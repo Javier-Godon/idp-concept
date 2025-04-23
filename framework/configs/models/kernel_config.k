@@ -1,0 +1,2 @@
+schema kernelConfig:
+    name: str

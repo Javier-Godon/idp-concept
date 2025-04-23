@@ -1,0 +1,2 @@
+schema Profile:
+    name: str

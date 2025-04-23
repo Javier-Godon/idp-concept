@@ -1,0 +1,2 @@
+schema EnvironmentConfig:
+    name: str

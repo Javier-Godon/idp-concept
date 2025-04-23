@@ -1,0 +1,2 @@
+schema StackConfig:
+    name: str

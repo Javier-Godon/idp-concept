@@ -1,0 +1,3 @@
+schema Project:
+    name: str
+    
