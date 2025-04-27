@@ -20,7 +20,7 @@ mono_crash.*
 [Dd]ebug/
 [Dd]ebugPublic/
 [Rr]elease/
-[Rr]eleases/
+# [Rr]eleases/
 x64/
 x86/
 [Ww][Ii][Nn]32/
@@ -538,4 +538,4 @@ fabric.properties
 
 # End of https://www.toptal.com/developers/gitignore/api/intellij
 
-credentials
+*credentials

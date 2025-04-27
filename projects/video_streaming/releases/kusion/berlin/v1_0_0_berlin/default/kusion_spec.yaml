@@ -1,0 +1,370 @@
+resources:
+- id: apps/v1:Deployment:apps:kafka-video-consumer-mongodb-python
+  type: Kubernetes
+  attributes:
+    apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      name: kafka-video-consumer-mongodb-python
+      namespace: apps
+    spec:
+      replicas: 1
+      selector:
+        matchLabels:
+          app: kafka-video-consumer-mongodb-python
+      template:
+        metadata:
+          labels:
+            app: kafka-video-consumer-mongodb-python
+        spec:
+          containers:
+          - image: ghcr.io/javier-godon/kafka-video-consumer-mongodb-python:3b7436a-2024-12-25T17-19
+            imagePullPolicy: IfNotPresent
+            livenessProbe:
+              exec:
+                command:
+                - /bin/sh
+                - '-c'
+                - echo livenessProbe
+              failureThreshold: 3
+              initialDelaySeconds: 30
+              periodSeconds: 5
+              successThreshold: 1
+              timeoutSeconds: 10
+            name: kafka-video-consumer-mongodb-python
+            readinessProbe:
+              exec:
+                command:
+                - /bin/sh
+                - '-c'
+                - echo readinessProbe
+              failureThreshold: 3
+              initialDelaySeconds: 30
+              periodSeconds: 5
+              successThreshold: 1
+              timeoutSeconds: 10
+            resources:
+              limits:
+                cpu: '1'
+                memory: '2Gi'
+                ephemeral-storage: '20Gi'
+              requests:
+                cpu: '1'
+                memory: '2Gi'
+                ephemeral-storage: '20Gi'
+            startupProbe:
+              exec:
+                command:
+                - /bin/sh
+                - '-c'
+                - echo startupProbe
+              failureThreshold: 3
+              initialDelaySeconds: 30
+              periodSeconds: 5
+              successThreshold: 1
+              timeoutSeconds: 10
+            volumeMounts:
+            - mountPath: /code/app/configuration/application.yaml
+              name: application-configuration
+              subPath: application.yaml
+          serviceAccountName: github-service-pull-image-account-kafka-video-consumer-mongodb-python
+          volumes:
+          - configMap:
+              name: kafka-video-consumer-mongodb-python-configmap
+              items:
+              - key: application.yaml
+                path: application.yaml
+            name: application-configuration
+  dependsOn:
+  - v1:Namespace:apps
+- id: v1:ConfigMap:apps:kafka-video-consumer-mongodb-python-configmap
+  type: Kubernetes
+  attributes:
+    apiVersion: v1
+    data:
+      application.yaml: |
+        server:
+          port: 8002
+        kafka:
+          topics:
+            processed: processed-video
+            streaming: streaming-video
+          consumer:
+            bootstrap-servers: blue-cluster-kafka-bootstrap.kafka.svc.cluster.local:9092
+            key-serializer: serializer
+            value-serializer: serializer
+            acks: all
+            auto-offset-reset: earliest
+        mongodb:
+          uri:  mongodb://admin:admin@blue-mongo-db.mongodb.svc.cluster.local:27017/admin?readPreference=primaryPreferred
+          database: blue-mongodb
+    kind: ConfigMap
+    metadata:
+      name: kafka-video-consumer-mongodb-python-configmap
+      namespace: apps
+  dependsOn:
+  - v1:Namespace:apps
+- id: v1:Service:apps:kafka-video-consumer-mongodb-python
+  type: Kubernetes
+  attributes:
+    apiVersion: v1
+    kind: Service
+    metadata:
+      name: kafka-video-consumer-mongodb-python
+      namespace: apps
+    spec:
+      ports:
+      - name: kafka-video-consumer-mongodb-python-server
+        nodePort: 31021
+        port: 8002
+      selector:
+        app: kafka-video-consumer-mongodb-python
+      type: NodePort
+  dependsOn:
+  - v1:Namespace:apps
+- id: v1:ServiceAccount:apps:github-service-pull-image-account-kafka-video-consumer-mongodb-python
+  type: Kubernetes
+  attributes:
+    apiVersion: v1
+    imagePullSecrets:
+    - name: pull-image-from-github-registry-secret
+    kind: ServiceAccount
+    metadata:
+      name: github-service-pull-image-account-kafka-video-consumer-mongodb-python
+      namespace: apps
+  dependsOn:
+  - v1:Namespace:apps
+- id: v1:Namespace:apps
+  type: Kubernetes
+  attributes:
+    apiVersion: v1
+    kind: Namespace
+    metadata:
+      name: apps
+  dependsOn: []
+- id: v1:Namespace:postgres
+  type: Kubernetes
+  attributes:
+    apiVersion: v1
+    kind: Namespace
+    metadata:
+      name: postgres
+  dependsOn: []
+- id: v1:Namespace:cert-manager
+  type: Kubernetes
+  attributes:
+    apiVersion: v1
+    kind: Namespace
+    metadata:
+      name: cert-manager
+  dependsOn: []
+- id: v1:Namespace:kafka
+  type: Kubernetes
+  attributes:
+    apiVersion: v1
+    kind: Namespace
+    metadata:
+      name: kafka
+  dependsOn: []
+- id: v1:Namespace:mongodb
+  type: Kubernetes
+  attributes:
+    apiVersion: v1
+    kind: Namespace
+    metadata:
+      name: mongodb
+  dependsOn: []
+- id: kafka.strimzi.io/v1beta2:Kafka:kafka:blue-kafka-cluster
+  type: Kubernetes
+  attributes:
+    apiVersion: kafka.strimzi.io/v1beta2
+    kind: Kafka
+    metadata:
+      name: blue-kafka-cluster
+      namespace: kafka
+    spec:
+      kafka:
+        version: '3.8.0'
+        replicas: 1
+        listeners:
+        - name: plain
+          port: 9092
+          type: internal
+          tls: false
+        - name: tls
+          port: 9093
+          type: internal
+          tls: true
+        - name: external
+          port: 9094
+          type: nodeport
+          tls: false
+        config:
+          offsets.topic.replication.factor: 1
+          transaction.state.log.replication.factor: 1
+          transaction.state.log.min.isr: 1
+          default.replication.factor: 1
+          min.insync.replicas: 1
+          inter.broker.protocol.version: '3.8'
+        storage:
+          type: jbod
+          volumes:
+          - id: 0
+            type: persistent-claim
+            size: '100Gi'
+            deleteClaim: false
+      zookeeper:
+        replicas: 1
+        storage:
+          type: persistent-claim
+          size: '100Gi'
+          deleteClaim: false
+      entityOperator:
+        topicOperator: {}
+        userOperator: {}
+  dependsOn:
+  - v1:Namespace:kafka
+- id: kafka.strimzi.io/v1beta2:KafkaTopic:kafka:processed-video
+  type: Kubernetes
+  attributes:
+    apiVersion: kafka.strimzi.io/v1beta2
+    kind: KafkaTopic
+    metadata:
+      name: processed-video
+      labels:
+        strimzi.io/cluster: blue-kafka-cluster
+      namespace: kafka
+    spec:
+      partitions: 3
+      replicas: 1
+  dependsOn:
+  - v1:Namespace:kafka
+- id: kafka.strimzi.io/v1beta2:KafkaTopic:kafka:streaming-video
+  type: Kubernetes
+  attributes:
+    apiVersion: kafka.strimzi.io/v1beta2
+    kind: KafkaTopic
+    metadata:
+      name: streaming-video
+      labels:
+        strimzi.io/cluster: blue-kafka-cluster
+      namespace: kafka
+    spec:
+      partitions: 3
+      replicas: 1
+  dependsOn:
+  - v1:Namespace:kafka
+- id: apps/v1:Deployment:mongodb:blue-mongo-db
+  type: Kubernetes
+  attributes:
+    apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      name: blue-mongo-db
+      namespace: mongodb
+    spec:
+      selector:
+        matchLabels:
+          app: blue-mongo-db
+      replicas: 1
+      strategy:
+        type: RollingUpdate
+        rollingUpdate:
+          maxSurge: 1
+          maxUnavailable: 1
+      minReadySeconds: 5
+      template:
+        metadata:
+          labels:
+            app: blue-mongo-db
+        spec:
+          containers:
+          - name: blue-mongo-db
+            image: mongo@sha256:cc62438c8ef61ce02f89b4f7c026e735df4580e8cd8857980d12e0eae73bf044
+            resources:
+              limits:
+                memory: '4Gi'
+                cpu: '1000m'
+              requests:
+                memory: '2Gi'
+                cpu: '500m'
+            imagePullPolicy: Always
+            env:
+            - name: MONGO_INITDB_ROOT_USERNAME
+              value: admin
+            - name: MONGO_INITDB_ROOT_PASSWORD
+              value: admin
+            ports:
+            - containerPort: 27017
+              name: mongodb
+            volumeMounts:
+            - name: blue-mongo-db-pv
+              mountPath: /data/db
+          volumes:
+          - name: blue-mongo-db-pv
+            persistentVolumeClaim:
+              claimName: blue-mongo-db-pvc
+  dependsOn:
+  - v1:Namespace:mongodb
+  - v1:PersistentVolume:mongodb:blue-mongo-db-pv
+  - v1:PersistentVolumeClaim:mongodb:blue-mongo-db-pvc
+- id: v1:Service:mongodb:blue-mongo-db
+  type: Kubernetes
+  attributes:
+    apiVersion: v1
+    kind: Service
+    metadata:
+      name: blue-mongo-db
+      labels:
+        app: blue-mongo-db
+      namespace: mongodb
+    spec:
+      selector:
+        app: blue-mongo-db
+      ports:
+      - name: mongodb
+        port: 27017
+        nodePort: 30332
+      type: NodePort
+  dependsOn:
+  - v1:Namespace:mongodb
+  - v1:PersistentVolume:mongodb:blue-mongo-db-pv
+  - v1:PersistentVolumeClaim:mongodb:blue-mongo-db-pvc
+- id: v1:PersistentVolume:mongodb:blue-mongo-db-pv
+  type: Kubernetes
+  attributes:
+    apiVersion: v1
+    kind: PersistentVolume
+    metadata:
+      name: blue-mongo-db-pv
+      labels:
+        type: local
+      namespace: mongodb
+    spec:
+      storageClassName: blue-mongo-db-pv
+      accessModes:
+      - ReadWriteOnce
+      capacity:
+        storage: '20Gi'
+      persistentVolumeReclaimPolicy: Retain
+      hostPath:
+        path: /mnt/data/mongodb-volume
+  dependsOn:
+  - v1:Namespace:mongodb
+- id: v1:PersistentVolumeClaim:mongodb:blue-mongo-db-pvc
+  type: Kubernetes
+  attributes:
+    apiVersion: v1
+    kind: PersistentVolumeClaim
+    metadata:
+      name: blue-mongo-db-pvc
+      namespace: mongodb
+    spec:
+      storageClassName: blue-mongo-db-pv
+      accessModes:
+      - ReadWriteOnce
+      resources:
+        requests:
+          storage: '20Gi'
+  dependsOn:
+  - v1:Namespace:mongodb

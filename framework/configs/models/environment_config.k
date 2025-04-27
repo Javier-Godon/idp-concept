@@ -1,2 +1,0 @@
-schema EnvironmentConfig:
-    name: str
