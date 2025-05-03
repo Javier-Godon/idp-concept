@@ -13,6 +13,10 @@
     version = "0.1.0"
     url = "https://github.com/KusionStack/kam.git"
     git_tag = "0.2.0"
+  [dependencies.kernel]
+    name = "kernel"
+    full_name = "kernel_0.0.1"
+    version = "0.0.1"
   [dependencies.modules]
     name = "modules"
     full_name = "modules_0.0.1"
@@ -24,6 +28,10 @@
     reg = "ghcr.io"
     repo = "kusionstack/network"
     oci_tag = "0.2.0"
+  [dependencies.releases]
+    name = "releases"
+    full_name = "releases_0.0.1"
+    version = "0.0.1"
   [dependencies.service]
     name = "service"
     full_name = "service_0.1.0"
@@ -31,3 +39,15 @@
     reg = "ghcr.io"
     repo = "kusionstack/service"
     oci_tag = "0.1.0"
+  [dependencies.sites]
+    name = "sites"
+    full_name = "sites_0.0.1"
+    version = "0.0.1"
+  [dependencies.stacks]
+    name = "stacks"
+    full_name = "stacks_0.0.1"
+    version = "0.0.1"
+  [dependencies.tenants]
+    name = "tenants"
+    full_name = "tenants_0.0.1"
+    version = "0.0.1"

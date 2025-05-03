@@ -1,3 +1,5 @@
+import configs.configurations as configs
+
 schema ComponentAsset:
     image?: str
     helmChart?: str
@@ -13,16 +15,18 @@ schema ComponentInstance:
     name: str
     kind: str
     namespace: str
+    configurations: configs.Configurations
     asset: ComponentAsset
     leaders: [ComponentLeader]
     manifests: [any]
     dependsOn: [any]
 
 schema Component:
-    instance: ComponentInstance = ComponentInstance{
-        name=name
-        kind=kind
-        namespace =namespace
+    instance: ComponentInstance = ComponentInstance {
+        name = name
+        kind = kind
+        namespace = namespace
+        configurations = configurations
         asset = asset
         leaders = leaders
         manifests = manifests
@@ -31,6 +35,7 @@ schema Component:
     kind: "APPLICATION" | "INFRASTRUCTURE"
     name: str
     namespace: str
+    configurations: configs.Configurations
     asset: ComponentAsset
     leaders: [ComponentLeader]
     manifests: [any]

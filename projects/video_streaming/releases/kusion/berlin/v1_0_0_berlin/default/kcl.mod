@@ -4,8 +4,7 @@ edition = "v0.10.0"
 version = "0.0.1"
 
 [dependencies]
-framework = { path = "../../../../../../../framework" }
 kam = { git = "https://github.com/KusionStack/kam.git", tag = "0.2.0" }
 network = { oci = "oci://ghcr.io/kusionstack/network", tag = "0.2.0" }
 service = { oci = "oci://ghcr.io/kusionstack/service", tag = "0.1.0" }
-modules = { path = "../../../../../modules" }
+releases = { path = "../../../../../releases" }

@@ -1,4 +1,4 @@
-import framework.models.component as component
+import framework.models.modules.component as component
 
 schema VideoCollectorMongodbPythonModule(component.Component):
     kind = "APPLICATION"

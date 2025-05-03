@@ -134,46 +134,6 @@ resources:
       namespace: apps
   dependsOn:
   - v1:Namespace:apps
-- id: v1:Namespace:apps
-  type: Kubernetes
-  attributes:
-    apiVersion: v1
-    kind: Namespace
-    metadata:
-      name: apps
-  dependsOn: []
-- id: v1:Namespace:postgres
-  type: Kubernetes
-  attributes:
-    apiVersion: v1
-    kind: Namespace
-    metadata:
-      name: postgres
-  dependsOn: []
-- id: v1:Namespace:cert-manager
-  type: Kubernetes
-  attributes:
-    apiVersion: v1
-    kind: Namespace
-    metadata:
-      name: cert-manager
-  dependsOn: []
-- id: v1:Namespace:kafka
-  type: Kubernetes
-  attributes:
-    apiVersion: v1
-    kind: Namespace
-    metadata:
-      name: kafka
-  dependsOn: []
-- id: v1:Namespace:mongodb
-  type: Kubernetes
-  attributes:
-    apiVersion: v1
-    kind: Namespace
-    metadata:
-      name: mongodb
-  dependsOn: []
 - id: kafka.strimzi.io/v1beta2:Kafka:kafka:blue-kafka-cluster
   type: Kubernetes
   attributes:
@@ -368,3 +328,43 @@ resources:
           storage: '20Gi'
   dependsOn:
   - v1:Namespace:mongodb
+- id: v1:Namespace:apps
+  type: Kubernetes
+  attributes:
+    apiVersion: v1
+    kind: Namespace
+    metadata:
+      name: apps
+  dependsOn: []
+- id: v1:Namespace:postgres
+  type: Kubernetes
+  attributes:
+    apiVersion: v1
+    kind: Namespace
+    metadata:
+      name: postgres
+  dependsOn: []
+- id: v1:Namespace:cert-manager
+  type: Kubernetes
+  attributes:
+    apiVersion: v1
+    kind: Namespace
+    metadata:
+      name: cert-manager
+  dependsOn: []
+- id: v1:Namespace:kafka
+  type: Kubernetes
+  attributes:
+    apiVersion: v1
+    kind: Namespace
+    metadata:
+      name: kafka
+  dependsOn: []
+- id: v1:Namespace:mongodb
+  type: Kubernetes
+  attributes:
+    apiVersion: v1
+    kind: Namespace
+    metadata:
+      name: mongodb
+  dependsOn: []

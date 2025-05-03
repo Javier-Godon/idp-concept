@@ -1,0 +1,9 @@
+[dependencies]
+  [dependencies.framework]
+    name = "framework"
+    full_name = "framework_0.0.1"
+    version = "0.0.1"
+  [dependencies.tenants]
+    name = "tenants"
+    full_name = "tenants_0.0.1"
+    version = "0.0.1"

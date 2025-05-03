@@ -1,2 +1,2 @@
-schema kernelConfig:
+schema KernelConfig:
     name: str

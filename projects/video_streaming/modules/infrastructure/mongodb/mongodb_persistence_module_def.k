@@ -1,4 +1,4 @@
-import framework.models.accessory as accessory
+import framework.models.modules.accessory as accessory
 
 schema MongoDBPersistenceModule(accessory.Accessory):
     kind = "CRD"

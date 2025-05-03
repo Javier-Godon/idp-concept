@@ -1,6 +1,7 @@
-import models.component
-import models.accessory
-import models.k8snamespace
+import models.modules.component
+import models.modules.accessory
+import models.modules.k8snamespace
+import models.stack as stack
 
 schema KusionResource:
     id: str
@@ -55,4 +56,18 @@ kusion_spec_stream_namespaces = lambda namespaces: [k8snamespace.K8sNamespaceIns
     } for namespace in namespaces for single_manifest in namespace.manifests]
 
     [kusion_spec_stream_single_manifest(dependency.manifest, dependency.dependsOn) for dependency in _dependencies]
+}
+
+kusion_spec_stream_stack = lambda input_stack: stack.Stack -> [KusionResource] {
+    kusion_resources = []
+    if input_stack.components and len(input_stack.components) > 0:
+        kusion_resources += kusion_spec_stream_components(input_stack.components)
+
+    if input_stack.accessories and len(input_stack.accessories) > 0:
+        kusion_resources += kusion_spec_stream_accessories(input_stack.accessories)
+
+    if input_stack.k8snamespaces and len(input_stack.k8snamespaces) > 0:
+        kusion_resources += kusion_spec_stream_namespaces(input_stack.k8snamespaces)
+
+    kusion_resources
 }

@@ -1,6 +1,6 @@
-import framework.configs.models as model
+import framework.configs.models.site_config
 
-berlin_config = model.SiteConfig{
+berlin_config = site_config.SiteConfig {
     name = "berlin"
     rootPaths = {
         "local opensearch": "http://opensearch.opensearch"

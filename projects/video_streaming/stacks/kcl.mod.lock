@@ -1,0 +1,9 @@
+[dependencies]
+  [dependencies.framework]
+    name = "framework"
+    full_name = "framework_0.0.1"
+    version = "0.0.1"
+  [dependencies.modules]
+    name = "modules"
+    full_name = "modules_0.0.1"
+    version = "0.0.1"
