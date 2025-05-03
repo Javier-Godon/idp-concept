@@ -5,7 +5,6 @@ schema ProjectInstance:
     description: str
     configurations: kernel_config.KernelConfig
 
-
 schema Project:
     instance: ProjectInstance = ProjectInstance {
         name = name

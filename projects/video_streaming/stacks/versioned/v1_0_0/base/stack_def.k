@@ -11,7 +11,7 @@ import versioned.v1_0_0.base.configurations as base_config
 schema VideoStreamingv1_0_0_BaseStack(stack.Stack):
 
     _instance_configurations = full_config.Configurations {
-        kernelConfigurations = kernelConfigurations
+        kernelConfigurations = project.configurations
         siteConfigurations = site.configurations
         profileConfigurations = profile.configurations
     }
@@ -19,7 +19,7 @@ schema VideoStreamingv1_0_0_BaseStack(stack.Stack):
     profile = fmwk_profile.Profile {
         name = "v1_0_0"
         configurations = base_config.video_streaming_v1_0_0_base_profile_configurations
-    }
+    }.instance
 
     # NAMESPACES
     k8snamespaces = [
