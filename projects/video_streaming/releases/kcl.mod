@@ -10,3 +10,7 @@ sites = { path = "../sites" }
 stacks = { path = "../stacks" }
 tenants = { path = "../tenants" }
 core_sources = { path = "../core_sources" }
+
+
+[profile]
+entries = ["../sites/tenants/production/berlin/config.yaml"]

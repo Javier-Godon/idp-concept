@@ -1,0 +1,6 @@
+site: 
+  name: Berlin
+rootPaths:
+  localOpensearch: "http://opensearch.opensearch"
+  centralOpensearch: "https://central-services/opensearch"
+  keycloak: "keycloak.keycloak/realm/auth"
