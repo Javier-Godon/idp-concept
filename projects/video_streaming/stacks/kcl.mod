@@ -5,4 +5,5 @@ version = "0.0.1"
 
 [dependencies]
 framework = { path = "../../../framework" }
-modules = { path = "../modules" }
+video_streaming = { path = "../../video_streaming" }
+

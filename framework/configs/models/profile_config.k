@@ -1,3 +1,0 @@
-schema ProfileConfig:
-    name: str
-

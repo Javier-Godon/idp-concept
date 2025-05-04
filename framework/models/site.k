@@ -1,13 +1,12 @@
 """
 Concrete target workspace
 """
-import configs.models.site_config
 import models.tenant
 
 schema SiteInstance:
     name: str
     tenant: tenant.Tenant
-    configurations: site_config.SiteConfig
+    configurations: any
 
 schema Site:
     instance: SiteInstance = SiteInstance {
@@ -17,5 +16,5 @@ schema Site:
     }
     name: str
     tenant: tenant.Tenant
-    configurations: site_config.SiteConfig
+    configurations: any
 

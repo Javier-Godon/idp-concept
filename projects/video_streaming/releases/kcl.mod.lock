@@ -1,4 +1,8 @@
 [dependencies]
+  [dependencies.core_sources]
+    name = "core_sources"
+    full_name = "core_sources_0.0.1"
+    version = "0.0.1"
   [dependencies.framework]
     name = "framework"
     full_name = "framework_0.0.1"

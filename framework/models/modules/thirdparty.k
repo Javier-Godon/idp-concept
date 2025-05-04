@@ -5,11 +5,10 @@ For example. If it uses helm as package manager, the helm chart is given for a c
 and declarative for our part will be the values.yaml, those concrete values depend on the vendor (vendorConfigurations)
 those vendorConfigurations are fill in depending on the platforConfigurations that are specific for your platform
 """
-import configs.configurations as configs
 
 schema ThirdPartyInstance:
     packageManager: str
-    platformConfigurations: configs.Configurations
+    platformConfigurations: any
     vendorConfigurations: {str:str}
 
 schema ThirdParty:
@@ -19,6 +18,6 @@ schema ThirdParty:
         vendorConfigurations = vendorConfigurations
     }
     packageManager: "HELM" | "JSONNET" | "KUSTOMIZE" | "TIMONI" | "KUSION"
-    platformConfigurations: configs.Configurations
+    platformConfigurations: any
     vendorConfigurations: {str:str}
 

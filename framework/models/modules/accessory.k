@@ -1,5 +1,3 @@
-import configs.configurations as configs
-
 schema AccessoryAsset:
     image?: str
     version: str
@@ -14,7 +12,7 @@ schema AccessoryInstance:
     name: str
     kind: str
     namespace: str
-    configurations: configs.Configurations
+    configurations: any
     asset: AccessoryAsset
     leaders: [AccessoryLeader]
     manifests: [any]
@@ -34,7 +32,7 @@ schema Accessory:
     kind: "CRD" | "SECRET"
     name: str
     namespace: str
-    configurations: configs.Configurations
+    configurations: any
     asset: AccessoryAsset
     leaders: [AccessoryLeader]
     manifests: [any]

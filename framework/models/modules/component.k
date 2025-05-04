@@ -1,5 +1,3 @@
-import configs.configurations as configs
-
 schema ComponentAsset:
     image?: str
     helmChart?: str
@@ -15,7 +13,7 @@ schema ComponentInstance:
     name: str
     kind: str
     namespace: str
-    configurations: configs.Configurations
+    configurations: any
     asset: ComponentAsset
     leaders: [ComponentLeader]
     manifests: [any]
@@ -35,7 +33,7 @@ schema Component:
     kind: "APPLICATION" | "INFRASTRUCTURE"
     name: str
     namespace: str
-    configurations: configs.Configurations
+    configurations: any
     asset: ComponentAsset
     leaders: [ComponentLeader]
     manifests: [any]

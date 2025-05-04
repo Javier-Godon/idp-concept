@@ -1,27 +1,10 @@
 import framework.models.modules.k8snamespace as k8snamespace
-import modules.appops.video_collector_mongodb_python as video_collector
-import modules.infrastructure.apache_kafka.instances as kafka
-import modules.infrastructure.mongodb as mongodb
+import video_streaming.modules.appops.video_collector_mongodb_python as video_collector
+import video_streaming.modules.infrastructure.apache_kafka.instances as kafka
+import video_streaming.modules.infrastructure.mongodb as mongodb
 import framework.models.stack
-import framework.models.profile as fmwk_profile
-import framework.configs.models.profile_config
-import framework.configs.configurations as full_config
-import versioned.v1_0_0.base.configurations as base_config
 
 schema VideoStreamingv1_0_0_BaseStack(stack.Stack):
-
-    _instance_configurations = full_config.Configurations {
-        kernelConfigurations = project.configurations
-        siteConfigurations = site.configurations
-        profileConfigurations = profile.configurations
-    }
-
-    profile = fmwk_profile.Profile {
-        name = "v1_0_0"
-        configurations = base_config.video_streaming_v1_0_0_base_profile_configurations
-    }.instance
-
-    # NAMESPACES
     k8snamespaces = [
         _apps_namespace
         _postgres_namespace
@@ -31,28 +14,28 @@ schema VideoStreamingv1_0_0_BaseStack(stack.Stack):
     ]
 
     _apps_namespace = k8snamespace.K8sNamespace {
-        name = "apps"
-        configurations = _instance_configurations
+        name = instanceConfigurations.appsNamespace
+        configurations = instanceConfigurations
     }.instance
 
     _postgres_namespace = k8snamespace.K8sNamespace {
-        name = "postgres"
-        configurations = _instance_configurations
+        name = instanceConfigurations.postgresNamespace
+        configurations = instanceConfigurations
     }.instance
 
     _certmanager_namespace = k8snamespace.K8sNamespace {
-        name = "cert-manager"
-        configurations = _instance_configurations
+        name = instanceConfigurations.certmanagerNamespace
+        configurations = instanceConfigurations
     }.instance
 
     _apache_kafka_namespace = k8snamespace.K8sNamespace {
         name = "kafka"
-        configurations = _instance_configurations
+        configurations = instanceConfigurations
     }.instance
 
     _mongodb_namespace = k8snamespace.K8sNamespace {
         name = "mongodb"
-        configurations = _instance_configurations
+        configurations = instanceConfigurations
     }.instance
     # COMPONENTS
     components = [
@@ -65,7 +48,7 @@ schema VideoStreamingv1_0_0_BaseStack(stack.Stack):
             image = "ghcr.io/javier-godon/kafka-video-consumer-mongodb-python"
             version = "3b7436a-2024-12-25T17-19"
         }
-        configurations = _instance_configurations
+        configurations = instanceConfigurations
         dependsOn = [_apps_namespace]
     }.instance
     # ACCESSORIES
@@ -82,7 +65,7 @@ schema VideoStreamingv1_0_0_BaseStack(stack.Stack):
             image = "strimzi"
             version = "0.45.0"
         }
-        configurations = _instance_configurations
+        configurations = instanceConfigurations
         dependsOn = [_apache_kafka_namespace]
     }.instance
 
@@ -93,7 +76,7 @@ schema VideoStreamingv1_0_0_BaseStack(stack.Stack):
             image = "mongo@sha256"
             version = "cc62438c8ef61ce02f89b4f7c026e735df4580e8cd8857980d12e0eae73bf044"
         }
-        configurations = _instance_configurations
+        configurations = instanceConfigurations
         dependsOn = [_mongodb_namespace, _mongodb_persistence_volume]
     }.instance
 
@@ -104,11 +87,7 @@ schema VideoStreamingv1_0_0_BaseStack(stack.Stack):
             image = "mongo@sha256"
             version = "cc62438c8ef61ce02f89b4f7c026e735df4580e8cd8857980d12e0eae73bf044"
         }
-        configurations = _instance_configurations
+        configurations = instanceConfigurations
         dependsOn = [_mongodb_namespace]
     }.instance
-
-
-
-
 

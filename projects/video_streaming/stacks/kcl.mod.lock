@@ -3,7 +3,11 @@
     name = "framework"
     full_name = "framework_0.0.1"
     version = "0.0.1"
-  [dependencies.modules]
-    name = "modules"
-    full_name = "modules_0.0.1"
+  [dependencies.k8s]
+    name = "k8s"
+    full_name = "k8s_1.31.2"
+    version = "1.31.2"
+  [dependencies.video_streaming]
+    name = "video_streaming"
+    full_name = "video_streaming_0.0.1"
     version = "0.0.1"
