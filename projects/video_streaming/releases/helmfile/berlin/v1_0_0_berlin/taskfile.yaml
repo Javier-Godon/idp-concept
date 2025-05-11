@@ -6,11 +6,16 @@ tasks:
       - mkdir -p helmfile/charts/my-chart
       - kcl run helm/chart.k -o helmfile/charts/my-chart/Chart.yaml
 
-  # generate:values:
-  #   cmds:
-  #     - mkdir -p helmfile/charts/my-chart
-  #     - kcl run helmfile/charts/my-chart/values.k -o yaml > helmfile/charts/my-chart/values.yaml
+  generate:values:
+    cmds:
+      - mkdir -p helmfile/charts/my-chart
+      - touch helmfile/charts/my-chart/values.yaml
 
+  generate:templates:
+    cmds:
+      - mkdir -p helmfile/charts/my-chart/templates
+      - touch helmfile/charts/my-chart/templates/values.yaml
+      
   generate:helmfile:
     cmds:
       - kcl run helm/helmfile.k -o  helmfile/helmfile.yaml
@@ -18,5 +23,5 @@ tasks:
   generate:all:
     deps:
       - generate:chart
-      # - generate:values
+      - generate:values
       - generate:helmfile
