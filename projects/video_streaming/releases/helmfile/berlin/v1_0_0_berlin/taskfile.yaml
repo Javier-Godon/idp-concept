@@ -1,0 +1,22 @@
+version: '3'
+
+tasks:
+  generate:chart:
+    cmds:
+      - mkdir -p helmfile/charts/my-chart
+      - kcl run helm/chart.k -o helmfile/charts/my-chart/Chart.yaml
+
+  # generate:values:
+  #   cmds:
+  #     - mkdir -p helmfile/charts/my-chart
+  #     - kcl run helmfile/charts/my-chart/values.k -o yaml > helmfile/charts/my-chart/values.yaml
+
+  generate:helmfile:
+    cmds:
+      - kcl run helm/helmfile.k -o  helmfile/helmfile.yaml
+
+  generate:all:
+    deps:
+      - generate:chart
+      # - generate:values
+      - generate:helmfile

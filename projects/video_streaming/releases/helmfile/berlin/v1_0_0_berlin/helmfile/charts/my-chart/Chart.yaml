@@ -1,0 +1,13 @@
+apiVersion: v2
+name: my-chart
+description: A Helm chart for Kubernetes
+type: application
+version: '0.1.0'
+appVersion: '1.0.0'
+keywords:
+- example
+- kcl
+maintainers:
+- name: Javier Godon
+  email: you@example.com
+ple.com
