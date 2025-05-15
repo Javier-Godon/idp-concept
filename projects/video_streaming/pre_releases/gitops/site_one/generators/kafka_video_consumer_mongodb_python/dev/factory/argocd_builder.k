@@ -32,7 +32,7 @@
 #         ]
 #     }
 # concrete = _concrete
-import video_streaming.pre_releases.gitops.kafka_video_consumer_mongodb_python.dev.factory.factory_seed
+import video_streaming.pre_releases.gitops.site_one.generators.kafka_video_consumer_mongodb_python.dev.factory.factory_seed
 import framework.custom.argocd.models.v1alpha1.argoproj_io_v1alpha1_application as application
 
 _application_name = factory_seed._kafka_video_consumer_mongodb_python_development_dev_cluster_stack.components[0].name

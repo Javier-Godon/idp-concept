@@ -1,4 +1,5 @@
 import framework.custom.helmfile.helmfile
+import video_streaming.releases.helmfile.berlin.v1_0_0_berlin.factory.factory_seed
 
 helmfile.Helmfile {
     helmfiles: [

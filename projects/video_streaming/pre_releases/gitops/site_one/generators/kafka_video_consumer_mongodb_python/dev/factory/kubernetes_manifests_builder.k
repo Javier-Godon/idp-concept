@@ -33,6 +33,6 @@
 #     }
 # concrete = _concrete
 import framework.procedures.kcl_to_yaml
-import video_streaming.pre_releases.gitops.kafka_video_consumer_mongodb_python.dev.factory.factory_seed
+import video_streaming.pre_releases.gitops.site_one.generators.kafka_video_consumer_mongodb_python.dev.factory.factory_seed
 
 kcl_to_yaml.yaml_stream_stack(factory_seed._kafka_video_consumer_mongodb_python_development_dev_cluster_stack)

@@ -1,5 +1,5 @@
 import framework.models.project
-import .configurations
+import video_streaming.kernel.configurations
 
 video_streaming_project = project.Project {
     name = "Video Streaming"

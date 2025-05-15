@@ -1,0 +1,4 @@
+import video_streaming.releases.helmfile.berlin.v1_0_0_berlin.factory.factory_seed
+import framework.procedures.kcl_to_helm
+
+kcl_to_helm.generate_helm_components_templates_from_stack(factory_seed._stack)

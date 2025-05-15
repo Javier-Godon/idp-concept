@@ -1,5 +1,5 @@
 import framework.models.site
-import tenants.vendor
+import video_streaming.tenants.vendor
 import video_streaming.core_sources.video_streaming_configurations
 import video_streaming.sites.development.dev_cluster.configurations
 

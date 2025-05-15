@@ -1,27 +1,34 @@
-version: '3'
+version: "3"
+
+vars:
+  items: ["video-streaming"]
 
 tasks:
   generate:chart:
     cmds:
-      - mkdir -p helmfile/charts/my-chart
-      - kcl run helm/chart.k -o helmfile/charts/my-chart/Chart.yaml
+      - mkdir -p output/charts/{{.item}}
+      - kcl run factory/chart_builder.k -D chart=\"{{.item}}\" -o output/charts/{{.item}}/Chart.yaml
 
   generate:values:
     cmds:
-      - mkdir -p helmfile/charts/my-chart
-      - touch helmfile/charts/my-chart/values.yaml
+      - mkdir -p output/charts/{{.item}}
+      - touch output/charts/{{.item}}/values.yaml
 
   generate:templates:
     cmds:
-      - mkdir -p helmfile/charts/my-chart/templates
-      - touch helmfile/charts/my-chart/templates/values.yaml
-      
+      - mkdir -p output/charts/{{.item}}/templates
+      - kcl run factory/templates_builder.k -D chart=\"{{.item}}\" -o output/charts/{{.item}}/templates/manifests.yaml
+
   generate:helmfile:
     cmds:
-      - kcl run helm/helmfile.k -o  helmfile/helmfile.yaml
+      - kcl run factory/helmfile_builder.k -o  output/helmfile.yaml
 
   generate:all:
-    deps:
-      - generate:chart
-      - generate:values
-      - generate:helmfile
+    cmds:
+      - task: generate:chart
+        vars: { item: "video-streaming" }
+      - task: generate:values
+        vars: { item: "video-streaming" }
+      - task: generate:templates
+        vars: { item: "video-streaming" }
+      - task: generate:helmfile
