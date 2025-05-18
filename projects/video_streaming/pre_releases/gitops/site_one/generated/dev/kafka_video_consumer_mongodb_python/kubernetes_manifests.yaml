@@ -66,10 +66,10 @@ spec:
       serviceAccountName: github-service-pull-image-account-kafka-video-consumer-mongodb-python
       volumes:
       - configMap:
-          name: kafka-video-consumer-mongodb-python-configmap
           items:
           - key: application.yaml
             path: application.yaml
+          name: kafka-video-consumer-mongodb-python-configmap
         name: application-configuration
 ---
 apiVersion: v1

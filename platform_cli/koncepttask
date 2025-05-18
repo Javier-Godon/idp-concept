@@ -1,0 +1,39 @@
+#!/usr/bin/env nu
+
+def main [
+  command: string
+  render_type: string
+  --factory: string
+  --output: string
+] {
+  let cwd = $env.PWD  # e.g. .../apps/deployments/my-app/dev
+  let base = ($cwd | path basename)  # 'dev'
+  let app = ($cwd | path dirname | path basename)  # 'my-app'
+  let koncept_dir = ($env.FILE_PWD) # Folder where koncept.nu lives
+
+  if $command != "render" {
+    print "Unknown command: $command"
+    exit 1
+  }
+
+  match $render_type {
+    "argocd" => {
+      let taskfile_path = ($koncept_dir | path join "taskfiles/argocd/taskfile.yaml")
+      print $"Running ArgoCD Taskfile for app ($app) in env ($base)..."
+      env BASE=$base APP=$app task -t $taskfile_path generate:all $"base=($base)" $"app=($app)" $"factory=($factory)" $"output=($output)"
+    }
+    "helmfile" => {
+      print $"Running Helmfile Taskfile for app ($app)..."
+      task -t $"taskfiles/helmfile/taskfile.yaml" generate:all --base $base --app $app
+    }
+    "kusion" => {
+      let computed_output = (if $output != null { $output } else { $"../../../generated/($env)/($app)" })
+      print $"Running KCL directly for Kusion ($computed_output))..."
+      kcl run $"($factory)/main.k" -o $"($computed_output)/kusion_spec.yaml"
+    }
+    _ => {
+      print $"Unsupported render type: ($render_type)"
+      exit 1
+    }
+  }
+}

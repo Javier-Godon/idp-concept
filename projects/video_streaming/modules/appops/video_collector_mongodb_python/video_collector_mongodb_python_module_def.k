@@ -1,4 +1,6 @@
 import framework.models.modules.component as component
+import k8s.api.core.v1 as core
+import k8s.api.apps.v1 as apps
 
 schema VideoCollectorMongodbPythonModule(component.Component):
     kind = "APPLICATION"
@@ -7,9 +9,9 @@ schema VideoCollectorMongodbPythonModule(component.Component):
         kind = "Deployment"
         apiVersion = "apps/v1"
         namespace = namespace
-    }]    
+    }]
     manifests = [
-        {
+        apps.Deployment {
             apiVersion = "apps/v1"
             kind = "Deployment"
             metadata = {
@@ -117,7 +119,7 @@ schema VideoCollectorMongodbPythonModule(component.Component):
                 }
             }
         }
-        {
+        core.ConfigMap {
             apiVersion = "v1"
             data = {
                 "application.yaml" = r"""server:
@@ -143,7 +145,7 @@ mongodb:
                 namespace = namespace
             }
         }
-        {
+        core.Service {
             apiVersion = "v1"
             kind = "Service"
             metadata = {
@@ -164,7 +166,7 @@ mongodb:
                 $type = "NodePort"
             }
         }
-        {
+        core.ServiceAccount {
             apiVersion = "v1"
             imagePullSecrets = [
                 {

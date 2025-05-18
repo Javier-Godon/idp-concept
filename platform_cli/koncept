@@ -1,0 +1,66 @@
+#!/usr/bin/env nu
+
+def main [
+  command: string
+  render_type: string
+  --factory: string  # Optional: default is 'factory'
+  --output: string
+] {
+  let cwd = $env.PWD  # e.g. .../apps/deployments/my-app/dev
+  let base = ($cwd | path basename)  # 'dev'
+  let app = ($cwd | path dirname | path basename)  # 'my-app'
+  let koncept_dir = ($env.FILE_PWD)  # Folder where koncept.nu lives
+
+  let factory_dir = (if $factory != null { $factory } else { "factory" })
+
+  if $command != "render" {
+    print "Unknown command: $command"
+    exit 1
+  }
+
+  match $render_type {
+    "argocd" => {
+      let output_dir = (if $output != null { $output } else { $"../../../generated/($base)/($app)" })
+      let output_path = ($output_dir | path expand)
+      let manifest_path = $"($output_path)/kubernetes_manifests.yaml"
+      print $"[ArgoCD] Generating manifests for app=($app) in env=($base)..."
+      mkdir $output_path
+      kcl run $"($factory_dir)/kubernetes_manifests_builder.k" -o $manifest_path
+    }
+
+    "helmfile" => {
+        let output_dir = (if $output != null { $output } else { "output" })
+
+        print "[Helmfile] Generating chart directly under charts/..."
+
+        let chart_dir = $"($output_dir)/charts"
+        mkdir $chart_dir
+
+        kcl run $"($factory_dir)/chart_builder.k" -D "chart=\"default\"" -o $"($chart_dir)/Chart.yaml"
+        touch $"($chart_dir)/values.yaml"
+
+        let templates_dir = $"($chart_dir)/templates"
+        mkdir $templates_dir
+
+        kcl run $"($factory_dir)/templates_builder.k" -D "chart=\"default\"" -o $"($templates_dir)/manifests.yaml"
+
+        print "[Helmfile] Generating helmfile.yaml..."
+        kcl run $"($factory_dir)/helmfile_builder.k" -o $"($output_dir)/helmfile.yaml"
+    }
+
+
+
+    "kusion" => {
+      let output_path = (if $output != null { $output } else { "output" })
+        let output_file = $"($output_path)/kusion_spec.yaml"
+        print $"[Kusion] Running KCL for app=($app), env=($base) -> ($output_file)..."
+        mkdir $output_path
+        kcl run $"($factory_dir)/main.k" -o $output_file
+    }
+
+    _ => {
+      print $"Unsupported render type: ($render_type)"
+      exit 1
+    }
+  }
+}

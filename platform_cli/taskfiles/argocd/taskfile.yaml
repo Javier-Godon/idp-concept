@@ -1,0 +1,19 @@
+version: "3"
+
+vars:
+  base: ""
+  app: ""
+  output: "../../../generated/{{.base}}/{{.app}}"
+
+tasks:
+  generate:manifests:
+    cmds:
+      # - mkdir -p ../../../generated/dev/kafka_video_consumer_mongodb_python
+      # - kcl run factory/kubernetes_manifests_builder.k -o ../../../generated/dev/kafka_video_consumer_mongodb_python/kubernetes_manifests.yaml
+      - mkdir -p {{.output}}
+      - kcl run {{.factory}}/kubernetes_manifests_builder.k -o {{.output}}/kubernetes_manifests.yaml
+    dir: "{{.TASKFILE_DIR}}"  
+
+  generate:all:
+    deps:
+      - generate:manifests
