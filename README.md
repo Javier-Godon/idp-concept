@@ -10,6 +10,9 @@ Furthermore, the development team would face challenges that shouldn't be their 
 
 With this project, we aim to define a **core configuration using [KCL](https://www.kcl-lang.io/)**. From this core, we can deploy in different ways, across various environments, and over different timeframes.
 
+Whenever possible, we will try to generate plain YAML files. This has two main advantages: it speeds up the deployment process and avoids the need to install plugins to make our platform compatible with specific manifest generation tools (like `kustomize`, `helm`, `helmfile`, `kusion`, etc.).
+
+In addition to generating manifests for use with client-side technologies (such as `kustomize` or `helm`), this platform will also be capable of generating the necessary CRDs when using Kubernetes-native technologies like `Crossplane` or `ArgoCD`.
 
 
 ```
