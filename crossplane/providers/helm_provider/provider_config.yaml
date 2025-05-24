@@ -1,0 +1,8 @@
+# https://github.com/crossplane-contrib/provider-kubernetes/blob/main/examples/provider/config-in-cluster.yaml
+apiVersion: helm.crossplane.io/v1beta1
+kind: ProviderConfig
+metadata:
+  name: helm-provider
+spec:
+  credentials:
+    source: InjectedIdentity

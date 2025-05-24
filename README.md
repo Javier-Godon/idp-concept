@@ -46,6 +46,11 @@ from idp-concept/projects/video_streaming/releases/kusion/berlin/v1_0_0_berlin/d
 koncept render kusion
 ```
 
-
+```
+kusion preview --spec-file output/kusion_spec.yaml
+```
+```
+kusion apply --spec-file output/kusion_spec.yaml
+```
 
 
