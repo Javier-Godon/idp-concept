@@ -1,4 +1,3 @@
-#https://cert-manager.io/docs/installation/helm/
 apiVersion: apiextensions.crossplane.io/v1
 kind: Composition
 metadata:
@@ -7,26 +6,37 @@ spec:
   compositeTypeRef:
     apiVersion: koncept.bluesolution.es/v1alpha1
     kind: XCertManager
-  resources:
-    - name: cert-manager-helm-release
-      base:
-        apiVersion: helm.crossplane.io/v1beta1
-        kind: Release
-        metadata:
-          name: cert-manager
-        spec:
-          forProvider:
-            chart:
-              name: cert-manager
-              repository: https://charts.jetstack.io
-              version: v1.17.2
-            namespace: cert-manager
-            set:
-              - name: installCRDs
-                value: "true"
-          providerConfigRef:
-            name: helm-provider
-      patches:
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.namespace"
-          toFieldPath: "spec.forProvider.namespace"
+  mode: Pipeline
+  pipeline:
+    - step: render-helm-release
+      functionRef:
+        name: function-patch-and-transform
+      input:
+        apiVersion: pt.fn.crossplane.io/v1beta1
+        kind: Resources
+        resources:
+          - name: cert-manager-helm-release
+            base:
+              apiVersion: helm.crossplane.io/v1beta1
+              kind: Release
+              metadata:
+                name: cert-manager
+              spec:
+                forProvider:
+                  chart:
+                    name: cert-manager
+                    repository: https://charts.jetstack.io
+                    version: v1.17.2
+                  namespace: default  # will be overridden by patch
+                  set:
+                    - name: installCRDs
+                      value: "true"
+                providerConfigRef:
+                  name: helm-provider
+            patches:
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.namespace
+                toFieldPath: spec.forProvider.namespace        
+    - step: automatically-detect-readiness
+      functionRef:
+        name: function-auto-ready              
