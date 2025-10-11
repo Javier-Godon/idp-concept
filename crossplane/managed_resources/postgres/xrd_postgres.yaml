@@ -1,15 +1,13 @@
 apiVersion: apiextensions.crossplane.io/v2
 kind: CompositeResourceDefinition
 metadata:
-  name: xkafkastrimzis.koncept.bluesolution.es
+  name: postgrescompositeworkloads.gitops.bluesolution.es
 spec:
-  group: koncept.bluesolution.es
+  scope: Cluster
+  group: gitops.bluesolution.es
   names:
-    kind: XKafkaStrimzi
-    plural: xkafkastrimzis
-  claimNames:
-    kind: KafkaStrimzi
-    plural: kafkastrimzis
+    kind: PostgresCompositeWorkload
+    plural: postgrescompositeworkloads
   versions:
     - name: v1alpha1
       served: true
@@ -23,3 +21,8 @@ spec:
               properties:
                 namespace:
                   type: string
+                label:
+                  type: object
+                  properties:
+                    postgresNamespace:
+                      type: string

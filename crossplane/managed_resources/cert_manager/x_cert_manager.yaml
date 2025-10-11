@@ -27,7 +27,7 @@ spec:
                     name: cert-manager
                     repository: https://charts.jetstack.io
                     version: v1.17.2
-                  namespace: default  # will be overridden by patch
+                  #namespace: default # will be overridden by patch
                   set:
                     - name: installCRDs
                       value: "true"
@@ -36,7 +36,7 @@ spec:
             patches:
               - type: FromCompositeFieldPath
                 fromFieldPath: spec.namespace
-                toFieldPath: spec.forProvider.namespace        
+                toFieldPath: spec.forProvider.namespace
     - step: automatically-detect-readiness
       functionRef:
-        name: function-auto-ready              
+        name: function-auto-ready

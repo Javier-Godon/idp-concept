@@ -1,4 +1,4 @@
-apiVersion: apiextensions.crossplane.io/v1
+apiVersion: apiextensions.crossplane.io/v2
 kind: CompositeResourceDefinition
 metadata:
   name: xcertmanagers.koncept.bluesolution.es
@@ -7,9 +7,7 @@ spec:
   names:
     kind: XCertManager
     plural: xcertmanagers
-  claimNames:
-    kind: CertManager
-    plural: certmanagers
+  scope: Cluster
   versions:
     - name: v1alpha1
       served: true

@@ -1,0 +1,5 @@
+apiVersion: koncept.bluesolution.es/v1alpha1
+kind: XCertManager
+metadata:
+  name: cert-manager-workload
+spec: {}

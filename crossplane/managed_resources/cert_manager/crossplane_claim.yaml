@@ -1,6 +1,0 @@
-apiVersion: koncept.bluesolution.es/v1alpha1
-kind: CertManager
-metadata:
-  name: cert-manager-claim
-spec:
-  namespace: cert-manager

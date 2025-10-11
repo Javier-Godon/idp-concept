@@ -1,0 +1,27 @@
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: dev-cluster
+
+nodes:
+  - role: control-plane
+    image: kindest/node:v1.33.0
+    # Expose 80 and 443 so ingress works
+    extraPortMappings:
+      - containerPort: 80
+        hostPort: 80
+        protocol: TCP
+      - containerPort: 443
+        hostPort: 443
+        protocol: TCP
+
+    # Mount a directory from your host into the node
+    extraMounts:
+      - hostPath: /home/youruser/kind-storage # 👈 host path on Ubuntu
+        containerPath: /mnt/kind-storage # 👈 path inside the Kind node
+
+    kubeadmConfigPatches:
+      - |
+        kind: InitConfiguration
+        nodeRegistration:
+          kubeletExtraArgs:
+            node-labels: "ingress-ready=true"
