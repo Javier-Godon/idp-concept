@@ -1,0 +1,75 @@
+apiVersion: apiextensions.crossplane.io/v2
+kind: Composition
+metadata:
+  name: keycloak-composition
+spec:
+  compositeTypeRef:
+    apiVersion: platform.example.org/v1alpha1
+    kind: XKeycloak
+
+  resources:
+    # 1. Install CRD: Keycloak
+    - name: keycloak-crd
+      base:
+        apiVersion: kubernetes.crossplane.io/v1alpha1
+        kind: Object
+        spec:
+          forProvider:
+            manifest:
+              apiVersion: apiextensions.k8s.io/v1
+              kind: CustomResourceDefinition
+              # 👇 full content replaced at runtime
+          providerConfigRef:
+            name: kubernetes-provider
+      patches:
+        - type: FromCompositeFieldPath
+          fromFieldPath: "metadata.name"
+          toFieldPath: "metadata.name"
+
+    # 2. Install CRD: KeycloakRealmImport
+    - name: keycloakrealm-crd
+      base:
+        apiVersion: kubernetes.crossplane.io/v1alpha1
+        kind: Object
+        spec:
+          forProvider:
+            manifest:
+              apiVersion: apiextensions.k8s.io/v1
+              kind: CustomResourceDefinition
+          providerConfigRef:
+            name: kubernetes-provider
+
+    # 3. Deploy Keycloak operator components
+    - name: keycloak-operator
+      base:
+        apiVersion: kubernetes.crossplane.io/v1alpha1
+        kind: Object
+        spec:
+          forProvider:
+            manifest:
+              apiVersion: v1
+              kind: List
+              items:
+                # 👇 entire operator YAML (kubernetes.yml) goes here
+          providerConfigRef:
+            name: kubernetes-provider
+
+    # 4. Create the Keycloak instance
+    - name: keycloak-instance
+      base:
+        apiVersion: k8s.keycloak.org/v1
+        kind: Keycloak
+        metadata:
+          name: keycloak
+        spec:
+          instances: 1
+          ingress:
+            enabled: true
+            hostname: example.com
+      patches:
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.hostname"
+          toFieldPath: "spec.ingress.hostname"
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.replicas"
+          toFieldPath: "spec.instances"

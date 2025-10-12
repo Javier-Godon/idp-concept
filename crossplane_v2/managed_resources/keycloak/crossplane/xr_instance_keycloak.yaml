@@ -1,0 +1,7 @@
+apiVersion: platform.example.org/v1alpha1
+kind: Keycloak
+metadata:
+  name: keycloak-sample
+spec:
+  hostname: keycloak.localtest.me
+  replicas: 1

@@ -8,13 +8,26 @@ spec:
     kind: XCertManager
   mode: Pipeline
   pipeline:
-    - step: render-helm-release
+    - step: patch-and-transform
       functionRef:
         name: function-patch-and-transform
       input:
         apiVersion: pt.fn.crossplane.io/v1beta1
         kind: Resources
         resources:
+          - name: namespaceCertManager
+            base:
+              apiVersion: kubernetes.crossplane.io/v1alpha2
+              kind: Object
+              spec:
+                providerConfigRef:
+                  name: provider-kubernetes
+                forProvider:
+                  manifest:
+                    apiVersion: v1
+                    kind: Namespace
+                    metadata:
+                      name: cert-manager
           - name: cert-manager-helm-release
             base:
               apiVersion: helm.crossplane.io/v1beta1
@@ -22,21 +35,27 @@ spec:
               metadata:
                 name: cert-manager
               spec:
+                # providerConfigRef should reference the Provider you created for provider-helm
+                providerConfigRef:
+                  name: helm-provider
                 forProvider:
                   chart:
                     name: cert-manager
                     repository: https://charts.jetstack.io
-                    version: v1.17.2
-                  #namespace: default # will be overridden by patch
+                    # use a chart version string (check latest that you want). Example:
+                    version: "v1.17.2"
                   set:
                     - name: installCRDs
                       value: "true"
-                providerConfigRef:
-                  name: helm-provider
             patches:
+              # patch the namespace value from the XR into the Release namespace
               - type: FromCompositeFieldPath
                 fromFieldPath: spec.namespace
                 toFieldPath: spec.forProvider.namespace
+              # optionally, ensure the Release metadata.namespace is set to the same
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.namespace
+                toFieldPath: metadata.namespace
     - step: automatically-detect-readiness
       functionRef:
         name: function-auto-ready

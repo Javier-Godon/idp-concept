@@ -209,9 +209,10 @@ spec:
                     spec:
                       selector:
                         app: blue-postgres
-                      type: LoadBalancer
+                      type: NodePort
                       ports:
                         - port: 5432
+                          targetPort: 5432
                           nodePort: 31543
             patches:
               - fromFieldPath: "spec.label.postgresNamespace"

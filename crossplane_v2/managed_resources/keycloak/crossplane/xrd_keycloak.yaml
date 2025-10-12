@@ -1,0 +1,36 @@
+apiVersion: apiextensions.crossplane.io/v2
+kind: CompositeResourceDefinition
+metadata:
+  name: xkeycloaks.platform.example.org
+spec:
+  group: platform.example.org
+  names:
+    kind: XKeycloak
+    plural: xkeycloaks
+  claimNames:
+    kind: Keycloak
+    plural: keycloaks
+  defaultCompositionRef:
+    name: keycloak-composition
+  connectionSecretKeys:
+    - KEYCLOAK_URL
+  versions:
+    - name: v1alpha1
+      served: true
+      referenceable: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                hostname:
+                  type: string
+                  description: Base hostname for Keycloak ingress.
+                replicas:
+                  type: integer
+                  description: Number of Keycloak replicas.
+                  default: 1
+              required:
+                - hostname
