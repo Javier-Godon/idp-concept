@@ -35,7 +35,6 @@ spec:
               metadata:
                 name: cert-manager
               spec:
-                # providerConfigRef should reference the Provider you created for provider-helm
                 providerConfigRef:
                   name: helm-provider
                 forProvider:

@@ -1,19 +1,13 @@
 apiVersion: apiextensions.crossplane.io/v2
 kind: CompositeResourceDefinition
 metadata:
-  name: xkeycloaks.platform.example.org
+  name: xkeycloaks.koncept.bluesolution.es
 spec:
-  group: platform.example.org
+  scope: Cluster
+  group: koncept.bluesolution.es
   names:
     kind: XKeycloak
     plural: xkeycloaks
-  claimNames:
-    kind: Keycloak
-    plural: keycloaks
-  defaultCompositionRef:
-    name: keycloak-composition
-  connectionSecretKeys:
-    - KEYCLOAK_URL
   versions:
     - name: v1alpha1
       served: true
@@ -32,5 +26,12 @@ spec:
                   type: integer
                   description: Number of Keycloak replicas.
                   default: 1
+                namespace:
+                  type: string
+                label:
+                  type: object
+                  properties:
+                    namespace:
+                      type: string
               required:
                 - hostname

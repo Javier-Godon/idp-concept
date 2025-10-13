@@ -1,0 +1,32 @@
+apiVersion: k8s.keycloak.org/v2alpha1
+kind: Keycloak
+metadata:
+  name: blue-keycloak
+  namespace: keycloak
+spec:
+  instances: 1
+  db:
+    database: blue_postgres
+    schema: keycloak
+    vendor: postgres
+    host: blue-postgres.postgres.svc.cluster.local
+    usernameSecret:
+      name: keycloak-db-secret
+      key: username
+    passwordSecret:
+      name: keycloak-db-secret
+      key: password
+  http:
+    tlsSecret: keycloak-tls-secret
+    httpEnabled: true
+  # ingress:
+  #   enabled: false
+  hostname:
+    hostname: bluesolution.es
+  proxy:
+    headers: xforwarded
+  # additionalOptions:
+  #   - name: KC_HOSTNAME_PATH
+  #     value: /keycloak
+  #   - name: KC_HTTP_RELATIVE_PATH
+  #     value: /keycloak

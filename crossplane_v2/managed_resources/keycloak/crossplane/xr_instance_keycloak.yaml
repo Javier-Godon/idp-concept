@@ -1,7 +1,10 @@
-apiVersion: platform.example.org/v1alpha1
-kind: Keycloak
+apiVersion: koncept.bluesolution.es/v1alpha1
+kind: XKeycloak
 metadata:
-  name: keycloak-sample
+  name: blue-keycloak
 spec:
-  hostname: keycloak.localtest.me
+  hostname: bluesolution.es
   replicas: 1
+  namespace: keycloak
+  label:
+    namespace: keycloak
