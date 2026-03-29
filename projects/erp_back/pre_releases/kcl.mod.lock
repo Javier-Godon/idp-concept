@@ -1,4 +1,8 @@
 [dependencies]
+  [dependencies.erp_back]
+    name = "erp_back"
+    full_name = "erp_back_0.0.1"
+    version = "0.0.1"
   [dependencies.framework]
     name = "framework"
     full_name = "framework_0.0.1"
@@ -11,7 +15,3 @@
     reg = "ghcr.io"
     repo = "kcl-lang/k8s"
     oci_tag = "1.31.2"
-  [dependencies.video_streaming]
-    name = "video_streaming"
-    full_name = "video_streaming_0.0.1"
-    version = "0.0.1"

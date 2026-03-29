@@ -106,6 +106,7 @@ spec:
                       resources:
                         requests:
                           storage: 20Gi
+                      storageClassName: local-path
                       #storageClassName: local-path # Minikube local path
             patches:
               - fromFieldPath: "spec.label.postgresNamespace"
@@ -139,6 +140,31 @@ spec:
                 policy:
                   fromFieldPath: "Required"
 
+          - name: configMapBluePostgresInit
+            base:
+              apiVersion: kubernetes.crossplane.io/v1alpha2
+              kind: Object
+              spec:
+                providerConfigRef:
+                  name: provider-kubernetes
+                forProvider:
+                  manifest:
+                    apiVersion: v1
+                    kind: ConfigMap
+                    metadata:
+                      name: blue-postgres-init
+                      namespace: postgres
+                      labels:
+                        app: blue-postgres
+                    data:
+                      postgres_init.sql: |-
+                        CREATE SCHEMA IF NOT EXISTS keycloak;
+            patches:
+              - fromFieldPath: "spec.label.postgresNamespace"
+                toFieldPath: "spec.forProvider.manifest.metadata.namespace"
+                policy:
+                  fromFieldPath: "Required"
+
           - name: deploymentBluePostgres
             base:
               apiVersion: kubernetes.crossplane.io/v1alpha2
@@ -165,6 +191,8 @@ spec:
                           labels:
                             app: blue-postgres
                         spec:
+                          securityContext:
+                            fsGroup: 999
                           containers:
                             - name: postgres
                               image: postgres:18-alpine3.22
@@ -174,16 +202,26 @@ spec:
                               envFrom:
                                 - configMapRef:
                                     name: blue-postgres-config
+                              env:
+                                - name: PGDATA
+                                  value: /var/lib/postgresql/data
                               volumeMounts:
-                                - mountPath: /var/lib/postgresql/data/pgdata
+                                - mountPath: /var/lib/postgresql
                                   name: postgresdb
-                              # env:
-                              #  - name: PGDATA
-                              #    value: /var/lib/postgresql/data/pgdata
+                                  subPath: data
+                                - name: postgres-init-scripts
+                                  mountPath: /docker-entrypoint-initdb.d
+                                  readOnly: true
                           volumes:
                             - name: postgresdb
                               persistentVolumeClaim:
                                 claimName: blue-postgres-pv-claim
+                            - name: postgres-init-scripts
+                              configMap:
+                                name: blue-postgres-init
+                                items:
+                                  - key: postgres_init.sql
+                                    path: postgres_init.sql
             patches:
               - fromFieldPath: "spec.label.postgresNamespace"
                 toFieldPath: "spec.forProvider.manifest.metadata.namespace"
