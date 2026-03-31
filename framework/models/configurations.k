@@ -17,6 +17,7 @@ schema BaseConfigurations:
     siteName?: str
     brandIcon?: str
     appsNamespace?: str
+    gitRepoUrl?: str
     rootPaths?: {str:str}
 
 merge_configurations = lambda kernel: any, profile: any, tenant: any, site: any -> any {

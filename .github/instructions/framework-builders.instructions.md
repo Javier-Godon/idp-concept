@@ -127,3 +127,32 @@ _ns = asm.create_namespace_from_config(instanceConfigurations, "appsNamespace")
 ```
 
 Both return a `K8sNamespaceInstance` ready for use in stack arrays and `dependsOn`.
+
+## Check Blocks (Validation)
+
+Builders include compile-time validation via `check` blocks:
+
+| Builder | Validations |
+|---|---|
+| `DeploymentSpec` | `port` 1-65535, `replicas` >= 1 |
+| `ServiceSpec` | `port` 1-65535, `serviceType` in ClusterIP/NodePort/LoadBalancer |
+| `PersistentVolumeSpec` | `accessMode` in ReadWriteOnce/ReadOnlyMany/ReadWriteMany, `reclaimPolicy` in Retain/Delete/Recycle |
+
+### EnvVar Schema (`framework/models/modules/common.k`)
+```kcl
+import framework.models.modules.common as common
+
+common.EnvVar { name = "KEY", value = "val" }
+common.EnvVar { name = "SECRET", valueFrom = common.EnvVarSource {
+    secretKeyRef = common.KeySelector { name = "secret-name", key = "key" }
+}}
+```
+- Must have either `value` OR `valueFrom`, not both, not neither
+- `EnvVarSource` must have either `secretKeyRef` OR `configMapKeyRef`, not both
+
+## Testing
+
+- **116 unit tests** in `framework/tests/` directory (mirroring source structure)
+- Run: `cd framework && kcl test ./...`
+- Template tests validate builder outputs individually (see `kcl test` limitation in KCL skill)
+- Integration: `kcl run` + `kubeconform` for full template validation

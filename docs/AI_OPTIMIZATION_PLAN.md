@@ -159,20 +159,29 @@ MCP servers allow Copilot to fetch **live documentation** from external sources 
 
 **Purpose**: Allows the AI to fetch documentation pages on-demand from KCL, Nushell, Crossplane, and other technology websites.
 
-**Configuration** (`.vscode/mcp.json`):
+**Configuration** (`.vscode/mcp.json`) — **runs in hardened Docker container** (see [SECURITY.md](SECURITY.md) for full details):
 ```json
 {
   "servers": {
     "fetch": {
-      "command": "uvx",
-      "args": ["mcp-server-fetch"],
-      "description": "Fetch web pages for technology documentation"
+      "command": "docker",
+      "args": [
+        "run", "-i", "--rm",
+        "--read-only",
+        "--cap-drop=ALL",
+        "--security-opt=no-new-privileges:true",
+        "--memory=512m",
+        "--cpus=0.5",
+        "--pids-limit=50",
+        "--tmpfs", "/tmp:rw,noexec,nosuid,size=64m",
+        "mcp/fetch"
+      ]
     }
   }
 }
 ```
 
-**Usage in chat**: The AI can fetch `https://www.kcl-lang.io/docs/reference/lang/spec/schema` when it needs to understand KCL schema inheritance.
+Docker provides process/network/filesystem isolation that eliminates the critical SSRF risk of the previous `uvx` approach. The container's localhost is isolated from the host, cloud metadata endpoints are unreachable, and the filesystem is read-only.
 
 **Key URLs to save**:
 - KCL Language Spec: `https://www.kcl-lang.io/docs/reference/lang/spec/`
@@ -232,26 +241,21 @@ MCP servers allow Copilot to fetch **live documentation** from external sources 
 
 ### 6.2 Complete MCP Configuration
 
-Create `.vscode/mcp.json`:
+See `.vscode/mcp.json` for the current configuration. The `fetch` server runs in a hardened Docker container (see [SECURITY.md](SECURITY.md) for details).
+
 ```json
 {
   "servers": {
     "fetch": {
-      "command": "uvx",
-      "args": ["mcp-server-fetch"],
-      "description": "Fetch technology documentation pages"
-    },
-    "github": {
       "command": "docker",
       "args": [
         "run", "-i", "--rm",
-        "-e", "GITHUB_PERSONAL_ACCESS_TOKEN",
-        "ghcr.io/github/github-mcp-server"
-      ],
-      "env": {
-        "GITHUB_PERSONAL_ACCESS_TOKEN": "${input:github-token}"
-      },
-      "description": "GitHub repository browsing"
+        "--read-only", "--cap-drop=ALL",
+        "--security-opt=no-new-privileges:true",
+        "--memory=512m", "--cpus=0.5", "--pids-limit=50",
+        "--tmpfs", "/tmp:rw,noexec,nosuid,size=64m",
+        "mcp/fetch"
+      ]
     }
   }
 }
@@ -277,9 +281,14 @@ A curated knowledge base of **official, verified** reference repositories and do
 |---|---|---|
 | [kcl-lang/kcl](https://github.com/kcl-lang/kcl) | 2,300+ | KCL language core, has CLAUDE.md, CNCF Sandbox |
 | [kcl-lang/modules](https://github.com/kcl-lang/modules) | 39+ | 200+ official KCL modules (crossplane, argocd, strimzi, cert-manager) |
-| [vfarcic/dot-ai](https://github.com/vfarcic/dot-ai) | 308+ | MCP-based DevOps AI toolkit, Nushell + K8s, by Upbound/Crossplane dev advocate |
+| [vfarcic/crossplane-kubernetes](https://github.com/vfarcic/crossplane-kubernetes) | 50+ | **Closest match**: 66% KCL + 30.6% Nushell, Crossplane compositions, CLAUDE.md |
+| [crossplane-contrib/function-kcl](https://github.com/crossplane-contrib/function-kcl) | 150+ | Canonical KCL-in-Crossplane function (used in our crossplane_v2/) |
+| [vfarcic/dot-ai](https://github.com/vfarcic/dot-ai) | 308+ | MCP-based DevOps AI toolkit, Nushell + K8s |
 | [vfarcic/cncf-demo](https://github.com/vfarcic/cncf-demo) | 231+ | End-to-end CNCF stack (Crossplane, ArgoCD, Helm), IDP chapter |
-| [kcl-lang/crossplane-kcl](https://github.com/kcl-lang/crossplane-kcl) | 30+ | Crossplane KCL function — bridge between our KCL and Crossplane pipelines |
+| [kcl-lang/konfig](https://github.com/kcl-lang/konfig) | 14+ | KCL K8s abstraction framework (similar to our framework/) |
+| [kcl-lang/krm-kcl](https://github.com/kcl-lang/krm-kcl) | 34+ | KRM spec bridging KCL to Helm, Helmfile, Crossplane |
+| [KusionStack/kusion](https://github.com/KusionStack/kusion) | 1,287+ | IDP orchestrator, deep KCL integration |
+| [cncf/tag-app-delivery](https://github.com/cncf/tag-app-delivery) | 833+ | Platform Engineering Maturity Model, Platforms Whitepaper |
 
 ### For AI Assistants
 

@@ -1,17 +1,17 @@
 # Security Policy for AI Tools, MCP Servers & External Dependencies
 
-> **⚠️ CRITICAL — MCP Fetch SSRF Warning**
+> **⚠️ CRITICAL — MCP Fetch Security Model**
 >
-> The `mcp-server-fetch` tool **can access local and internal IP addresses** (localhost, 127.0.0.1, 10.x.x.x, 172.16.x.x, 192.168.x.x, etc.) and may expose sensitive services running on the developer machine or local network.
+> The `mcp-server-fetch` tool runs inside a **hardened Docker container** with process, network, and filesystem isolation. This mitigates the primary SSRF risk: the container's `localhost` is isolated from the host machine, and cloud metadata endpoints (169.254.169.254) are unreachable.
 >
-> **ALL AI assistants using the fetch tool in this project MUST:**
+> **Despite Docker isolation, ALL AI assistants using the fetch tool MUST:**
 > 1. **NEVER fetch localhost, 127.0.0.1, 0.0.0.0, or any private/internal IP address**
 > 2. **NEVER fetch URLs on local network ranges** (10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16)
 > 3. **NEVER fetch URLs with non-standard ports** unless the domain is in the trusted list below
 > 4. **ONLY fetch URLs from the explicitly trusted domains** listed in this document
 > 5. **NEVER follow redirects blindly** — if a trusted URL redirects to a non-trusted domain, stop
 >
-> Violation of these rules could expose internal services, credentials, or infrastructure metadata endpoints (e.g., cloud provider metadata at 169.254.169.254).
+> Docker isolation is the **primary defense**. The software-level restrictions above are **defense-in-depth** to protect against misconfiguration or future container escape vulnerabilities.
 
 ---
 
@@ -82,7 +82,8 @@ Before adding **any** external tool (MCP server, extension, CLI utility, depende
 - **Organization**: `modelcontextprotocol` — The official MCP organization (backed by Anthropic)
 - **License**: MIT (existing code) / Apache 2.0 (new contributions)
 - **Language**: Python
-- **Install method**: `uvx mcp-server-fetch` or `pip install mcp-server-fetch`
+- **Install method**: Docker (`mcp/fetch` from Docker Hub, verified publisher) — previously `uvx mcp-server-fetch`
+- **Docker image**: [`mcp/fetch`](https://hub.docker.com/r/mcp/fetch) — built and signed by Docker Inc., cosign-verified
 
 ### Is it 100% secure?
 
@@ -102,22 +103,67 @@ Before adding **any** external tool (MCP server, extension, CLI utility, depende
 
 | Risk | Severity | Mitigation |
 |---|---|---|
-| **SSRF (Server-Side Request Forgery)** — Can access local/internal IPs | **HIGH** | The official README warns: *"This server can access local/internal IP addresses and may represent a security risk. Exercise caution when using this MCP server to ensure this does not expose any sensitive data."* **This is the primary risk.** The fetch tool has unrestricted network access and can reach: localhost services, internal APIs, cloud metadata endpoints (169.254.169.254), database admin panels, and any service on the local network. **Mandatory mitigations:** (1) NEVER request localhost/127.0.0.1/0.0.0.0, (2) NEVER request private IP ranges (10.x, 172.16-31.x, 192.168.x), (3) NEVER request link-local addresses (169.254.x.x), (4) ONLY fetch from the explicitly trusted domain allowlist in this document, (5) Do NOT expose the MCP server to untrusted networks. |
+| **SSRF (Server-Side Request Forgery)** — Can access local/internal IPs | **MEDIUM** (mitigated by Docker) | **Docker isolation provides the primary defense.** With Docker's default bridge network, `localhost`/`127.0.0.1` inside the container resolves to the container itself (not the host), making localhost-based SSRF attacks ineffective. Cloud metadata endpoints (169.254.169.254) timeout from inside the container. The host is only reachable via the Docker bridge IP (172.17.0.1), which is non-trivial to exploit. **Additional software mitigations:** (1) AI must NEVER request localhost/127.0.0.1/0.0.0.0, (2) NEVER request private IP ranges, (3) ONLY fetch from the trusted domain allowlist, (4) Do NOT expose the MCP server to untrusted networks. |
 | **Content from untrusted sites** — AI may follow malicious instructions from fetched content | **LOW** | Only fetch from known, trusted documentation sites (kcl-lang.io, nushell.sh, docs.crossplane.io, etc.). The AI should not blindly execute code from fetched pages. |
 | **Reference implementation** — Explicitly stated as "not production-ready" | **LOW** | This is acceptable for our use case (developer tooling in local environments). We are NOT deploying this in production infrastructure. |
-| **Python supply chain** — Dependency on Python packages | **LOW** | Installed via `uvx` which uses locked dependencies. Verify with `pip audit` periodically. |
+| **Python supply chain** — Dependency on Python packages | **LOW** | Docker image is built from a locked `uv.lock` file, signed by Docker Inc. with cosign verification. Image is immutable once pulled — no runtime dependency resolution. |
 
 #### Verdict: **APPROVED for development use**
 
 The `mcp-server-fetch` server is approved for use in this project under these **strict conditions**:
-1. Used ONLY on developer workstations, NEVER in CI/CD or production
-2. **ONLY fetch URLs from the explicitly trusted domain allowlist below** — no exceptions
-3. **NEVER fetch localhost, 127.0.0.1, 0.0.0.0, or any private/internal IP address**
-4. **NEVER fetch cloud metadata endpoints** (169.254.169.254, metadata.google.internal, etc.)
-5. **NEVER fetch URLs with IP addresses** — always use domain names from the trusted list
-6. Do NOT use `--ignore-robots-txt` unless explicitly needed for specific documentation sites
-7. Keep `uvx`/`uv` updated to get latest security fixes
-8. If a URL redirects to a domain NOT on the trusted list, do NOT follow the redirect
+1. **MUST run inside Docker** with the hardened configuration below — NEVER run via `uvx` or `pip` directly
+2. Used ONLY on developer workstations, NEVER in CI/CD or production
+3. **ONLY fetch URLs from the explicitly trusted domain allowlist below** — no exceptions
+4. **NEVER fetch localhost, 127.0.0.1, 0.0.0.0, or any private/internal IP address**
+5. **NEVER fetch cloud metadata endpoints** (169.254.169.254, metadata.google.internal, etc.)
+6. **NEVER fetch URLs with IP addresses** — always use domain names from the trusted list
+7. Do NOT use `--ignore-robots-txt` unless explicitly needed for specific documentation sites
+8. Keep the Docker image updated: `docker pull mcp/fetch:latest`
+9. If a URL redirects to a domain NOT on the trusted list, do NOT follow the redirect
+
+#### Docker Security Hardening
+
+The `.vscode/mcp.json` configuration runs `mcp-server-fetch` in a hardened Docker container with the following security controls:
+
+```json
+{
+  "command": "docker",
+  "args": [
+    "run", "-i", "--rm",
+    "--read-only",
+    "--cap-drop=ALL",
+    "--security-opt=no-new-privileges:true",
+    "--memory=512m",
+    "--cpus=0.5",
+    "--pids-limit=50",
+    "--tmpfs", "/tmp:rw,noexec,nosuid,size=64m",
+    "mcp/fetch"
+  ]
+}
+```
+
+| Flag | Purpose |
+|---|---|
+| `--rm` | Auto-remove container after exit — no leftover state |
+| `--read-only` | Read-only root filesystem — prevents malicious writes |
+| `--cap-drop=ALL` | Drop ALL Linux capabilities — minimal privilege |
+| `--security-opt=no-new-privileges:true` | Prevent privilege escalation via setuid/setgid |
+| `--memory=512m` | Memory limit — prevents resource exhaustion DoS |
+| `--cpus=0.5` | CPU limit — prevents resource exhaustion DoS |
+| `--pids-limit=50` | Process limit — prevents fork bombs |
+| `--tmpfs /tmp:rw,noexec,nosuid,size=64m` | Ephemeral writable /tmp with no-exec — needed for Python but prevents code execution from /tmp |
+
+**Why Docker instead of uvx?**
+
+| Aspect | `uvx` (previous) | Docker (current) |
+|---|---|---|
+| **Process isolation** | Runs as your user, full host access | Runs in isolated namespace, no host filesystem access |
+| **Network isolation** | `localhost` = host's localhost (SSRF risk) | `localhost` = container's localhost (SSRF mitigated) |
+| **Cloud metadata** | Can reach 169.254.169.254 | Times out — cannot reach metadata endpoint |
+| **Filesystem** | Full read/write to host | Read-only root, ephemeral /tmp only |
+| **Capabilities** | Full user capabilities | ALL capabilities dropped |
+| **Supply chain** | Resolves deps at runtime from PyPI | Immutable image with locked, signed deps |
+| **Resource limits** | None — can consume unlimited resources | Hard memory/CPU/PID limits |
 
 ### Recommended Fetch Targets (Trusted URLs)
 
@@ -156,9 +202,24 @@ https://www.keycloak.org/*
 # GitHub repos (for source code reference)
 https://github.com/kcl-lang/*
 https://github.com/crossplane/*
+https://github.com/crossplane-contrib/*
 https://github.com/vfarcic/*
 https://github.com/modelcontextprotocol/*
 https://github.com/github/*
+https://github.com/KusionStack/*
+https://github.com/stefanprodan/*
+https://github.com/cncf/*
+https://github.com/score-spec/*
+https://github.com/syntasso/*
+https://raw.githubusercontent.com/*/main/*
+https://raw.githubusercontent.com/*/refs/heads/main/*
+
+# Platform engineering references
+https://tag-app-delivery.cncf.io/*
+https://score.dev/*
+https://timoni.sh/*
+https://kustomize.io/*
+https://cdk8s.io/*
 
 # BLOCKED — NEVER fetch these (examples, not exhaustive)
 # http://localhost:*
@@ -229,5 +290,5 @@ If a security issue is found in any approved tool:
 
 ---
 
-*Last reviewed: 2026-03-28*
-*Next scheduled review: 2026-06-28*
+*Last reviewed: 2026-03-30*
+*Next scheduled review: 2026-06-30*

@@ -28,6 +28,10 @@ schema DeploymentSpec:
     strategy?: any
     minReadySeconds?: int
 
+    check:
+        1 <= port <= 65535 if port is not Undefined, "port must be between 1 and 65535"
+        replicas >= 1 if replicas is not Undefined, "replicas must be at least 1"
+
 schema ResourceSpec:
     cpuRequest?: str = "250m"
     cpuLimit?: str = "1"

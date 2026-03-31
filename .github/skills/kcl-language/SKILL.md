@@ -183,6 +183,47 @@ import file
 data = yaml.decode(file.read("config.yaml"))
 ```
 
+## Testing with `kcl test`
+
+### Basics
+```kcl
+# File must end with _test.k
+# Each test is a lambda prefixed with test_
+test_my_feature = lambda {
+    _result = my_function("input")
+    assert _result == "expected"
+}
+```
+
+### Testing Check Block Violations
+Use `runtime.catch()` to test that invalid inputs are rejected:
+```kcl
+import runtime
+
+test_invalid_port = lambda {
+    _err = runtime.catch(lambda {
+        MySchema { port = 99999 }  # should violate check block
+    })
+    assert _err != Undefined, "expected check block to fail"
+}
+```
+
+### Critical `kcl test` Limitations
+1. **Auto-computed `instance` fields fail in test lambdas** — When a parent schema (Component/Accessory) has `instance: TypeInstance = TypeInstance { ... manifests = manifests }` and `manifests` is computed from builder lambdas, `kcl test` evaluates the `instance` default before child schema private fields resolve → `UndefinedType` errors. Works fine with `kcl run`.
+   - **Workaround**: Test individual builder outputs, not full template instantiation. Validate templates via `kcl run` + `kubeconform`.
+2. **Run tests from the package root**: `cd framework && kcl test ./...`
+
+### Check Block Gotchas
+```kcl
+# ❌ WRONG: `if port` is falsy for integer 0
+check:
+    1 <= port <= 65535 if port, "port out of range"
+
+# ✅ CORRECT: use `is not Undefined` for optional int fields
+check:
+    1 <= port <= 65535 if port is not Undefined, "port out of range"
+```
+
 ## Common Mistakes
 
 | Mistake | Fix |
@@ -190,9 +231,12 @@ data = yaml.decode(file.read("config.yaml"))
 | Using `type` in K8s manifests | Use `$type` |
 | Passing schema instead of `.instance` | Add `.instance` |
 | Using `None` for absent values | Use `Undefined` |
-| Mutable variable reassignment | KCL variables are immutable; use union `|` for merging |
+| Mutable variable reassignment | KCL variables are immutable; use union `\|` for merging |
 | Missing `?` on optional schema fields | Add `?` suffix: `field?: str` |
 | String interpolation with `${}` in wrong context | Only works in `"double quoted"` strings |
+| `if port` being falsy for int 0 | Use `if port is not Undefined` for optional int checks |
+| Instantiating template schemas in `kcl test` | Test builder outputs individually; use `kcl run` for integration |
+| `runtime.catch()` without import | Add `import runtime` at top of test file |
 
 ## Reference Files
 - [KCL import system](./../../instructions/kcl-module-system.instructions.md)

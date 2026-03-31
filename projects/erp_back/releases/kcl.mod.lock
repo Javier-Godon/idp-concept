@@ -1,0 +1,52 @@
+[dependencies]
+  [dependencies.core_sources]
+    name = "core_sources"
+    full_name = "erp_back_0.0.1"
+    version = "0.0.1"
+    reg = "ghcr.io"
+    repo = "kcl-lang/core_sources"
+    oci_tag = "0.0.1"
+  [dependencies.erp_back]
+    name = "erp_back"
+    full_name = "erp_back_0.0.1"
+    version = "0.0.1"
+  [dependencies.framework]
+    name = "framework"
+    full_name = "framework_0.0.1"
+    version = "0.0.1"
+  [dependencies.k8s]
+    name = "k8s"
+    full_name = "k8s_1.31.2"
+    version = "1.31.2"
+    sum = "xBZgPsnpVVyWBpahuPQHReeRx28eUHGFoaPeqbct+vs="
+    reg = "ghcr.io"
+    repo = "kcl-lang/k8s"
+    oci_tag = "1.31.2"
+  [dependencies.kernel]
+    name = "kernel"
+    full_name = "erp_back_0.0.1"
+    version = "0.0.1"
+    reg = "ghcr.io"
+    repo = "kcl-lang/kernel"
+    oci_tag = "0.0.1"
+  [dependencies.sites]
+    name = "sites"
+    full_name = "erp_back_0.0.1"
+    version = "0.0.1"
+    reg = "ghcr.io"
+    repo = "kcl-lang/sites"
+    oci_tag = "0.0.1"
+  [dependencies.stacks]
+    name = "stacks"
+    full_name = "erp_back_0.0.1"
+    version = "0.0.1"
+    reg = "ghcr.io"
+    repo = "kcl-lang/stacks"
+    oci_tag = "0.0.1"
+  [dependencies.tenants]
+    name = "tenants"
+    full_name = "erp_back_0.0.1"
+    version = "0.0.1"
+    reg = "ghcr.io"
+    repo = "kcl-lang/tenants"
+    oci_tag = "0.0.1"

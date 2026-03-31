@@ -98,6 +98,17 @@ schema VideoCollectorMongodbPythonModule(component.Component):
                                         subPath = "application.yaml"
                                     }
                                 ]
+                                env = [
+                                    {
+                                        name = "MONGODB_URI"
+                                        valueFrom = {
+                                            secretKeyRef = {
+                                                name = "mongodb-credentials"
+                                                key = "uri"
+                                            }
+                                        }
+                                    }
+                                ]
                             }
                         ]
                         serviceAccountName = "github-service-pull-image-account-kafka-video-consumer-mongodb-python"
@@ -135,7 +146,7 @@ kafka:
     acks: all
     auto-offset-reset: earliest
 mongodb:
-  uri:  mongodb://admin:admin@blue-mongo-db.mongodb.svc.cluster.local:27017/admin?readPreference=primaryPreferred
+  uri:  ${MONGODB_URI}
   database: blue-mongodb
 """
             }

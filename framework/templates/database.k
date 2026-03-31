@@ -28,7 +28,7 @@ schema SingleDatabaseModule(accessory.Accessory):
     nodePort?: int
     env?: [any]
     resources?: deploy.ResourceSpec
-    imagePullPolicy?: str = "Always"
+    imagePullPolicy?: str = "IfNotPresent"
     portName?: str
 
     # Auto-computed

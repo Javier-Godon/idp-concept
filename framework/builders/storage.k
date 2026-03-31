@@ -11,6 +11,10 @@ schema PersistentVolumeSpec:
     reclaimPolicy?: str = "Retain"
     hostPath?: str = "/mnt/data"
 
+    check:
+        accessMode in ["ReadWriteOnce", "ReadOnlyMany", "ReadWriteMany"] if accessMode, "accessMode must be ReadWriteOnce, ReadOnlyMany, or ReadWriteMany"
+        reclaimPolicy in ["Retain", "Delete", "Recycle"] if reclaimPolicy, "reclaimPolicy must be Retain, Delete, or Recycle"
+
 build_pv_and_pvc = lambda spec: PersistentVolumeSpec -> [any] {
     _storage_class = spec.storageClassName if spec.storageClassName else "${spec.name}-pv"
     _pv = {

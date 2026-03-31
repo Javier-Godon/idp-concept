@@ -20,9 +20,9 @@ schema AccessoryInstance:
 
 schema Accessory:
     instance: AccessoryInstance = AccessoryInstance {
-        name=name
-        kind=kind
-        namespace =namespace
+        name = name
+        kind = kind
+        namespace = namespace
         configurations = configurations
         asset = asset
         leaders = leaders

@@ -13,6 +13,10 @@ schema ServiceSpec:
     portName?: str
     labels?: {str:str}
 
+    check:
+        1 <= port <= 65535, "port must be between 1 and 65535"
+        serviceType in ["ClusterIP", "NodePort", "LoadBalancer"] if serviceType, "serviceType must be ClusterIP, NodePort, or LoadBalancer"
+
 build_service = lambda spec: ServiceSpec -> core.Service {
     _port_entry = {
         port = spec.port

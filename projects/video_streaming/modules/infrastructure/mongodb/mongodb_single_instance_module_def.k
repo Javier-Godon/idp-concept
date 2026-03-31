@@ -52,15 +52,25 @@ schema MongoDBSingleInstanceModule(accessory.Accessory):
                                         cpu = "500m"
                                     }
                                 }
-                                imagePullPolicy = "Always"
+                                imagePullPolicy = "IfNotPresent"
                                 env = [
                                     {
                                         name = "MONGO_INITDB_ROOT_USERNAME"
-                                        value = "admin"
+                                        valueFrom = {
+                                            secretKeyRef = {
+                                                name = "mongodb-credentials"
+                                                key = "username"
+                                            }
+                                        }
                                     }
                                     {
                                         name = "MONGO_INITDB_ROOT_PASSWORD"
-                                        value = "admin"
+                                        valueFrom = {
+                                            secretKeyRef = {
+                                                name = "mongodb-credentials"
+                                                key = "password"
+                                            }
+                                        }
                                     }
                                 ]
                                 ports = [

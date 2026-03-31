@@ -1,65 +1,182 @@
 #!/usr/bin/env nu
 
+# Safe wrapper for kcl run — exits with clear error on failure
+def kcl_run [file: string, ...args: string] -> string {
+    let result = (^kcl run $file ...$args | complete)
+    if $result.exit_code != 0 {
+        print $"❌ KCL compilation failed for ($file):"
+        print $result.stderr
+        exit 1
+    }
+    $result.stdout
+}
+
+# Resolve builder filename — uses koncept.yaml config if present, otherwise convention
+def resolve_builder [factory_dir: string, builder_key: string, default_name: string] -> string {
+    let config_path = $"($factory_dir)/koncept.yaml"
+    if ($config_path | path exists) {
+        let config = (open $config_path)
+        if ($config | get -i builders | get -i $builder_key) != null {
+            $config.builders | get $builder_key
+        } else {
+            $default_name
+        }
+    } else {
+        $default_name
+    }
+}
+
+# Check if factory uses the generic render.k pattern
+def has_render_k [factory_dir: string] -> bool {
+    ($"($factory_dir)/render.k" | path exists)
+}
+
 def main [
   command: string
-  render_type: string
+  render_type?: string
   --factory: string  # Optional: default is 'factory'
   --output: string
 ] {
-  let cwd = $env.PWD  # e.g. .../apps/deployments/my-app/dev
-  let base = ($cwd | path basename)  # 'dev'
-  let app = ($cwd | path dirname | path basename)  # 'my-app'
-  let koncept_dir = ($env.FILE_PWD)  # Folder where koncept.nu lives
+  let cwd = $env.PWD
+  let base = ($cwd | path basename)
+  let app = ($cwd | path dirname | path basename)
+  let koncept_dir = ($env.FILE_PWD)
 
   let factory_dir = (if $factory != null { $factory } else { "factory" })
 
-  if $command != "render" {
-    print "Unknown command: $command"
-    exit 1
-  }
-
-  match $render_type {
-    "argocd" => {
-      let output_dir = (if $output != null { $output } else { $"../../../generated/($base)/($app)" })
-      let output_path = ($output_dir | path expand)
-      let manifest_path = $"($output_path)/kubernetes_manifests.yaml"
-      print $"[ArgoCD] Generating manifests for app=($app) in env=($base)..."
-      mkdir $output_path
-      kcl run $"($factory_dir)/kubernetes_manifests_builder.k" -o $manifest_path
+  match $command {
+    "validate" => {
+      print "[Validate] Checking factory configuration..."
+      let seed_file = (resolve_builder $factory_dir "seed" "factory_seed.k")
+      let result = (^kcl run $"($factory_dir)/($seed_file)" | complete)
+      if $result.exit_code != 0 {
+          print $"❌ Validation failed:\n($result.stderr)"
+          exit 1
+      }
+      print "✅ Configuration is valid"
     }
 
-    "helmfile" => {
-        let output_dir = (if $output != null { $output } else { "output" })
+    "render" => {
+      if $render_type == null {
+          print "❌ Missing render type. Usage: koncept render <argocd|helmfile|kusion>"
+          exit 1
+      }
 
-        print "[Helmfile] Generating chart directly under charts/..."
+      # New pattern: generic render.k with -D output=TYPE
+      if (has_render_k $factory_dir) {
+        let render_file = $"($factory_dir)/render.k"
 
-        let chart_dir = $"($output_dir)/charts"
-        mkdir $chart_dir
+        match $render_type {
+          "argocd" => {
+            let output_dir = (if $output != null { $output } else { $"../../../generated/($base)/($app)" })
+            let output_path = ($output_dir | path expand)
+            let manifest_path = $"($output_path)/kubernetes_manifests.yaml"
+            print $"[ArgoCD] Generating manifests for app=($app) in env=($base)..."
+            mkdir $output_path
+            kcl_run $render_file -D "output=yaml" -o $manifest_path
+          }
 
-        kcl run $"($factory_dir)/chart_builder.k" -D "chart=\"default\"" -o $"($chart_dir)/Chart.yaml"
-        touch $"($chart_dir)/values.yaml"
+          "helmfile" => {
+            let output_dir = (if $output != null { $output } else { "output" })
+            let templates_src = ($koncept_dir | path join "../../framework/templates/helm")
 
-        let templates_dir = $"($chart_dir)/templates"
-        mkdir $templates_dir
+            print "[Helmfile] Generating parameterized Helm charts (Strategy B)..."
 
-        kcl run $"($factory_dir)/templates_builder.k" -D "chart=\"default\"" -o $"($templates_dir)/manifests.yaml"
+            let charts_data = (kcl_run $render_file -D "output=helm" | from yaml -a)
 
-        print "[Helmfile] Generating helmfile.yaml..."
-        kcl run $"($factory_dir)/helmfile_builder.k" -o $"($output_dir)/helmfile.yaml"
-    }
+            for entry in $charts_data {
+                let chart_name = $entry.chart.name
+                let chart_dir = $"($output_dir)/charts/($chart_name)"
 
+                mkdir $chart_dir
+                $entry.chart | to yaml | save -f $"($chart_dir)/Chart.yaml"
+                $entry.values | to yaml | save -f $"($chart_dir)/values.yaml"
 
+                let templates_dir = $"($chart_dir)/templates"
+                mkdir $templates_dir
+                glob $"($templates_src)/*" | each {|f| cp $f $templates_dir }
 
-    "kusion" => {
-      let output_path = (if $output != null { $output } else { "output" })
-        let output_file = $"($output_path)/kusion_spec.yaml"
-        print $"[Kusion] Running KCL for app=($app), env=($base) -> ($output_file)..."
-        mkdir $output_path
-        kcl run $"($factory_dir)/main.k" -o $output_file
+                print $"  [Chart] ($chart_name) -> ($chart_dir)"
+            }
+
+            kcl_run $render_file -D "output=helmfile" -o $"($output_dir)/helmfile.yaml"
+            print "[Helmfile] Done."
+          }
+
+          "kusion" => {
+            let output_path = (if $output != null { $output } else { "output" })
+            let output_file = $"($output_path)/kusion_spec.yaml"
+            print $"[Kusion] Running KCL for app=($app), env=($base) -> ($output_file)..."
+            mkdir $output_path
+            kcl_run $render_file -D "output=yaml" -o $output_file
+          }
+
+          _ => {
+            print $"❌ Unsupported render type: ($render_type). Use: argocd, helmfile, kusion"
+            exit 1
+          }
+        }
+      } else {
+        # Legacy pattern: per-builder files
+        match $render_type {
+          "argocd" => {
+            let output_dir = (if $output != null { $output } else { $"../../../generated/($base)/($app)" })
+            let output_path = ($output_dir | path expand)
+            let builder = (resolve_builder $factory_dir "yaml" "yaml_builder.k")
+            let manifest_path = $"($output_path)/kubernetes_manifests.yaml"
+            print $"[ArgoCD] Generating manifests for app=($app) in env=($base)..."
+            mkdir $output_path
+            kcl_run $"($factory_dir)/($builder)" -o $manifest_path
+          }
+
+          "helmfile" => {
+            let output_dir = (if $output != null { $output } else { "output" })
+            let templates_src = ($koncept_dir | path join "../../framework/templates/helm")
+            let chart_builder = (resolve_builder $factory_dir "chart_values" "chart_values_builder.k")
+            let hf_builder = (resolve_builder $factory_dir "helmfile" "helmfile_builder.k")
+
+            print "[Helmfile] Generating parameterized Helm charts (Strategy B)..."
+
+            let charts_data = (kcl_run $"($factory_dir)/($chart_builder)" | from yaml -a)
+
+            for entry in $charts_data {
+                let chart_name = $entry.chart.name
+                let chart_dir = $"($output_dir)/charts/($chart_name)"
+
+                mkdir $chart_dir
+                $entry.chart | to yaml | save -f $"($chart_dir)/Chart.yaml"
+                $entry.values | to yaml | save -f $"($chart_dir)/values.yaml"
+
+                let templates_dir = $"($chart_dir)/templates"
+                mkdir $templates_dir
+                glob $"($templates_src)/*" | each {|f| cp $f $templates_dir }
+
+                print $"  [Chart] ($chart_name) -> ($chart_dir)"
+            }
+
+            kcl_run $"($factory_dir)/($hf_builder)" -o $"($output_dir)/helmfile.yaml"
+            print "[Helmfile] Done."
+          }
+
+          "kusion" => {
+            let output_path = (if $output != null { $output } else { "output" })
+            let builder = (resolve_builder $factory_dir "kusion" "main.k")
+            let output_file = $"($output_path)/kusion_spec.yaml"
+            print $"[Kusion] Running KCL for app=($app), env=($base) -> ($output_file)..."
+            mkdir $output_path
+            kcl_run $"($factory_dir)/($builder)" -o $output_file
+          }
+
+          _ => {
+            print $"❌ Unsupported render type: ($render_type). Use: argocd, helmfile, kusion"
+            exit 1
+          }
+        }
+      }
     }
 
     _ => {
-      print $"Unsupported render type: ($render_type)"
+      print $"❌ Unknown command: ($command). Use: render, validate"
       exit 1
     }
   }

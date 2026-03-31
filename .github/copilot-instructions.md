@@ -187,19 +187,44 @@ These rules apply to ALL AI-generated code and tool recommendations:
 
 See `docs/SECURITY.md` for the complete security policy, approved tools registry, and tool evaluation criteria.
 
-## Reference Knowledge Sources
+## Knowledge Reliability Warning
 
-When you need patterns or examples beyond this project, consult these **verified, official** resources:
+**This project uses niche technologies (KCL, Nushell, Kusion) where AI training data is limited and unreliable.** The project code in `framework/` and `projects/` represents functional working solutions by a practitioner (not a KCL/IDP expert). Always cross-reference with authoritative sources before generating code.
+
+**Trust hierarchy:**
+1. Official docs (kcl-lang.io, nushell.sh, docs.crossplane.io) — **authoritative**
+2. Official repos (kcl-lang/*, crossplane-contrib/function-kcl) — **authoritative**
+3. Expert repos (vfarcic/crossplane-kubernetes: 66% KCL + 30.6% Nushell) — **high trust**
+4. Local project code — **functional but not authoritative**
+5. AI training data for KCL/Kusion — **unreliable, always verify**
+
+Use the `knowledge-research` skill (`.github/skills/knowledge-research/SKILL.md`) when working with unfamiliar patterns.
+
+## Reference Knowledge Sources
 
 ### KCL Ecosystem (CNCF)
 - **kcl-lang/kcl** (2,300+ stars) — KCL language core. Has a `CLAUDE.md` with AI instruction patterns
 - **kcl-lang/modules** (200+ modules) — Official KCL modules for crossplane, argocd, strimzi, cert-manager
-- **kcl-lang/crossplane-kcl** — Crossplane KCL function, bridge between KCL schemas and Crossplane pipelines
+- **crossplane-contrib/function-kcl** (150+ stars) — Canonical KCL-in-Crossplane function (API: `option("params").oxr/.ocds/.dxr/.dcds/.ctx`)
+- **kcl-lang/krm-kcl** (34+ stars) — KRM KCL spec bridging KCL to Helm, Helmfile, Crossplane
+- **kcl-lang/konfig** (14+ stars) — KCL K8s abstraction framework (similar architecture to our `framework/`)
+- **kcl-lang/examples** (34+ stars) — Comprehensive KCL examples for all use cases
 - **KCL docs**: https://www.kcl-lang.io/docs/
 
 ### Platform Engineering References (Viktor Farcic / Upbound)
+- **vfarcic/crossplane-kubernetes** (50+ stars) — **Closest external match**: 66% KCL + 30.6% Nushell, Crossplane compositions, CLAUDE.md, MCP config
+- **vfarcic/crossplane-app** (11+ stars) — 78.7% Nushell + 20.4% KCL, app-level Crossplane compositions
 - **vfarcic/dot-ai** (308+ stars) — MCP-based DevOps AI toolkit, Nushell + K8s operations
 - **vfarcic/cncf-demo** (231+ stars) — End-to-end CNCF stack with IDP, Crossplane, ArgoCD chapters
+
+### Platform Framework Alternatives (monitor for ideas)
+- **KusionStack/kusion** (1,287+ stars) — Intent-driven Platform Orchestrator, deep KCL integration
+- **stefanprodan/timoni** (1,900+ stars) — CUE-powered Helm alternative (possible future output format)
+- **score-spec/spec** (8,000+ stars) — Platform-agnostic workload spec (possible future input format)
+- **syntasso/kratix** (741+ stars) — Platform framework with Promises (parallels Stack/Module pattern)
+
+### CNCF References
+- **cncf/tag-app-delivery** (833+ stars) — Platform Engineering Maturity Model + Platforms Whitepaper
 
 ### Official Documentation
 - KCL: https://www.kcl-lang.io/docs/
@@ -208,5 +233,6 @@ When you need patterns or examples beyond this project, consult these **verified
 - ArgoCD: https://argo-cd.readthedocs.io/
 - Helm: https://helm.sh/docs/
 - Kusion: https://www.kusionstack.io/docs/
+- CNCF Platform Maturity Model: https://tag-app-delivery.cncf.io/whitepapers/platform-eng-maturity-model
 
 See `docs/REFERENCE_RESOURCES.md` for the complete curated knowledge base.
