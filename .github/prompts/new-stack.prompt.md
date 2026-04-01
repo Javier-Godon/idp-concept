@@ -7,7 +7,7 @@ description: Define a new stack (combination of modules for deployment)
 You are creating a new stack definition in idp-concept.
 
 ## Context Files
-- #file:docs/AI_REFERENCE.md
+- #file:.github/docs/AI_REFERENCE.md
 - #file:framework/models/stack.k
 - #file:framework/assembly/helpers.k
 - #file:projects/erp_back/stacks/development/stack_def.k

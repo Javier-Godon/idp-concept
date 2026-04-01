@@ -167,13 +167,13 @@ Run full KCL render pipelines on existing projects and validate the output:
 ```bash
 # 1. Render YAML from erp_back pre-release
 cd projects/erp_back/pre_releases
-kcl run gitops/dev/factory/yaml_builder.k > /tmp/output.yaml
+kcl run manifests/dev/factory/yaml_builder.k > /tmp/output.yaml
 
 # 2. Validate with kubeconform
 kubeconform -summary -strict /tmp/output.yaml
 
 # 3. Render Kusion format and check structure
-kcl run gitops/dev/factory/kusion_builder.k > /tmp/kusion.yaml
+kcl run manifests/dev/factory/kusion_builder.k > /tmp/kusion.yaml
 # Verify Kusion resource IDs follow expected format
 ```
 
@@ -213,21 +213,41 @@ framework/
     │   ├── configmap_test.k            ← 2 tests
     │   ├── storage_test.k              ← 5 tests
     │   ├── service_account_test.k      ← 2 tests
-    │   └── leader_test.k               ← 3 tests
+    │   ├── leader_test.k               ← 3 tests
+    │   ├── network_policy_test.k       ← 4 tests
+    │   └── pdb_test.k                  ← 4 tests
     ├── models/
     │   ├── configurations_test.k       ← 4 tests
+    │   ├── configurations_git_test.k   ← 4 tests
+    │   ├── secrets_test.k              ← 6 tests
     │   └── modules/
     │       ├── common_test.k           ← 7 tests
-    │       └── k8snamespace_test.k     ← 4 tests
+    │       ├── k8snamespace_test.k     ← 4 tests
+    │       └── thirdparty_helm_test.k  ← 5 tests
     ├── assembly/
     │   └── helpers_test.k              ← 3 tests
     ├── procedures/
     │   ├── helper_test.k               ← 3 tests
     │   ├── kusion_test.k               ← 8 tests
-    │   └── yaml_test.k                 ← 5 tests
+    │   ├── yaml_test.k                 ← 5 tests
+    │   ├── helm_values_test.k          ← 5 tests
+    │   ├── helmfile_test.k             ← 5 tests
+    │   ├── helm_test.k                 ← 5 tests
+    │   └── argocd_test.k               ← 5 tests
+    │   └── kustomize_test.k            ← 8 tests
     └── templates/
         ├── webapp_test.k               ← 8 tests
-        └── database_test.k             ← 8 tests
+        ├── database_test.k             ← 8 tests
+        ├── postgresql_test.k           ← 10 tests (CloudNativePG)
+        ├── mongodb_test.k              ← 6 tests (Community Operator)
+        ├── rabbitmq_test.k             ← 7 tests (Cluster Operator)
+        ├── redis_test.k                ← 6 tests (OT Redis)
+        ├── keycloak_test.k             ← 5 tests (Keycloak Operator)
+        ├── opensearch_test.k           ← 8 tests (k8s-operator)
+        ├── vault_test.k                ← 7 tests (VSO)
+        └── questdb_test.k              ← 4 tests (Helm chart)
+        ├── minio_test.k                ← 8 tests (Operator + Bitnami)
+        └── observability_test.k         ← 8 tests (Prometheus + Grafana + ServiceMonitor)
 ```
 
 Test files are in a dedicated `tests/` directory mirroring the source tree. Imports use package-relative paths (e.g., `import builders.deployment as deploy`) which resolve from the `framework` package root regardless of the test file's location.
@@ -238,16 +258,18 @@ Schemas with auto-computed `instance` fields (like `Component` and `Accessory`) 
 
 **Workaround**: Template tests validate the individual builder outputs that templates compose, rather than instantiating the full template schema. Integration testing via `kcl run` + `kubeconform` validates the complete pipeline.
 
-### Current Test Count: 116 tests (all PASS)
+### Current Test Count: 219 tests (all PASS)
 
 | Category | Tests |
 |---|---|
-| Builder lambdas | 44 |
-| Model schemas | 19 |
+| Builder lambdas | 52 |
+| Model schemas | 30 |
 | Assembly helpers | 3 |
-| Procedures | 36 |
-| Template builders | 16 |
-| **Total** | **116** |
+| Procedures | 44 |
+| Template builders (apps) | 16 |
+| Template builders (operators) | 69 |
+| Template builders (helm charts) | 5 |
+| **Total** | **219** |
 
 ---
 
@@ -285,10 +307,11 @@ cd framework && kcl test ./...
 
 # 2. Integration: render + validate
 cd projects/erp_back/pre_releases
-kcl run gitops/dev/factory/yaml_builder.k | kubeconform -summary -strict
+kcl run manifests/dev/factory/render.k -D output=yaml | kubeconform -summary -strict
 
-# 3. Helm lint (when Helm output is implemented)
-# helm lint output/charts/*/
+# 3. Helm lint
+cd projects/erp_back/pre_releases
+kcl run manifests/dev/factory/render.k -D output=helm
 ```
 
 ---
@@ -315,7 +338,7 @@ jobs:
       - name: Render & Validate (erp_back)
         run: |
           cd projects/erp_back/pre_releases
-          kcl run gitops/dev/factory/yaml_builder.k | kubeconform -summary -strict
+          kcl run manifests/dev/factory/render.k -D output=yaml | kubeconform -summary -strict
 ```
 
 ### Test Coverage Targets

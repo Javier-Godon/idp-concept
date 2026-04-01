@@ -56,9 +56,89 @@ def main [
       print "✅ Configuration is valid"
     }
 
+    "init" => {
+      # Scaffold a new factory directory with render.k + factory_seed.k template
+      let target_dir = (if $factory != null { $factory } else { "factory" })
+      let framework_render = ($koncept_dir | path join "../../framework/factory/render.k")
+
+      if ($"($target_dir)/render.k" | path exists) {
+          print $"❌ Factory already exists at ($target_dir)/render.k"
+          exit 1
+      }
+
+      print $"[Init] Scaffolding factory at ($target_dir)/"
+      mkdir $target_dir
+
+      # Copy render.k from framework
+      if ($framework_render | path exists) {
+          cp $framework_render $"($target_dir)/render.k"
+          print "  ✅ render.k copied from framework"
+      } else {
+          print $"  ⚠️ render.k not found at ($framework_render) — create manually"
+      }
+
+      # Generate factory_seed.k template
+      let seed_content = [
+          '"""'
+          'Factory seed — fills the render.k contract.'
+          'Edit the imports and variables below for your environment.'
+          ''
+          'Contract exports: _stack, _project_name, _git_repo_url, _manifest_path'
+          '"""'
+          'import framework.models.manifests.renderstack'
+          '# TODO: import your configurations module'
+          '# import <project>.pre_releases.configurations_dev as config'
+          ''
+          '# TODO: set _base_stack from your configurations'
+          '# _base_stack = config._stack'
+          ''
+          '# Full stack for rendering (standardized contract variable)'
+          '# _stack = renderstack.RenderStack {'
+          '#     instanceConfigurations = _base_stack.instanceConfigurations'
+          '#     k8snamespaces = _base_stack.k8snamespaces'
+          '#     components = _base_stack.components'
+          '#     accessories = _base_stack.accessories'
+          '# }'
+          ''
+          '# Standardized contract variables for render.k'
+          '# _project_name = config._project.instance.name'
+          '# _git_repo_url = config._pre_release_configurations.gitRepoUrl'
+          '# _manifest_path = "projects/<project>/pre_releases/manifests/<env>/output"'
+      ] | str join "\n"
+
+      $seed_content | save -f $"($target_dir)/factory_seed.k"
+      print "  ✅ factory_seed.k template created — edit with your project imports"
+      print ""
+      print "Next steps:"
+      print $"  1. Edit ($target_dir)/factory_seed.k with your project imports"
+      print $"  2. Run: koncept validate --factory ($target_dir)"
+      print $"  3. Run: koncept render argocd --factory ($target_dir)"
+    }
+
+    "publish" => {
+      # Publish a KCL module as OCI artifact
+      if $render_type == null {
+          print "❌ Missing module path. Usage: koncept publish <module_path> --output <version>"
+          print "   Example: koncept publish framework --output 1.0.0"
+          exit 1
+      }
+      let module_path = $render_type
+      let version = (if $output != null { $output } else {
+          print "❌ Missing version. Usage: koncept publish <module_path> --output <version>"
+          exit 1
+      })
+      print $"[Publish] Pushing ($module_path) as OCI artifact v($version)..."
+      let result = (^kcl mod push $"oci://($module_path):($version)" | complete)
+      if $result.exit_code != 0 {
+          print $"❌ Publish failed:\n($result.stderr)"
+          exit 1
+      }
+      print $"✅ Published ($module_path):($version)"
+    }
+
     "render" => {
       if $render_type == null {
-          print "❌ Missing render type. Usage: koncept render <argocd|helmfile|kusion>"
+          print "❌ Missing render type. Usage: koncept render <argocd|helmfile|kusion|kustomize>"
           exit 1
       }
 
@@ -111,8 +191,29 @@ def main [
             kcl_run $render_file -D "output=yaml" -o $output_file
           }
 
+          "kustomize" => {
+            let output_dir = (if $output != null { $output } else { "output" })
+            let base_dir = $"($output_dir)/base"
+            print $"[Kustomize] Generating base manifests and kustomization.yaml..."
+            mkdir $base_dir
+
+            # Generate kustomization.yaml
+            kcl_run $render_file -D "output=kustomize" -o $"($base_dir)/kustomization.yaml"
+
+            # Generate individual manifest files
+            let manifests = (kcl_run $render_file -D "output=yaml" | from yaml -a)
+            for m in $manifests {
+                let kind = ($m.kind | str downcase)
+                let name = $m.metadata.name
+                let filename = $"($kind)-($name).yaml"
+                $m | to yaml | save -f $"($base_dir)/($filename)"
+                print $"  [Resource] ($filename)"
+            }
+            print "[Kustomize] Done."
+          }
+
           _ => {
-            print $"❌ Unsupported render type: ($render_type). Use: argocd, helmfile, kusion"
+            print $"❌ Unsupported render type: ($render_type). Use: argocd, helmfile, kusion, kustomize"
             exit 1
           }
         }
@@ -168,7 +269,7 @@ def main [
           }
 
           _ => {
-            print $"❌ Unsupported render type: ($render_type). Use: argocd, helmfile, kusion"
+            print $"❌ Unsupported render type: ($render_type). Use: argocd, helmfile, kusion, kustomize"
             exit 1
           }
         }
@@ -176,7 +277,7 @@ def main [
     }
 
     _ => {
-      print $"❌ Unknown command: ($command). Use: render, validate"
+      print $"❌ Unknown command: ($command). Use: init, render, validate, publish"
       exit 1
     }
   }

@@ -111,9 +111,9 @@ test_generate_applications_empty_stack = lambda {
     assert len(_apps) == 0
 }
 
-# === Test: generate_applications_from_stack accepts GitOpsStack-like (any type) ===
+# === Test: generate_applications_from_stack accepts RenderStack-like (any type) ===
 test_generate_applications_any_type = lambda {
-    # Simulate a reduced stack with only some components (like GitOpsStack)
+    # Simulate a reduced stack with only some components (like RenderStack)
     _mini = {
         components = [_test_component]
     }

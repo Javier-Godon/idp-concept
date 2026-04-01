@@ -8,7 +8,7 @@ You are helping debug a KCL compilation error in idp-concept.
 
 ## Context Files
 - #file:.github/instructions/kcl-module-system.instructions.md
-- #file:docs/AI_REFERENCE.md
+- #file:.github/docs/AI_REFERENCE.md
 
 ## Common Issues
 

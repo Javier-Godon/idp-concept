@@ -145,6 +145,6 @@ import procedures.kcl_to_kusion  # Same as import framework.procedures.kcl_to_ku
 Use `.` prefix for imports from the same directory:
 
 ```kcl
-# In pre_releases/gitops/dev/factory/yaml_builder.k:
+# In pre_releases/manifests/dev/factory/yaml_builder.k:
 import .factory_seed    # imports factory_seed.k from same directory
 ```

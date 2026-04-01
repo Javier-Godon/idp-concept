@@ -4,7 +4,7 @@ Follows the standardized factory_seed contract for render.k.
 
 Contract exports: _stack, _project_name, _git_repo_url, _manifest_path
 """
-import framework.models.gitops.gitopsstack
+import framework.models.manifests.renderstack
 import erp_back.stacks.versioned.v1_0_0.stack_def as stack
 import erp_back.stacks.versioned.v1_0_0.profile_def
 import erp_back.tenants.acme_corp.tenant_def
@@ -29,7 +29,7 @@ _base_stack = stack.ErpBackV1_0_0Stack {
 }
 
 # Full stack for rendering (standardized contract variable)
-_stack = gitopsstack.GitOpsStack {
+_stack = renderstack.RenderStack {
     instanceConfigurations = _base_stack.instanceConfigurations
     k8snamespaces = _base_stack.k8snamespaces
     components = _base_stack.components

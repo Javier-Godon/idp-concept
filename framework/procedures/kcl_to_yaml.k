@@ -1,7 +1,7 @@
 import models.modules.component
 import models.modules.accessory
 import models.modules.k8snamespace
-import models.gitops.gitopsstack
+import models.manifests.renderstack
 import manifests
 
 get_components = lambda components: [component.ComponentInstance] -> [any] {
@@ -16,7 +16,7 @@ get_namespaces = lambda namespaces: [k8snamespace.K8sNamespaceInstance] -> [any]
     [namespace.manifests for namespace in namespaces] if namespaces else []
 }
 
-yaml_stream_stack = lambda input_stack: gitopsstack.GitOpsStack -> [any] {
+yaml_stream_stack = lambda input_stack: renderstack.RenderStack -> [any] {
     modules = []
     modules += get_components(input_stack.components)
     modules += get_caccessories(input_stack.accessories)

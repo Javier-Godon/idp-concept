@@ -335,7 +335,7 @@ Procedures are lambda functions that take a Stack and transform it into a specif
 
 | Procedure | Input | Output | File |
 |---|---|---|---|
-| `yaml_stream_stack()` | `GitOpsStack` | Multi-document YAML | `kcl_to_yaml.k` |
+| `yaml_stream_stack()` | `RenderStack` | Multi-document YAML | `kcl_to_yaml.k` |
 | `generate_helm_components_templates_from_stack()` | `Stack` | Helm template YAML | `kcl_to_helm.k` |
 | `kusion_spec_stream_stack()` | `Stack` | `[KusionResource]` | `kcl_to_kusion.k` |
 | `extract_models_by_name_from_list()` | Models + name | Filtered list | `helper.k` |
@@ -555,7 +555,7 @@ This replaces the manual `_configs = kernel | profile | tenant | site` pattern w
 
 **Location:** `framework/factory/seed.k`
 
-**Purpose:** Provides a `FactorySeed` schema that automates the factory setup: merging configs, creating a Release, and preparing GitOpsStack. Used in factory directories.
+**Purpose:** Provides a `FactorySeed` schema that automates the factory setup: merging configs, creating a Release, and preparing RenderStack. Used in factory directories.
 
 **Key fields:**
 - `project`, `profile`, `tenant`, `site` — The four inputs
@@ -567,7 +567,7 @@ This replaces the manual `_configs = kernel | profile | tenant | site` pattern w
 - `stack` — The built stack
 - `release` — A Release combining all instances
 
-This schema exists for convenience. The `erp_back` project uses a manual approach (importing directly in `factory_seed.k`) because it needs finer control over GitOpsStack creation. Both patterns are valid.
+This schema exists for convenience. The `erp_back` project uses a manual approach (importing directly in `factory_seed.k`) because it needs finer control over RenderStack creation. Both patterns are valid.
 
 ---
 
@@ -917,7 +917,7 @@ _configs = VideoStreamingConfigurations {
 ```
 pre_releases/
 ├── configurations_dev.k                    # Merge all 4 layers for dev
-└── gitops/site_one/generators/
+└── manifests/site_one/generators/
     └── kafka_.../dev/factory/              # Factory for this output
         ├── factory_seed.k                  # Setup: merge, stack, release
         ├── kubernetes_manifests_builder.k  # → YAML
@@ -997,7 +997,7 @@ _release = release.Release {
 import framework.procedures.kcl_to_yaml
 import .factory_seed
 
-kcl_to_yaml.yaml_stream_stack(factory_seed._my_gitops_stack)
+kcl_to_yaml.yaml_stream_stack(factory_seed._my_render_stack)
 ```
 
 ---
@@ -1560,12 +1560,12 @@ A Profile provides configuration values. A Stack uses those values to instantiat
 3. Add a `<format>_builder.k` to the factory
 4. Add a render target to `platform_cli/koncept`
 
-### Q: Why is there a GitOpsStack AND a Stack?
+### Q: Why is there a RenderStack AND a Stack?
 
 - **Stack** is the standard assembly (all fields required, used by Helm and Kusion outputs)
-- **GitOpsStack** is a variant where all module lists are optional (used by the YAML/ArgoCD output where you might only deploy a subset)
+- **RenderStack** is a variant where all module lists are optional (used by the YAML/ArgoCD output where you might only deploy a subset)
 
-The GitOps pattern often needs to deploy individual components separately (one ArgoCD Application per component), so GitOpsStack allows filtering to just the modules you want.
+The GitOps pattern often needs to deploy individual components separately (one ArgoCD Application per component), so RenderStack allows filtering to just the modules you want.
 
 ### Q: Can I read configuration from external YAML files?
 

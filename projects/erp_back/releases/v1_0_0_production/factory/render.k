@@ -4,7 +4,7 @@ This file is designed to be identical in every factory directory.
 It imports factory_seed.k from the same directory using relative import.
 
 Factory Seed Contract — factory_seed.k MUST export these variables:
-    _stack: GitOpsStack          — The full stack for rendering
+    _stack: RenderStack          — The full stack for rendering
     _project_name: str           — Project name (e.g., "ERP Back")
     _git_repo_url: str           — Git repository URL for ArgoCD
     _manifest_path: str          — Output path for manifest references
@@ -15,12 +15,14 @@ Usage:
     kcl run render.k -D output=argocd      # ArgoCD Application CRDs
     kcl run render.k -D output=helmfile    # helmfile.yaml
     kcl run render.k -D output=helm        # Chart.yaml + values.yaml per component
+    kcl run render.k -D output=kustomize   # kustomization.yaml + resource list
 """
 import manifests
 import framework.procedures.kcl_to_yaml as yaml_proc
 import framework.procedures.kcl_to_argocd as argocd_proc
 import framework.procedures.kcl_to_helm as helm_proc
 import framework.procedures.kcl_to_helmfile as helmfile_proc
+import framework.procedures.kcl_to_kustomize as kustomize_proc
 import .factory_seed as seed
 
 _output = option("output", default="yaml")
@@ -53,3 +55,14 @@ if _output == "helmfile":
 if _output == "helm":
     _charts = helm_proc.generate_charts_from_stack(seed._stack)
     manifests.yaml_stream(_charts)
+
+# --- Kustomize (kustomization.yaml + resource references) ---
+if _output == "kustomize":
+    _kustomization = kustomize_proc.generate_kustomization_from_stack(
+        seed._stack.components
+        seed._stack.accessories
+        seed._stack.k8snamespaces
+        seed._project_name
+        "1.0.0"
+    )
+    manifests.yaml_stream([_kustomization])

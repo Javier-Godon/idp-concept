@@ -148,7 +148,7 @@ Target state: **Level 3 (Scalable)** — product-like platform with self-service
 | **No `check` validation blocks** | Config errors caught at K8s deploy time, not compile time | P1 | ✅ RESOLVED — DeploymentSpec, ServiceSpec, PVSpec, EnvVar check blocks |
 | **`any` types for env vars/volumes** | No compile-time type checking for K8s fields | P1 | ✅ RESOLVED — EnvVar schema with KeySelector, EnvVarSource |
 | **CLI hardcoded builder filenames** | Different project structures break the CLI | P2 | ✅ RESOLVED — `resolve_builder` with `koncept.yaml` config |
-| **No test infrastructure** | No `.test.k` files; regressions undetected | P2 | ✅ RESOLVED — 130 tests, full TDD workflow |
+| **No test infrastructure** | No `.test.k` files; regressions undetected | P2 | ✅ RESOLVED — 219 tests, full TDD workflow |
 | **Hardcoded Git repo URL** | ArgoCD builders can't be forked/multi-tenanted | P2 | ✅ RESOLVED — `gitRepoUrl` in BaseConfigurations |
 
 ### Architecture Diagram (Current → Target)
@@ -820,7 +820,7 @@ Create `docs/DEVELOPER_QUICKSTART.md`:
 ## Deploying Your Application
 
 ### 1. Navigate to your release directory
-cd projects/<project>/pre_releases/gitops/<site>/
+cd projects/<project>/pre_releases/manifests/<site>/
 
 ### 2. Validate configuration
 koncept validate
@@ -1002,82 +1002,280 @@ output/
 
 **Owner**: Platform Engineer (Low-Level) for framework; Platform Engineer (High-Level) for project integration
 
-This phase replaces proof-of-concept raw manifests with production-grade Kubernetes operators and third-party Helm charts. See [`REFERENCE_RESOURCES.md`](./REFERENCE_RESOURCES.md) for the full evaluation of each tool.
+This phase replaces proof-of-concept raw manifests with production-grade Kubernetes operators and third-party Helm charts. The IDP must simplify deploying both **proprietary application code** AND **production infrastructure** (databases, messaging, caches, identity, secrets, search).
 
-### 9.1 Operator-Managed Databases
+### 9.1 Infrastructure Operator Catalog
 
-Replace hand-crafted StatefulSets/Deployments for databases with Kubernetes operators.
+Every infrastructure service follows the same integration pattern:
+1. **Install operator** — `ThirdParty` module for the operator's Helm chart
+2. **Import CRDs** — `kcl import --mode crd` generates KCL schemas
+3. **Create template** — `framework/templates/<service>.k` with sensible production defaults
+4. **Add check blocks** — Compile-time validation (instances, storage, version pinning)
+5. **Write tests** — TDD with `kcl test` for builder outputs
 
-#### 9.1.1 PostgreSQL via CloudNativePG
+#### 9.1.1 PostgreSQL — CloudNativePG
 
-**Priority**: P1 — Most common database; CNCF Sandbox project; Kubernetes-native design.
-
-1. **Install operator**: Create a `ThirdParty` module for the CloudNativePG Helm chart
-2. **Import CRDs**: `kcl import --mode crd` from CloudNativePG CRDs → generates KCL schemas
-3. **Create template**: `framework/templates/postgresql.k` — `PostgreSQLClusterModule(Accessory)` with sensible production defaults
-4. **Builder lambda**: `framework/builders/postgresql.k` — generates `Cluster` CR with backup, monitoring, HA settings
-5. **Check blocks**: Validate `instances >= 1`, `storageSize` required, backup config when `instances > 1`
+| Detail | Value |
+|---|---|
+| **Operator** | [cloudnative-pg/cloudnative-pg](https://github.com/cloudnative-pg/cloudnative-pg) |
+| **Stars / Contributors** | 8,300+ / 280+ |
+| **License** | Apache-2.0 |
+| **CNCF Status** | Sandbox → Incubation track |
+| **CRDs** | `Cluster`, `Backup`, `ScheduledBackup`, `Pooler` |
+| **Priority** | P0 — Most common database, Kubernetes-native HA, automated failover & backup |
 
 ```kcl
 # Target API for Platform Engineer (High-Level):
 schema MyPostgres(postgresql.PostgreSQLClusterModule):
-    instances = 3                        # HA: 3 replicas
+    instances = 3
     storageSize = "50Gi"
     pgVersion = "16"
     backup = postgresql.BackupSpec {
-        schedule = "0 3 * * *"           # Daily 3 AM
+        schedule = "0 3 * * *"
         retentionPolicy = "30d"
         destination = "s3://backups/pg"
     }
-    monitoring = True                    # Enable Prometheus metrics
+    monitoring = True
     pooler = postgresql.PoolerSpec {
         instances = 2
         pgbouncerPoolMode = "transaction"
     }
 ```
 
-#### 9.1.2 Redis via OT-Container-Kit Operator
+#### 9.1.2 MongoDB — MCK (MongoDB Controllers for Kubernetes)
 
-**Priority**: P2 — Common cache/session store.
+| Detail | Value |
+|---|---|
+| **Operator** | [mongodb/mongodb-kubernetes](https://github.com/mongodb/mongodb-kubernetes) (MCK) |
+| **Stars / Contributors** | 165 / 28 |
+| **License** | Apache-2.0 |
+| **CRDs** | `MongoDBCommunity`, `MongoDB` (Enterprise), `MongoDBMultiCluster` |
+| **Priority** | P1 — Replaces deprecated `mongodb-kubernetes-operator` (EOL Nov 2025); unified Community+Enterprise |
 
-1. **Install operator**: `ThirdParty` module for redis-operator Helm chart
-2. **Import CRDs**: Generate KCL schemas from Redis/RedisCluster/RedisSentinel/RedisReplication CRDs
-3. **Create template**: `framework/templates/redis.k` — modes: standalone, cluster, replication, sentinel
-4. **Check blocks**: Validate mode-specific requirements (e.g., cluster needs `clusterSize >= 3`)
+> **Note**: MCK is the official successor. The old `mongodb/mongodb-kubernetes-operator` is deprecated. MCK supports replica sets, sharded clusters, TLS, SCRAM auth, and Prometheus monitoring out of the box.
 
 ```kcl
-# Target API:
+schema MyMongo(mongodb.MongoDBClusterModule):
+    members = 3
+    storageSize = "20Gi"
+    version = "8.0.5"
+    monitoring = True
+    tls = True
+```
+
+#### 9.1.3 Kafka — Strimzi
+
+| Detail | Value |
+|---|---|
+| **Operator** | [strimzi/strimzi-kafka-operator](https://github.com/strimzi/strimzi-kafka-operator) |
+| **Stars / Contributors** | 4,900+ / 400+ |
+| **License** | Apache-2.0 |
+| **CNCF Status** | Sandbox |
+| **CRDs** | `Kafka`, `KafkaTopic`, `KafkaUser`, `KafkaConnect`, `KafkaMirrorMaker2` |
+| **Priority** | P1 — Already in project (`crossplane_v2/managed_resources/kafka_strimzi/`), needs template integration |
+
+> Already partially integrated. Needs: KCL template wrapping existing CRDs into `KafkaClusterModule`.
+
+#### 9.1.4 RabbitMQ — RabbitMQ Cluster Operator
+
+| Detail | Value |
+|---|---|
+| **Operator** | [rabbitmq/cluster-operator](https://github.com/rabbitmq/cluster-operator) |
+| **Stars / Contributors** | 1,100+ / 65 |
+| **License** | MPL-2.0 |
+| **CRDs** | `RabbitmqCluster` |
+| **Priority** | P1 — Production-grade, official VMware/Broadcom project, v2.20.0, 81 releases |
+
+```kcl
+schema MyRabbitMQ(rabbitmq.RabbitMQClusterModule):
+    replicas = 3
+    storageSize = "10Gi"
+    monitoring = True
+    plugins = ["rabbitmq_management", "rabbitmq_prometheus"]
+```
+
+#### 9.1.5 OpenSearch — OpenSearch K8s Operator
+
+| Detail | Value |
+|---|---|
+| **Operator** | [opensearch-project/opensearch-k8s-operator](https://github.com/opensearch-project/opensearch-k8s-operator) |
+| **Stars / Contributors** | 534 / 134 |
+| **License** | Apache-2.0 |
+| **CRDs** | `OpenSearchCluster` |
+| **Priority** | P2 — Search/analytics engine, supports Dashboards, TLS, multi-node pools, rolling upgrades |
+
+```kcl
+schema MyOpenSearch(opensearch.OpenSearchClusterModule):
+    version = "2.19.2"
+    dataPools = [opensearch.NodePool {
+        component = "data"
+        replicas = 3
+        storageSize = "100Gi"
+    }]
+    dashboards = True
+    monitoring = True
+```
+
+#### 9.1.6 HashiCorp Vault — Vault Secrets Operator (VSO)
+
+| Detail | Value |
+|---|---|
+| **Operator** | [hashicorp/vault-secrets-operator](https://github.com/hashicorp/vault-secrets-operator) |
+| **Stars / Contributors** | 577 / 45 |
+| **License** | BUSL-1.1 (changed from MPL) |
+| **CRDs** | `VaultStaticSecret`, `VaultDynamicSecret`, `VaultPKISecret`, `VaultAuth`, `VaultAuthGlobal`, `VaultConnection` |
+| **Priority** | P1 — Syncs Vault secrets → K8s Secrets, integrates with ExternalSecrets pattern already in framework |
+
+> **License warning**: BUSL-1.1 is NOT fully open-source. Free for non-competing use. Evaluate against your organization's policies. If BUSL is unacceptable, use **ExternalSecrets Operator** (Apache-2.0) as the Vault integration layer instead.
+
+```kcl
+schema MyVaultSecret(vault.VaultStaticSecretModule):
+    mount = "secret"
+    path = "data/myapp/config"
+    destination = "myapp-secrets"
+    refreshAfter = "1h"
+```
+
+#### 9.1.7 Valkey — Valkey Operator
+
+| Detail | Value |
+|---|---|
+| **Operator** | [valkey-io/valkey-operator](https://github.com/valkey-io/valkey-operator) |
+| **Stars / Contributors** | 157 / 14 |
+| **License** | Apache-2.0 |
+| **CRDs** | `Valkey` (v1alpha1) |
+| **Priority** | P3 — **Early development, NOT production-ready**. No releases yet. |
+
+> **⚠️ EARLY DEVELOPMENT**: The Valkey operator explicitly warns it is not ready for production. Monitor progress; for now use **OT-Container-Kit Redis Operator** (Redis/Valkey are protocol-compatible) or deploy Valkey via Helm chart as `ThirdParty` module.
+
+**Fallback plan**: Valkey can run any Redis-compatible orchestration. Use OT Redis Operator with Valkey images, or deploy via Bitnami chart.
+
+#### 9.1.8 Keycloak — Keycloak Operator (built into Keycloak)
+
+| Detail | Value |
+|---|---|
+| **Operator** | [keycloak/keycloak](https://github.com/keycloak/keycloak) (operator directory in main repo) |
+| **Stars / Contributors** | 25,000+ (main repo) |
+| **License** | Apache-2.0 |
+| **CNCF Status** | Incubation |
+| **CRDs** | `Keycloak`, `KeycloakRealmImport` |
+| **Priority** | P1 — Identity/SSO, CNCF Incubation, Quarkus-native, official operator ships with Keycloak |
+
+> **Note**: The old `keycloak/keycloak-operator` repo is **archived** (Nov 2022, WildFly). The current operator lives inside the main `keycloak/keycloak` repository and uses the Quarkus distribution.
+
+```kcl
+schema MyKeycloak(keycloak.KeycloakModule):
+    instances = 2
+    hostname = "auth.example.com"
+    database = keycloak.DatabaseSpec {
+        vendor = "postgres"
+        host = "pg-cluster-rw.data.svc"
+        secretName = "keycloak-db-creds"
+    }
+    realmImports = ["realm-export.json"]
+```
+
+#### 9.1.9 QuestDB — Helm Chart (No Operator Available)
+
+| Detail | Value |
+|---|---|
+| **Project** | [questdb/questdb](https://github.com/questdb/questdb) |
+| **Stars** | 16,800+ |
+| **License** | Apache-2.0 |
+| **K8s Support** | Official Helm chart (no operator exists) |
+| **Priority** | P3 — Time-series DB, niche use case, deploy as `ThirdParty` Helm chart |
+
+> **No Kubernetes operator exists** for QuestDB. Deploy via the official Helm chart as a `ThirdParty` module. QuestDB is a single-node database (HA requires Enterprise edition).
+
+```kcl
+schema MyQuestDB(thirdparty.ThirdPartyHelmModule):
+    chart = "questdb/questdb"
+    version = "0.32.0"
+    values = {
+        persistence.size = "50Gi"
+        service.$type = "ClusterIP"
+        resources.requests.memory = "4Gi"
+        resources.limits.memory = "8Gi"
+    }
+```
+
+#### 9.1.10 Redis — OT-Container-Kit Operator
+
+| Detail | Value |
+|---|---|
+| **Operator** | [OT-CONTAINER-KIT/redis-operator](https://github.com/OT-CONTAINER-KIT/redis-operator) |
+| **Stars / Contributors** | 1,300+ / 50+ |
+| **License** | Apache-2.0 |
+| **CRDs** | `Redis`, `RedisCluster`, `RedisSentinel`, `RedisReplication` |
+| **Priority** | P1 — Covers Redis AND Valkey (protocol-compatible), standalone/cluster/replication/sentinel modes |
+
+```kcl
 schema MyRedis(redis.RedisModule):
     mode = "cluster"                     # "standalone" | "cluster" | "replication" | "sentinel"
     clusterSize = 3
     storageSize = "10Gi"
     monitoring = True
-    exporter = True                      # Redis exporter sidecar
+    exporter = True
 ```
 
-#### 9.1.3 MongoDB via New Operator or Bitnami
+#### 9.1.11 MinIO — MinIO Operator (Archived) + Bitnami Helm Chart
 
-**Priority**: P2 — Replace deprecated `mongodb-kubernetes-operator`.
+| Detail | Value |
+|---|---|
+| **Operator** | [minio/operator](https://github.com/minio/operator) |
+| **Stars / Contributors** | 1,400+ / 151 |
+| **License** | AGPL-3.0 (free, open-source, copyleft) |
+| **CRDs** | `Tenant` (`minio.min.io/v2`) |
+| **Helm Alternative** | `oci://registry-1.docker.io/bitnamicharts/minio` (Apache-2.0) |
+| **Priority** | P2 — S3-compatible object storage, high-performance, Kubernetes-native |
 
-> **CRITICAL**: The `mongodb/mongodb-kubernetes-operator` was **deprecated in December 2025**. The recommended path is either the new `mongodb/mongodb-kubernetes` repo or the Bitnami MongoDB Helm chart.
+> **⚠️ ARCHIVED**: The minio/operator was archived March 20, 2026 (last release v7.1.1). The Tenant CRD still works on existing clusters but **no new features or security patches** will be released. The IDP template provides both approaches:
+> - `MinIOTenantSpec` + `build_minio_tenant` — Uses the operator Tenant CRD (for clusters with the operator already installed)
+> - `MinIOHelmSpec` + `build_minio_helm` — Uses the Bitnami Helm chart (recommended for new deployments)
 
-Two options:
-- **Option A**: Use new `mongodb/mongodb-kubernetes` operator — import CRDs, create template
-- **Option B**: Use `bitnami/mongodb` Helm chart as `ThirdParty` module — simpler, well-tested
+```kcl
+# Option 1: Operator Tenant CRD (existing operator installations)
+schema MyMinIO:
+    _spec = minio.MinIOTenantSpec {
+        name = "my-minio"
+        namespace = "storage"
+        servers = 4
+        volumesPerServer = 4
+        storageSize = "100Gi"
+    }
+    manifests = [minio.build_minio_tenant(_spec)]
 
-#### 9.1.4 MinIO / Object Storage
+# Option 2: Bitnami Helm chart (recommended for new deployments)
+schema MyMinIOHelm:
+    _spec = minio.MinIOHelmSpec {
+        name = "my-minio"
+        namespace = "storage"
+        mode = "distributed"
+        replicas = 4
+        storageSize = "100Gi"
+    }
+    manifests = [minio.build_minio_helm(_spec)]
+```
 
-**Priority**: P3 — Less common, consider Bitnami chart.
+### 9.2 Infrastructure Catalog Summary
 
-> **NOTE**: The `minio/operator` was **archived in March 2026**. Use Bitnami MinIO Helm chart instead.
+| Service | Operator / Chart | License | Stars | Maturity | Priority |
+|---|---|---|---|---|---|
+| **PostgreSQL** | CloudNativePG | Apache-2.0 | 8,300+ | CNCF Sandbox | P0 |
+| **MongoDB** | MCK (mongodb-kubernetes) | Apache-2.0 | 165 | Official MongoDB | P1 |
+| **Kafka** | Strimzi | Apache-2.0 | 4,900+ | CNCF Sandbox | P1 |
+| **RabbitMQ** | cluster-operator | MPL-2.0 | 1,100+ | Official Broadcom | P1 |
+| **Redis** | OT Redis Operator | Apache-2.0 | 1,300+ | Production | P1 |
+| **Keycloak** | keycloak (built-in) | Apache-2.0 | 25,000+ | CNCF Incubation | P1 |
+| **Vault** | VSO | BUSL-1.1 ⚠️ | 577 | HashiCorp Official | P1 |
+| **MinIO** | minio/operator (archived) + Bitnami | AGPL-3.0 / Apache-2.0 | 1,400+ | ⚠️ Archived 2026 | P2 |
+| **OpenSearch** | opensearch-k8s-operator | Apache-2.0 | 534 | OpenSearch Project | P2 |
+| **Valkey** | valkey-operator | Apache-2.0 | 157 | ⚠️ Early dev | P3 |
+| **QuestDB** | Helm chart (no operator) | Apache-2.0 | 16,800+ | Helm only | P3 |
 
-### 9.2 Third-Party Helm Chart Integration
+### 9.3 ThirdParty Module Enhancement
 
-The `ThirdParty` module type already exists in the framework but needs production patterns.
-
-#### 9.2.1 ThirdParty Module Enhancement
-
-Enhance `framework/models/modules/thirdparty.k` to support:
+Enhance `framework/models/modules/thirdparty.k`:
 
 ```kcl
 schema ThirdPartyHelmSpec:
@@ -1098,92 +1296,45 @@ schema ThirdPartyHelmSpec:
         "latest" not in version, "version must not contain 'latest'"
 ```
 
-#### 9.2.2 Bitnami Chart Catalog
-
-Create a catalog of pre-configured Bitnami chart wrappers in `framework/templates/thirdparty/`:
-
-```
-framework/templates/thirdparty/
-├── bitnami_postgresql.k     # Wraps bitnami/postgresql with IDP defaults
-├── bitnami_redis.k          # Wraps bitnami/redis
-├── bitnami_mongodb.k        # Wraps bitnami/mongodb (replacement for deprecated operator)
-├── bitnami_minio.k          # Wraps bitnami/minio
-├── bitnami_keycloak.k       # Wraps bitnami/keycloak
-└── bitnami_kafka.k          # Wraps bitnami/kafka (alternative to Strimzi)
-```
-
-Each wrapper provides:
-- Sensible production defaults (resource limits, security context, persistence)
-- IDP-standard labels and annotations
-- Check blocks for version pinning and required security settings
-- Integration with the configuration merge pipeline (values from tenant/site configs)
-
-### 9.3 Observability Stack
-
-#### 9.3.1 Monitoring Template
+### 9.4 Observability Stack
 
 ```kcl
 schema MonitoringStack:
-    """Deploy Prometheus + Grafana via Bitnami or kube-prometheus-stack."""
+    """Deploy Prometheus + Grafana via kube-prometheus-stack."""
     prometheus: ThirdPartyHelmSpec = ThirdPartyHelmSpec {
         name = "prometheus"
         chart = "oci://registry-1.docker.io/bitnamicharts/kube-prometheus"
-        version = "10.2.0"  # Pin to specific version
+        version = "10.2.0"
     }
     grafana: ThirdPartyHelmSpec = ThirdPartyHelmSpec {
         name = "grafana"
         chart = "oci://registry-1.docker.io/bitnamicharts/grafana"
         version = "11.3.0"
     }
-    serviceMonitors?: [ServiceMonitorSpec]  # Auto-generated from components
+    serviceMonitors?: [ServiceMonitorSpec]
 ```
 
-#### 9.3.2 ExternalSecrets Operator Integration
+### 9.5 Strategy: Operator vs Helm Chart
 
-Replace in-cluster `Secret` references with external secret management:
-
-```kcl
-schema ExternalSecretSpec:
-    """Spec for ExternalSecrets operator to sync from external stores."""
-    name: str
-    namespace: str
-    secretStoreRef: SecretStoreRef
-    target: str                          # K8s Secret name to create
-    data: [ExternalSecretData]
-    refreshInterval?: str = "1h"
-
-schema SecretStoreRef:
-    name: str                            # ClusterSecretStore or SecretStore name
-    kind: str = "ClusterSecretStore"     # "SecretStore" | "ClusterSecretStore"
-
-schema ExternalSecretData:
-    secretKey: str                       # Key in the K8s Secret
-    remoteRef: RemoteRef                 # Reference in external store
-
-schema RemoteRef:
-    key: str                             # Path in vault/AWS/Azure
-    property?: str                       # Specific property within the key
-```
-
-### 9.4 Strategy: Operator vs Helm Chart
-
-Decision matrix for when to use operators vs direct Helm charts:
-
-| Criteria | Use Operator | Use Helm Chart (Bitnami) |
+| Criteria | Use Operator | Use Helm Chart |
 |---|---|---|
-| **Stateful with HA** | PostgreSQL, Kafka (failover, backup) | Simpler deployments without HA |
-| **Custom lifecycle** | Backup/restore, major upgrades | Standard deployments |
+| **Stateful with HA** | PostgreSQL, Kafka, RabbitMQ, MongoDB | Simpler single-instance deployments |
+| **Custom lifecycle** | Backup/restore, major upgrades, failover | Standard install/upgrade |
 | **CRD-based API** | Need declarative K8s-native API | Standard values.yaml is sufficient |
-| **Team expertise** | Team knows operators, has cluster-admin | Team prefers standard Helm |
-| **Complexity** | Can afford operator overhead | Minimize operational burden |
+| **License concerns** | All Apache-2.0 / MPL-2.0 ✅ | Vault VSO: BUSL-1.1 ⚠️ |
+| **No operator exists** | — | QuestDB, Valkey (for now) |
 
-**Recommended defaults for idp-concept**:
-- PostgreSQL → **CloudNativePG operator** (HA, backup, CNCF)
-- Redis → **OT Redis Operator** or Bitnami chart (depends on HA needs)
-- MongoDB → **Bitnami chart** (operator deprecated)
-- Kafka → **Strimzi operator** (already in project)
-- MinIO → **Bitnami chart** (operator archived)
-- Keycloak → **Bitnami chart** or Crossplane managed resource
+**Recommended defaults**:
+- PostgreSQL → **CloudNativePG** (CNCF, HA, backup)
+- MongoDB → **MCK** (official Apache-2.0 operator)
+- Kafka → **Strimzi** (already in project)
+- RabbitMQ → **cluster-operator** (official, production-grade)
+- Redis/Valkey → **OT Redis Operator** (compatible with both)
+- Keycloak → **Keycloak Operator** (CNCF Incubation, built-in)
+- Vault → **VSO** if BUSL acceptable; else **ExternalSecrets Operator** (Apache-2.0)
+- OpenSearch → **opensearch-k8s-operator** (Apache-2.0)
+- QuestDB → **Helm chart** as ThirdParty module
+- Valkey → **OT Redis Operator** with Valkey images (until valkey-operator matures)
 
 ---
 
@@ -1260,6 +1411,76 @@ schema JsonnetBundle(ThirdParty):
     tlaVars?: {str:str}           # Top-level argument variables
 ```
 
+### 10.5 Timoni / CUE Output Format (`kcl_to_timoni`)
+
+**Priority**: P3 — Experimental. [Timoni](https://timoni.sh/) is a CUE-powered Kubernetes package manager (1.9k stars, Apache-2.0, v0.26.0). It is an alternative to Helm that uses CUE instead of Go templates.
+
+> **⚠️ MATURITY WARNING**: Timoni explicitly states "APIs may change in backwards incompatible manner." Treat this output format as experimental.
+
+#### Why Timoni?
+
+- **Type-safe** values (CUE constraints vs Helm's untyped `values.yaml`)
+- **OCI-native** distribution (push/pull modules from OCI registries)
+- **Drift detection** built-in
+- **CRD import** support (`timoni mod vendor crds`)
+
+#### Integration Approach
+
+KCL→CUE is NOT an automatic language conversion. KCL and CUE are different configuration languages with different type systems. The integration strategy:
+
+**Option A — Generate raw YAML, wrap in CUE module** (recommended, simpler):
+1. Use existing `kcl_to_yaml` to produce K8s manifests
+2. Generate a minimal Timoni module structure that embeds the YAML as CUE values
+3. Create `timoni.cue`, `values.cue`, and `templates/` with raw manifest embedding
+
+```
+output/timoni/<stack-name>/
+├── timoni.cue                    # Module metadata (apiVersion, name, version)
+├── values.cue                    # Generated from IDP config (tenant/site overrides)
+├── templates/
+│   ├── config.cue                # Module config schema
+│   └── resources.cue             # K8s manifests as CUE objects
+└── README.md                     # Auto-generated module docs
+```
+
+**Option B — Generate native CUE** (complex, higher fidelity):
+1. Map KCL schemas → CUE definitions
+2. Generate `values.cue` constraints from BaseConfigurations + check blocks
+3. Generate resource templates using `timoni.sh/core` schemas
+
+#### Implementation
+
+```kcl
+# framework/procedures/kcl_to_timoni.k
+_timoni_module = lambda stack: RenderStack, configs: any -> {str:any} {
+    # Generate Timoni module structure
+    _manifests = [m for module in stack.modules for m in module.manifests]
+    {
+        "timoni.cue" = _generate_timoni_metadata(stack)
+        "values.cue" = _generate_values_cue(configs)
+        "templates/resources.cue" = _generate_resources_cue(_manifests)
+    }
+}
+```
+
+```nushell
+# CLI integration in platform_cli/koncept
+# koncept render timoni
+"timoni" => {
+    let output_path = $"($output_dir)/timoni/($stack_name)"
+    mkdir $output_path
+    ^kcl run factory/ -D output=timoni | save $"($output_path)/module.cue"
+}
+```
+
+#### Deliverables
+
+- `framework/procedures/kcl_to_timoni.k` — CUE module generation from Stack
+- `render.k` updated with `output == "timoni"` branch
+- `platform_cli/koncept` updated with `timoni` render target
+- Tests: `framework/tests/procedures/kcl_to_timoni_test.k`
+- Documentation in `docs/DEVELOPER_GUIDE.md` under output formats
+
 ---
 
 ## 11. User Workflow Guides
@@ -1274,7 +1495,7 @@ schema JsonnetBundle(ThirdParty):
 
 ```bash
 # 1. Navigate to your release
-cd projects/my-project/pre_releases/gitops/dev/factory
+cd projects/my-project/pre_releases/manifests/dev/factory
 
 # 2. Validate configuration (catch errors before rendering)
 koncept validate
@@ -1588,7 +1809,7 @@ cd framework && kcl run main.k
 cd framework && kcl test ./...
 
 # Validate all projects compile
-cd projects/erp_back/pre_releases/gitops/dev/factory && kcl run yaml_builder.k | kubeconform -summary
+cd projects/erp_back/pre_releases/manifests/dev/factory && kcl run yaml_builder.k | kubeconform -summary
 
 # After adding dependencies, delete lock file and re-resolve
 rm kcl.mod.lock && kcl run main.k
@@ -1612,7 +1833,7 @@ rm kcl.mod.lock && kcl run main.k
 
 ### Testing Infrastructure (Implemented)
 
-**130 unit tests** covering the full framework, all passing via `kcl test ./...`.
+**219 unit tests** covering the full framework, all passing via `kcl test ./...`.
 
 | Layer | Test File | Tests | Status |
 |---|---|---|---|
@@ -1639,6 +1860,18 @@ rm kcl.mod.lock && kcl run main.k
 | **Builders** | `tests/builders/network_policy_test.k` | 4 | PASS |
 | **Builders** | `tests/builders/pdb_test.k` | 4 | PASS |
 | **Models** | `tests/models/modules/secrets_test.k` | 6 | PASS |
+| **Templates** | `tests/templates/observability_test.k` | 8 | PASS |
+| **Procedures** | `tests/procedures/kustomize_test.k` | 8 | PASS |
+| **Models** | `tests/models/modules/thirdparty_helm_test.k` | 5 | PASS |
+| **Templates** | `tests/templates/postgresql_test.k` | 10 | PASS |
+| **Templates** | `tests/templates/mongodb_test.k` | 6 | PASS |
+| **Templates** | `tests/templates/rabbitmq_test.k` | 7 | PASS |
+| **Templates** | `tests/templates/redis_test.k` | 6 | PASS |
+| **Templates** | `tests/templates/keycloak_test.k` | 5 | PASS |
+| **Templates** | `tests/templates/opensearch_test.k` | 8 | PASS |
+| **Templates** | `tests/templates/vault_test.k` | 7 | PASS |
+| **Templates** | `tests/templates/questdb_test.k` | 4 | PASS |
+| **Templates** | `tests/templates/minio_test.k` | 8 | PASS |
 
 #### Known Limitation: `kcl test` + Schema Instance Bug
 
@@ -1689,6 +1922,7 @@ Template schemas (WebAppModule, SingleDatabaseModule) cannot be directly instant
 | ArgoCD render default changed | `platform_cli/koncept` | DONE — Default builder is `yaml_builder.k` (not `kubernetes_manifests_builder.k`) |
 | Generic render.k CLI support | `platform_cli/koncept` | DONE — Auto-detects `render.k` pattern, uses `-D output=TYPE` |
 | Developer quickstart docs | `docs/DEVELOPER_QUICKSTART.md` | DONE — Prerequisites, commands, project structure, troubleshooting |
+| `koncept init` scaffolding | `platform_cli/koncept` | DONE — Copies render.k from framework, generates factory_seed.k template |
 
 ### Phase 5 Completed Items
 
@@ -1710,10 +1944,10 @@ Template schemas (WebAppModule, SingleDatabaseModule) cannot be directly instant
 |---|---|---|
 | Generic render.k pattern | `framework/factory/render.k` | DONE — Single file replaces 5 builder files per factory; uses `option("output")` for yaml/argocd/helmfile/helm |
 | Factory Seed Contract | All `factory_seed.k` files | DONE — Standardized exports: `_stack`, `_project_name`, `_git_repo_url`, `_manifest_path` |
-| erp_back stg environment | `sites/development/stg_cluster/`, `pre_releases/gitops/stg/` | DONE — Full stg site config + factory with render.k |
+| erp_back stg environment | `sites/development/stg_cluster/`, `pre_releases/manifests/stg/` | DONE — Full stg site config + factory with render.k |
 | erp_back releases structure | `releases/v1_0_0_production/`, `stacks/versioned/v1_0_0/` | DONE — Versioned stack, production site, transitive deps via `erp_back = { path = "../" }` |
 | CLI render.k auto-detection | `platform_cli/koncept` | DONE — `has_render_k` function; new pattern uses `-D output=TYPE`, legacy falls back to per-builder files |
-| erp_back dev factory cleanup | `pre_releases/gitops/dev/factory/` | DONE — Removed 4 old builder files, replaced with render.k + factory_seed.k |
+| erp_back dev factory cleanup | `pre_releases/manifests/dev/factory/` | DONE — Removed 4 old builder files, replaced with render.k + factory_seed.k |
 
 ### Kubeconform Validation Results
 
@@ -1723,6 +1957,43 @@ Template schemas (WebAppModule, SingleDatabaseModule) cannot be directly instant
 | erp_back (stg) | 8 | 8 | 0 | 0 |
 | erp_back (release v1.0.0) | 8 | 8 | 0 | 0 |
 | video_streaming (dev) | 5 | 5 | 0 | 0 |
+
+### Phase 6 Completed Items
+
+| Item | File(s) | Status |
+|---|---|---|
+| ThirdPartyHelmSpec schema | `framework/models/modules/thirdparty_helm.k` | DONE — `ThirdPartyHelmSpec` + `build_thirdparty_helm` → HelmRelease manifests |
+| ThirdPartyHelm tests | `framework/tests/models/modules/thirdparty_helm_test.k` | DONE — 5 tests |
+| PostgreSQL template (TDD) | `framework/templates/postgresql.k` | DONE — `CNPGClusterSpec`, `PoolerSpec`, `BackupSpec`, `build_cnpg_cluster`, `build_pooler`, `build_scheduled_backup` (CloudNativePG `postgresql.cnpg.io/v1`) |
+| PostgreSQL tests | `framework/tests/templates/postgresql_test.k` | DONE — 10 tests (defaults, backup, bootstrap, image, monitoring, pg_params, wal_storage, pooler, scheduled_backup, validation) |
+| MongoDB template (TDD) | `framework/templates/mongodb.k` | DONE — `MongoDBCommunitySpec`, `build_mongodb_community`, `MongoDBCommunityModule` (`mongodbcommunity.mongodb.com/v1`) |
+| MongoDB tests | `framework/tests/templates/mongodb_test.k` | DONE — 6 tests (basic, resources, storage_class, user, validation x2) |
+| RabbitMQ template (TDD) | `framework/templates/rabbitmq.k` | DONE — `RabbitMQClusterSpec`, `build_rabbitmq_cluster`, `RabbitMQClusterModule` (`rabbitmq.com/v1beta1`) |
+| RabbitMQ tests | `framework/tests/templates/rabbitmq_test.k` | DONE — 7 tests (basic, defaults, config, image, plugins, resources, storage_class, validation x2) |
+| Redis template (TDD) | `framework/templates/redis.k` | DONE — `RedisSpec`, `build_redis`, standalone/cluster modes (`redis.redis.opstreelabs.in/v1beta2`) |
+| Redis tests | `framework/tests/templates/redis_test.k` | DONE — 6 tests (standalone, cluster, image, resources, storage_class, validation x2) |
+| Keycloak template (TDD) | `framework/templates/keycloak.k` | DONE — `KeycloakSpec`, `build_keycloak`, `KeycloakModule` (`k8s.keycloak.org/v2alpha1`) |
+| Keycloak tests | `framework/tests/templates/keycloak_test.k` | DONE — 5 tests (basic, defaults, db, http, realm_import, validation x2) |
+| OpenSearch template (TDD) | `framework/templates/opensearch.k` | DONE — `OpenSearchClusterSpec`, `NodePoolSpec`, `DashboardsSpec`, `build_opensearch_cluster`, `OpenSearchClusterModule` (`opensearch.org/v1`) |
+| OpenSearch tests | `framework/tests/templates/opensearch_test.k` | DONE — 8 tests (basic, dashboards, multi_pool, config, monitoring, validation x3) |
+| Vault VSO template (TDD) | `framework/templates/vault.k` | DONE — `VaultConnectionSpec`, `VaultAuthSpec`, `VaultStaticSecretSpec`, 3 build lambdas (`secrets.hashicorp.com/v1beta1`) ⚠️ BUSL-1.1 |
+| Vault tests | `framework/tests/templates/vault_test.k` | DONE — 7 tests (connection basic/TLS, auth kubernetes, static secret, custom dest, validation x2) |
+| QuestDB template (TDD) | `framework/templates/questdb.k` | DONE — `QuestDBSpec`, `build_questdb_release` wrapping ThirdPartyHelmSpec (Helm chart, no operator) |
+| QuestDB tests | `framework/tests/templates/questdb_test.k` | DONE — 4 tests (default, custom, ports, service_type) |
+| MinIO template (TDD) | `framework/templates/minio.k` | DONE — `MinIOTenantSpec` + `build_minio_tenant` (Operator CRD `minio.min.io/v2`) + `MinIOHelmSpec` + `build_minio_helm` (Bitnami chart fallback) |
+| MinIO tests | `framework/tests/templates/minio_test.k` | DONE — 8 tests (default, custom_pools, resources, storage_class, no_autocert, env_vars, validation, helm_fallback) |
+| Observability stack (TDD) | `framework/templates/observability.k` | DONE — `PrometheusSpec`, `GrafanaSpec`, `ServiceMonitorSpec` + 3 build lambdas (Bitnami Helm charts + Prometheus CRD) |
+| Observability tests | `framework/tests/templates/observability_test.k` | DONE — 8 tests (prometheus default/custom/alertmanager, grafana default/custom/ingress, service_monitor basic/interval) |
+
+### Phase 7 Completed Items
+
+| Item | File(s) | Status |
+|---|---|---|
+| Kustomize output procedure (TDD) | `framework/procedures/kcl_to_kustomize.k` | DONE — `generate_kustomization`, `generate_kustomization_from_stack`, `generate_overlay_patch` |
+| Kustomize tests | `framework/tests/procedures/kustomize_test.k` | DONE — 8 tests (single, multiple, accessories, labels, from_stack, resource_names, empty, overlay_patch) |
+| render.k kustomize support | `framework/factory/render.k` | DONE — Added `-D output=kustomize` block |
+| CLI kustomize render | `platform_cli/koncept` | DONE — `koncept render kustomize` generates `base/kustomization.yaml` + individual manifest files |
+| CLI OCI publish | `platform_cli/koncept` | DONE — `koncept publish <module> --output <version>` wraps `kcl mod push` |
 
 ### Strategy Document
 
@@ -1865,30 +2136,39 @@ Score defines a platform-agnostic workload spec. While we use KCL as our spec la
 ## Appendix B: Implementation Priority
 
 ```
-Phase 1 (Foundation) ✅            Phase 2 (Helmfile) ✅
-├─ Security fixes (P0) ✅         ├─ HelmValues extraction ✅
-├─ imagePullPolicy fix ✅          ├─ kcl_to_helmfile.k implementation ✅
-└─ Code style cleanup ✅           ├─ kcl_to_helm.k expansion ✅
-                                   ├─ Static Helm templates ✅
-Phase 3 (Code Quality) ✅         ├─ values_builder.k implementation ✅
-├─ EnvVar schema ✅                └─ CLI update for helmfile flow ✅
+Phase 1 (Foundation) ✅             Phase 2 (Helmfile) ✅
+├─ Security fixes (P0) ✅          ├─ HelmValues extraction ✅
+├─ imagePullPolicy fix ✅           ├─ kcl_to_helmfile.k implementation ✅
+└─ Code style cleanup ✅            ├─ kcl_to_helm.k expansion ✅
+                                    ├─ Static Helm templates ✅
+Phase 3 (Code Quality) ✅          ├─ values_builder.k implementation ✅
+├─ EnvVar schema ✅                 └─ CLI update for helmfile flow ✅
 ├─ check validation blocks ✅
-├─ Document any types              Phase 4 (Developer Experience) ✅
-└─ Test infrastructure ✅          ├─ koncept validate ✅
-                                   ├─ koncept init (nice-to-have)
-Phase 5 (Advanced) ✅              ├─ Configurable builder names ✅
-├─ kcl_to_argocd.k ✅              ├─ Generic render.k + CLI support ✅
-├─ NetworkPolicy builder ✅        └─ DEVELOPER_QUICKSTART.md ✅
+├─ Document any types               Phase 4 (Developer Experience) ✅
+└─ Test infrastructure ✅           ├─ koncept validate ✅
+                                    ├─ koncept init (nice-to-have) ✅
+Phase 5 (Advanced) ✅               ├─ Configurable builder names ✅
+├─ kcl_to_argocd.k ✅               ├─ Generic render.k + CLI support ✅
+├─ NetworkPolicy builder ✅         └─ DEVELOPER_QUICKSTART.md ✅
 ├─ PDB builder ✅
-├─ Secret management schemas ✅   Phase 6 (Production Infrastructure)
-└─ Multi-component Helm charts    ├─ CloudNativePG operator template
-                                  ├─ Redis operator template
-Phase 7 (Ecosystem)               ├─ MongoDB (Bitnami chart wrapper)
-├─ kcl_to_kustomize.k            ├─ ThirdPartyHelmSpec schema
-├─ KCL plugin integration        ├─ Bitnami chart catalog
-│  (helm-kcl, kustomize-kcl)     ├─ ExternalSecrets operator
-├─ OCI artifact publishing        └─ Observability stack (Prometheus/Grafana)
-└─ Jsonnet bundle consumption
+├─ Secret management schemas ✅
+└─ Multi-component Helm charts
+
+Phase 6 (Production Infrastructure) ✅  Phase 7 (Ecosystem) ✅
+├─ P0: CloudNativePG (PostgreSQL) ✅  ├─ kcl_to_kustomize.k ✅
+├─ P1: MCK (MongoDB) ✅               ├─ KCL plugin integration (docs)
+├─ P1: Strimzi (Kafka) — integrate    ├─ OCI artifact publishing ✅
+├─ P1: RabbitMQ cluster-operator ✅   ├─ Jsonnet bundle consumption
+├─ P1: OT Redis Operator ✅           └─ kcl_to_timoni.k [experimental]
+├─ P1: Keycloak Operator (CNCF) ✅        ├─ CUE module generation
+├─ P1: Vault VSO (⚠️ BUSL-1.1) ✅        ├─ Timoni module structure
+├─ P2: MinIO (operator+Bitnami) ✅       └─ CLI render target
+├─ P2: OpenSearch k8s-operator ✅
+├─ P3: Valkey (not ready — use Redis)
+├─ P3: QuestDB (Helm chart only) ✅
+├─ ThirdPartyHelmSpec enhancement ✅
+├─ ExternalSecrets operator ✅
+└─ Observability stack ✅
 ```
 
 ### Proof-of-Concept → Production Transition Map
@@ -1896,14 +2176,18 @@ Phase 7 (Ecosystem)               ├─ MongoDB (Bitnami chart wrapper)
 ```
 POC (current)                        Production Target
 ─────────────                        ──────────────────
-Raw Deployments/StatefulSets    →    K8s Operators (CNPG, Redis, Strimzi)
-Hand-crafted all manifests      →    Bitnami charts + operator CRDs
-Hardcoded secrets in code       →    ExternalSecrets + Vault/Cloud KMS
+Raw Deployments/StatefulSets    →    K8s Operators (CNPG, Strimzi, MCK, OT Redis, ...)
+Hand-crafted all manifests      →    Operator CRDs + ThirdParty Helm charts
+Hardcoded secrets in code       →    ExternalSecrets + Vault VSO / Cloud KMS
+No object storage               →    MinIO Operator (Tenant CRD) + Bitnami Helm
+No identity management          →    Keycloak Operator (CNCF Incubation)
+No messaging beyond Kafka       →    RabbitMQ cluster-operator
+No search/analytics             →    OpenSearch k8s-operator
 No monitoring                   →    Prometheus + Grafana (auto-configured)
 No network policies             →    NetworkPolicy per component
 No HA guarantees                →    PDB + topology spread constraints
-Single output format (YAML)     →    YAML + Helm + Helmfile + Kustomize + ArgoCD
+Single output format (YAML)     →    YAML + Helm + Helmfile + Kustomize + ArgoCD + Timoni
 Manual project setup            →    `koncept init` scaffolding
 No validation before deploy     →    `koncept validate` + check blocks + kubeconform
-No tests                        →    130 unit tests + integration validation
+No tests                        →    219 unit tests + integration validation
 ```

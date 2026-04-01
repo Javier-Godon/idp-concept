@@ -12,7 +12,7 @@
 
 ```bash
 # Navigate to your environment directory
-cd projects/<project>/pre_releases/gitops/<env>/
+cd projects/<project>/pre_releases/manifests/<env>/
 
 # Validate configuration (catches errors before rendering)
 koncept validate
@@ -21,6 +21,7 @@ koncept validate
 koncept render argocd          # Plain K8s YAML for GitOps deployment
 koncept render helmfile        # Helm charts + helmfile.yaml
 koncept render kusion          # Kusion spec
+koncept render kustomize       # Kustomize base with kustomization.yaml
 
 # Navigate to a production release
 cd projects/<project>/releases/<version>/
@@ -47,7 +48,7 @@ projects/<your-project>/
 ├── pre_releases/         # Development environments
 │   ├── configurations_dev.k
 │   ├── configurations_stg.k
-│   └── gitops/
+│   └── manifests/
 │       ├── dev/factory/  # Dev factory (factory_seed.k + render.k)
 │       └── stg/factory/  # Stg factory (factory_seed.k + render.k)
 └── releases/             # Versioned production releases
@@ -70,6 +71,25 @@ As a developer, you interact with **site** and **tenant** configuration files:
 - `framework/` — Core platform schemas (contact platform engineers)
 - `modules/` — Module definitions (contact platform engineers)
 - `render.k` — Generic renderer (auto-managed)
+
+## Available Infrastructure Services
+
+The platform provides pre-built templates for common infrastructure. Ask your platform engineer to add these to your stack:
+
+| Service | Template | What It Deploys |
+|---|---|---|
+| **PostgreSQL** | `PostgreSQLClusterModule` | CloudNativePG cluster with HA, backups, connection pooling |
+| **MongoDB** | `MongoDBCommunityModule` | MongoDB replica set via Community Operator |
+| **Kafka** | `KafkaClusterModule` | Strimzi Kafka cluster with topics |
+| **RabbitMQ** | `RabbitMQClusterModule` | RabbitMQ cluster with custom plugins/config |
+| **Redis** | `RedisModule` | Standalone or cluster mode via OT Redis Operator |
+| **Keycloak** | `KeycloakModule` | Keycloak identity server with realm import |
+| **OpenSearch** | `OpenSearchClusterModule` | Search/analytics with dashboards |
+| **Vault** | `VaultStaticSecretModule` | Sync secrets from HashiCorp Vault → K8s Secrets |
+| **QuestDB** | `QuestDBModule` | Time-series database via Helm chart |
+| **MinIO** | `MinIOTenantSpec` / `MinIOHelmSpec` | S3-compatible object storage (Operator CRD or Bitnami Helm) |
+
+These are configured in `modules/` by platform engineers — you control environment-specific settings (replicas, storage size) via site configurations.
 
 ## Each Factory Has Only 2 Files
 
@@ -98,6 +118,14 @@ koncept render helmfile
 Generates Kusion spec with resources and dependency ordering.
 ```bash
 koncept render kusion
+```
+
+### Kustomize
+Generates a Kustomize base directory with `kustomization.yaml` and individual resource files.
+```bash
+koncept render kustomize
+# Output: output/base/kustomization.yaml
+#         output/base/<kind>-<name>.yaml
 ```
 
 ## Validation

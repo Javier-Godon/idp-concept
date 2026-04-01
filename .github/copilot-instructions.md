@@ -98,8 +98,8 @@ Later values override earlier ones.
 | `framework/models/` | Core domain schemas: Project, Tenant, Site, Profile, Stack, Release |
 | `framework/models/modules/` | Component, Accessory, K8sNamespace, ThirdParty schemas |
 | `framework/models/configurations.k` | BaseConfigurations schema + generic merge_configurations lambda |
-| `framework/builders/` | Manifest builder lambdas: deployment, service, configmap, storage, service_account, leader |
-| `framework/templates/` | High-level module templates: WebAppModule, SingleDatabaseModule, KafkaClusterModule |
+| `framework/builders/` | Manifest builder lambdas: deployment, service, configmap, storage, service_account, leader, network_policy, pdb |
+| `framework/templates/` | Module templates: WebAppModule, SingleDatabaseModule, KafkaClusterModule, PostgreSQLClusterModule, MongoDBCommunityModule, RabbitMQClusterModule, RedisModule, KeycloakModule, OpenSearchClusterModule, VaultStaticSecretModule, QuestDBModule, MinIOTenantSpec/MinIOHelmSpec |
 | `framework/assembly/` | Stack utilities: create_namespace helpers |
 | `framework/factory/` | Factory scaffolding: FactorySeed schema |
 | `framework/procedures/` | Conversion functions: `kcl_to_yaml`, `kcl_to_helm`, `kcl_to_kusion`, `kcl_to_argocd` |
@@ -138,6 +138,15 @@ Later values override earlier ones.
 - For web apps: `schema MyApp(webapp.WebAppModule):` — set port, probes, env, resources
 - For databases: `schema MyDb(database.SingleDatabaseModule):` — set port, dataPath, storageSize, env
 - For Kafka: `schema MyKafka(kafka.KafkaClusterModule):` — set clusterName, topics
+- For PostgreSQL: `schema MyPg(postgresql.PostgreSQLClusterModule):` — set instances, storageSize, pgVersion
+- For MongoDB: `schema MyMongo(mongodb.MongoDBCommunityModule):` — set members, version, users
+- For RabbitMQ: `schema MyRmq(rabbitmq.RabbitMQClusterModule):` — set replicas, storageSize
+- For Redis: `schema MyRedis(redis.RedisModule):` — set mode (standalone/cluster), replicas
+- For Keycloak: `schema MyKc(keycloak.KeycloakModule):` — set instances, hostname, db
+- For OpenSearch: `schema MyOs(opensearch.OpenSearchClusterModule):` — set nodePools, dashboards
+- For Vault secrets: `schema MyVault(vault.VaultStaticSecretModule):` — set mount, path
+- For QuestDB: `schema MyQdb(questdb.QuestDBModule):` — set storageSize, httpPort
+- For MinIO: `minio.MinIOTenantSpec` (Operator CRD) or `minio.MinIOHelmSpec` (Bitnami Helm) — set servers, storageSize
 - Templates auto-generate leaders, manifests, Deployment, Service, ConfigMap, etc.
 - See `projects/erp_back/` for a complete example using templates
 
@@ -235,4 +244,4 @@ Use the `knowledge-research` skill (`.github/skills/knowledge-research/SKILL.md`
 - Kusion: https://www.kusionstack.io/docs/
 - CNCF Platform Maturity Model: https://tag-app-delivery.cncf.io/whitepapers/platform-eng-maturity-model
 
-See `docs/REFERENCE_RESOURCES.md` for the complete curated knowledge base.
+See `.github/docs/REFERENCE_RESOURCES.md` for the complete curated knowledge base.

@@ -114,6 +114,46 @@ Set: `port`, `dataPath`, `storageSize`, `storageHostPath`, `env`, `resources`, `
 ### KafkaClusterModule (kafka.k) — extends Accessory
 Set: `clusterName`, `kafkaVersion`, `kafkaReplicas`, `zookeeperReplicas`, `storageSize`, `topics` (list of `KafkaTopicSpec`)
 
+### PostgreSQLClusterModule (postgresql.k) — extends Accessory
+Wraps CloudNativePG operator (`postgresql.cnpg.io/v1`).
+Build lambdas: `build_cnpg_cluster`, `build_pooler`, `build_scheduled_backup`
+Set: `instances`, `storageSize`, `pgVersion`, `monitoring`, `backup` (BackupSpec), `pooler` (PoolerSpec), `walStorage`, `pgParams`, `imageName`
+
+### MongoDBCommunityModule (mongodb.k) — extends Accessory
+Wraps MongoDB Community Operator (`mongodbcommunity.mongodb.com/v1`).
+Build lambda: `build_mongodb_community`
+Set: `members`, `mongodbVersion`, `storageSize`, `storageClassName`, `users` (list of MongoDBUserSpec), `resources`
+
+### RabbitMQClusterModule (rabbitmq.k) — extends Accessory
+Wraps RabbitMQ Cluster Operator (`rabbitmq.com/v1beta1`).
+Build lambda: `build_rabbitmq_cluster`
+Set: `replicas`, `storageSize`, `storageClassName`, `image`, `plugins`, `additionalConfig`, `resources`
+
+### RedisModule (redis.k) — extends Accessory
+Wraps OT Redis Operator (`redis.redis.opstreelabs.in/v1beta2`).
+Build lambda: `build_redis`
+Set: `mode` ("standalone"|"cluster"), `clusterSize`, `storageSize`, `storageClassName`, `image`, `resources`
+
+### KeycloakModule (keycloak.k) — extends Accessory
+Wraps Keycloak Operator (`k8s.keycloak.org/v2alpha1`).
+Build lambda: `build_keycloak`
+Set: `instances`, `hostname`, `database` (DatabaseSpec), `httpEnabled`, `tlsSecret`, `realmImports`
+
+### OpenSearchClusterModule (opensearch.k) — extends Accessory
+Wraps OpenSearch K8s Operator (`opensearch.org/v1`).
+Build lambda: `build_opensearch_cluster`
+Set: `version`, `nodePools` (list of NodePoolSpec), `dashboards` (DashboardsSpec), `securityConfig`, `monitoring`
+
+### VaultStaticSecretModule (vault.k) — Vault Secrets Operator
+Wraps HashiCorp VSO (`secrets.hashicorp.com/v1beta1`). ⚠️ BUSL-1.1 license.
+Build lambdas: `build_vault_connection`, `build_vault_auth`, `build_vault_static_secret`
+Set: VaultConnectionSpec (address, TLS), VaultAuthSpec (method, mount, role), VaultStaticSecretSpec (mount, path, type, destination)
+
+### QuestDBSpec (questdb.k) — ThirdPartyHelm wrapper
+No operator; wraps official Helm chart via ThirdPartyHelmSpec.
+Build lambda: `build_questdb_release`
+Set: `storageSize`, `chartVersion`, `storageClassName`, `cpuRequest/Limit`, `memoryRequest/Limit`, `httpPort`, `ilpPort`, `pgPort`, `serviceType`
+
 ## Assembly Helpers (`framework/assembly/helpers.k`)
 
 ```kcl
@@ -152,7 +192,7 @@ common.EnvVar { name = "SECRET", valueFrom = common.EnvVarSource {
 
 ## Testing
 
-- **116 unit tests** in `framework/tests/` directory (mirroring source structure)
+- **195 unit tests** in `framework/tests/` directory (mirroring source structure)
 - Run: `cd framework && kcl test ./...`
 - Template tests validate builder outputs individually (see `kcl test` limitation in KCL skill)
 - Integration: `kcl run` + `kubeconform` for full template validation

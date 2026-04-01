@@ -133,7 +133,7 @@ The framework (`framework/`) provides reusable schemas and procedures that any p
 | `Profile` / `ProfileInstance` | `profile.k` | Defines a deployment mode (dev, staging, production version) |
 | `Stack` / `StackInstance` | `stack.k` | Aggregates components, accessories, namespaces, and third-parties for a deployment |
 | `Release` | `release.k` | Combines project + tenant + site + profile + stack into a versioned deployment |
-| `GitOpsStack` / `GitOpsStackInstance` | `gitops/gitopsstack.k` | Stack variant for GitOps (plain YAML) output |
+| `RenderStack` / `RenderStackInstance` | `manifests/renderstack.k` | Stack variant for GitOps (plain YAML) output |
 
 #### Module Models (`framework/models/modules/`)
 
@@ -170,7 +170,7 @@ The `instance` property creates a flattened `ProjectInstance` from the `Project`
 
 | Procedure | File | Input | Output |
 |---|---|---|---|
-| `yaml_stream_stack` | `kcl_to_yaml.k` | `GitOpsStack` | Multi-document YAML stream |
+| `yaml_stream_stack` | `kcl_to_yaml.k` | `RenderStack` | Multi-document YAML stream |
 | `generate_helm_components_templates_from_stack` | `kcl_to_helm.k` | `Stack` | Helm template YAML |
 | `kusion_spec_stream_stack` | `kcl_to_kusion.k` | `Stack` | `[KusionResource]` array |
 | `extract_models_by_name_from_list` | `helper.k` | Model list + name | Filtered models |
@@ -317,7 +317,7 @@ sites/
 ```
 pre_releases/
 ├── configurations_dev.k    # Merges all config layers for dev
-├── gitops/site_one/generators/    # ArgoCD output
+├── manifests/site_one/generators/    # ArgoCD output
 │   └── kafka_.../dev/factory/
 │       ├── factory_seed.k
 │       ├── kubernetes_manifests_builder.k

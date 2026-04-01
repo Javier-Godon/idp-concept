@@ -99,21 +99,21 @@ schema Stack:
     thirdParties?: [ThirdParty]
 ```
 
-### GitOpsStack
+### RenderStack
 
-**File**: `framework/models/gitops/gitopsstack.k`  
-**Purpose**: Stack variant for GitOps (plain YAML) output — allows optional components.
+**File**: `framework/models/manifests/renderstack.k`  
+**Purpose**: Stack variant for rendering output — allows optional components (useful when deploying a subset).
 
 ```kcl
-schema GitOpsStackInstance:
+schema RenderStackInstance:
     instanceConfigurations: any
     components?: [ComponentInstance]                # Optional (for subset generation)
     accessories?: [AccessoryInstance]
     k8snamespaces?: [K8sNamespaceInstance]
     thirdParties?: [ThirdPartyInstance]
 
-schema GitOpsStack:
-    instance: GitOpsStackInstance
+schema RenderStack:
+    instance: RenderStackInstance
     instanceConfigurations: any
     components?: [ComponentInstance]
     accessories?: [AccessoryInstance]
@@ -390,29 +390,177 @@ schema ApplicationProperties:
 
 ---
 
-## 5. Schema Inheritance Hierarchy
+## 5. Builder Schemas (`framework/builders/`)
+
+### Deployment Builder
+
+**File**: `framework/builders/deployment.k`
+
+Key schemas: `DeploymentSpec`, `ResourceSpec`, `ProbeSpec`. Lambda: `build_deployment`.
+
+### Service Builder
+
+**File**: `framework/builders/service.k`
+
+Key schemas: `ServiceSpec`. Lambda: `build_service`.
+
+### ConfigMap Builder
+
+**File**: `framework/builders/configmap.k`
+
+Key schemas: `ConfigMapSpec`. Lambda: `build_configmap`.
+
+### Storage Builder
+
+**File**: `framework/builders/storage.k`
+
+Key schemas: `PersistentVolumeSpec`. Lambda: `build_pv_and_pvc`.
+
+### Service Account Builder
+
+**File**: `framework/builders/service_account.k`
+
+Key schemas: `ServiceAccountSpec`. Lambda: `build_service_account`.
+
+### NetworkPolicy Builder
+
+**File**: `framework/builders/network_policy.k`
+
+```kcl
+schema NetworkPolicySpec:
+    name: str
+    namespace: str
+    podSelector: {str:str}
+    ingressRules?: [any]
+    egressRules?: [any]
+```
+
+Lambda: `build_network_policy` → `networking.k8s.io/v1 NetworkPolicy`. Dynamic `policyTypes` based on rules present.
+
+### PDB Builder
+
+**File**: `framework/builders/pdb.k`
+
+```kcl
+schema PDBSpec:
+    name: str
+    namespace: str
+    matchLabels: {str:str}
+    minAvailable?: int | str
+    maxUnavailable?: int | str
+```
+
+Lambda: `build_pdb` → `policy/v1 PodDisruptionBudget`.
+
+---
+
+## 6. Templates (`framework/templates/`)
+
+### Application Templates
+
+| Template | File | Parent | Purpose |
+|---|---|---|---|
+| `WebAppModule` | `webapp.k` | `Component` | Web applications (Deployment + Service + optional ConfigMap) |
+| `SingleDatabaseModule` | `database.k` | `Accessory` | Simple database (Deployment + Service + PV/PVC) |
+| `KafkaClusterModule` | `kafka.k` | `Accessory` | Strimzi Kafka cluster (`kafka.strimzi.io/v1beta2`) |
+
+### Operator Templates (Phase 6)
+
+| Template | File | Operator | CRD API |
+|---|---|---|---|
+| `PostgreSQLClusterModule` | `postgresql.k` | CloudNativePG | `postgresql.cnpg.io/v1 Cluster` |
+| `MongoDBCommunityModule` | `mongodb.k` | MongoDB Community | `mongodbcommunity.mongodb.com/v1 MongoDBCommunity` |
+| `RabbitMQClusterModule` | `rabbitmq.k` | RabbitMQ Cluster Operator | `rabbitmq.com/v1beta1 RabbitmqCluster` |
+| `RedisModule` | `redis.k` | OT Redis Operator | `redis.redis.opstreelabs.in/v1beta2 Redis/RedisCluster` |
+| `KeycloakModule` | `keycloak.k` | Keycloak Operator (CNCF) | `k8s.keycloak.org/v2alpha1 Keycloak` |
+| `OpenSearchClusterModule` | `opensearch.k` | OpenSearch k8s-operator | `opensearch.org/v1 OpenSearchCluster` |
+| `VaultStaticSecretModule` | `vault.k` | Vault Secrets Operator | `secrets.hashicorp.com/v1beta1` ⚠️ BUSL-1.1 |
+| `QuestDBModule` | `questdb.k` | Helm chart (no operator) | ThirdPartyHelmSpec wrapper |
+| `MinIOTenantSpec` | `minio.k` | MinIO Operator (archived) | `minio.min.io/v2 Tenant` ⚠️ Archived |
+| `MinIOHelmSpec` | `minio.k` | Bitnami Helm chart | ThirdPartyHelmSpec wrapper (recommended) |
+
+### Secret Management
+
+**File**: `framework/models/modules/secrets.k`
+
+```kcl
+schema SecretReference:
+    secretName: str
+    key: str
+    optional?: bool = False
+
+schema ExternalSecret:
+    store: str                  # vault | aws-secrets-manager | azure-key-vault | gcp-secret-manager
+    key: str
+    property?: str
+    refreshInterval?: str = "1h"
+```
+
+Lambda: `build_external_secret` → `external-secrets.io/v1beta1 ExternalSecret`.
+
+### ThirdPartyHelmSpec
+
+**File**: `framework/models/modules/thirdparty_helm.k`
+
+```kcl
+schema ThirdPartyHelmSpec:
+    name: str
+    namespace: str
+    chart: str
+    version: str
+    repository?: str
+    values?: {str:str}
+    createNamespace?: bool = True
+
+    check:
+        version, "Helm chart version must be pinned"
+        "latest" not in version, "version must not contain 'latest'"
+```
+
+Lambda: `build_thirdparty_helm` → HelmRelease manifest.
+
+---
+
+## 7. Schema Inheritance Hierarchy
 
 ```
 Component (framework)
-├── VideoCollectorMongodbPythonModule (project module)
-├── KafkaVideoServerPythonModule (project module)
+├── WebAppModule (template — web applications)
+├── VideoCollectorMongodbPythonModule (project module, raw)
+├── KafkaVideoServerPythonModule (project module, raw)
 └── ... (other application modules)
 
 Accessory (framework)
-├── KafkaSingleInstanceModule (infrastructure module)
-├── MongoDBSingleInstanceModule (infrastructure module)
-├── MongoDBPersistenceModule (infrastructure module)
+├── SingleDatabaseModule (template — simple database)
+├── KafkaClusterModule (template — Strimzi operator)
+├── PostgreSQLClusterModule (template — CloudNativePG)
+├── MongoDBCommunityModule (template — MongoDB Community)
+├── RabbitMQClusterModule (template — RabbitMQ)
+├── RedisModule (template — OT Redis)
+├── KeycloakModule (template — Keycloak)
+├── OpenSearchClusterModule (template — OpenSearch)
+├── VaultStaticSecretModule (vault.k — Vault VSO)
+├── QuestDBModule (template — Helm chart)
+├── MinIOTenantSpec (template — MinIO Operator, archived)
+├── MinIOHelmSpec (template — Bitnami Helm chart)
+├── KafkaSingleInstanceModule (project module, raw)
+├── MongoDBSingleInstanceModule (project module, raw)
 └── ... (other infrastructure modules)
+
+RenderStack (framework/models/manifests/)
+└── wraps Stack for multi-format render output
 
 Stack (framework)
 ├── VideoStreamingDevelopmentStack (project stack)
 ├── VideoStreamingv1_0_0_BaseStack (versioned stack)
+├── ErpBackDevelopmentStack (project stack)
+├── ErpBackV1_0_0Stack (versioned stack)
 └── ... (other version stacks)
 ```
 
 ---
 
-## 6. Usage Summary
+## 8. Usage Summary
 
 ### Creating a Module
 ```kcl

@@ -8,7 +8,7 @@ argument-hint: "Project name and what it deploys (e.g., 'e-commerce with API, Po
 You are scaffolding a complete new project for idp-concept using the recommended template approach.
 
 ## Context Files
-- #file:docs/AI_REFERENCE.md
+- #file:.github/docs/AI_REFERENCE.md
 - #file:.github/instructions/kcl-module-system.instructions.md
 - #file:projects/erp_back/kcl.mod
 - #file:projects/erp_back/core_sources/erp_back_configurations.k
@@ -21,8 +21,8 @@ You are scaffolding a complete new project for idp-concept using the recommended
 - #file:projects/erp_back/stacks/development/profile_def.k
 - #file:projects/erp_back/stacks/development/profile_configurations.k
 - #file:projects/erp_back/pre_releases/kcl.mod
-- #file:projects/erp_back/pre_releases/gitops/dev/factory/factory_seed.k
-- #file:projects/erp_back/pre_releases/gitops/dev/factory/yaml_builder.k
+- #file:projects/erp_back/pre_releases/manifests/dev/factory/factory_seed.k
+- #file:projects/erp_back/pre_releases/manifests/dev/factory/yaml_builder.k
 
 ## Directory Structure to Create
 
@@ -51,8 +51,8 @@ projects/<project_name>/
 └── pre_releases/
     ├── kcl.mod                      # ONLY depends on <project_name>
     ├── configurations_dev.k         # Merge pipeline
-    └── gitops/dev/factory/
-        ├── factory_seed.k           # Stack + GitOps setup
+    └── manifests/dev/factory/
+        ├── factory_seed.k           # Stack + rendering setup
         └── yaml_builder.k           # YAML output
 ```
 

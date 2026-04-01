@@ -8,7 +8,7 @@ You are creating a KCL module for the idp-concept project. Choose the approach b
 
 ## Context Files
 Read these for patterns:
-- #file:docs/AI_REFERENCE.md
+- #file:.github/docs/AI_REFERENCE.md
 - #file:.github/instructions/kcl-module-system.instructions.md
 - #file:framework/models/modules/component.k
 - #file:framework/models/modules/accessory.k

@@ -34,7 +34,7 @@ from idp-concept/projects/video_streaming/releases/helmfile/berlin/v1_0_0_berlin
 koncept render helmfile
 ```
 
-from idp-concept/projects/video_streaming/pre_releases/gitops/site_one/generators/kafka_video_consumer_mongodb_python/dev
+from idp-concept/projects/video_streaming/pre_releases/manifests/site_one/generators/kafka_video_consumer_mongodb_python/dev
 
 ```
 koncept render argocd
