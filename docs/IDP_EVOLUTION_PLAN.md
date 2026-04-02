@@ -14,9 +14,12 @@
 - [8. Phase 5 — Advanced Platform Features](#8-phase-5--advanced-platform-features)
 - [9. Phase 6 — Production Infrastructure (Operators & Third-Party)](#9-phase-6--production-infrastructure-operators--third-party)
 - [10. Phase 7 — Multi-Format Output & Ecosystem Integration](#10-phase-7--multi-format-output--ecosystem-integration)
-- [11. User Workflow Guides](#11-user-workflow-guides)
-- [12. Work Matrix by User Profile](#12-work-matrix-by-user-profile)
-- [13. Migration Guide: video_streaming → template pattern](#13-migration-guide-video_streaming--template-pattern)
+- [11. Phase 8 — Developer Portal: Backstage Catalog Foundation](#11-phase-8--developer-portal-backstage-catalog-foundation)
+- [12. Phase 9 — Developer Portal: Plugin Integration & Auth](#12-phase-9--developer-portal-plugin-integration--auth)
+- [13. Phase 10 — Developer Portal: Self-Service Scaffolder](#13-phase-10--developer-portal-self-service-scaffolder)
+- [14. User Workflow Guides](#14-user-workflow-guides) — [Standalone: USER_WORKFLOW_GUIDES.md](./USER_WORKFLOW_GUIDES.md)
+- [15. Work Matrix by User Profile](#15-work-matrix-by-user-profile) — [Standalone: WORK_MATRIX.md](./WORK_MATRIX.md)
+- [16. Migration Guide: video_streaming → template pattern](#16-migration-guide-video_streaming--template-pattern) — [Standalone: MIGRATION_GUIDE.md](./MIGRATION_GUIDE.md)
 - [Implementation Progress — Testing & TDD](#implementation-progress--testing--tdd)
 
 ---
@@ -56,12 +59,13 @@ Current state: **Level 2 (Operationalized)** — dedicated tooling, but manual p
 
 Target state: **Level 3 (Scalable)** — product-like platform with self-service interfaces, measurable adoption, and tested user experiences.
 
-| Aspect | Current (L2) | Target (L3) |
-|---|---|---|
-| **Interfaces** | CLI (`koncept`) requires knowledge of factory structure | Self-service: developers run `koncept deploy <app>` |
-| **Operations** | Manual factory/builder creation per release | Automated: `koncept init` scaffolds everything |
-| **Adoption** | Engineers must learn KCL internals | Developers use `nu` commands only |
-| **Measurement** | No metrics | Track render success/failure, build times, config drift |
+| Aspect | Current (L2) | Target (L3) | How |
+|---|---|---|---|
+| **Investment** | Dedicated tooling (KCL, Nushell CLI) | Product-like platform with portal | Backstage instance + plugin ecosystem |
+| **Interfaces** | CLI (`koncept`) requires knowledge of factory structure | CLI + Web portal (dual interface) | Backstage catalog + scaffolder wrapping `koncept` |
+| **Operations** | Manual factory/builder creation per release | Automated provisioning, catalog sync | TeraSky Ingestor auto-syncs, scaffolder automates |
+| **Adoption** | Engineers must learn KCL internals | Developers use portal for common tasks, CLI for power users | Backstage Templates → wizard-driven self-service |
+| **Measurement** | No metrics | Track template usage, render times, adoption | Backstage analytics, `backstage.io/time-saved` annotation |
 
 ---
 
@@ -77,6 +81,8 @@ Target state: **Level 3 (Scalable)** — product-like platform with self-service
 - `koncept render argocd` — Generate K8s manifests for GitOps deployment
 - `koncept render helmfile` — Generate Helm charts with parameterized values
 - `koncept render kusion` — Generate Kusion spec
+- `koncept render kustomize` — generates Kustomize structure
+- `koncept render timoni` — generates Timoni CUE module (experimental)
 - `koncept status` — (NEW) Check current release status
 - `koncept validate` — (NEW) Validate configurations before rendering
 - `koncept diff` — (NEW) Show what changed between current and previous render
@@ -148,7 +154,7 @@ Target state: **Level 3 (Scalable)** — product-like platform with self-service
 | **No `check` validation blocks** | Config errors caught at K8s deploy time, not compile time | P1 | ✅ RESOLVED — DeploymentSpec, ServiceSpec, PVSpec, EnvVar check blocks |
 | **`any` types for env vars/volumes** | No compile-time type checking for K8s fields | P1 | ✅ RESOLVED — EnvVar schema with KeySelector, EnvVarSource |
 | **CLI hardcoded builder filenames** | Different project structures break the CLI | P2 | ✅ RESOLVED — `resolve_builder` with `koncept.yaml` config |
-| **No test infrastructure** | No `.test.k` files; regressions undetected | P2 | ✅ RESOLVED — 219 tests, full TDD workflow |
+| **No test infrastructure** | No `.test.k` files; regressions undetected | P2 | ✅ RESOLVED — 232 tests, full TDD workflow |
 | **Hardcoded Git repo URL** | ArgoCD builders can't be forked/multi-tenanted | P2 | ✅ RESOLVED — `gitRepoUrl` in BaseConfigurations |
 
 ### Architecture Diagram (Current → Target)
@@ -192,8 +198,10 @@ TARGET (Production-Grade):
               │ kcl_to_helm     (working)│
               │ kcl_to_helmfile (working)│
               │ kcl_to_argocd   (working)│
-              │ kcl_to_kustomize(future) │
-              └──────────────────────────┘
+              │ kcl_to_kustomize(working)│
+              │ kcl_to_timoni   (working)│
+              │ kcl_to_crossplane(working)│
+              └───────────────────────────┘
 ```
 
 ---
@@ -1257,6 +1265,44 @@ schema MyMinIOHelm:
     manifests = [minio.build_minio_helm(_spec)]
 ```
 
+#### 9.1.12 OpenTelemetry — OpenTelemetry Operator
+
+| Detail | Value |
+|---|---|
+| **Operator** | [open-telemetry/opentelemetry-operator](https://github.com/open-telemetry/opentelemetry-operator) |
+| **Stars / Contributors** | 1,700+ / 268 |
+| **License** | Apache-2.0 |
+| **CNCF Status** | Part of CNCF OpenTelemetry project (Graduated) |
+| **CRDs** | `OpenTelemetryCollector`, `Instrumentation`, `OpAMPBridge`, `TargetAllocator` |
+| **Helm Chart** | `open-telemetry/opentelemetry-operator` (chart v0.109.0, appVersion v0.148.0) |
+| **Priority** | P1 — Unified observability (traces, metrics, logs), CNCF Graduated, auto-instrumentation for Java/Python/Node.js/.NET/Go |
+
+> **Key capabilities**: The operator manages OpenTelemetry Collector instances (deployment, daemonset, statefulset, sidecar modes) and auto-instrumentation injection. The Target Allocator distributes Prometheus scrape targets across collector replicas. Supports ServiceMonitor/PodMonitor discovery from prometheus-operator ecosystem.
+
+```kcl
+# Deploy operator + collector + auto-instrumentation:
+import framework.templates.opentelemetry as otel
+
+_operator = otel.build_otel_operator(otel.OtelOperatorSpec {
+    name = "opentelemetry-operator"
+    namespace = "opentelemetry"
+})
+
+_collector = otel.build_otel_collector(otel.OtelCollectorSpec {
+    name = "otel-collector"
+    namespace = "opentelemetry"
+    mode = "deployment"
+    replicas = 2
+})
+
+_instrumentation = otel.build_instrumentation(otel.InstrumentationSpec {
+    name = "auto-instrumentation"
+    namespace = "apps"
+    exporterEndpoint = "http://otel-collector.opentelemetry.svc:4317"
+    propagators = ["tracecontext", "baggage", "b3"]
+})
+```
+
 ### 9.2 Infrastructure Catalog Summary
 
 | Service | Operator / Chart | License | Stars | Maturity | Priority |
@@ -1268,6 +1314,7 @@ schema MyMinIOHelm:
 | **Redis** | OT Redis Operator | Apache-2.0 | 1,300+ | Production | P1 |
 | **Keycloak** | keycloak (built-in) | Apache-2.0 | 25,000+ | CNCF Incubation | P1 |
 | **Vault** | VSO | BUSL-1.1 ⚠️ | 577 | HashiCorp Official | P1 |
+| **OpenTelemetry** | opentelemetry-operator | Apache-2.0 | 1,700+ | CNCF Graduated | P1 |
 | **MinIO** | minio/operator (archived) + Bitnami | AGPL-3.0 / Apache-2.0 | 1,400+ | ⚠️ Archived 2026 | P2 |
 | **OpenSearch** | opensearch-k8s-operator | Apache-2.0 | 534 | OpenSearch Project | P2 |
 | **Valkey** | valkey-operator | Apache-2.0 | 157 | ⚠️ Early dev | P3 |
@@ -1300,7 +1347,7 @@ schema ThirdPartyHelmSpec:
 
 ```kcl
 schema MonitoringStack:
-    """Deploy Prometheus + Grafana via kube-prometheus-stack."""
+    """Deploy Prometheus + Grafana + OpenTelemetry via kube-prometheus-stack."""
     prometheus: ThirdPartyHelmSpec = ThirdPartyHelmSpec {
         name = "prometheus"
         chart = "oci://registry-1.docker.io/bitnamicharts/kube-prometheus"
@@ -1313,6 +1360,13 @@ schema MonitoringStack:
     }
     serviceMonitors?: [ServiceMonitorSpec]
 ```
+
+**OpenTelemetry integration**: The `framework/templates/opentelemetry.k` template provides:
+- `OtelOperatorSpec` + `build_otel_operator` — Deploys the operator via Helm chart (`open-telemetry/opentelemetry-operator` v0.109.0)
+- `OtelCollectorSpec` + `build_otel_collector` — Generates `OpenTelemetryCollector` CRDs (deployment/daemonset/statefulset/sidecar modes) with OTLP receivers, processors, and exporters
+- `InstrumentationSpec` + `build_instrumentation` — Generates `Instrumentation` CRDs for auto-instrumentation injection (Java, Python, Node.js, .NET, Go)
+
+The OpenTelemetry Collector integrates with Prometheus via the Target Allocator, enabling ServiceMonitor/PodMonitor-based metrics collection alongside the existing Prometheus stack.
 
 ### 9.5 Strategy: Operator vs Helm Chart
 
@@ -1483,15 +1537,325 @@ _timoni_module = lambda stack: RenderStack, configs: any -> {str:any} {
 
 ---
 
-## 11. User Workflow Guides
+## 11. Phase 8 — Developer Portal: Backstage Catalog Foundation
+
+**Owner**: Platform Engineer (Low-Level) for procedures; Platform Engineer (High-Level) for configuration
+**CNCF Target**: Level 2 → Level 3 (Scalable) — Self-service interfaces
+**Prerequisite**: Phases 1-7 completed ✅
+**Reference**: [docs/BACKSTAGE_ADOPTION_ANALYSIS.md](./BACKSTAGE_ADOPTION_ANALYSIS.md)
+
+> Backstage (CNCF Incubation, 33k+ stars, Apache-2.0) is the only viable free OSS developer portal. It provides a service catalog, software templates (scaffolder), TechDocs, and 205+ active plugins. See the full analysis in `BACKSTAGE_ADOPTION_ANALYSIS.md`.
+
+### 11.1 `kcl_to_backstage` Output Procedure (TDD)
+
+New output procedure to generate Backstage `catalog-info.yaml` descriptors from the KCL Stack model. Follows the same TDD pattern as all existing procedures.
+
+**Entity mapping**:
+
+| idp-concept Model | Backstage Kind | `spec.type` |
+|---|---|---|
+| Project | Domain | `product-area` |
+| Stack | System | `product` |
+| Component (APPLICATION) | Component | `service` |
+| Component (INFRASTRUCTURE) | Resource | `database`, `cache`, `message-queue` |
+| Accessory (CRD) | Resource | `kubernetes-crd` |
+| Accessory (SECRET) | Resource | `secret` |
+| ThirdParty (HELM) | Component | `library` |
+| Pre-release | `spec.lifecycle` | `experimental` |
+| Release | `spec.lifecycle` | `production` |
+
+**Implementation**:
+
+```kcl
+# framework/procedures/kcl_to_backstage.k
+import models.stack as stack
+
+_BACKSTAGE_API_VERSION = "backstage.io/v1alpha1"
+
+generate_backstage_component = lambda name: str, spec: any, system_name: str -> {str:any} {
+    apiVersion = _BACKSTAGE_API_VERSION
+    kind = "Component"
+    metadata = {
+        name = name
+        annotations = {
+            "backstage.io/kubernetes-id" = name
+            "koncept.io/module-type" = spec.moduleType or "Component"
+        }
+    }
+    spec = {
+        type = "service"
+        lifecycle = spec.lifecycle or "production"
+        owner = spec.owner or "platform-team"
+        system = system_name
+    }
+}
+
+generate_backstage_resource = lambda name: str, resource_type: str, system_name: str -> {str:any} {
+    apiVersion = _BACKSTAGE_API_VERSION
+    kind = "Resource"
+    metadata.name = name
+    spec = {
+        type = resource_type
+        lifecycle = "production"
+        owner = "platform-team"
+        system = system_name
+    }
+}
+
+generate_backstage_system = lambda stack_name: str, domain_name: str -> {str:any} {
+    apiVersion = _BACKSTAGE_API_VERSION
+    kind = "System"
+    metadata.name = stack_name
+    spec = {
+        owner = "platform-team"
+        domain = domain_name
+    }
+}
+
+generate_backstage_domain = lambda project_name: str -> {str:any} {
+    apiVersion = _BACKSTAGE_API_VERSION
+    kind = "Domain"
+    metadata.name = project_name
+    spec.owner = "platform-team"
+}
+
+generate_catalog_from_stack = lambda input_stack: stack.Stack, project_name: str -> [any] {
+    # Compose all entity types from stack into a catalog-info document
+    _domain = generate_backstage_domain(project_name)
+    _system = generate_backstage_system(input_stack.name, project_name)
+    _components = [generate_backstage_component(c.name, c, input_stack.name) for c in input_stack.components if c.kind == "APPLICATION"]
+    _resources = [generate_backstage_resource(c.name, "database", input_stack.name) for c in input_stack.components if c.kind == "INFRASTRUCTURE"]
+    _accessory_resources = [generate_backstage_resource(a.name, "kubernetes-crd", input_stack.name) for a in input_stack.accessories]
+    [_domain, _system] + _components + _resources + _accessory_resources
+}
+```
+
+**Deliverables**:
+- `framework/procedures/kcl_to_backstage.k`
+- `framework/tests/procedures/backstage_test.k` — 10+ tests
+- Integration into `framework/factory/render.k` (`output == "backstage"` branch)
+- CLI support: `koncept render backstage`
+
+### 11.2 Backstage Annotations in K8s Manifests
+
+Add annotations to generated K8s manifests so the TeraSky Kubernetes Ingestor can auto-create catalog entities from deployed resources.
+
+**Annotations to add**:
+
+```yaml
+metadata:
+  annotations:
+    terasky.backstage.io/owner: "platform-team"
+    terasky.backstage.io/system: "<stack-name>"
+    terasky.backstage.io/lifecycle: "production"
+    terasky.backstage.io/component-type: "service"
+    terasky.backstage.io/source-code-repo-url: "<git-repo-url>"
+```
+
+**Changes**:
+- Extend `framework/models/configurations.k` `BaseConfigurations` with optional `backstageOwner: str`, `backstageSystem: str`
+- Update `framework/builders/deployment.k` to inject these as annotations when present
+- Source values from factory_seed context (project name, git repo URL, tenant)
+
+### 11.3 Backstage Instance Setup
+
+Deploy a Backstage instance to the target cluster:
+
+- **PostgreSQL**: Use existing CloudNativePG template (`framework/templates/postgresql.k`)
+- **Backstage app**: Node.js + React, deployed via Helm chart ([backstage/charts](https://github.com/backstage/charts))
+- **app-config.yaml**: Catalog locations pointing to monorepo `catalog-info.yaml` files
+- **Authentication**: GitHub OAuth or Keycloak (Red Hat plugin) for SSO
+
+**Infrastructure as KCL**:
+- New `framework/templates/backstage.k` template (or ThirdPartyHelmSpec wrapping the Backstage Helm chart)
+- PostgreSQL instance from `framework/templates/postgresql.k`
+- Ingress configuration
+
+---
+
+## 12. Phase 9 — Developer Portal: Plugin Integration & Auth
+
+**Owner**: Platform Engineer (High-Level) for configuration; Developer for testing
+
+### 12.1 Core Plugin Installation (Tier 1 — Day One)
+
+| Plugin | By | Purpose |
+|---|---|---|
+| **Kubernetes** | Backstage Core | View pods, deployments, objects across clusters |
+| **Kubernetes Ingestor** | TeraSky | Auto-create catalog entities from deployed K8s resources and Crossplane claims |
+| **Crossplane Resources** | TeraSky | View Crossplane claim/XR/managed resource graph and YAML |
+| **Argo CD** | Roadie | View ArgoCD sync status and health per application |
+| **Catalog Graph** | SDA SE | Visualize entity relationships (dependency graphs) |
+
+### 12.2 Auth & RBAC via Keycloak
+
+- Install Keycloak auth plugin (Red Hat) for SSO
+- Map Keycloak roles to Backstage permissions:
+  - `developer` → read-only catalog + template usage
+  - `platform-engineer` → full catalog + admin access
+  - `manager` → read-only catalog + metrics
+- Use existing Keycloak instance (already have Keycloak template in `framework/templates/keycloak.k`)
+
+### 12.3 TechDocs
+
+- Configure TechDocs to read Markdown from `docs/` directory
+- Add `backstage.io/techdocs-ref` annotation to catalog entities
+- Generate TechDocs from existing documentation (DEVELOPER_GUIDE.md, DEVELOPER_QUICKSTART.md, PROJECT_ARCHITECTURE.md)
+
+### 12.4 Observability Plugin Stack (Tier 2)
+
+| Plugin | Purpose |
+|---|---|
+| **Kafka** | Monitor Strimzi clusters and topics |
+| **Vault** | Visualize secrets |
+| **Grafana** | Embed monitoring dashboards per service |
+| **Prometheus** | Metrics and alerts per service |
+| **GitHub Actions** | CI/CD pipeline status |
+
+---
+
+## 13. Phase 10 — Developer Portal: Self-Service Scaffolder
+
+**Owner**: Platform Engineer (Low-Level) for custom actions; Platform Engineer (High-Level) for templates
+
+### 13.1 Custom Scaffolder Actions (TypeScript)
+
+Create TypeScript actions wrapping the `koncept` Nushell CLI. Actions follow the Backstage `createTemplateAction` pattern:
+
+```typescript
+// backstage-plugin-koncept/src/actions/render.ts
+import { createTemplateAction } from '@backstage/plugin-scaffolder-node';
+import { z } from 'zod';
+
+export const konceptRenderAction = createTemplateAction({
+  id: 'koncept:render',
+  description: 'Render KCL manifests using koncept CLI',
+  schema: {
+    input: z.object({
+      output: z.enum(['argocd', 'helmfile', 'kusion', 'crossplane', 'kustomize', 'timoni', 'backstage']),
+      factory: z.string().optional(),
+    }),
+  },
+  async handler(ctx) {
+    const { output, factory } = ctx.input;
+    // Execute koncept render (Nushell CLI wrapping KCL)
+    // Never pass raw user input to shell — sanitize via zod schema
+  },
+});
+```
+
+**Actions to implement**:
+- `koncept:render` — render manifests in specified format
+- `koncept:validate` — validate configurations
+- `koncept:init` — scaffold new project/release
+- `koncept:publish` — publish KCL module to OCI registry
+
+### 13.2 Backstage Templates (Scaffolder Wizard)
+
+Map our KCL framework templates to Backstage Software Templates:
+
+| Backstage Template | KCL Template | What it creates |
+|---|---|---|
+| "New Web Application" | `WebAppModule` | Service + Deployment + ConfigMap |
+| "New PostgreSQL Database" | `PostgreSQLClusterModule` | CloudNativePG Cluster |
+| "New Kafka Cluster" | `KafkaClusterModule` | Strimzi Kafka + topics |
+| "New Redis Cache" | `RedisModule` | Redis standalone/cluster |
+| "New MongoDB" | `MongoDBCommunityModule` | MongoDB Community Operator |
+| "New RabbitMQ Cluster" | `RabbitMQClusterModule` | RabbitMQ cluster-operator |
+| "New Release" | `koncept init` | Complete factory structure |
+| "Deploy to Environment" | `koncept render` | Rendered manifests for target |
+
+Each template is a YAML file with `spec.parameters` (wizard form fields) and `spec.steps` (actions to execute):
+
+```yaml
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: new-web-application
+  title: New Web Application
+  description: Create a new web application using the KCL WebAppModule template
+  tags: [kcl, kubernetes, webapp]
+spec:
+  owner: platform-team
+  type: service
+  parameters:
+    - title: Application Details
+      properties:
+        name:
+          title: Application Name
+          type: string
+        port:
+          title: Port
+          type: integer
+          default: 8080
+        replicas:
+          title: Replicas
+          type: integer
+          default: 1
+  steps:
+    - id: scaffold
+      name: Scaffold KCL module
+      action: koncept:init
+      input:
+        template: webapp
+        name: ${{ parameters.name }}
+    - id: render
+      name: Render manifests
+      action: koncept:render
+      input:
+        output: argocd
+    - id: publish
+      name: Open Pull Request
+      action: publish:github:pull-request
+      input:
+        repoUrl: ${{ parameters.repoUrl }}
+        title: "feat: add ${{ parameters.name }}"
+```
+
+### 13.3 Self-Service Workflow (End-to-End)
+
+```
+Developer clicks "New Web Application" in Backstage
+    ↓
+Backstage Template wizard collects: name, port, replicas, environment
+    ↓
+Step 1: koncept:init → creates KCL module from WebAppModule template
+Step 2: koncept:validate → validates generated configuration
+Step 3: koncept:render → generates K8s manifests
+Step 4: publish:github:pull-request → creates PR in Git repo
+    ↓
+Platform engineer reviews and merges PR
+    ↓
+ArgoCD syncs manifests to cluster
+    ↓
+TeraSky Kubernetes Ingestor auto-creates catalog entity in Backstage
+    ↓
+Developer sees their new service in Backstage catalog with health status
+```
+
+### 13.4 CLI and Portal Coexistence
+
+The `koncept` Nushell CLI remains the primary build/render tool. Backstage is the self-service UI layer:
+
+| Use CLI (`koncept`) | Use Portal (Backstage) |
+|---|---|
+| Platform engineer developing templates | Developer creating a new service |
+| CI/CD pipeline rendering manifests | Developer deploying to a new environment |
+| Debugging a failed render | Viewing deployment health |
+| Publishing a KCL module | Discovering what services exist |
+| Offline/local development | New team member onboarding |
+
+---
+
+## 14. User Workflow Guides
 
 > Developer-oriented documentation for each of the three user profiles. Each section describes **what the user does**, **how they do it**, and **what they should never need to know**.
 
-### 11.1 Developer Workflow
+### 14.1 Developer Workflow
 
 **Goal**: Deploy and configure applications with zero Kubernetes knowledge.
 
-#### 11.1.1 Day-to-Day Commands
+#### 14.1.1 Day-to-Day Commands
 
 ```bash
 # 1. Navigate to your release
@@ -1510,7 +1874,7 @@ koncept render helmfile        # Helm charts + values.yaml + helmfile.yaml
 koncept diff                   # (Phase 4) Compare current vs previous render
 ```
 
-#### 11.1.2 What Developers Configure
+#### 14.1.2 What Developers Configure
 
 Developers customize their applications through **site configuration files** (YAML-friendly KCL). They never write raw K8s manifests.
 
@@ -1522,7 +1886,7 @@ Developers customize their applications through **site configuration files** (YA
 | Feature flags | `tenants/<tenant>/tenant_def.k` | `featureNewUI = True` |
 | Image version | `sites/<site>/site_def.k` | `version = "2.1.0"` |
 
-#### 11.1.3 What Developers Never Touch
+#### 14.1.3 What Developers Never Touch
 
 - `framework/` — Platform internals
 - `modules/*_module_def.k` — Module schemas (contact Platform Eng)
@@ -1530,7 +1894,7 @@ Developers customize their applications through **site configuration files** (YA
 - `stacks/` — Stack composition (contact Platform Eng)
 - `kcl.mod` — Package dependencies
 
-#### 11.1.4 Troubleshooting for Developers
+#### 14.1.4 Troubleshooting for Developers
 
 | Problem | Solution |
 |---|---|
@@ -1540,11 +1904,11 @@ Developers customize their applications through **site configuration files** (YA
 | Application not deploying | Check ArgoCD UI → sync status; check events for K8s errors |
 | Need a new environment variable | Add to site config file, run `koncept render`, commit to Git |
 
-### 11.2 Platform Engineer (High-Level) Workflow
+### 14.2 Platform Engineer (High-Level) Workflow
 
 **Goal**: Compose deployment topologies — stacks, tenants, sites, modules — using pre-built templates.
 
-#### 11.2.1 Creating a New Project
+#### 14.2.1 Creating a New Project
 
 ```bash
 # 1. Start with the template project (erp_back is the reference)
@@ -1574,7 +1938,7 @@ cp -r projects/erp_back projects/my_new_project
 #   Wire factory_seed.k → builder files
 ```
 
-#### 11.2.2 Creating a Module (Using Templates)
+#### 14.2.2 Creating a Module (Using Templates)
 
 ```kcl
 # For a web application:
@@ -1613,7 +1977,7 @@ my_api_service = MyApiService {
 }
 ```
 
-#### 11.2.3 Adding a Database (Operator-Managed)
+#### 14.2.3 Adding a Database (Operator-Managed)
 
 ```kcl
 # Phase 6: Use operator template
@@ -1644,7 +2008,7 @@ schema MyDatabase(bpg.BitnamiPostgreSQL):
     }
 ```
 
-#### 11.2.4 Composing a Stack
+#### 14.2.4 Composing a Stack
 
 ```kcl
 import framework.assembly.helpers as asm
@@ -1666,14 +2030,14 @@ my_stack = stack_model.Stack {
 }
 ```
 
-#### 11.2.5 What High-Level PEs Never Touch
+#### 14.2.5 What High-Level PEs Never Touch
 
 - `framework/builders/` — Builder lambdas (Low-Level PE territory)
 - `framework/procedures/` — Output format procedures
 - `framework/models/` — Core domain schemas
 - `kcl.mod` at framework level
 
-#### 11.2.6 Decision Matrix
+#### 14.2.6 Decision Matrix
 
 | Scenario | Action |
 |---|---|
@@ -1684,11 +2048,11 @@ my_stack = stack_model.Stack {
 | New deployment target | Create `pre_releases/` or `releases/` with factory |
 | Custom infra component | Ask Low-Level PE to create builder/template |
 
-### 11.3 Platform Engineer (Low-Level) Workflow
+### 14.3 Platform Engineer (Low-Level) Workflow
 
 **Goal**: Design and maintain framework internals — schemas, builders, templates, procedures, and the output pipeline.
 
-#### 11.3.1 Creating a New Builder
+#### 14.3.1 Creating a New Builder
 
 Builders are low-level lambdas that generate a single K8s manifest:
 
@@ -1736,7 +2100,7 @@ test_build_my_resource = lambda {
 }
 ```
 
-#### 11.3.2 Creating a New Template
+#### 14.3.2 Creating a New Template
 
 Templates compose multiple builders into a high-level module:
 
@@ -1769,7 +2133,7 @@ schema MyModule(component.Component):
 
 **Testing**: Due to the `kcl test` bug with auto-computed `instance` fields, test builder outputs individually (see `TESTING_STRATEGY.md`).
 
-#### 11.3.3 Adding a New Output Procedure
+#### 14.3.3 Adding a New Output Procedure
 
 ```kcl
 # framework/procedures/kcl_to_<format>.k
@@ -1781,7 +2145,7 @@ generate_<format> = lambda input_stack: stack.Stack -> any {
 }
 ```
 
-#### 11.3.4 Importing Operator CRDs
+#### 14.3.4 Importing Operator CRDs
 
 When adding support for a new operator:
 
@@ -1799,7 +2163,7 @@ kcl import --mode crd -f /tmp/crds.yaml -o framework/custom/<operator>/models/
 # 6. Update kcl.mod if new dependencies are needed
 ```
 
-#### 11.3.5 Maintaining the Module System
+#### 14.3.5 Maintaining the Module System
 
 ```bash
 # Verify all kcl.mod files resolve correctly
@@ -1815,7 +2179,7 @@ cd projects/erp_back/pre_releases/manifests/dev/factory && kcl run yaml_builder.
 rm kcl.mod.lock && kcl run main.k
 ```
 
-#### 11.3.6 Low-Level PE Checklist for New Features
+#### 14.3.6 Low-Level PE Checklist for New Features
 
 - [ ] Create builder with `check` blocks
 - [ ] Write `*_test.k` file with tests for valid and invalid inputs
@@ -1833,7 +2197,7 @@ rm kcl.mod.lock && kcl run main.k
 
 ### Testing Infrastructure (Implemented)
 
-**219 unit tests** covering the full framework, all passing via `kcl test ./...`.
+**268 unit tests** covering the full framework, all passing via `kcl test ./...`.
 
 | Layer | Test File | Tests | Status |
 |---|---|---|---|
@@ -1872,6 +2236,9 @@ rm kcl.mod.lock && kcl run main.k
 | **Templates** | `tests/templates/vault_test.k` | 7 | PASS |
 | **Templates** | `tests/templates/questdb_test.k` | 4 | PASS |
 | **Templates** | `tests/templates/minio_test.k` | 8 | PASS |
+| **Templates** | `tests/templates/opentelemetry_test.k` | 13 | PASS |
+| **Procedures** | `tests/procedures/timoni_test.k` | 11 | PASS |
+| **Procedures** | `tests/procedures/crossplane_test.k` | 25 | PASS |
 
 #### Known Limitation: `kcl test` + Schema Instance Bug
 
@@ -1984,6 +2351,8 @@ Template schemas (WebAppModule, SingleDatabaseModule) cannot be directly instant
 | MinIO tests | `framework/tests/templates/minio_test.k` | DONE — 8 tests (default, custom_pools, resources, storage_class, no_autocert, env_vars, validation, helm_fallback) |
 | Observability stack (TDD) | `framework/templates/observability.k` | DONE — `PrometheusSpec`, `GrafanaSpec`, `ServiceMonitorSpec` + 3 build lambdas (Bitnami Helm charts + Prometheus CRD) |
 | Observability tests | `framework/tests/templates/observability_test.k` | DONE — 8 tests (prometheus default/custom/alertmanager, grafana default/custom/ingress, service_monitor basic/interval) |
+| OpenTelemetry template (TDD) | `framework/templates/opentelemetry.k` | DONE — `OtelOperatorSpec` + `build_otel_operator` (Helm chart `open-telemetry/opentelemetry-operator` v0.109.0), `OtelCollectorSpec` + `build_otel_collector` (`opentelemetry.io/v1beta1`), `InstrumentationSpec` + `build_instrumentation` (`opentelemetry.io/v1alpha1`) |
+| OpenTelemetry tests | `framework/tests/templates/opentelemetry_test.k` | DONE — 13 tests (operator default/auto_cert/custom_image/validation, collector default/daemonset/custom_config/target_allocator/invalid_mode/sidecar, instrumentation default/custom_endpoint/custom_images) |
 
 ### Phase 7 Completed Items
 
@@ -1994,6 +2363,17 @@ Template schemas (WebAppModule, SingleDatabaseModule) cannot be directly instant
 | render.k kustomize support | `framework/factory/render.k` | DONE — Added `-D output=kustomize` block |
 | CLI kustomize render | `platform_cli/koncept` | DONE — `koncept render kustomize` generates `base/kustomization.yaml` + individual manifest files |
 | CLI OCI publish | `platform_cli/koncept` | DONE — `koncept publish <module> --output <version>` wraps `kcl mod push` |
+| Timoni output procedure (TDD) | `framework/procedures/kcl_to_timoni.k` | DONE — `generate_timoni_metadata`, `generate_timoni_values`, `generate_timoni_resources`, `generate_timoni_module_from_stack` |
+| Timoni tests | `framework/tests/procedures/timoni_test.k` | DONE — 11 tests (metadata, version, values components/accessories/namespaces, resources single/multiple/empty, module from_stack/empty/components_only) |
+| render.k timoni support | `framework/factory/render.k` | DONE — Added `-D output=timoni` block |
+| CLI timoni render | `platform_cli/koncept` | DONE — `koncept render timoni` generates Timoni module directory structure |
+| Standalone User Workflow Guides | `docs/USER_WORKFLOW_GUIDES.md` | DONE — Developer, High-Level PE, Low-Level PE workflows |
+| Standalone Work Matrix | `docs/WORK_MATRIX.md` | DONE — Tasks mapped by user profile across all phases |
+| Standalone Migration Guide | `docs/MIGRATION_GUIDE.md` | DONE — video_streaming → template pattern step-by-step |
+| Crossplane output procedure (TDD) | `framework/procedures/kcl_to_crossplane.k` | DONE — `generate_xrd`, `generate_composition`, `generate_xr`, `generate_prerequisites`, `generate_crossplane_from_stack` |
+| Crossplane tests | `framework/tests/procedures/crossplane_test.k` | DONE — 25 tests (xr_kind, xrd_structure, composition pipeline, sequencer rules, object wrapping, full_stack, prerequisites) |
+| render.k crossplane support | `framework/factory/render.k` | DONE — Added `-D output=crossplane` block |
+| CLI crossplane render | `platform_cli/koncept` | DONE — `koncept render crossplane` generates xrd.yaml, composition.yaml, xr.yaml, prerequisites/ |
 
 ### Strategy Document
 
@@ -2001,7 +2381,7 @@ Full testing strategy: [`docs/TESTING_STRATEGY.md`](./TESTING_STRATEGY.md)
 
 ---
 
-## 12. Work Matrix by User Profile
+## 15. Work Matrix by User Profile
 
 ### Developer
 
@@ -2013,6 +2393,9 @@ Full testing strategy: [`docs/TESTING_STRATEGY.md`](./TESTING_STRATEGY.md)
 | 5 | Report configuration issues via `koncept validate` | CLI output | Bug reports |
 | 6 | Configure operator-managed database resources | Site/tenant YAML configs | Custom DB settings per env |
 | 7 | Use `koncept render kustomize` (future) | CLI command | Kustomize overlays |
+| 8-10 | Create a new service via Backstage portal | Backstage Template wizard | Scaffolded service + PR |
+| 8-10 | Deploy to new environment via portal | Backstage Template wizard | Rendered manifests |
+| 8-10 | Browse service catalog and dependencies | Backstage Catalog UI | Discovery + health status |
 
 ### Platform Engineer — High-Level
 
@@ -2028,6 +2411,10 @@ Full testing strategy: [`docs/TESTING_STRATEGY.md`](./TESTING_STRATEGY.md)
 | 6 | Create operator-backed modules (PostgreSQL, Redis) | Operator CRDs + templates | Production database modules |
 | 6 | Add Bitnami chart wrappers to stacks | ThirdParty module configs | Third-party integrations |
 | 6 | Configure ExternalSecrets for vault integration | Secret store configs | Externalized secrets |
+| 8 | Configure Backstage annotations in BaseConfigurations | `configurations.k` | Backstage-annotated manifests |
+| 9 | Install and configure Backstage plugins | Plugin configs | Working Backstage portal |
+| 9 | Configure Keycloak auth for Backstage | Keycloak instance | SSO + RBAC |
+| 10 | Create Backstage Templates for KCL templates | Template YAML files | Self-service wizards |
 
 ### Platform Engineer — Low-Level
 
@@ -2059,10 +2446,15 @@ Full testing strategy: [`docs/TESTING_STRATEGY.md`](./TESTING_STRATEGY.md)
 | 7 | Implement `kcl_to_kustomize.k` procedure | Stack schema | Kustomize output |
 | 7 | Implement KCL plugin integration layer | helm-kcl/kustomize-kcl | Mutation pipeline |
 | 7 | Create OCI artifact publishing pipeline | Nushell CLI | `koncept publish` command |
+| 8 | Implement `kcl_to_backstage.k` procedure (TDD) | Stack schema | catalog-info.yaml generation |
+| 8 | Add Backstage annotations to deployment builder | Builder schemas | TeraSky Ingestor-compatible manifests |
+| 8 | Set up Backstage instance (Helm chart + PostgreSQL) | Framework templates | Running Backstage portal |
+| 10 | Create custom scaffolder actions (TypeScript) | `koncept` CLI commands | Backstage actions wrapping CLI |
+| 10 | Update CLI for `koncept render backstage` | Nushell script | New render target |
 
 ---
 
-## 13. Migration Guide: video_streaming → template pattern
+## 16. Migration Guide: video_streaming → template pattern
 
 The `video_streaming` project predates framework templates. Its modules use raw manifests (~190 lines each). The `erp_back` project demonstrates the recommended template pattern (~50 lines each, 74% reduction).
 
@@ -2131,6 +2523,15 @@ Key takeaways for our platform:
 
 Score defines a platform-agnostic workload spec. While we use KCL as our spec language, Score's mental model (declare what you need, not how to deploy it) aligns with our template pattern where developers set `port`, `replicas`, `env` and the framework handles the rest.
 
+### Backstage (CNCF Incubation)
+
+Backstage is the de-facto standard OSS developer portal (33k+ stars, 1,867 contributors, Apache-2.0). Key integration points for idp-concept:
+- **TeraSky Kubernetes Ingestor**: Auto-ingests deployed K8s workloads and Crossplane Claims as Backstage catalog entities. Auto-creates Templates from XRDs.
+- **TeraSky Crossplane Resources**: Graph view of Crossplane claim/XR/managed resources.
+- **Custom Scaffolder Actions**: Wrap `koncept` CLI in TypeScript actions for self-service.
+- **Catalog Entity Model**: 9 entity kinds (Component, API, Resource, System, Domain, Group, User, Template, Location) map directly to our framework models.
+- See [docs/BACKSTAGE_ADOPTION_ANALYSIS.md](./BACKSTAGE_ADOPTION_ANALYSIS.md) for the full analysis.
+
 ---
 
 ## Appendix B: Implementation Priority
@@ -2159,16 +2560,35 @@ Phase 6 (Production Infrastructure) ✅  Phase 7 (Ecosystem) ✅
 ├─ P1: MCK (MongoDB) ✅               ├─ KCL plugin integration (docs)
 ├─ P1: Strimzi (Kafka) — integrate    ├─ OCI artifact publishing ✅
 ├─ P1: RabbitMQ cluster-operator ✅   ├─ Jsonnet bundle consumption
-├─ P1: OT Redis Operator ✅           └─ kcl_to_timoni.k [experimental]
-├─ P1: Keycloak Operator (CNCF) ✅        ├─ CUE module generation
-├─ P1: Vault VSO (⚠️ BUSL-1.1) ✅        ├─ Timoni module structure
-├─ P2: MinIO (operator+Bitnami) ✅       └─ CLI render target
+├─ P1: OT Redis Operator ✅           └─ kcl_to_timoni.k ✅ [experimental]
+├─ P1: Keycloak Operator (CNCF) ✅        ├─ CUE module generation ✅
+├─ P1: Vault VSO (⚠️ BUSL-1.1) ✅        ├─ Timoni module structure ✅
+├─ P2: MinIO (operator+Bitnami) ✅       └─ CLI render target ✅
+├─ P2: OpenSearch k8s-operator ✅    kcl_to_crossplane.k ✅
+├─ P3: Valkey (not ready — use Redis)    ├─ XRD + Composition + XR generation ✅
+├─ P3: QuestDB (Helm chart only) ✅      ├─ function-sequencer ordering ✅
+├─ ThirdPartyHelmSpec enhancement ✅     └─ CLI render target ✅
 ├─ P2: OpenSearch k8s-operator ✅
 ├─ P3: Valkey (not ready — use Redis)
 ├─ P3: QuestDB (Helm chart only) ✅
 ├─ ThirdPartyHelmSpec enhancement ✅
 ├─ ExternalSecrets operator ✅
 └─ Observability stack ✅
+
+Phase 8 (Portal: Catalog)          Phase 9 (Portal: Plugins)
+├─ kcl_to_backstage procedure       ├─ K8s + Ingestor + Crossplane plugins
+├─ Backstage annotations in K8s     ├─ ArgoCD + Catalog Graph plugins
+├─ Backstage instance setup          ├─ Keycloak auth + RBAC
+└─ catalog-info.yaml generation      ├─ TechDocs integration
+                                     └─ Observability plugins (Kafka, Vault,
+Phase 10 (Portal: Self-Service)         Grafana, Prometheus)
+├─ Custom scaffolder actions
+│   (koncept:render, :validate,
+│    :init, :publish)
+├─ Backstage Templates mapping
+│   KCL templates → wizard forms
+├─ Self-service end-to-end workflow
+└─ CLI + Portal coexistence docs
 ```
 
 ### Proof-of-Concept → Production Transition Map
@@ -2183,11 +2603,16 @@ No object storage               →    MinIO Operator (Tenant CRD) + Bitnami Hel
 No identity management          →    Keycloak Operator (CNCF Incubation)
 No messaging beyond Kafka       →    RabbitMQ cluster-operator
 No search/analytics             →    OpenSearch k8s-operator
-No monitoring                   →    Prometheus + Grafana (auto-configured)
+No monitoring                   →    Prometheus + Grafana + OpenTelemetry (auto-configured)
 No network policies             →    NetworkPolicy per component
 No HA guarantees                →    PDB + topology spread constraints
-Single output format (YAML)     →    YAML + Helm + Helmfile + Kustomize + ArgoCD + Timoni
-Manual project setup            →    `koncept init` scaffolding
-No validation before deploy     →    `koncept validate` + check blocks + kubeconform
-No tests                        →    219 unit tests + integration validation
+Single output format (YAML)     →    YAML + Helm + Helmfile + Kustomize + ArgoCD + Timoni + Crossplane ✅
+Manual project setup            →    `koncept init` scaffolding ✅
+No validation before deploy     →    `koncept validate` + check blocks + kubeconform ✅
+No tests                        →    268 unit tests + integration validation ✅
+CLI-only interface              →    CLI + Backstage developer portal (self-service)
+No service catalog              →    Backstage catalog (auto-ingested via TeraSky Ingestor)
+No self-service for developers  →    Backstage Templates wrapping KCL templates
+No dependency visualization     →    Backstage Catalog Graph + Crossplane resource graph
+No centralized docs             →    TechDocs from Markdown alongside code
 ```

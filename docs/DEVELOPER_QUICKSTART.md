@@ -4,9 +4,14 @@
 
 ## Prerequisites
 
-- [KCL](https://www.kcl-lang.io/docs/user_docs/getting-started/install) (v0.11+)
-- [Nushell](https://www.nushell.sh/book/installation.html) (v0.90+)
-- [kubeconform](https://github.com/yannh/kubeconform) (optional, for validation)
+> **Full installation guide with local vs global options, pros/cons, and mise version locking**: [TOOLING_SETUP.md](./TOOLING_SETUP.md)
+
+| Tool | Purpose | Required | Install |
+|---|---|---|---|
+| [Nushell](https://www.nushell.sh/book/installation.html) (`nu`) | Runs `koncept` CLI scripts | **Yes** | See [TOOLING_SETUP.md](./TOOLING_SETUP.md#nushell) |
+| [KCL](https://www.kcl-lang.io/docs/user_docs/getting-started/install) (`kcl`) | Renders and tests KCL configs | **Yes** | See [TOOLING_SETUP.md](./TOOLING_SETUP.md#kcl) |
+| [kubeconform](https://github.com/yannh/kubeconform) | Validates K8s manifests | Recommended | See [TOOLING_SETUP.md](./TOOLING_SETUP.md#kubeconform) |
+| [Helm](https://helm.sh/docs/intro/install/) | Lints Helm chart output | Optional | See [TOOLING_SETUP.md](./TOOLING_SETUP.md#helm) |
 
 ## Quick Commands
 

@@ -52,6 +52,8 @@ Before adding **any** external tool (MCP server, extension, CLI utility, depende
 | `mcp-server-fetch` | [modelcontextprotocol/servers](https://github.com/modelcontextprotocol/servers/tree/main/src/fetch) | **APPROVED** | **MEDIUM** | See detailed assessment below |
 | `github-mcp-server` | [github/github-mcp-server](https://github.com/github/github-mcp-server) | **APPROVED** | LOW | Official GitHub MCP server. Requires PAT with minimal scopes |
 | `@anthropic-ai/mcp-filesystem` | [modelcontextprotocol/servers](https://github.com/modelcontextprotocol/servers/tree/main/src/filesystem) | **NOT USED** | MEDIUM | Reference server. Would need strict path restrictions. Not currently needed — VS Code built-in file access is sufficient |
+| `addon-controlplane-mcp-server` | [upbound/addon-controlplane-mcp-server](https://marketplace.upbound.io/addons/upbound/addon-controlplane-mcp-server/0.1.0) | **REJECTED** | HIGH | In-cluster sidecar for Upbound Spaces — wrong use case (requires commercial Upbound platform). v0.1.0 pre-release, no open-source community, commercial vendor lock-in. Evaluated 2025. |
+| `crossplane-mcp` | [vfarcic/crossplane-mcp](https://github.com/vfarcic/crossplane-mcp) | **REJECTED** | HIGH | Abandoned prototype — 1 star, 0 forks, 0 releases, 11 months stale, single contributor. No tests, no CI, incomplete implementation. Evaluated 2025. |
 
 ### VS Code Extensions
 

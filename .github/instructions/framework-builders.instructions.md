@@ -154,6 +154,13 @@ No operator; wraps official Helm chart via ThirdPartyHelmSpec.
 Build lambda: `build_questdb_release`
 Set: `storageSize`, `chartVersion`, `storageClassName`, `cpuRequest/Limit`, `memoryRequest/Limit`, `httpPort`, `ilpPort`, `pgPort`, `serviceType`
 
+### OpenTelemetry Operator (opentelemetry.k) — Helm + CRDs
+Operator deployed via Helm (`open-telemetry/opentelemetry-operator`), collector + instrumentation via CRDs.
+Build lambdas: `build_otel_operator`, `build_otel_collector`, `build_instrumentation`
+- `OtelOperatorSpec`: `certManagerEnabled`, `autoGenerateCert`, `createRbacPermissions`, `collectorImage`
+- `OtelCollectorSpec`: `mode` (deployment/daemonset/statefulset/sidecar), `replicas`, `receivers`, `processors`, `exporters`, `pipelines`, `targetAllocatorEnabled`, `targetAllocatorPrometheusCR`
+- `InstrumentationSpec`: `exporterEndpoint`, `propagators`, `samplerType`, `samplerArgument`, `javaImage`, `pythonImage`, `nodejsImage`, `dotnetImage`, `goImage`
+
 ## Assembly Helpers (`framework/assembly/helpers.k`)
 
 ```kcl
@@ -190,9 +197,34 @@ common.EnvVar { name = "SECRET", valueFrom = common.EnvVarSource {
 - Must have either `value` OR `valueFrom`, not both, not neither
 - `EnvVarSource` must have either `secretKeyRef` OR `configMapKeyRef`, not both
 
+## Output Procedures (`framework/procedures/`)
+
+Lambdas that transform stack data into target output formats. Used by `render.k`.
+
+| Procedure | Output Format | Key Functions |
+|---|---|---|
+| `kcl_to_yaml` | Plain K8s YAML | `yaml_stream_stack` |
+| `kcl_to_argocd` | ArgoCD Application CRDs | `generate_applications_from_stack`, `generate_app_project` |
+| `kcl_to_helm` | Chart.yaml + values.yaml | `generate_charts_from_stack` |
+| `kcl_to_helmfile` | helmfile.yaml | `generate_helmfile` |
+| `kcl_to_kustomize` | kustomization.yaml | `generate_kustomization_from_stack`, `generate_overlay_patch` |
+| `kcl_to_kusion` | Kusion spec YAML | `generate_kusion_resources` |
+| `kcl_to_timoni` | Timoni CUE module | `generate_timoni_module_from_stack`, `generate_timoni_metadata`, `generate_timoni_values`, `generate_timoni_resources` |
+| `kcl_to_crossplane` | Crossplane XRD + Composition + XR | `generate_crossplane_from_stack`, `generate_xrd`, `generate_composition`, `generate_xr`, `generate_prerequisites` |
+
+### Timoni Procedure (`kcl_to_timoni.k`)
+Generates a Timoni module structure (Option A: raw YAML wrapped in CUE structure).
+Output dict contains: `metadata` (timoni.sh/v1alpha1 Module), `values` (component/accessory/namespace config), `resources` (flat K8s manifest list), `resourceCount`.
+The CLI (`koncept render timoni`) writes these into a directory: `timoni.cue`, `values.cue`, `templates/config.cue`, `README.md`.
+
+### Crossplane Procedure (`kcl_to_crossplane.k`)
+Generates static Crossplane resources from stack data: XRD (CompositeResourceDefinition), Composition (Pipeline mode with patch-and-transform → function-sequencer → auto-ready), XR (claim instance), and prerequisites (provider + function installs).
+K8s manifests are wrapped in `kubernetes.crossplane.io/v1alpha2 Object` resources. `dependsOn` ordering maps to function-sequencer rules with regex patterns.
+The CLI (`koncept render crossplane`) writes: `xrd.yaml`, `composition.yaml`, `xr.yaml`, `prerequisites/infrastructure.yaml`.
+
 ## Testing
 
-- **195 unit tests** in `framework/tests/` directory (mirroring source structure)
+- **268 unit tests** in `framework/tests/` directory (mirroring source structure)
 - Run: `cd framework && kcl test ./...`
 - Template tests validate builder outputs individually (see `kcl test` limitation in KCL skill)
 - Integration: `kcl run` + `kubeconform` for full template validation

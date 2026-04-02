@@ -385,3 +385,35 @@ Both use `InjectedIdentity` — the provider runs in-cluster and uses the servic
 | Direct resource creation without Object wrapper | Wrap K8s manifests in `kubernetes.crossplane.io/v1alpha2 Object` |
 | Missing `function-auto-ready` step | Add as the last step for readiness detection |
 | Helm Release without namespace patch | Always patch namespace from composite field |
+
+---
+
+## 12. Automated Crossplane Output (Recommended)
+
+The manual `crossplane_v2/` directory contains hand-crafted compositions. The **recommended approach** is to use the IDP's automated Crossplane output format, which generates XRDs, Compositions, and XRs directly from stack definitions.
+
+### Usage
+```bash
+cd projects/<project>/pre_releases/<release>
+koncept render crossplane
+```
+
+This generates:
+- `output/crossplane/xrd.yaml` — CompositeResourceDefinition with `koncept.bluesolution.es/v1alpha1`
+- `output/crossplane/composition.yaml` — Pipeline composition (patch-and-transform → function-sequencer → auto-ready)
+- `output/crossplane/xr.yaml` — Composite Resource claim instance
+- `output/crossplane/prerequisites/infrastructure.yaml` — Provider + function installs
+
+### How It Works
+1. **KCL resolves** all configurations (kernel → profile → tenant → site merge)
+2. **Stack modules** produce finalized K8s manifests
+3. **`kcl_to_crossplane`** wraps each manifest in a `kubernetes.crossplane.io/v1alpha2 Object`
+4. **`dependsOn`** ordering maps to `function-sequencer` rules with regex patterns
+5. **Output** is static YAML — no in-cluster KCL execution needed
+
+### Advantages over Manual crossplane_v2/
+- **No copy-pasting** manifests into Crossplane Objects
+- **Automatic ordering** via function-sequencer (derived from `dependsOn`)
+- **All module types** supported: namespaces, components, accessories, third-party
+- **Consistent** with other output formats (same stack → different outputs)
+- **Tested**: 25 unit tests in `framework/tests/procedures/crossplane_test.k`
