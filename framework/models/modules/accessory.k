@@ -1,12 +1,11 @@
+import models.modules.leader as base_leader
+
 schema AccessoryAsset:
     image?: str
     version: str
 
-schema AccessoryLeader:
-    name: str
-    kind: str
-    apiVersion: str
-    namespace?: str
+schema AccessoryLeader(base_leader.Leader):
+    """Leader specialisation for Accessories — inherits all fields from Leader."""
 
 schema AccessoryInstance:
     name: str

@@ -1,0 +1,18 @@
+apiVersion: backstage.io/v1alpha1
+kind: Location
+metadata:
+  name: idp-concept-templates
+  description: Backstage Software Templates for the idp-concept IDP
+  annotations:
+    koncept.io/generated-by: idp-concept
+spec:
+  type: url
+  targets:
+    - ./templates/new-web-application.yaml
+    - ./templates/new-postgresql-database.yaml
+    - ./templates/new-kafka-cluster.yaml
+    - ./templates/new-redis-cache.yaml
+    - ./templates/new-mongodb-database.yaml
+    - ./templates/new-rabbitmq-cluster.yaml
+    - ./templates/new-release.yaml
+    - ./templates/deploy-to-environment.yaml

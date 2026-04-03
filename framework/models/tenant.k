@@ -1,6 +1,7 @@
 schema TenantInstance:
     name: str
     description: str
+    # framework-generic: accepts any project config schema
     configurations: any
 
 schema Tenant:
@@ -11,5 +12,6 @@ schema Tenant:
     }
     name: str
     description: str
+    # framework-generic: accepts any project config schema
     configurations: any
 

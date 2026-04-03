@@ -16,6 +16,9 @@ Usage:
     kcl run render.k -D output=helmfile    # helmfile.yaml
     kcl run render.k -D output=helm        # Chart.yaml + values.yaml per component
     kcl run render.k -D output=kustomize   # kustomization.yaml + resource list
+    kcl run render.k -D output=timoni      # Timoni CUE module structure
+    kcl run render.k -D output=crossplane  # Crossplane XRD + Composition + XR
+    kcl run render.k -D output=backstage   # Backstage catalog-info.yaml entities
 """
 import manifests
 import framework.procedures.kcl_to_yaml as yaml_proc
@@ -23,6 +26,9 @@ import framework.procedures.kcl_to_argocd as argocd_proc
 import framework.procedures.kcl_to_helm as helm_proc
 import framework.procedures.kcl_to_helmfile as helmfile_proc
 import framework.procedures.kcl_to_kustomize as kustomize_proc
+import framework.procedures.kcl_to_timoni as timoni_proc
+import framework.procedures.kcl_to_crossplane as crossplane_proc
+import framework.procedures.kcl_to_backstage as backstage_proc
 import .factory_seed as seed
 
 _output = option("output", default="yaml")
@@ -66,3 +72,40 @@ if _output == "kustomize":
         "1.0.0"
     )
     manifests.yaml_stream([_kustomization])
+
+# --- Timoni (CUE module structure) ---
+if _output == "timoni":
+    _timoni_module = timoni_proc.generate_timoni_module_from_stack(
+        seed._stack.components
+        seed._stack.accessories
+        seed._stack.k8snamespaces
+        seed._project_name
+        "1.0.0"
+    )
+    manifests.yaml_stream([_timoni_module])
+
+# --- Crossplane (XRD + Composition + XR + prerequisites) ---
+if _output == "crossplane":
+    _crossplane = crossplane_proc.generate_crossplane_from_stack(
+        seed._stack.components
+        seed._stack.accessories
+        seed._stack.k8snamespaces
+        seed._project_name
+        "1.0.0"
+    )
+    manifests.yaml_stream([_crossplane])
+
+# --- Backstage (catalog-info.yaml entities) ---
+if _output == "backstage":
+    _backstage = backstage_proc.generate_catalog_from_stack(
+        seed._stack.components
+        seed._stack.accessories
+        seed._stack.k8snamespaces
+        seed._project_name
+        "1.0.0"
+        "platform-team"
+        "production"
+        seed._git_repo_url
+        "dir:docs/"
+    )
+    manifests.yaml_stream([_backstage])

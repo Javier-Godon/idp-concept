@@ -1,0 +1,25 @@
+site_name: idp-concept Platform Documentation
+nav:
+  - Home: README.md
+  - Getting Started:
+      - Developer Quickstart: docs/DEVELOPER_QUICKSTART.md
+      - Developer Guide: docs/DEVELOPER_GUIDE.md
+  - Architecture:
+      - Project Architecture: docs/PROJECT_ARCHITECTURE.md
+      - Framework Schemas: docs/FRAMEWORK_SCHEMAS.md
+  - Operations:
+      - User Workflow Guides: docs/USER_WORKFLOW_GUIDES.md
+      - Migration Guide: docs/MIGRATION_GUIDE.md
+      - Development Workflows: docs/DEVELOPMENT_WORKFLOWS.md
+      - Tooling Setup: docs/TOOLING_SETUP.md
+  - Security: docs/SECURITY.md
+  - Testing: docs/TESTING_STRATEGY.md
+  - Backstage:
+      - Adoption Analysis: docs/BACKSTAGE_ADOPTION_ANALYSIS.md
+      - Plugin Guide: docs/BACKSTAGE_PLUGIN_GUIDE.md
+  - Reference:
+      - Crossplane Patterns: docs/CROSSPLANE_PATTERNS.md
+      - IDP Evolution Plan: docs/IDP_EVOLUTION_PLAN.md
+      - Work Matrix: docs/WORK_MATRIX.md
+plugins:
+  - techdocs-core

@@ -27,6 +27,7 @@ schema DeploymentSpec:
     volumeMounts?: [any]
     strategy?: any
     minReadySeconds?: int
+    annotations?: {str:str}
 
     check:
         1 <= port <= 65535 if port is not Undefined, "port must be between 1 and 65535"
@@ -151,6 +152,8 @@ build_deployment = lambda spec: DeploymentSpec -> apps.Deployment {
         metadata = {
             name = spec.name
             namespace = spec.namespace
+            if spec.annotations:
+                annotations = spec.annotations
         }
         spec = {
             replicas = spec.replicas

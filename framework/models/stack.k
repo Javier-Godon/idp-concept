@@ -4,6 +4,7 @@ import models.modules.k8snamespace
 import models.modules.thirdparty
 
 schema StackInstance:
+    # framework-generic: accepts any project config schema (merged from all layers)
     instanceConfigurations: any
     components: [component.ComponentInstance]
     accessories?: [accessory.AccessoryInstance]
@@ -18,6 +19,7 @@ schema Stack:
         k8snamespaces = k8snamespaces
         thirdParties = thirdParties
     }
+    # framework-generic: accepts any project config schema (merged from all layers)
     instanceConfigurations: any
     components: [component.ComponentInstance]
     accessories?: [accessory.AccessoryInstance]

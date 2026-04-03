@@ -1,0 +1,125 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: new-redis-cache
+  title: New Redis Cache
+  description: |
+    Create a new Redis cache using the Redis Operator
+    via the KCL RedisModule template. Supports standalone and cluster modes.
+  tags:
+    - kcl
+    - kubernetes
+    - redis
+    - cache
+spec:
+  owner: platform-team
+  type: resource
+  parameters:
+    - title: Redis Details
+      required:
+        - name
+        - namespace
+      properties:
+        name:
+          title: Instance Name
+          type: string
+          description: Name of the Redis instance
+          pattern: "^[a-z][a-z0-9-]*$"
+          ui:autofocus: true
+        namespace:
+          title: Kubernetes Namespace
+          type: string
+          default: data
+        mode:
+          title: Redis Mode
+          type: string
+          default: standalone
+          enum:
+            - standalone
+            - cluster
+          description: standalone for single instance, cluster for HA
+
+    - title: Configuration
+      properties:
+        replicas:
+          title: Replicas
+          type: integer
+          default: 1
+          minimum: 1
+          description: Number of replicas (cluster mode uses 3+ leaders + replicas)
+        storageSize:
+          title: Storage Size
+          type: string
+          default: "5Gi"
+        cpuRequest:
+          title: CPU Request
+          type: string
+          default: "100m"
+        memoryRequest:
+          title: Memory Request
+          type: string
+          default: "256Mi"
+
+    - title: Target Environment
+      required:
+        - environment
+        - outputFormat
+      properties:
+        environment:
+          title: Environment
+          type: string
+          default: dev
+          enum:
+            - dev
+            - stg
+            - production
+        outputFormat:
+          title: Output Format
+          type: string
+          default: argocd
+          enum:
+            - argocd
+            - helmfile
+            - kustomize
+            - crossplane
+        repoUrl:
+          title: Repository
+          type: string
+          ui:field: RepoUrlPicker
+          ui:options:
+            allowedHosts:
+              - github.com
+
+  steps:
+    - id: scaffold
+      name: Initialize Redis module
+      action: koncept:init
+      input:
+        template: redis
+        name: ${{ parameters.name }}
+        namespace: ${{ parameters.namespace }}
+
+    - id: validate
+      name: Validate configuration
+      action: koncept:validate
+
+    - id: render
+      name: Render manifests
+      action: koncept:render
+      input:
+        output: ${{ parameters.outputFormat }}
+
+    - id: publish
+      name: Open Pull Request
+      action: publish:github:pull-request
+      input:
+        repoUrl: ${{ parameters.repoUrl }}
+        title: "feat: add ${{ parameters.name }} Redis cache"
+        branchName: feat/add-${{ parameters.name }}
+
+  output:
+    links:
+      - title: Pull Request
+        url: ${{ steps['publish'].output.remoteUrl }}
+      - title: View in Catalog
+        entityRef: resource:default/${{ parameters.name }}

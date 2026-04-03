@@ -2197,7 +2197,7 @@ rm kcl.mod.lock && kcl run main.k
 
 ### Testing Infrastructure (Implemented)
 
-**268 unit tests** covering the full framework, all passing via `kcl test ./...`.
+**287 unit tests** covering the full framework, all passing via `kcl test ./...`.
 
 | Layer | Test File | Tests | Status |
 |---|---|---|---|
@@ -2239,6 +2239,8 @@ rm kcl.mod.lock && kcl run main.k
 | **Templates** | `tests/templates/opentelemetry_test.k` | 13 | PASS |
 | **Procedures** | `tests/procedures/timoni_test.k` | 11 | PASS |
 | **Procedures** | `tests/procedures/crossplane_test.k` | 25 | PASS |
+| **Procedures** | `tests/procedures/backstage_test.k` | 14 | PASS |
+| **Templates** | `tests/templates/backstage_test.k` | 5 | PASS |
 
 #### Known Limitation: `kcl test` + Schema Instance Bug
 
@@ -2374,6 +2376,50 @@ Template schemas (WebAppModule, SingleDatabaseModule) cannot be directly instant
 | Crossplane tests | `framework/tests/procedures/crossplane_test.k` | DONE — 25 tests (xr_kind, xrd_structure, composition pipeline, sequencer rules, object wrapping, full_stack, prerequisites) |
 | render.k crossplane support | `framework/factory/render.k` | DONE — Added `-D output=crossplane` block |
 | CLI crossplane render | `platform_cli/koncept` | DONE — `koncept render crossplane` generates xrd.yaml, composition.yaml, xr.yaml, prerequisites/ |
+
+### Phase 8 Completed Items
+
+| Item | File(s) | Status |
+|---|---|---|
+| Backstage output procedure (TDD) | `framework/procedures/kcl_to_backstage.k` | DONE — `generate_domain`, `generate_system`, `generate_component_entity`, `generate_resource_from_component`, `generate_resource_from_accessory`, `generate_resource_from_namespace`, `generate_catalog_from_stack` |
+| Backstage procedure tests | `framework/tests/procedures/backstage_test.k` | DONE — 14 tests (domain, system, component, infra resource, CRD accessory, SECRET accessory, namespace, full catalog, empty stack, components only, lifecycle/owner, repo_url, techdocs annotation, no techdocs when empty) |
+| Backstage fields in BaseConfigurations | `framework/models/configurations.k` | DONE — Added `backstageOwner`, `backstageSystem`, `backstageLifecycle` optional fields |
+| Deployment annotations support | `framework/builders/deployment.k` | DONE — Added `annotations?: {str:str}` to DeploymentSpec, conditional injection in `build_deployment` |
+| render.k backstage support | `framework/factory/render.k` | DONE — Added `-D output=backstage` block with TechDocs ref parameter |
+| CLI backstage render | `platform_cli/koncept` | DONE — `koncept render backstage` generates `catalog-info.yaml` with all entities |
+| Backstage Helm template (TDD) | `framework/templates/backstage.k` | DONE — `BackstageHelmSpec` + `build_backstage_release` wrapping official Backstage Helm chart |
+| Backstage template tests | `framework/tests/templates/backstage_test.k` | DONE — 5 tests (default, host/ingress, postgres, resources, custom version) |
+| TechDocs annotation support | `framework/procedures/kcl_to_backstage.k` | DONE — `generate_domain` and `generate_system` accept `techdocs_ref` parameter |
+| mkdocs.yml for TechDocs | `mkdocs.yml` | DONE — Site navigation for Backstage TechDocs integration |
+| Document justified `any` types (Phase 3 gap) | `project.k`, `tenant.k`, `site.k`, `stack.k`, `seed.k`, `configurations.k` | DONE — `# framework-generic` comments on all intentional `any` types |
+
+### Phase 9 Completed Items
+
+| Item | File(s) | Status |
+|---|---|---|
+| Plugin Integration Guide | `docs/BACKSTAGE_PLUGIN_GUIDE.md` | DONE — Kubernetes, TeraSky Ingestor, Crossplane Resources, ArgoCD, Catalog Graph plugins |
+| Keycloak auth guide | `docs/BACKSTAGE_PLUGIN_GUIDE.md` §3 | DONE — Plugin installation, realm config, role mapping, permission framework |
+| TechDocs configuration guide | `docs/BACKSTAGE_PLUGIN_GUIDE.md` §4 | DONE — TechDocs setup, mkdocs.yml, annotation integration |
+| Observability plugins guide | `docs/BACKSTAGE_PLUGIN_GUIDE.md` §5 | DONE — Grafana, Prometheus, Kafka, GitHub Actions plugins |
+| Complete app-config.yaml reference | `docs/BACKSTAGE_PLUGIN_GUIDE.md` §6 | DONE — Full config template with all plugin sections |
+| Entity annotations cheat sheet | `docs/BACKSTAGE_PLUGIN_GUIDE.md` §6 | DONE — All annotations with source and purpose |
+
+### Phase 10 Completed Items
+
+| Item | File(s) | Status |
+|---|---|---|
+| Custom scaffolder actions (TypeScript) | `backstage/plugins/koncept-actions/src/actions/` | DONE — `koncept:render`, `koncept:validate`, `koncept:init`, `koncept:publish` |
+| CLI executor library | `backstage/plugins/koncept-actions/src/lib/executor.ts` | DONE — Safe process spawning (no shell interpolation) |
+| Plugin package setup | `backstage/plugins/koncept-actions/package.json` | DONE — TypeScript project with Backstage dependencies |
+| New Web Application template | `backstage/templates/new-web-application.yaml` | DONE — Wizard for WebAppModule (name, port, replicas, resources, health checks, environment) |
+| New PostgreSQL Database template | `backstage/templates/new-postgresql-database.yaml` | DONE — Wizard for PostgreSQLClusterModule (instances, version, storage, backup) |
+| New Kafka Cluster template | `backstage/templates/new-kafka-cluster.yaml` | DONE — Wizard for KafkaClusterModule (replicas, storage, topics) |
+| New Redis Cache template | `backstage/templates/new-redis-cache.yaml` | DONE — Wizard for RedisModule (standalone/cluster, replicas, storage) |
+| New MongoDB Database template | `backstage/templates/new-mongodb-database.yaml` | DONE — Wizard for MongoDBCommunityModule (members, version, storage) |
+| New RabbitMQ Cluster template | `backstage/templates/new-rabbitmq-cluster.yaml` | DONE — Wizard for RabbitMQClusterModule (replicas, storage, plugins) |
+| New Release template | `backstage/templates/new-release.yaml` | DONE — Wizard for creating versioned releases with backstage catalog generation |
+| Deploy to Environment template | `backstage/templates/deploy-to-environment.yaml` | DONE — Wizard for environment promotion (dev → stg → production) |
+| Backstage catalog locations | `backstage/catalog-info.yaml` | DONE — Location file referencing all template YAML files |
 
 ### Strategy Document
 

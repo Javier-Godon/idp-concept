@@ -1,11 +1,9 @@
 import k8s.api.core.v1 as k8core
 import k8s.api.apps.v1 as k8sapps
+import models.modules.leader as base_leader
 
-schema K8sNamespaceLeader:
-    name: str
-    kind: str
-    apiVersion: str
-    namespace?: str
+schema K8sNamespaceLeader(base_leader.Leader):
+    """Leader specialisation for K8sNamespaces — inherits all fields from Leader."""
 
 schema K8sNamespaceInstance:
     name: str

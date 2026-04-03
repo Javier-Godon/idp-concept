@@ -1,0 +1,109 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: new-release
+  title: New Release
+  description: |
+    Create a new release for an existing project. Scaffolds the complete
+    factory structure (render.k + factory_seed.k) for a new version.
+  tags:
+    - kcl
+    - release
+    - platform
+spec:
+  owner: platform-team
+  type: other
+  parameters:
+    - title: Release Details
+      required:
+        - projectName
+        - version
+        - site
+      properties:
+        projectName:
+          title: Project Name
+          type: string
+          description: Name of the existing project (e.g., erp_back, video_streaming)
+          ui:autofocus: true
+        version:
+          title: Version
+          type: string
+          description: Release version (e.g., 1.0.0, 2.1.0)
+          pattern: '^\d+\.\d+\.\d+$'
+        site:
+          title: Target Site
+          type: string
+          description: Deployment target site (e.g., development, staging, production)
+          enum:
+            - development
+            - staging
+            - production
+
+    - title: Output Configuration
+      required:
+        - outputFormat
+      properties:
+        outputFormat:
+          title: Output Format
+          type: string
+          default: argocd
+          enum:
+            - argocd
+            - helmfile
+            - kusion
+            - kustomize
+            - timoni
+            - crossplane
+        repoUrl:
+          title: Repository
+          type: string
+          ui:field: RepoUrlPicker
+          ui:options:
+            allowedHosts:
+              - github.com
+
+  steps:
+    - id: init
+      name: Initialize release structure
+      action: koncept:init
+      input:
+        name: ${{ parameters.version }}
+        projectDir: projects/${{ parameters.projectName }}/releases
+
+    - id: validate
+      name: Validate release configuration
+      action: koncept:validate
+      input:
+        factoryDir: projects/${{ parameters.projectName }}/releases/${{ parameters.version }}/factory
+
+    - id: render
+      name: Render release manifests
+      action: koncept:render
+      input:
+        output: ${{ parameters.outputFormat }}
+        factoryDir: projects/${{ parameters.projectName }}/releases/${{ parameters.version }}/factory
+
+    - id: backstage
+      name: Generate catalog entry
+      action: koncept:render
+      input:
+        output: backstage
+        factoryDir: projects/${{ parameters.projectName }}/releases/${{ parameters.version }}/factory
+
+    - id: publish
+      name: Open Pull Request
+      action: publish:github:pull-request
+      input:
+        repoUrl: ${{ parameters.repoUrl }}
+        title: "release: ${{ parameters.projectName }} v${{ parameters.version }} (${{ parameters.site }})"
+        description: |
+          New release **v${{ parameters.version }}** for **${{ parameters.projectName }}**.
+
+          - Site: `${{ parameters.site }}`
+          - Output format: `${{ parameters.outputFormat }}`
+        branchName: release/${{ parameters.projectName }}-v${{ parameters.version }}
+
+  output:
+    links:
+      - title: Pull Request
+        url: ${{ steps['publish'].output.remoteUrl }}

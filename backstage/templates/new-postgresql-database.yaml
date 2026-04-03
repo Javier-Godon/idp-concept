@@ -1,0 +1,153 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: new-postgresql-database
+  title: New PostgreSQL Database
+  description: |
+    Create a new PostgreSQL database using CloudNativePG (CNPG) operator
+    via the KCL PostgreSQLClusterModule template.
+  tags:
+    - kcl
+    - kubernetes
+    - postgresql
+    - database
+    - cnpg
+spec:
+  owner: platform-team
+  type: resource
+  parameters:
+    - title: Database Details
+      required:
+        - name
+        - namespace
+      properties:
+        name:
+          title: Cluster Name
+          type: string
+          description: Name of the PostgreSQL cluster
+          pattern: "^[a-z][a-z0-9-]*$"
+          ui:autofocus: true
+        namespace:
+          title: Kubernetes Namespace
+          type: string
+          default: data
+          description: Target Kubernetes namespace
+
+    - title: Cluster Configuration
+      properties:
+        instances:
+          title: Instances
+          type: integer
+          default: 2
+          minimum: 1
+          maximum: 10
+          description: Number of PostgreSQL instances (1 primary + N-1 replicas)
+        pgVersion:
+          title: PostgreSQL Version
+          type: string
+          default: "16"
+          enum:
+            - "14"
+            - "15"
+            - "16"
+            - "17"
+          description: PostgreSQL major version
+        storageSize:
+          title: Storage Size
+          type: string
+          default: "10Gi"
+          description: PVC storage size per instance (e.g., 10Gi, 50Gi)
+        storageClassName:
+          title: Storage Class
+          type: string
+          description: Kubernetes StorageClass name (optional, uses default if omitted)
+
+    - title: Monitoring & Backup
+      properties:
+        enableMonitoring:
+          title: Enable Monitoring
+          type: boolean
+          default: false
+          description: Enable Prometheus metrics endpoint
+        enableBackup:
+          title: Enable Backup
+          type: boolean
+          default: false
+          description: Enable scheduled backups (requires S3/MinIO)
+        backupSchedule:
+          title: Backup Schedule
+          type: string
+          default: "0 2 * * *"
+          description: Cron schedule for backups (default 2 AM daily)
+
+    - title: Target Environment
+      required:
+        - environment
+        - outputFormat
+      properties:
+        environment:
+          title: Environment
+          type: string
+          default: dev
+          enum:
+            - dev
+            - stg
+            - production
+        outputFormat:
+          title: Output Format
+          type: string
+          default: argocd
+          enum:
+            - argocd
+            - helmfile
+            - kustomize
+            - crossplane
+        repoUrl:
+          title: Repository
+          type: string
+          ui:field: RepoUrlPicker
+          ui:options:
+            allowedHosts:
+              - github.com
+
+  steps:
+    - id: scaffold
+      name: Initialize PostgreSQL module
+      action: koncept:init
+      input:
+        template: postgresql
+        name: ${{ parameters.name }}
+        namespace: ${{ parameters.namespace }}
+
+    - id: validate
+      name: Validate configuration
+      action: koncept:validate
+
+    - id: render
+      name: Render manifests
+      action: koncept:render
+      input:
+        output: ${{ parameters.outputFormat }}
+
+    - id: publish
+      name: Open Pull Request
+      action: publish:github:pull-request
+      input:
+        repoUrl: ${{ parameters.repoUrl }}
+        title: "feat: add ${{ parameters.name }} PostgreSQL cluster"
+        description: |
+          New PostgreSQL cluster **${{ parameters.name }}** created via Backstage scaffolder.
+
+          - Namespace: `${{ parameters.namespace }}`
+          - Instances: `${{ parameters.instances }}`
+          - Version: PostgreSQL `${{ parameters.pgVersion }}`
+          - Storage: `${{ parameters.storageSize }}`
+          - Environment: `${{ parameters.environment }}`
+        branchName: feat/add-${{ parameters.name }}
+
+  output:
+    links:
+      - title: Pull Request
+        url: ${{ steps['publish'].output.remoteUrl }}
+      - title: View in Catalog
+        entityRef: resource:default/${{ parameters.name }}

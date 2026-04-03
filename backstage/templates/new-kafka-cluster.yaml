@@ -1,0 +1,149 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: new-kafka-cluster
+  title: New Kafka Cluster
+  description: |
+    Create a new Kafka cluster using Strimzi operator
+    via the KCL KafkaClusterModule template.
+  tags:
+    - kcl
+    - kubernetes
+    - kafka
+    - strimzi
+    - messaging
+spec:
+  owner: platform-team
+  type: resource
+  parameters:
+    - title: Cluster Details
+      required:
+        - name
+        - namespace
+      properties:
+        name:
+          title: Cluster Name
+          type: string
+          description: Name of the Kafka cluster
+          pattern: "^[a-z][a-z0-9-]*$"
+          ui:autofocus: true
+        namespace:
+          title: Kubernetes Namespace
+          type: string
+          default: infra
+          description: Target Kubernetes namespace
+
+    - title: Cluster Configuration
+      properties:
+        replicas:
+          title: Kafka Replicas
+          type: integer
+          default: 3
+          minimum: 1
+          maximum: 10
+          description: Number of Kafka broker replicas
+        zookeeperReplicas:
+          title: ZooKeeper Replicas
+          type: integer
+          default: 3
+          minimum: 1
+          maximum: 5
+          description: Number of ZooKeeper replicas
+        storageSize:
+          title: Storage Size
+          type: string
+          default: "10Gi"
+          description: PVC storage size per broker
+
+    - title: Topics
+      properties:
+        topics:
+          title: Initial Topics
+          type: array
+          description: Kafka topics to create (optional)
+          items:
+            type: object
+            required:
+              - name
+            properties:
+              name:
+                title: Topic Name
+                type: string
+              partitions:
+                title: Partitions
+                type: integer
+                default: 3
+              replicas:
+                title: Replication Factor
+                type: integer
+                default: 2
+
+    - title: Target Environment
+      required:
+        - environment
+        - outputFormat
+      properties:
+        environment:
+          title: Environment
+          type: string
+          default: dev
+          enum:
+            - dev
+            - stg
+            - production
+        outputFormat:
+          title: Output Format
+          type: string
+          default: argocd
+          enum:
+            - argocd
+            - helmfile
+            - kustomize
+            - crossplane
+        repoUrl:
+          title: Repository
+          type: string
+          ui:field: RepoUrlPicker
+          ui:options:
+            allowedHosts:
+              - github.com
+
+  steps:
+    - id: scaffold
+      name: Initialize Kafka module
+      action: koncept:init
+      input:
+        template: kafka
+        name: ${{ parameters.name }}
+        namespace: ${{ parameters.namespace }}
+
+    - id: validate
+      name: Validate configuration
+      action: koncept:validate
+
+    - id: render
+      name: Render manifests
+      action: koncept:render
+      input:
+        output: ${{ parameters.outputFormat }}
+
+    - id: publish
+      name: Open Pull Request
+      action: publish:github:pull-request
+      input:
+        repoUrl: ${{ parameters.repoUrl }}
+        title: "feat: add ${{ parameters.name }} Kafka cluster"
+        description: |
+          New Kafka cluster **${{ parameters.name }}** created via Backstage scaffolder.
+
+          - Namespace: `${{ parameters.namespace }}`
+          - Brokers: `${{ parameters.replicas }}`
+          - Environment: `${{ parameters.environment }}`
+        branchName: feat/add-${{ parameters.name }}
+
+  output:
+    links:
+      - title: Pull Request
+        url: ${{ steps['publish'].output.remoteUrl }}
+      - title: View in Catalog
+        entityRef: resource:default/${{ parameters.name }}

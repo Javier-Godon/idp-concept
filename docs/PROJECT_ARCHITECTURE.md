@@ -3,17 +3,18 @@
 ## Table of Contents
 
 - [1. Project Vision & Goals](#1-project-vision--goals)
-- [2. Architecture Overview](#2-architecture-overview)
-- [3. Technology Stack](#3-technology-stack)
-- [4. Framework Layer](#4-framework-layer)
-- [5. Project Layer (video_streaming)](#5-project-layer-video_streaming)
-- [6. Platform CLI](#6-platform-cli)
-- [7. Crossplane Layer](#7-crossplane-layer)
-- [8. Output Formats](#8-output-formats)
-- [9. Data Flow End-to-End](#9-data-flow-end-to-end)
-- [10. Adding a New Project](#10-adding-a-new-project)
-- [11. Adding a New Module](#11-adding-a-new-module)
-- [12. Adding a New Output Format](#12-adding-a-new-output-format)
+- [2. How It Works — The Big Picture](#2-how-it-works--the-big-picture)
+- [3. Architecture Overview](#3-architecture-overview)
+- [4. Technology Stack](#4-technology-stack)
+- [5. Framework Layer](#5-framework-layer)
+- [6. Project Layer](#6-project-layer)
+- [7. Platform CLI](#7-platform-cli)
+- [8. Crossplane Layer](#8-crossplane-layer)
+- [9. Output Formats](#9-output-formats)
+- [10. Data Flow End-to-End](#10-data-flow-end-to-end)
+- [11. Adding a New Project](#11-adding-a-new-project)
+- [12. Adding a New Module](#12-adding-a-new-module)
+- [13. Adding a New Output Format](#13-adding-a-new-output-format)
 
 ---
 
@@ -22,477 +23,435 @@
 **idp-concept** is an Internal Developer Platform (IDP) designed to solve the "technology lock-in" problem in Kubernetes deployment workflows.
 
 ### The Problem
+
 When teams adopt a specific deployment tool (e.g., Helmfile with Go templates), they become locked into that technology. If a better tool appears, or if the team wants to adopt GitOps, they must rewrite everything. Developers also face unnecessary complexity managing Helm charts, versioning, and infrastructure manifests.
 
 ### The Solution
-Define **all configuration in KCL** (Kusion Configuration Language) as a **single source of truth**. From this single definition, automatically generate manifests in any output format:
+
+Define **all configuration in KCL** (Kusion Configuration Language) as a **single source of truth**. From this single definition, automatically generate manifests in **9 output formats**:
 
 | Output Format | Use Case |
 |---|---|
 | **Plain YAML** | GitOps with ArgoCD, direct `kubectl apply` |
+| **ArgoCD** | ArgoCD Application CRDs for GitOps pipelines |
 | **Helm Charts** | Traditional Helm-based deployments |
 | **Helmfile** | Multi-chart orchestration with Helmfile |
 | **Kusion Spec** | Kusion-based infrastructure-as-code |
+| **Kustomize** | Kustomize overlay-based deployments |
+| **Timoni** | CUE-powered Helm alternative |
 | **Crossplane** | Kubernetes-native infrastructure provisioning |
+| **Backstage** | Backstage catalog-info.yaml for developer portal |
 
 ### Key Benefits
+
 - **No technology lock-in**: Switch output formats without rewriting configurations
-- **Separation of concerns**: Developers define what to deploy; the platform handles how
-- **Multi-tenant support**: Same application, different configurations per customer
+- **Separation of concerns**: Developers define *what* to deploy; the platform handles *how*
+- **Multi-tenant**: Same application, different configurations per customer
 - **Multi-environment**: Deploy the same version to different sites with site-specific overrides
 - **Versioned releases**: Immutable release snapshots tied to specific versions
+- **DRY**: 17 pre-built templates reduce 200+ lines of YAML to ~30 lines of KCL
 
 ---
 
-## 2. Architecture Overview
+## 2. How It Works — The Big Picture
+
+Imagine you have a web API backed by a PostgreSQL database. To deploy it to Kubernetes, you need
+Deployments, Services, ConfigMaps, PersistentVolumes, Namespaces, and more.  In this project:
+
+1. **You describe your app once** using a simple KCL schema (30 lines).
+2. **The framework generates everything** — all K8s manifests, in any format.
+3. **You customise per-environment** — dev gets 1 replica, prod gets 3 — by overlaying configurations.
 
 ```
-┌──────────────────────────────────────────────────────────────┐
-│                       FRAMEWORK LAYER                        │
-│  ┌─────────────┐  ┌──────────────┐  ┌─────────────────────┐ │
-│  │   models/    │  │ procedures/  │  │     custom/         │ │
-│  │ Project      │  │ kcl_to_yaml  │  │ ArgoCD schemas      │ │
-│  │ Tenant       │  │ kcl_to_helm  │  │ Helm schemas        │ │
-│  │ Site         │  │ kcl_to_kusion│  │ Helmfile schemas    │ │
-│  │ Profile      │  │ kcl_to_argocd│  │ Spring schemas      │ │
-│  │ Stack        │  │ helper       │  │                     │ │
-│  │ Release      │  │              │  │                     │ │
-│  │ modules/     │  │              │  │                     │ │
-│  │  Component   │  │              │  │                     │ │
-│  │  Accessory   │  │              │  │                     │ │
-│  │  K8sNamespace│  │              │  │                     │ │
-│  │  ThirdParty  │  │              │  │                     │ │
-│  └─────────────┘  └──────────────┘  └─────────────────────┘ │
-└──────────────────────────┬───────────────────────────────────┘
-                           │ imports
-┌──────────────────────────▼───────────────────────────────────┐
-│                    PROJECT LAYER (video_streaming)            │
-│  ┌──────────┐  ┌──────────────┐  ┌────────────┐             │
-│  │ kernel/  │  │ core_sources/│  │  modules/   │             │
-│  │ project  │  │ config schema│  │ appops/     │             │
-│  │ configs  │  │ merge func   │  │ infra/      │             │
-│  └────┬─────┘  └──────┬───────┘  └──────┬─────┘             │
-│       │               │                 │                    │
-│  ┌────▼───────────────▼─────────────────▼────┐               │
-│  │              stacks/                       │               │
-│  │  development/ (dev, stg profiles)          │               │
-│  │  versioned/   (v1_0_0, v2_0_0)            │               │
-│  └──────────────────┬────────────────────────┘               │
-│                     │                                        │
-│  ┌────────┐  ┌──────▼──┐  ┌──────────────────────────┐      │
-│  │tenants/│  │ sites/  │  │ pre_releases/ & releases/ │      │
-│  │germany │  │ berlin  │  │ factory/ → builders → OUT │      │
-│  │spain   │  │ madrid  │  │     ↓                     │      │
-│  │italy   │  │ rome    │  │  OUTPUT YAML/HELM/KUSION  │      │
-│  └────────┘  └─────────┘  └──────────────────────────┘      │
-└──────────────────────────────────────────────────────────────┘
-                           │
-┌──────────────────────────▼───────────────────────────────────┐
-│                     PLATFORM CLI (Nushell)                    │
-│  koncept render argocd|helmfile|kusion                        │
-│  koncepttask (delegates to go-task Taskfiles)                 │
-└──────────────────────────────────────────────────────────────┘
+You write this (30 lines):                    The platform generates this:
+┌──────────────────────────┐                  ┌──────────────────────────────────┐
+│ schema ErpApi(WebApp):   │                  │ Deployment (with probes, env,    │
+│   port = 8080            │   ──build──►     │   resources, volumes)            │
+│   replicas = 1           │                  │ Service (ClusterIP:8080)         │
+│   env = [...]            │                  │ ConfigMap (optional)             │
+│   resources = {...}      │                  │ ServiceAccount (optional)        │
+│   livenessProbe = {...}  │                  │ ...in YAML, Helm, ArgoCD, etc.  │
+└──────────────────────────┘                  └──────────────────────────────────┘
+```
+
+### Configuration Layering
+
+Configurations merge in 4 layers. Later layers override earlier ones:
+
+```
+1. kernel   — project-wide defaults (project name, git repo URL)
+       ↓ merged with
+2. profile  — deployment mode (dev resources, prod replicas)
+       ↓ merged with
+3. tenant   — customer-specific (branding, feature flags)
+       ↓ merged with
+4. site     — environment-specific (hostnames, storage class, cluster)
+       =
+   Final merged config → passed to the stack → generates manifests
+```
+
+This uses KCL's union operator (`|`): `kernel | profile | tenant | site`.
+Later values override earlier ones for the same key.
+
+---
+
+## 3. Architecture Overview
+
+The platform has three main layers:
+
+```
+┌──────────────────────────────────────────────────────────────────────┐
+│                        FRAMEWORK LAYER                               │
+│  Reusable schemas, builders, templates, and output procedures        │
+│                                                                      │
+│  models/           builders/          templates/        procedures/   │
+│  ┌──────────┐     ┌──────────────┐   ┌──────────────┐ ┌───────────┐ │
+│  │ Project   │     │ Deployment   │   │ WebApp       │ │ → YAML    │ │
+│  │ Tenant    │     │ Service      │   │ Database     │ │ → ArgoCD  │ │
+│  │ Site      │     │ ConfigMap    │   │ Kafka        │ │ → Helm    │ │
+│  │ Profile   │     │ Storage      │   │ PostgreSQL   │ │ → Helmfile│ │
+│  │ Stack     │     │ SA           │   │ MongoDB      │ │ → Kusion  │ │
+│  │ Component │     │ NetworkPol.  │   │ RabbitMQ     │ │ → Kustom. │ │
+│  │ Accessory │     │ PDB          │   │ Redis        │ │ → Timoni  │ │
+│  │ Namespace │     │ Leader       │   │ Keycloak     │ │ → Crosspl.│ │
+│  │ ThirdParty│     └──────────────┘   │ OpenSearch   │ │ → Backstg.│ │
+│  └──────────┘                         │ Vault,MinIO  │ └───────────┘ │
+│                                       │ QuestDB,...  │               │
+│                                       └──────────────┘               │
+└────────────────────────────┬─────────────────────────────────────────┘
+                             │ imports
+┌────────────────────────────▼─────────────────────────────────────────┐
+│                        PROJECT LAYER                                 │
+│  Your application definitions, configurations, and release factories │
+│                                                                      │
+│  kernel/        core_sources/    modules/        stacks/             │
+│  ┌──────────┐  ┌────────────┐  ┌────────────┐  ┌────────────────┐   │
+│  │ Project   │  │ Config     │  │ ErpApi     │  │ Dev stack      │   │
+│  │ defaults  │  │ schema +   │  │ (WebApp)   │  │ (what to       │   │
+│  │           │  │ merge fn   │  │ Postgres   │  │  deploy)       │   │
+│  └─────┬────┘  └─────┬──────┘  │ (Database) │  └──────┬─────────┘   │
+│        └──────┬───────┘         └──────┬─────┘         │             │
+│               │                        │               │             │
+│  tenants/     │  sites/        ┌───────▼───────────────▼──────┐      │
+│  ┌────────┐   │  ┌────────┐   │  pre_releases/ & releases/    │      │
+│  │customer│───┘  │cluster │   │  factory/ → render.k → OUTPUT │      │
+│  │configs │      │configs │   └───────────────────────────────┘      │
+│  └────────┘      └────────┘                                          │
+└────────────────────────────┬─────────────────────────────────────────┘
+                             │
+┌────────────────────────────▼─────────────────────────────────────────┐
+│                       PLATFORM CLI (Nushell)                         │
+│  koncept render yaml|argocd|helmfile|helm|kusion|kustomize|...       │
+└──────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 3. Technology Stack
+## 4. Technology Stack
 
-| Technology | Version | Role | Documentation |
-|---|---|---|---|
-| **KCL** | v0.10.0 | Configuration language (single source of truth) | https://www.kcl-lang.io/docs/ |
-| **Nushell** | latest | CLI scripting language | https://www.nushell.sh/book/ |
-| **Kubernetes** | 1.31.2 (schemas) | Target deployment platform | https://kubernetes.io/docs/ |
-| **Crossplane** | v1 | Kubernetes-native infrastructure provisioning | https://docs.crossplane.io/ |
-| **ArgoCD** | v2.x | GitOps continuous delivery | https://argo-cd.readthedocs.io/ |
-| **Helm** | v3+ | Package manager for Kubernetes | https://helm.sh/docs/ |
-| **Helmfile** | latest | Declarative Helm chart management | https://helmfile.readthedocs.io/ |
-| **Kusion** | v0.2.0 | Infrastructure-as-code platform | https://www.kusionstack.io/docs/ |
-| **Strimzi** | 0.45.0 | Apache Kafka on Kubernetes operator | https://strimzi.io/docs/ |
-| **Keycloak** | 26.4.0 | Identity and access management | https://www.keycloak.org/documentation |
-| **cert-manager** | 1.17.2 | Certificate management for Kubernetes | https://cert-manager.io/docs/ |
-| **go-task** | v3 | Task runner (Taskfile YAML) | https://taskfile.dev/ |
-| **kind** | latest | Local Kubernetes clusters | https://kind.sigs.k8s.io/ |
-| **MongoDB** | latest | Document database (infrastructure accessory) | https://www.mongodb.com/docs/ |
-
----
-
-## 4. Framework Layer
-
-The framework (`framework/`) provides reusable schemas and procedures that any project can import.
-
-### 4.1 Models (`framework/models/`)
-
-#### Core Domain Models
-
-| Schema | File | Purpose |
+| Technology | Role | Documentation |
 |---|---|---|
-| `Project` / `ProjectInstance` | `project.k` | Defines a deployable project (name, description, configurations) |
-| `Tenant` / `TenantInstance` | `tenant.k` | Represents a customer/organization |
-| `Site` / `SiteInstance` | `site.k` | Represents a target deployment environment (linked to a Tenant) |
-| `Profile` / `ProfileInstance` | `profile.k` | Defines a deployment mode (dev, staging, production version) |
-| `Stack` / `StackInstance` | `stack.k` | Aggregates components, accessories, namespaces, and third-parties for a deployment |
-| `Release` | `release.k` | Combines project + tenant + site + profile + stack into a versioned deployment |
-| `RenderStack` / `RenderStackInstance` | `manifests/renderstack.k` | Stack variant for GitOps (plain YAML) output |
+| **KCL** | Configuration language — single source of truth | https://www.kcl-lang.io/docs/ |
+| **Nushell** | CLI scripting language (`koncept` tool) | https://www.nushell.sh/book/ |
+| **Kubernetes** 1.31.2 | Target deployment platform (K8s schemas) | https://kubernetes.io/docs/ |
+| **Crossplane** | Kubernetes-native infrastructure provisioning | https://docs.crossplane.io/ |
+| **ArgoCD** | GitOps continuous delivery | https://argo-cd.readthedocs.io/ |
+| **Helm** / **Helmfile** | Package manager / multi-chart orchestration | https://helm.sh/docs/ |
+| **Kusion** | Intent-driven infrastructure-as-code | https://www.kusionstack.io/docs/ |
+| **Backstage** | Developer portal (catalog + scaffolder) | https://backstage.io/docs/ |
+| **go-task** | Task runner (Taskfile YAML) | https://taskfile.dev/ |
 
-#### Module Models (`framework/models/modules/`)
+---
 
-| Schema | File | Kind Values | Purpose |
+## 5. Framework Layer
+
+The framework (`framework/`) is the shared library that every project imports.  It is organised into five areas:
+
+### 5.1 Models (`framework/models/`) — Domain Concepts
+
+Models define the vocabulary of the platform.  Every model follows a **Schema + Instance** pattern (see [FRAMEWORK_SCHEMAS.md](./FRAMEWORK_SCHEMAS.md) for full reference):
+
+| Schema | Purpose | Think of it as… |
+|---|---|---|
+| **Project** | A deployable product | "Video Streaming", "ERP Back" |
+| **Tenant** | A customer/organisation | "Germany", "Spain", "vendor" |
+| **Site** | A deployment target | "dev_cluster", "berlin", "staging" |
+| **Profile** | A deployment mode | "development", "v1_0_0" |
+| **Stack** | All modules for one deployment | "dev stack = API + Postgres + Kafka" |
+| **Release** | Versioned snapshot | Stack + config for a specific site/version |
+
+**Module models** (`models/modules/`) define the building blocks:
+
+| Schema | Kind | What it represents |
+|---|---|---|
+| **Component** | `APPLICATION` / `INFRASTRUCTURE` | Deployable workloads (Deployments, Services) |
+| **Accessory** | `CRD` / `SECRET` | Supporting resources (Kafka, MongoDB, PVs) |
+| **K8sNamespace** | `Namespace` | Kubernetes namespaces |
+| **ThirdParty** | varies | Vendor-managed (Helm charts, Kustomize bases) |
+
+All Leader types (ComponentLeader, AccessoryLeader, K8sNamespaceLeader) share a common **Leader** base schema that identifies the primary K8s resource for dependency ordering.
+
+### 5.2 Builders (`framework/builders/`) — K8s Manifest Generators
+
+Builders are **lambda functions** that take a spec schema and return a typed K8s manifest. They eliminate YAML boilerplate:
+
+| Builder | Input Schema | Output | What it generates |
 |---|---|---|---|
-| `Component` / `ComponentInstance` | `component.k` | `APPLICATION`, `INFRASTRUCTURE` | Main deployable units (Deployments, Services, ConfigMaps) |
-| `Accessory` / `AccessoryInstance` | `accessory.k` | `CRD`, `SECRET` | Supporting resources (Kafka clusters, PVs, databases) |
-| `K8sNamespace` / `K8sNamespaceInstance` | `k8snamespace.k` | `Namespace` | Kubernetes namespace resources |
-| `ThirdParty` / `ThirdPartyInstance` | `thirdparty.k` | N/A | External vendor-managed resources with package managers |
+| `build_deployment` | `DeploymentSpec` | `apps/v1 Deployment` | Container, probes, resources, volumes, env |
+| `build_service` | `ServiceSpec` | `v1 Service` | ClusterIP/NodePort/LoadBalancer |
+| `build_configmap` | `ConfigMapSpec` | `v1 ConfigMap` | Configuration data |
+| `build_pv_and_pvc` | `PersistentVolumeSpec` | PV + PVC | Persistent storage |
+| `build_service_account` | `ServiceAccountSpec` | `v1 ServiceAccount` | With imagePullSecrets |
+| `build_network_policy` | `NetworkPolicySpec` | `NetworkPolicy` | Ingress/egress rules |
+| `build_pdb` | `PDBSpec` | `PodDisruptionBudget` | Availability guarantees |
+| `build_leader` | name, namespace, kind | `Leader` | Dependency identifier |
 
-#### The Schema + Instance Pattern
+### 5.3 Templates (`framework/templates/`) — Pre-Built Patterns
 
-Every model follows a dual pattern:
-```kcl
-schema ProjectInstance:        # Flat data container (exported)
-    name: str
-    description: str
-    configurations: any
+Templates **compose builders** into complete modules. Instead of writing 200 lines of K8s YAML, you write ~30 lines:
 
-schema Project:                 # Validated constructor
-    instance: ProjectInstance = ProjectInstance {
-        name = name
-        description = description
-        configurations = configurations
-    }
-    name: str
-    description: str
-    configurations: any
-```
+| Template | Extends | What it generates automatically |
+|---|---|---|
+| `WebAppModule` | Component | Deployment + Service + ConfigMap + ServiceAccount |
+| `SingleDatabaseModule` | Accessory | Deployment + Service + PV + PVC |
+| `KafkaClusterModule` | Accessory | Strimzi Kafka CRD + KafkaTopic CRDs |
+| `PostgreSQLClusterModule` | Accessory | CloudNativePG Cluster + Backup + Pooler |
+| `MongoDBCommunityModule` | Accessory | MongoDB ReplicaSet CRD |
+| `RabbitMQClusterModule` | Accessory | RabbitmqCluster CRD |
+| `RedisModule` | Accessory | OT Redis/RedisCluster CRD |
+| `KeycloakModule` | Accessory | Keycloak CRD + RealmImport |
+| `OpenSearchClusterModule` | Accessory | OpenSearchCluster CRD + Dashboards |
+| `VaultStaticSecretModule` | Accessory | Vault VSO SecretSync CRDs |
+| `QuestDBModule` | Accessory | Helm chart wrapper |
+| `MinIOTenantSpec/HelmSpec` | Accessory | MinIO Operator CRD / Bitnami Helm |
+| `BackstageHelmModule` | ThirdPartyHelmSpec | Backstage Helm chart |
+| `ObservabilityStackModule` | Accessory | Prometheus + Grafana Helm charts |
 
-The `instance` property creates a flattened `ProjectInstance` from the `Project` fields. This allows passing validated, flat data downstream while keeping the schema validation at the creation point.
+### 5.4 Procedures (`framework/procedures/`) — Output Format Converters
 
-### 4.2 Procedures (`framework/procedures/`)
+Procedures transform a stack's manifests into a specific output format:
 
-| Procedure | File | Input | Output |
-|---|---|---|---|
-| `yaml_stream_stack` | `kcl_to_yaml.k` | `RenderStack` | Multi-document YAML stream |
-| `generate_helm_components_templates_from_stack` | `kcl_to_helm.k` | `Stack` | Helm template YAML |
-| `kusion_spec_stream_stack` | `kcl_to_kusion.k` | `Stack` | `[KusionResource]` array |
-| `extract_models_by_name_from_list` | `helper.k` | Model list + name | Filtered models |
-
-### 4.3 Custom Schemas (`framework/custom/`)
-
-| Directory | Purpose |
+| Procedure | Output |
 |---|---|
-| `helm/helm.k` | Chart, Maintainer, Dependency, HelmChartValues, Image, Service, Ingress, Resources schemas |
-| `helmfile/helmfile.k` | Helmfile, Repository, Release, Environment, HelmfilePath schemas |
-| `argocd/models/` | Auto-generated KCL models from ArgoCD CRDs (Application, ApplicationSet, AppProject) |
-| `argocd/specifications/` | YAML examples of ArgoCD resources |
-| `spring_application_properties.k` | Spring Boot application.properties schema for Java microservices |
+| `kcl_to_yaml` | Multi-document K8s YAML (for `kubectl apply` / ArgoCD) |
+| `kcl_to_argocd` | ArgoCD Application + AppProject CRDs |
+| `kcl_to_helm` | Chart.yaml + values.yaml per component |
+| `kcl_to_helmfile` | helmfile.yaml with per-component releases |
+| `kcl_to_kusion` | Kusion spec with dependency graph |
+| `kcl_to_kustomize` | kustomization.yaml + resource manifests |
+| `kcl_to_timoni` | Timoni CUE module structure |
+| `kcl_to_crossplane` | XRD + Composition + Composite Resource |
+| `kcl_to_backstage` | catalog-info.yaml with Component entities |
+
+### 5.5 Factory (`framework/factory/`) — Generic Renderer
+
+The factory provides two files that every release directory copies:
+
+- **`render.k`** — routes to the correct procedure based on `-D output=<format>`
+- **`seed.k`** — `FactorySeed` schema that merges 4 config layers and creates a `Release`
+
+### 5.6 Assembly (`framework/assembly/`) — Helpers
+
+Convenience functions for common operations:
+- `create_namespace(name, config)` — creates a `K8sNamespaceInstance` in one line
+- `create_namespace_from_config(field, config)` — reads namespace name from a config field
 
 ---
 
-## 5. Project Layer (video_streaming)
+## 6. Project Layer
 
-The `projects/video_streaming/` directory is the reference implementation.
+Projects live in `projects/` and import from the framework.  There are two example projects:
 
-### 5.1 kernel/ — Project Definition
+- **`erp_back/`** — Recommended reference.  Uses framework templates (`WebAppModule`, `SingleDatabaseModule`).
+- **`video_streaming/`** — Older example.  Builds modules "raw" (without templates).
 
-```
-kernel/
-├── configurations.k    # Base project configurations
-├── project_def.k       # Project schema instance
-├── kcl.mod             # Package declaration
-└── main.k
-```
-
-`project_def.k` creates a `Project` instance with base configurations:
-```kcl
-video_streaming_project = project.Project {
-    name = "Video Streaming"
-    description = "video streaming using apache kafka"
-    configurations = configurations._video_streaming_kernel_configurations
-}
-```
-
-### 5.2 core_sources/ — Configuration Schema & Merge
+### 6.1 Project Structure (erp_back)
 
 ```
-core_sources/
-├── video_streaming_configurations.k   # VideoStreamingConfigurations schema
-├── merge_configurations.k             # Lambda function to merge config layers
-├── kcl.mod
-└── main.k
+projects/erp_back/
+├── kcl.mod                           # Package declaration + framework dependency
+├── kernel/                           # ① Project identity + base config
+│   ├── project_def.k                 #    Project { name, description, configurations }
+│   └── configurations.k             #    Kernel-level defaults (project name, DB, git URL)
+├── core_sources/                     # ② Config schema + merge function
+│   ├── erp_back_configurations.k    #    schema ErpBackConfigurations(BaseConfigurations)
+│   └── merge_configurations.k       #    merge = kernel | profile | tenant | site
+├── modules/                          # ③ What to deploy
+│   ├── appops/erp_api/              #    ErpApiModule(WebAppModule): port, probes, env
+│   └── infrastructure/postgres/     #    PostgresModule(SingleDatabaseModule): port, storage
+├── stacks/                           # ④ Which modules go together
+│   └── development/                 #    ErpBackDevelopmentStack: [api] + [postgres] + [ns]
+├── tenants/vendor/                   # ⑤ Customer overrides (branding, features)
+├── sites/development/dev_cluster/    # ⑥ Environment overrides (hostnames, replicas)
+└── pre_releases/                     # ⑦ Factory that merges everything → output
+    ├── configurations_dev.k         #    Merges kernel | profile | tenant | site
+    └── manifests/dev/factory/       #    factory_seed.k + render.k
 ```
 
-`VideoStreamingConfigurations` defines all configurable fields:
-```kcl
-schema VideoStreamingConfigurations:
-    projectName?: str = "video_streaming"
-    brandIcon?: str
-    siteName?: str
-    appsNamespace?: str
-    postgresNamespace?: str
-    certmanagerNamespace?: str
-    apacheKafkaNamespace?: str
-    mongodbNamespace?: str
-    rootPaths?: {str:str}
-```
-
-`merge_configurations` uses KCL's union operator to merge layers:
-```kcl
-merge_configurations = lambda kernel, profile, tenant, site -> VideoStreamingConfigurations {
-    _configs = kernel | profile | tenant | site
-}
-```
-
-### 5.3 modules/ — Concrete Kubernetes Manifests
+### 6.2 How the Pieces Connect
 
 ```
-modules/
-├── appops/
-│   ├── kafka_video_consumer_mongodb_python/   # Application component
-│   ├── kafka_video_server_python/             # Application component (empty)
-│   └── video_collector_mongodb_python/        # Application component
-└── infrastructure/
-    ├── apache_kafka/
-    │   ├── instances/kafka_single_instance_module_def.k
-    │   └── strimzi_operator/strimzi-crds-0.45.0.yaml
-    ├── cert_manager/cert_manager_v1.17.2.yaml
-    └── mongodb/
-        ├── mongodb_persistence_module_def.k
-        └── mongodb_single_instance_module_def.k
-```
-
-Modules use **schema inheritance** from framework base types:
-```kcl
-schema VideoCollectorMongodbPythonModule(component.Component):
-    kind = "APPLICATION"
-    leaders = [...]
-    manifests = [Deployment{...}, ConfigMap{...}, Service{...}, ServiceAccount{...}]
-```
-
-### 5.4 stacks/ — What to Deploy
-
-```
-stacks/
-├── stack_configurations.k              # Base stack configurations
-├── development/
-│   ├── profile_configurations.k        # Dev profile overrides
-│   ├── profile_def.k                   # Profile instance
-│   └── stack_def.k                     # Stack schema (VideoStreamingDevelopmentStack)
-└── versioned/
-    ├── v1_0_0/base/                    # Production version 1.0.0
-    └── v2_0_0/base/                    # Kusion-native version 2.0.0
-```
-
-A stack aggregates namespaces, components, and accessories:
-```kcl
-schema VideoStreamingDevelopmentStack(stack.Stack):
-    k8snamespaces = [_apps, _postgres, _certmanager, _kafka, _mongodb]
-    components = [_video_collector_mongodb_python]
-    accessories = [_apache_kafka, _mongodb_instance, _mongodb_persistence]
-```
-
-### 5.5 tenants/ — Customer Overrides
-
-```
-tenants/
-├── germany/   (tenant_def.k, germany_configurations.k)
-├── italy/     (tenant_def.k)
-├── spain/     (tenant_def.k)
-└── vendor/    (tenant_def.k, tenant_configurations.k)
-```
-
-### 5.6 sites/ — Environment Overrides
-
-```
-sites/
-├── sites_configurations.k
-├── development/
-│   ├── dev_cluster/    (site_def.k, configurations.k)
-│   └── stg_cluster/    (stg_cluster_config.k)
-└── tenants/
-    ├── pre_production/berlin/
-    └── production/berlin/  (site_def.k, configurations.k, config.yaml)
-```
-
-### 5.7 pre_releases/ & releases/ — Output Generation
-
-```
-pre_releases/
-├── configurations_dev.k    # Merges all config layers for dev
-├── manifests/site_one/generators/    # ArgoCD output
-│   └── kafka_.../dev/factory/
-│       ├── factory_seed.k
-│       ├── kubernetes_manifests_builder.k
-│       └── argocd_builder.k
-└── kusion/dev/default/     # Kusion output
-
-releases/
-├── helmfile/berlin/v1_0_0_berlin/factory/   # Helmfile output
-│   ├── factory_seed.k
-│   ├── chart_builder.k
-│   ├── templates_builder.k
-│   ├── helmfile_builder.k
-│   └── main.k
-└── kusion/berlin/v1_0_0_berlin/default/factory/  # Kusion output
-    └── main.k
+① kernel/configurations.k              →  ErpBackConfigurations { projectName = "erp_back", ... }
+② core_sources/merge_configurations.k  →  merge(kernel, profile, tenant, site) → final config
+③ modules/erp_api/                     →  ErpApiModule(WebAppModule) { port = 8080, env = [...] }
+④ stacks/development/stack_def.k       →  ErpBackDevelopmentStack { components = [erp_api], accessories = [postgres] }
+⑤ tenants/vendor/                      →  Tenant { configurations = { brandIcon = "vendor.png" } }
+⑥ sites/dev_cluster/                   →  Site { configurations = { postgresHost = "...", siteName = "dev" } }
+⑦ factory/ → render.k -D output=yaml  →  kcl_to_yaml → K8s YAML manifests
 ```
 
 ---
 
-## 6. Platform CLI
+## 7. Platform CLI
 
-### 6.1 koncept (Primary CLI)
+### 7.1 koncept (Primary CLI)
 
 Location: `platform_cli/koncept` (Nushell script)
 
 ```bash
-koncept render <format> [--factory <dir>] [--output <dir>]
+# Navigate to a factory directory, then:
+koncept render <format>
+
+# Formats: yaml, argocd, helmfile, helm, kusion, kustomize, timoni, crossplane, backstage
 ```
 
-| Format | Action |
-|---|---|
-| `argocd` | Runs `kcl run factory/kubernetes_manifests_builder.k` → plain YAML |
-| `helmfile` | Generates Chart.yaml, values.yaml, templates/manifests.yaml, helmfile.yaml |
-| `kusion` | Runs `kcl run factory/main.k` → kusion_spec.yaml |
+The CLI calls `kcl run render.k -D output=<format>` inside the factory directory.
 
-### 6.2 koncepttask (Task Runner Variant)
+### 7.2 koncepttask (Task Runner Variant)
 
-Location: `platform_cli/koncepttask` (Nushell script wrapping go-task)
+Location: `platform_cli/koncepttask` (wraps go-task)
 
-Delegates to Taskfile YAML templates in `platform_cli/taskfiles/`:
-- `taskfiles/argocd/taskfile.yaml` — generates manifests YAML
-- `taskfiles/helmfile/taskfile.yaml` — generates charts + helmfile.yaml
-- `taskfiles/kusion/taskfile.yaml` — (empty, placeholder)
+Delegates to Taskfile YAML templates in `platform_cli/taskfiles/` for more complex workflows
+(building charts, publishing, validation).
 
 ---
 
-## 7. Crossplane Layer
+## 8. Crossplane Layer
 
-The `crossplane_v2/` directory contains Kubernetes-native infrastructure definitions.
+The `crossplane_v2/` directory contains Kubernetes-native infrastructure definitions for
+provisioning managed resources via Crossplane.
 
-### 7.1 Custom Resource Definitions (XRDs)
-
-| Kind | API Group | File |
+| Kind | API Group | Provisions |
 |---|---|---|
-| `XCertManager` | `koncept.bluesolution.es/v1alpha1` | `cert_manager/xrd_cert_manager.yaml` |
-| `XKafkaStrimzi` | `koncept.bluesolution.es/v1alpha1` | `kafka_strimzi/crossplane_xrd.yaml` |
-| `XKeycloak` | `koncept.bluesolution.es/v1alpha1` | `keycloak/crossplane/xrd_keycloak.yaml` |
-| `PostgresCompositeWorkload` | `gitops.bluesolution.es/v1alpha1` | `postgres/xrd_postgres.yaml` |
+| `XCertManager` | `koncept.bluesolution.es/v1alpha1` | cert-manager via Helm |
+| `XKafkaStrimzi` | `koncept.bluesolution.es/v1alpha1` | Strimzi Kafka operator |
+| `XKeycloak` | `koncept.bluesolution.es/v1alpha1` | Keycloak identity server |
+| `PostgresCompositeWorkload` | `gitops.bluesolution.es/v1alpha1` | PostgreSQL deployment |
 
-### 7.2 Compositions (Pipeline Mode)
+All compositions use `mode: Pipeline` with function steps (patch-and-transform, auto-ready,
+go-templating, KCL, sequencer). Providers: `provider-kubernetes` and `provider-helm`
+with `InjectedIdentity` credentials.
 
-All compositions use `mode: Pipeline` with function steps:
+---
 
-1. **cert-manager**: Namespace creation → Helm release install (jetstack chart v1.17.2) → auto-ready
-2. **Kafka Strimzi**: Helm release (Strimzi operator 0.46.0) → patches namespace
-3. **PostgreSQL**: Namespace → PVC → ConfigMaps → Deployment → Service → patches
-4. **Keycloak**: Namespace → auto-ready → Keycloak CRD instance → patches
+## 9. Output Formats
 
-### 7.3 Functions
+All formats are generated from the **same KCL source**. Run `koncept render <format>`:
 
-| Function | Package | Purpose |
+| Format | Command | What it generates |
 |---|---|---|
-| `function-patch-and-transform` | v0.9.0 | Resource patching and transformation |
-| `function-auto-ready` | v0.5.0 | Automatic readiness detection |
-| `function-go-templating` | v0.10.0 | Go template rendering |
-| `function-kcl` | v0.11.4 | KCL function execution |
-| `function-sequencer` | v0.2.3 | Step sequencing |
-
-### 7.4 Providers
-
-| Provider | Config |
-|---|---|
-| `provider-kubernetes` | `InjectedIdentity` credentials |
-| `provider-helm` | `InjectedIdentity` credentials |
+| **yaml** | `koncept render yaml` | Multi-document K8s YAML (`kubectl apply -f`) |
+| **argocd** | `koncept render argocd` | ArgoCD Application + AppProject CRDs |
+| **helm** | `koncept render helm` | Chart.yaml + values.yaml per component |
+| **helmfile** | `koncept render helmfile` | helmfile.yaml + per-component Helm charts |
+| **kusion** | `koncept render kusion` | Kusion spec with dependency graph |
+| **kustomize** | `koncept render kustomize` | kustomization.yaml + resource files |
+| **timoni** | `koncept render timoni` | Timoni CUE module structure |
+| **crossplane** | `koncept render crossplane` | XRD + Composition + Composite Resource |
+| **backstage** | `koncept render backstage` | catalog-info.yaml with entities |
 
 ---
 
-## 8. Output Formats
+## 10. Data Flow End-to-End
 
-### 8.1 Plain YAML (ArgoCD/GitOps)
-
-Generated by `kcl_to_yaml.yaml_stream_stack()`. Produces multi-document YAML with all K8s manifests (Namespaces, Deployments, Services, ConfigMaps, CRDs).
-
-### 8.2 Helm Charts
-
-Generated by builders:
-- `chart_builder.k` → `Chart.yaml`
-- `templates_builder.k` → `templates/manifests.yaml`
-- Creates empty `values.yaml`
-
-### 8.3 Helmfile
-
-Generated by `helmfile_builder.k` → `helmfile.yaml` with release references to local charts.
-
-### 8.4 Kusion Spec
-
-Generated by `Release.kusionSpec` property which calls `kcl_to_kusion.kusion_spec_stream_stack()`. Each manifest becomes a `KusionResource` with:
-- `id`: `apiVersion:kind:namespace:name`
-- `type`: `Kubernetes`
-- `attributes`: The full K8s manifest
-- `dependsOn`: References to leader resources
-
----
-
-## 9. Data Flow End-to-End
-
-Example: Generating Kusion spec for Berlin v1.0.0:
+Example: Generating plain YAML for erp_back development environment:
 
 ```
-1. kernel/project_def.k → video_streaming_project (Project instance)
-2. stacks/versioned/v1_0_0/base/profile_def.k → v1_0_0 profile (Profile instance)
-3. tenants/germany/tenant_def.k → germany tenant (Tenant instance)
-4. sites/tenants/production/berlin/site_def.k → berlin site (Site instance)
-5. core_sources/merge_configurations.k → merge(project, profile, tenant, site configs)
-6. stacks/versioned/v1_0_0/base/stack_def.k → Stack with merged configs
-   → Creates K8sNamespaces, Components, Accessories with concrete manifests
-7. framework/models/release.k → Release with kusionSpec property
-8. framework/procedures/kcl_to_kusion.k → Transform manifests to KusionResource format
-9. Output: kusion_spec.yaml with all resources and dependency chains
+kernel/configurations.k
+  → ErpBackConfigurations { projectName = "erp_back", gitRepoUrl = "...", ... }
+
+stacks/development/profile_def.k
+  → Profile { configurations = { springProfile = "default", ... } }
+
+tenants/vendor/tenant_def.k
+  → Tenant { configurations = { brandIcon = "vendor.png" } }
+
+sites/dev_cluster/site_def.k
+  → Site { configurations = { postgresHost = "erp-postgres.erp-postgres.svc...", ... } }
+
+pre_releases/configurations_dev.k
+  → merged = kernel | profile | tenant | site = final config
+
+stacks/development/stack_def.k
+  → ErpBackDevelopmentStack {
+      k8snamespaces = [erp-apps-ns, erp-postgres-ns]
+      components = [erp-api (Deployment + Service)]
+      accessories = [erp-postgres (Deployment + Service + PV + PVC)]
+    }
+
+factory/render.k -D output=yaml
+  → kcl_to_yaml.yaml_stream_stack(stack)
+  → Multi-document YAML: 2 Namespaces + 2 Deployments + 2 Services + PV + PVC
 ```
 
 ---
 
-## 10. Adding a New Project
+## 11. Adding a New Project
 
-1. Create `projects/<project_name>/` with `kcl.mod` and `main.k`
-2. Create `kernel/` with project definition and base configurations
-3. Create `core_sources/` with project-specific configuration schema and merge function
-4. Create `modules/` with concrete K8s manifest modules
-5. Create `stacks/` with stack definitions
-6. Create `tenants/` and `sites/` for multi-tenancy
-7. Create `pre_releases/` and/or `releases/` with factory builders
+See the [Developer Guide](./DEVELOPER_GUIDE.md) for detailed instructions. Summary:
+
+1. Create `projects/<name>/` with `kcl.mod` (depends on `framework`)
+2. Create `kernel/` — project definition + base configurations
+3. Create `core_sources/` — config schema extending `BaseConfigurations` + merge function
+4. Create `modules/` — use templates (`WebAppModule`, `SingleDatabaseModule`, etc.)
+5. Create `stacks/` — assemble modules into a stack
+6. Create `tenants/` and `sites/` — customer and environment overrides
+7. Create `pre_releases/` — factory directory with `factory_seed.k` + `render.k`
 
 ---
 
-## 11. Adding a New Module
+## 12. Adding a New Module
 
-1. Create a new `.k` file in `modules/appops/` or `modules/infrastructure/`
-2. Extend `component.Component` or `accessory.Accessory` via schema inheritance
-3. Define `kind`, `leaders`, `manifests` with K8s resources
-4. Add the module to the stack definition in `stacks/`
+### Using a template (recommended)
 
-Example:
+```kcl
+import framework.templates.webapp as webapp
+
+schema MyApi(webapp.WebAppModule):
+    port = 8080
+    replicas = 1
+    resources = deploy.ResourceSpec { cpuRequest = "500m", memoryRequest = "512Mi" }
+    env = [{ name = "APP_ENV", value = configurations.springProfile }]
+```
+
+This auto-generates: Deployment + Service + optional ConfigMap + optional ServiceAccount.
+
+### Using raw manifests (full control)
+
 ```kcl
 import framework.models.modules.component as component
+import framework.builders.leader as leader
 
-schema MyNewModule(component.Component):
+schema MyModule(component.Component):
     kind = "APPLICATION"
-    leaders = [component.ComponentLeader {
-        name = name
-        kind = "Deployment"
-        apiVersion = "apps/v1"
-        namespace = namespace
-    }]
+    leaders = [leader.build_component_leader(name, namespace)]
     manifests = [
-        # K8s Deployment, Service, etc.
+        # build_deployment(...), build_service(...), etc.
     ]
 ```
 
+Then add the module to your stack:
+```kcl
+_my_api = MyApi { name = "api", namespace = _ns.name, asset = { image = "...", version = "1.0" }, configurations = instanceConfigurations, dependsOn = [_ns] }.instance
+components = [_my_api]
+```
+
 ---
 
-## 12. Adding a New Output Format
+## 13. Adding a New Output Format
 
-1. Create a new procedure in `framework/procedures/kcl_to_<format>.k`
-2. Define the transformation lambda that takes a Stack and outputs the target format
-3. Optionally add custom schemas in `framework/custom/<format>/`
-4. Add a new builder pattern in the factory (e.g., `<format>_builder.k`)
-5. Add a new render type to `platform_cli/koncept`
+1. Create `framework/procedures/kcl_to_<format>.k` — transformation lambda
+2. Optionally create `framework/custom/<format>/` — format-specific schemas
+3. Add a new `if _output == "<format>":` block to `framework/factory/render.k`
+4. Copy updated `render.k` to all existing factory directories
+5. Add the format to `platform_cli/koncept` CLI

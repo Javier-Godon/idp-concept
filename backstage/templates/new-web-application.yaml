@@ -1,0 +1,173 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: new-web-application
+  title: New Web Application
+  description: |
+    Create a new web application using the KCL WebAppModule template.
+    Generates a Deployment, Service, ConfigMap, and ServiceAccount.
+  tags:
+    - kcl
+    - kubernetes
+    - webapp
+    - recommended
+  annotations:
+    backstage.io/techdocs-ref: dir:docs/
+spec:
+  owner: platform-team
+  type: service
+  parameters:
+    - title: Application Details
+      required:
+        - name
+        - namespace
+      properties:
+        name:
+          title: Application Name
+          type: string
+          description: Name of the application (used for Deployment, Service, etc.)
+          pattern: "^[a-z][a-z0-9-]*$"
+          ui:autofocus: true
+        namespace:
+          title: Kubernetes Namespace
+          type: string
+          default: apps
+          description: Target Kubernetes namespace
+        port:
+          title: Port
+          type: integer
+          default: 8080
+          description: Application container port
+        replicas:
+          title: Replicas
+          type: integer
+          default: 1
+          minimum: 1
+          maximum: 10
+          description: Number of pod replicas
+
+    - title: Image Configuration
+      required:
+        - imageVersion
+      properties:
+        imageVersion:
+          title: Image Version
+          type: string
+          default: "1.0.0"
+          description: Container image version tag (never use 'latest')
+          pattern: '^\d+\.\d+\.\d+'
+        imagePullPolicy:
+          title: Image Pull Policy
+          type: string
+          default: IfNotPresent
+          enum:
+            - IfNotPresent
+            - Always
+          description: When to pull the container image
+
+    - title: Resource Configuration
+      properties:
+        cpuRequest:
+          title: CPU Request
+          type: string
+          default: "100m"
+          description: CPU request (e.g., 100m, 500m, 1)
+        memoryRequest:
+          title: Memory Request
+          type: string
+          default: "256Mi"
+          description: Memory request (e.g., 256Mi, 1Gi)
+        cpuLimit:
+          title: CPU Limit
+          type: string
+          default: "500m"
+        memoryLimit:
+          title: Memory Limit
+          type: string
+          default: "512Mi"
+
+    - title: Health Checks
+      properties:
+        healthPath:
+          title: Health Check Path
+          type: string
+          default: "/health"
+          description: HTTP path for liveness/readiness probes
+        healthPort:
+          title: Health Check Port
+          type: integer
+          description: Port for health checks (defaults to application port)
+
+    - title: Target Environment
+      required:
+        - environment
+        - outputFormat
+      properties:
+        environment:
+          title: Environment
+          type: string
+          default: dev
+          enum:
+            - dev
+            - stg
+            - production
+          description: Target deployment environment
+        outputFormat:
+          title: Output Format
+          type: string
+          default: argocd
+          enum:
+            - argocd
+            - helmfile
+            - kustomize
+            - crossplane
+          description: Manifest output format
+        repoUrl:
+          title: Repository
+          type: string
+          ui:field: RepoUrlPicker
+          ui:options:
+            allowedHosts:
+              - github.com
+
+  steps:
+    - id: scaffold
+      name: Initialize KCL module
+      action: koncept:init
+      input:
+        template: webapp
+        name: ${{ parameters.name }}
+        namespace: ${{ parameters.namespace }}
+
+    - id: validate
+      name: Validate configuration
+      action: koncept:validate
+
+    - id: render
+      name: Render manifests
+      action: koncept:render
+      input:
+        output: ${{ parameters.outputFormat }}
+
+    - id: publish
+      name: Open Pull Request
+      action: publish:github:pull-request
+      input:
+        repoUrl: ${{ parameters.repoUrl }}
+        title: "feat: add ${{ parameters.name }} web application"
+        description: |
+          New web application **${{ parameters.name }}** created via Backstage scaffolder.
+
+          - Namespace: `${{ parameters.namespace }}`
+          - Port: `${{ parameters.port }}`
+          - Replicas: `${{ parameters.replicas }}`
+          - Environment: `${{ parameters.environment }}`
+          - Output format: `${{ parameters.outputFormat }}`
+        branchName: feat/add-${{ parameters.name }}
+
+  output:
+    links:
+      - title: Pull Request
+        url: ${{ steps['publish'].output.remoteUrl }}
+      - title: View in Catalog
+        entityRef: component:default/${{ parameters.name }}

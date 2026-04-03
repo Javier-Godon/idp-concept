@@ -1,0 +1,94 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: deploy-to-environment
+  title: Deploy to Environment
+  description: |
+    Render manifests for an existing project and target environment.
+    Used when promoting a release across environments (dev → stg → production).
+  tags:
+    - kcl
+    - deploy
+    - platform
+spec:
+  owner: platform-team
+  type: other
+  parameters:
+    - title: Deployment Target
+      required:
+        - projectName
+        - releaseType
+        - environment
+        - outputFormat
+      properties:
+        projectName:
+          title: Project Name
+          type: string
+          description: Name of the project (e.g., erp_back)
+          ui:autofocus: true
+        releaseType:
+          title: Release Type
+          type: string
+          enum:
+            - pre_release
+            - release
+          default: pre_release
+          description: Pre-release (dev/stg) or production release
+        environment:
+          title: Environment
+          type: string
+          enum:
+            - dev
+            - stg
+            - production
+          description: Target deployment environment
+        outputFormat:
+          title: Output Format
+          type: string
+          default: argocd
+          enum:
+            - argocd
+            - helmfile
+            - kusion
+            - kustomize
+            - timoni
+            - crossplane
+
+    - title: Repository
+      properties:
+        repoUrl:
+          title: Repository
+          type: string
+          ui:field: RepoUrlPicker
+          ui:options:
+            allowedHosts:
+              - github.com
+
+  steps:
+    - id: validate
+      name: Validate configuration
+      action: koncept:validate
+
+    - id: render
+      name: Render manifests
+      action: koncept:render
+      input:
+        output: ${{ parameters.outputFormat }}
+
+    - id: publish
+      name: Open Pull Request
+      action: publish:github:pull-request
+      input:
+        repoUrl: ${{ parameters.repoUrl }}
+        title: "deploy: ${{ parameters.projectName }} to ${{ parameters.environment }}"
+        description: |
+          Deploying **${{ parameters.projectName }}** to **${{ parameters.environment }}**.
+
+          - Release type: `${{ parameters.releaseType }}`
+          - Output format: `${{ parameters.outputFormat }}`
+        branchName: deploy/${{ parameters.projectName }}-${{ parameters.environment }}
+
+  output:
+    links:
+      - title: Pull Request
+        url: ${{ steps['publish'].output.remoteUrl }}

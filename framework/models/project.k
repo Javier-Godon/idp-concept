@@ -6,6 +6,7 @@ in the kernel folder. So in some sense kernel is the same as project and contain
 schema ProjectInstance:
     name: str
     description: str
+    # framework-generic: accepts any project config schema
     configurations: any
 
 schema Project:
@@ -16,5 +17,6 @@ schema Project:
     }
     name: str
     description: str
+    # framework-generic: accepts any project config schema
     configurations: any
 

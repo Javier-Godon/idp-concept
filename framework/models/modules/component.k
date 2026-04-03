@@ -1,13 +1,12 @@
+import models.modules.leader as base_leader
+
 schema ComponentAsset:
     image?: str
     helmChart?: str
     version: str
 
-schema ComponentLeader:
-    name: str
-    kind: str
-    apiVersion: str
-    namespace?: str
+schema ComponentLeader(base_leader.Leader):
+    """Leader specialisation for Components — inherits all fields from Leader."""
 
 schema ComponentInstance:
     name: str

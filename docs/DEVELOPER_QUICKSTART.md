@@ -22,11 +22,14 @@ cd projects/<project>/pre_releases/manifests/<env>/
 # Validate configuration (catches errors before rendering)
 koncept validate
 
-# Render manifests
+# Render manifests (pick the format your team uses)
 koncept render argocd          # Plain K8s YAML for GitOps deployment
 koncept render helmfile        # Helm charts + helmfile.yaml
 koncept render kusion          # Kusion spec
 koncept render kustomize       # Kustomize base with kustomization.yaml
+koncept render timoni          # CUE-based Timoni bundle
+koncept render crossplane      # Crossplane managed resources
+koncept render backstage       # Backstage catalog entities
 
 # Navigate to a production release
 cd projects/<project>/releases/<version>/
@@ -132,6 +135,26 @@ koncept render kustomize
 # Output: output/base/kustomization.yaml
 #         output/base/<kind>-<name>.yaml
 ```
+
+### Timoni
+Generates CUE-based Timoni bundle manifests.
+```bash
+koncept render timoni
+```
+
+### Crossplane
+Generates Crossplane-compatible YAML for managed resources.
+```bash
+koncept render crossplane
+```
+
+### Backstage
+Generates Backstage catalog entity definitions from component/accessory metadata.
+```bash
+koncept render backstage
+```
+
+> **All 9 formats** are rendered from the same KCL source — change one config, re-render any format.
 
 ## Validation
 

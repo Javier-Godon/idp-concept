@@ -144,6 +144,21 @@ schema Release:
 
 ## 2. Module Models (`framework/models/modules/`)
 
+### Leader (Base)
+
+**File**: `framework/models/modules/leader.k`
+**Purpose**: Shared base schema identifying the primary K8s resource of a module.
+
+```kcl
+schema Leader:
+    name: str        # Resource name
+    kind: str        # K8s kind (e.g., "Deployment", "Kafka", "Namespace")
+    apiVersion: str  # K8s apiVersion (e.g., "apps/v1")
+    namespace?: str  # Optional namespace
+```
+
+`ComponentLeader`, `AccessoryLeader`, and `K8sNamespaceLeader` all inherit from `Leader` and are interchangeable specialisations.
+
 ### Component
 
 **File**: `framework/models/modules/component.k`  
@@ -155,11 +170,7 @@ schema ComponentAsset:
     helmChart?: str            # Helm chart reference (alternative to image)
     version: str               # Version/tag
 
-schema ComponentLeader:
-    name: str                  # Resource name
-    kind: str                  # K8s kind (e.g., "Deployment")
-    apiVersion: str            # K8s apiVersion (e.g., "apps/v1")
-    namespace?: str            # Optional namespace
+schema ComponentLeader(Leader):  # Inherits name, kind, apiVersion, namespace
 
 schema ComponentInstance:
     name: str                  # Component name
@@ -172,7 +183,7 @@ schema ComponentInstance:
     dependsOn: [any]           # Dependencies (namespace instances, etc.)
 
 schema Component:
-    instance: ComponentInstance
+    instance: ComponentInstance  # Auto-generated flat instance
     kind: "APPLICATION" | "INFRASTRUCTURE"
     name: str
     namespace: str
@@ -180,7 +191,7 @@ schema Component:
     asset: ComponentAsset
     leaders: [ComponentLeader]
     manifests: [any]
-    dependsOn?: [any]
+    dependsOn?: [any]          # Optional — auto-populated in instance
 ```
 
 ### Accessory
@@ -193,11 +204,7 @@ schema AccessoryAsset:
     image?: str
     version: str
 
-schema AccessoryLeader:
-    name: str
-    kind: str
-    apiVersion: str
-    namespace?: str
+schema AccessoryLeader(Leader):  # Inherits name, kind, apiVersion, namespace
 
 schema AccessoryInstance:
     name: str
@@ -227,16 +234,12 @@ schema Accessory:
 **Purpose**: Kubernetes namespace resources with auto-generated manifests.
 
 ```kcl
-schema K8sNamespaceLeader:
-    name: str
-    kind: str                      # Always "Namespace"
-    apiVersion: str                # Always "v1"
-    namespace?: str
+schema K8sNamespaceLeader(Leader):  # Inherits name, kind, apiVersion, namespace
 
 schema K8sNamespaceInstance:
     name: str
-    kind: str
-    apiVersion: str
+    kind: str                      # Always "Namespace"
+    apiVersion: str                # Always "v1"
     configurations: any
     leaders: [K8sNamespaceLeader]
     manifests: [any]               # Auto-generated Namespace manifest
@@ -524,52 +527,65 @@ Lambda: `build_thirdparty_helm` → HelmRelease manifest.
 ## 7. Schema Inheritance Hierarchy
 
 ```
-Component (framework)
-├── WebAppModule (template — web applications)
-├── VideoCollectorMongodbPythonModule (project module, raw)
-├── KafkaVideoServerPythonModule (project module, raw)
-└── ... (other application modules)
+Leader (framework/models/modules/leader.k — base for all leader types)
+├── ComponentLeader    (component.k — primary resource of a Component)
+├── AccessoryLeader    (accessory.k — primary resource of an Accessory)
+└── K8sNamespaceLeader (k8snamespace.k — primary resource of a Namespace)
 
-Accessory (framework)
-├── SingleDatabaseModule (template — simple database)
-├── KafkaClusterModule (template — Strimzi operator)
-├── PostgreSQLClusterModule (template — CloudNativePG)
-├── MongoDBCommunityModule (template — MongoDB Community)
-├── RabbitMQClusterModule (template — RabbitMQ)
-├── RedisModule (template — OT Redis)
-├── KeycloakModule (template — Keycloak)
-├── OpenSearchClusterModule (template — OpenSearch)
-├── VaultStaticSecretModule (vault.k — Vault VSO)
-├── QuestDBModule (template — Helm chart)
-├── MinIOTenantSpec (template — MinIO Operator, archived)
-├── MinIOHelmSpec (template — Bitnami Helm chart)
-├── KafkaSingleInstanceModule (project module, raw)
-├── MongoDBSingleInstanceModule (project module, raw)
-└── ... (other infrastructure modules)
+Component (framework/models/modules/component.k)
+├── WebAppModule          (template — web applications)
+├── VideoCollectorModule  (project module — raw approach)
+└── ... (project APPLICATION / INFRASTRUCTURE modules)
+
+Accessory (framework/models/modules/accessory.k)
+├── SingleDatabaseModule      (template — simple DB with PV)
+├── KafkaClusterModule        (template — Strimzi operator)
+├── PostgreSQLClusterModule   (template — CloudNativePG)
+├── MongoDBCommunityModule    (template — MongoDB Community)
+├── RabbitMQClusterModule     (template — RabbitMQ)
+├── RedisModule               (template — OT Redis)
+├── KeycloakModule            (template — Keycloak)
+├── OpenSearchClusterModule   (template — OpenSearch)
+├── VaultStaticSecretModule   (template — Vault VSO)
+├── QuestDBModule             (template — Helm chart)
+├── MinIOTenantSpec / MinIOHelmSpec (template — MinIO)
+└── ... (project CRD / SECRET modules)
+
+Stack (framework/models/stack.k)
+├── ErpBackDevelopmentStack     (project stack — template approach)
+├── VideoStreamingDevStack      (project stack — raw approach)
+└── ... (versioned stacks per project)
 
 RenderStack (framework/models/manifests/)
 └── wraps Stack for multi-format render output
-
-Stack (framework)
-├── VideoStreamingDevelopmentStack (project stack)
-├── VideoStreamingv1_0_0_BaseStack (versioned stack)
-├── ErpBackDevelopmentStack (project stack)
-├── ErpBackV1_0_0Stack (versioned stack)
-└── ... (other version stacks)
 ```
 
 ---
 
 ## 8. Usage Summary
 
-### Creating a Module
+### Creating a Module (Raw Approach)
 ```kcl
 import framework.models.modules.component as component
 
 schema MyModule(component.Component):
     kind = "APPLICATION"
-    leaders = [component.ComponentLeader { name = name, kind = "Deployment", apiVersion = "apps/v1", namespace = namespace }]
-    manifests = [/* K8s manifests */]
+    leaders = [component.ComponentLeader {
+        name = name
+        kind = "Deployment"
+        apiVersion = "apps/v1"
+        namespace = namespace
+    }]
+    manifests = [/* K8s manifests using builders */]
+```
+
+### Creating a Module (Template Approach — Recommended)
+```kcl
+import framework.templates.webapp as webapp
+
+schema MyApp(webapp.WebAppModule):
+    port = 8080
+    # leaders, manifests, Deployment, Service auto-generated
 ```
 
 ### Creating a Stack

@@ -6,6 +6,7 @@ import models.tenant
 schema SiteInstance:
     name: str
     tenant: tenant.Tenant
+    # framework-generic: accepts any project config schema
     configurations: any
 
 schema Site:
@@ -16,5 +17,6 @@ schema Site:
     }
     name: str
     tenant: tenant.Tenant
+    # framework-generic: accepts any project config schema
     configurations: any
 

@@ -138,7 +138,7 @@ def main [
 
     "render" => {
       if $render_type == null {
-          print $"❌ Missing render type. Usage: koncept render <argocd|helmfile|kusion|kustomize|timoni|crossplane>"
+          print $"❌ Missing render type. Usage: koncept render <argocd|helmfile|kusion|kustomize|timoni|crossplane|backstage>"
           exit 1
       }
 
@@ -264,8 +264,25 @@ def main [
             print "[Crossplane] Done."
           }
 
+          "backstage" => {
+            let output_dir = (if $output != null { $output } else { "output" })
+            let bs_dir = $"($output_dir)/backstage"
+            print "[Backstage] Generating catalog-info.yaml entities..."
+            mkdir $bs_dir
+
+            let bs_data = (kcl_run $render_file -D "output=backstage" | from yaml)
+
+            # Write catalog-info.yaml (all entities as multi-doc YAML)
+            let entities = $bs_data.entities
+            $entities | each {|e| $e | to yaml } | str join "---\n" | save -f $"($bs_dir)/catalog-info.yaml"
+            print $"  [Catalog] ($bs_data.metadata.entityCount) entities -> ($bs_dir)/catalog-info.yaml"
+            print $"  [Project] ($bs_data.metadata.projectName) v($bs_data.metadata.version)"
+
+            print "[Backstage] Done."
+          }
+
           _ => {
-            print $"❌ Unsupported render type: ($render_type). Use: argocd, helmfile, kusion, kustomize, timoni, crossplane"
+            print $"❌ Unsupported render type: ($render_type). Use: argocd, helmfile, kusion, kustomize, timoni, crossplane, backstage"
             exit 1
           }
         }

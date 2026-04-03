@@ -30,7 +30,9 @@ schema FactorySeed:
     profile: profile_model.Profile
     tenant: tenant_model.Tenant
     site: site_model.Site
+    # framework-generic: higher-order function — merge lambda varies per project
     mergeFunc: any
+    # framework-generic: stack schema type varies per project
     stackSchema: any
 
     # Auto-computed: merge all 4 layers
