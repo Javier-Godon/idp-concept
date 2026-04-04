@@ -232,6 +232,10 @@ Use the `knowledge-research` skill (`.github/skills/knowledge-research/SKILL.md`
 - **score-spec/spec** (8,000+ stars) — Platform-agnostic workload spec (possible future input format)
 - **syntasso/kratix** (741+ stars) — Platform framework with Promises (parallels Stack/Module pattern)
 
+### Multi-Cluster & GitOps at Scale (reference architectures)
+- **k0rdent/kcm** (180+ stars) — Enterprise multi-cluster K8s management (Go). ClusterTemplate/ServiceTemplate/TemplateChain patterns, priority-based template ordering, Helm-native lifecycle. Applicable: template versioning chains and lifecycle management
+- **rancher/fleet** (1,700+ stars) — GitOps at scale (Go). GitRepo→Bundle→BundleDeployment pipeline, converts everything to Helm internally, multi-cluster targeting with labels. Applicable: potential 10th output format (`kcl_to_fleet`), bundle grouping patterns
+
 ### CNCF References
 - **cncf/tag-app-delivery** (833+ stars) — Platform Engineering Maturity Model + Platforms Whitepaper
 
@@ -242,6 +246,9 @@ Use the `knowledge-research` skill (`.github/skills/knowledge-research/SKILL.md`
 - ArgoCD: https://argo-cd.readthedocs.io/
 - Helm: https://helm.sh/docs/
 - Kusion: https://www.kusionstack.io/docs/
+- k0rdent: https://docs.k0rdent.io/
+- Fleet: https://fleet.rancher.io/
 - CNCF Platform Maturity Model: https://tag-app-delivery.cncf.io/whitepapers/platform-eng-maturity-model
 
 See `.github/docs/REFERENCE_RESOURCES.md` for the complete curated knowledge base.
+See `docs/PLATFORM_COMPARISON_AND_KCL_ANALYSIS.md` for the KCL vs Go analysis and platform comparison study.

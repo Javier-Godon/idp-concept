@@ -213,6 +213,8 @@ https://github.com/stefanprodan/*
 https://github.com/cncf/*
 https://github.com/score-spec/*
 https://github.com/syntasso/*
+https://github.com/k0rdent/*
+https://github.com/rancher/*
 https://raw.githubusercontent.com/*/main/*
 https://raw.githubusercontent.com/*/refs/heads/main/*
 
@@ -222,6 +224,8 @@ https://score.dev/*
 https://timoni.sh/*
 https://kustomize.io/*
 https://cdk8s.io/*
+https://docs.k0rdent.io/*
+https://fleet.rancher.io/*
 
 # BLOCKED — NEVER fetch these (examples, not exhaustive)
 # http://localhost:*

@@ -163,6 +163,7 @@ See [projects/erp_back/](projects/erp_back/) for the template approach and [proj
 | [TESTING_STRATEGY](docs/TESTING_STRATEGY.md) | Contributors | Testing patterns and conventions |
 | [TOOLING_SETUP](docs/TOOLING_SETUP.md) | All | Installation and environment setup |
 | [SECURITY](docs/SECURITY.md) | All | Security policy and approved tools |
+| [PLATFORM_COMPARISON](docs/PLATFORM_COMPARISON_AND_KCL_ANALYSIS.md) | Platform engineers | KCL vs Go, k0rdent/Fleet patterns |
 
 ## Technologies
 

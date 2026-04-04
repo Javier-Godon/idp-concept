@@ -274,6 +274,71 @@ All resources are:
 
 ---
 
+## Multi-Cluster & GitOps at Scale (Reference Architectures)
+
+### 13. k0rdent/kcm — Enterprise Multi-Cluster K8s Management
+
+- **URL**: [github.com/k0rdent/kcm](https://github.com/k0rdent/kcm)
+- **Stars**: 180+ | **License**: Apache 2.0
+- **Maintained by**: Mirantis (k0rdent project)
+- **Language**: Go 93.7%
+
+**What to learn from this repo:**
+- Enterprise multi-cluster Kubernetes management with template-based lifecycle
+- **ClusterTemplate/ServiceTemplate/TemplateChain** patterns — typed templates with priority-based ordering and versioning chains
+- `HelmSpec` + `HelmValues` reusable types for Helm-native resource lifecycle
+- `TemplateValidationStatus` with constraint checking (providers, contract version)
+- Template chain upgrade paths (e.g., v1→v2→v3 with supported upgrade matrix)
+- Management vs child cluster separation patterns
+
+**Applicable patterns for idp-concept:**
+- Template versioning chains could enhance our Release/Stack versioning
+- Priority-based template ordering parallels our `dependsOn` mechanism
+- The `TemplateChain` concept (supported upgrades between template versions) could be adapted for stack version migration
+- `HelmSpec` reusable struct pattern validates our approach of extracting common schemas
+
+**Key paths:**
+- `/api/v1alpha1/templates_common.go` — Shared template types (HelmSpec, TemplateStatusCommon)
+- `/api/v1alpha1/clustertemplate_types.go` — ClusterTemplate CRD definition
+- `/api/v1alpha1/servicetemplate_types.go` — ServiceTemplate CRD definition
+- `/api/v1alpha1/templatechain_types.go` — Template versioning chain patterns
+
+**Docs**: [docs.k0rdent.io](https://docs.k0rdent.io/)
+
+---
+
+### 14. rancher/fleet — GitOps at Scale
+
+- **URL**: [github.com/rancher/fleet](https://github.com/rancher/fleet)
+- **Stars**: 1,700+ | **License**: Apache 2.0
+- **Maintained by**: SUSE/Rancher
+- **Language**: Go 92.7%
+
+**What to learn from this repo:**
+- GitOps deployment at scale: GitRepo → Bundle → BundleDeployment three-stage pipeline
+- **Everything converts to Helm** internally — raw YAML, Kustomize, and Helm charts all normalized to Helm releases
+- Multi-cluster targeting with label-based selectors (similar to our Site concept)
+- Bundle grouping by path within a Git repository (parallels our factory/ structure)
+- Dependency ordering between bundles via `dependsOn`
+- Diff-based change detection for efficient reconciliation
+
+**Applicable patterns for idp-concept:**
+- The "normalize everything to Helm" strategy validates our multi-format output approach
+- Bundle path-based grouping could inform how we organize factory/ output directories
+- Fleet's cluster targeting by labels parallels our Site→Tenant→Stack selection
+- `dependsOn` in Fleet Bundles is conceptually identical to our module/manifest `dependsOn`
+- Potential future 10th output format: `kcl_to_fleet` generating Fleet GitRepo + Bundle specs
+
+**Key concepts:**
+- `GitRepo` — Points to a Git repository with paths to deploy
+- `Bundle` — Collection of resources from a single path, normalized to Helm
+- `BundleDeployment` — Per-cluster deployment of a Bundle
+- `ClusterGroup` — Label-based cluster targeting (parallels our Site model)
+
+**Docs**: [fleet.rancher.io](https://fleet.rancher.io/)
+
+---
+
 ## Alternative Tools & Emerging Technologies
 
 These tools represent alternative or complementary approaches worth monitoring. They are NOT currently used in idp-concept but may influence future design or serve as additional output formats.

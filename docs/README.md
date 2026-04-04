@@ -34,6 +34,7 @@ Start here if you design framework internals — builders, templates, procedures
 | [TESTING_STRATEGY.md](TESTING_STRATEGY.md) | Testing approach — KCL unit tests, kubeconform, Helm lint, CI/CD |
 | [CROSSPLANE_PATTERNS.md](CROSSPLANE_PATTERNS.md) | Crossplane composition patterns used in `crossplane_v2/` |
 | [IDP_EVOLUTION_PLAN.md](IDP_EVOLUTION_PLAN.md) | Roadmap — phases, implementation progress, priority tree |
+| [PLATFORM_COMPARISON_AND_KCL_ANALYSIS.md](PLATFORM_COMPARISON_AND_KCL_ANALYSIS.md) | KCL vs Go analysis, k0rdent/Fleet patterns, factory improvements |
 
 ### All Users
 
