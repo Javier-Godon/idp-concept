@@ -1,0 +1,23 @@
+repos:
+  - repo: local
+    hooks:
+      - id: kcl-fmt
+        name: Format KCL files
+        entry: kcl fmt
+        language: system
+        files: '\.k$'
+        exclude: 'kcl\.mod'
+
+      - id: kcl-lint
+        name: Lint KCL files
+        entry: kcl lint
+        language: system
+        files: '\.k$'
+        exclude: 'kcl\.mod|tests/'
+
+      - id: kcl-test
+        name: Run KCL tests
+        entry: bash -c 'cd framework && kcl test ./...'
+        language: system
+        pass_filenames: false
+        files: 'framework/.*\.k$'

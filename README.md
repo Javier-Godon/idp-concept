@@ -1,5 +1,7 @@
 # idp-concept
 
+[![Validate KCL Configurations](https://github.com/YOUR_ORG/idp-concept/actions/workflows/validate.yml/badge.svg)](https://github.com/YOUR_ORG/idp-concept/actions/workflows/validate.yml)
+
 An **Internal Developer Platform** (IDP) that uses [KCL](https://www.kcl-lang.io/) as a single source of truth to generate Kubernetes deployment manifests in **9 output formats** — so you never lock into one deployment tool.
 
 ## Why?

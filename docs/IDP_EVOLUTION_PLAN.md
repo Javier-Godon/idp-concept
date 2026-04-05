@@ -1,26 +1,28 @@
 # IDP Evolution Plan
 
-> Single-source-of-truth roadmap to evolve **idp-concept** from a functional prototype into a production-grade Internal Developer Platform.
+> Single-source-of-truth roadmap for **idp-concept** — evolving from a functional prototype into a production-grade, extensible Internal Developer Platform.
 
 ## Table of Contents
 
 - [1. Vision & Principles](#1-vision--principles)
 - [2. User Profiles](#2-user-profiles)
-- [3. Current State Assessment](#3-current-state-assessment)
-- [4. Phase 1 — Foundation Hardening](#4-phase-1--foundation-hardening)
-- [5. Phase 2 — Helmfile Parameterization](#5-phase-2--helmfile-parameterization)
-- [6. Phase 3 — KCL Code Quality](#6-phase-3--kcl-code-quality)
-- [7. Phase 4 — Developer Experience](#7-phase-4--developer-experience)
-- [8. Phase 5 — Advanced Platform Features](#8-phase-5--advanced-platform-features)
-- [9. Phase 6 — Production Infrastructure (Operators & Third-Party)](#9-phase-6--production-infrastructure-operators--third-party)
-- [10. Phase 7 — Multi-Format Output & Ecosystem Integration](#10-phase-7--multi-format-output--ecosystem-integration)
-- [11. Phase 8 — Developer Portal: Backstage Catalog Foundation](#11-phase-8--developer-portal-backstage-catalog-foundation)
-- [12. Phase 9 — Developer Portal: Plugin Integration & Auth](#12-phase-9--developer-portal-plugin-integration--auth)
-- [13. Phase 10 — Developer Portal: Self-Service Scaffolder](#13-phase-10--developer-portal-self-service-scaffolder)
-- [14. User Workflow Guides](#14-user-workflow-guides) — [Standalone: USER_WORKFLOW_GUIDES.md](./USER_WORKFLOW_GUIDES.md)
-- [15. Work Matrix by User Profile](#15-work-matrix-by-user-profile) — [Standalone: WORK_MATRIX.md](./WORK_MATRIX.md)
-- [16. Migration Guide: video_streaming → template pattern](#16-migration-guide-video_streaming--template-pattern) — [Standalone: MIGRATION_GUIDE.md](./MIGRATION_GUIDE.md)
-- [Implementation Progress — Testing & TDD](#implementation-progress--testing--tdd)
+- [3. CNCF Platform Engineering Maturity Model Alignment](#3-cncf-platform-engineering-maturity-model-alignment)
+- [4. Accomplished Phases (1–10) — Summary](#4-accomplished-phases-110--summary)
+- [5. Phase 11 — Go CLI: Hybrid Architecture](#5-phase-11--go-cli-hybrid-architecture)
+- [6. Phase 12 — CI/CD Integration & Validation Pipeline](#6-phase-12--cicd-integration--validation-pipeline)
+- [7. Phase 13 — Framework Package Registry & Versioning](#7-phase-13--framework-package-registry--versioning)
+- [8. Phase 14 — Configuration Extensibility & Plugin Architecture](#8-phase-14--configuration-extensibility--plugin-architecture)
+- [9. Phase 15 — Policy-as-Code & Governance](#9-phase-15--policy-as-code--governance)
+- [10. Phase 16 — Fleet Output & Multi-Cluster Strategy](#10-phase-16--fleet-output--multi-cluster-strategy)
+- [11. Phase 17 — Score Spec Input Format](#11-phase-17--score-spec-input-format)
+- [12. Phase 18 — Observability-Driven Platform](#12-phase-18--observability-driven-platform)
+- [13. Strategic Roadmap Overview](#13-strategic-roadmap-overview)
+- [14. Architecture Decision Records](#14-architecture-decision-records)
+- [15. User Workflow Guides](#15-user-workflow-guides) — [Standalone: USER_WORKFLOW_GUIDES.md](./USER_WORKFLOW_GUIDES.md)
+- [16. Work Matrix by User Profile](#16-work-matrix-by-user-profile) — [Standalone: WORK_MATRIX.md](./WORK_MATRIX.md)
+- [17. Migration Guide: video_streaming → template pattern](#17-migration-guide-video_streaming--template-pattern) — [Standalone: MIGRATION_GUIDE.md](./MIGRATION_GUIDE.md)
+- [Appendix A — Completed Implementation Progress](#appendix-a--completed-implementation-progress)
+- [Appendix B — Reference Patterns & Competitive Positioning](#appendix-b--reference-patterns--competitive-positioning)
 
 ---
 
@@ -29,43 +31,59 @@
 ### Vision
 
 A KCL-powered IDP where:
-- **Developers** deploy and configure applications using only `nu` commands — zero Kubernetes knowledge required
+- **Developers** deploy and configure applications using only `koncept` commands or a Backstage portal — zero Kubernetes knowledge required
 - **Platform Engineers (High-Level)** compose stacks, tenants, and sites using pre-built templates and schemas
 - **Platform Engineers (Low-Level)** design framework internals, builders, templates, and output procedures
 
 ### Production-Readiness Goals
 
-The platform must evolve from **proof-of-concept** to **production-grade**:
-
 1. **Stateful services via operators** — Database, cache, and messaging clusters managed by Kubernetes operators (CloudNativePG, Redis Operator, Strimzi) instead of raw StatefulSets
 2. **Third-party chart reuse** — Leverage production-hardened Helm charts (Bitnami, official operator charts) instead of building everything from scratch
 3. **Multi-format ecosystem** — Support consuming and producing Kustomize, Jsonnet, OCI artifacts alongside Helm/Helmfile
-4. **Observable infrastructure** — Prometheus metrics, Grafana dashboards, structured logging from day one
-5. **Secret management** — Integration with external secret stores (Vault, AWS Secrets Manager, Azure Key Vault) via ExternalSecrets operator
+4. **Observable infrastructure** — Prometheus metrics, Grafana dashboards, OpenTelemetry traces from day one
+5. **Secret management** — Integration with external secret stores (Vault, AWS Secrets Manager) via ExternalSecrets operator
 6. **Network security** — NetworkPolicies, PodSecurityStandards, mTLS via service mesh
 7. **High availability** — PodDisruptionBudgets, topology spread constraints, anti-affinity rules
+8. **Single-binary distribution** — Go CLI wrapping KCL Go SDK for zero-dependency deployment
+9. **Policy governance** — Automated compliance checks via policy-as-code (OPA/Kyverno)
+10. **Multi-cluster targeting** — Deploy to multiple clusters via Fleet or ArgoCD ApplicationSets
 
 ### Design Principles
 
-1. **Single Source of Truth** — KCL models define everything; outputs (YAML, Helm, Helmfile, Kusion, ArgoCD) are derived
+1. **Single Source of Truth** — KCL models define everything; outputs (YAML, Helm, Helmfile, Kusion, ArgoCD, Kustomize, Timoni, Crossplane, Backstage, Fleet) are derived
 2. **Progressive Disclosure** — Each user profile sees only the complexity appropriate to their role
 3. **Type Safety at Compile Time** — Catch misconfigurations in KCL, not at Kubernetes deployment time
 4. **Parameterized Outputs** — Generate Helm charts with configurable values, not flattened final manifests
 5. **Secure by Default** — No hardcoded secrets, `IfNotPresent` image pull, least-privilege RBAC
+6. **Configuration over Code** — Prefer declarative configuration; reserve Go/imperative code for tooling boundaries only
+7. **Extensible without Forking** — Teams can add custom builders, templates, and output formats without modifying framework internals
 
-### CNCF Platform Engineering Maturity Model Alignment
+### Technology Decision: KCL + Go Hybrid
 
-Current state: **Level 2 (Operationalized)** — dedicated tooling, but manual processes and limited self-service.
+> Based on the analysis in [PLATFORM_COMPARISON_AND_KCL_ANALYSIS.md](./PLATFORM_COMPARISON_AND_KCL_ANALYSIS.md).
 
-Target state: **Level 3 (Scalable)** — product-like platform with self-service interfaces, measurable adoption, and tested user experiences.
+**KCL** stays as the configuration and policy layer. **Go** is introduced only for the CLI/tooling layer via the [KCL Go SDK](https://www.kcl-lang.io/docs/reference/xlang-api/go-api). This is the same approach validated by KusionStack/kusion (1,287+ stars).
 
-| Aspect | Current (L2) | Target (L3) | How |
-|---|---|---|---|
-| **Investment** | Dedicated tooling (KCL, Nushell CLI) | Product-like platform with portal | Backstage instance + plugin ecosystem |
-| **Interfaces** | CLI (`koncept`) requires knowledge of factory structure | CLI + Web portal (dual interface) | Backstage catalog + scaffolder wrapping `koncept` |
-| **Operations** | Manual factory/builder creation per release | Automated provisioning, catalog sync | TeraSky Ingestor auto-syncs, scaffolder automates |
-| **Adoption** | Engineers must learn KCL internals | Developers use portal for common tasks, CLI for power users | Backstage Templates → wizard-driven self-service |
-| **Measurement** | No metrics | Track template usage, render times, adoption | Backstage analytics, `backstage.io/time-saved` annotation |
+```
+┌──────────────────────────────────────────────────┐
+│                   Go CLI Layer                    │
+│  (single binary, API access, scaffolding, CI)     │
+├──────────────────────────────────────────────────┤
+│              KCL Go SDK Bridge                    │
+│  (Run, RunFiles, Validate, Test, FormatCode)      │
+├──────────────────────────────────────────────────┤
+│                KCL Config Layer                    │
+│  (schemas, templates, builders, procedures)        │
+│  (2,500+ lines of working, tested KCL)             │
+└──────────────────────────────────────────────────┘
+```
+
+**Why not migrate entirely to Go?**
+- KCL's union operator (`|`) for config merge has no Go equivalent — you'd write a custom deep-merge library
+- Schema inheritance is natural in KCL, verbose in Go struct embedding
+- Compile-time validation via `check:` blocks catches errors before rendering
+- KCL is CNCF Sandbox with growing ecosystem — not a dead project
+- 287+ passing tests validate the existing KCL foundation
 
 ---
 
@@ -73,2131 +91,1324 @@ Target state: **Level 3 (Scalable)** — product-like platform with self-service
 
 ### Profile 1: Developer
 
-**Role**: Application developer who deploys and configures their applications.
+**Interaction**: `koncept` CLI commands or Backstage portal. Never edits `.k` files.
 
-**Interaction**: Only Nushell CLI commands (`koncept`). Never edits `.k` files directly.
+**Commands**:
+- `koncept render argocd|helmfile|kusion|kustomize|timoni|crossplane|backstage`
+- `koncept validate` — Validate configurations before rendering
+- `koncept status` — Check current release status
+- `koncept diff` — Show changes between current and previous render
 
-**Capabilities**:
-- `koncept render argocd` — Generate K8s manifests for GitOps deployment
-- `koncept render helmfile` — Generate Helm charts with parameterized values
-- `koncept render kusion` — Generate Kusion spec
-- `koncept render kustomize` — generates Kustomize structure
-- `koncept render timoni` — generates Timoni CUE module (experimental)
-- `koncept status` — (NEW) Check current release status
-- `koncept validate` — (NEW) Validate configurations before rendering
-- `koncept diff` — (NEW) Show what changed between current and previous render
-
-**What they configure**: Application-level settings via site/tenant YAML overrides (port, replicas, environment variables, feature flags).
-
-**What they never touch**: Framework schemas, builders, templates, procedures.
+**Configures**: Application-level settings via site/tenant YAML overrides (port, replicas, env vars, feature flags).
 
 ### Profile 2: Platform Engineer — High-Level
 
-**Role**: Designs the deployment topology — which components go where, with what configuration layers.
-
 **Interaction**: KCL files in `projects/<name>/` directories (stacks, tenants, sites, modules using templates).
 
-**Capabilities**:
-- Define new stacks combining existing modules
-- Create tenants and sites with configuration overrides
-- Compose modules using framework templates (`WebAppModule`, `SingleDatabaseModule`, `KafkaClusterModule`)
-- Define new pre-releases and releases
-- Extend `BaseConfigurations` with project-specific fields
-
-**What they never touch**: Framework builders, procedures, core model schemas.
+**Capabilities**: Define stacks, create tenants/sites, compose modules using framework templates (`WebAppModule`, `SingleDatabaseModule`, `KafkaClusterModule`, etc.), create pre-releases and releases.
 
 ### Profile 3: Platform Engineer — Low-Level
 
-**Role**: Designs and maintains the framework internals — schemas, builders, templates, output procedures.
-
 **Interaction**: KCL files in `framework/` directories.
 
-**Capabilities**:
-- Create/modify builder lambdas (`build_deployment`, `build_service`, etc.)
-- Design new templates (`WebAppModule`, etc.)
-- Implement output procedures (`kcl_to_helm`, `kcl_to_helmfile`, `kcl_to_argocd`)
-- Define core model schemas (`Component`, `Accessory`, `Stack`, `Release`)
-- Design the factory pattern and assembly helpers
-- Maintain `kcl.mod` dependency graphs
-- Write KCL validation rules (`check` blocks)
-- Design Crossplane compositions
+**Capabilities**: Create/modify builders, design templates, implement output procedures, define core model schemas, design the factory pattern, maintain `kcl.mod` dependency graphs.
 
 ---
 
-## 3. Current State Assessment
+## 3. CNCF Platform Engineering Maturity Model Alignment
 
-### What Works Well
+> Reference: [CNCF Platform Engineering Maturity Model](https://tag-app-delivery.cncf.io/whitepapers/platform-eng-maturity-model/)
 
-| Component | Status | Quality |
-|---|---|---|
-| Configuration merge (4-layer union) | Working | Good |
-| YAML output (`kcl_to_yaml`) | Working | Good |
-| Kusion output (`kcl_to_kusion`) | Working | Excellent |
-| Framework builders | Working | Excellent |
-| Framework templates | Working | Excellent |
-| erp_back project (template pattern) | Working | Excellent |
-| CLI `koncept render argocd` | Working | Functional |
-| CLI `koncept render kusion` | Working | Functional |
-| Helm/Helmfile schemas | Defined | Complete but unused |
-| Factory/seed pattern | Working | Good |
+### Current State Assessment
 
-### Critical Gaps
+After completing Phases 1–10, idp-concept sits between **Level 2 (Operationalized)** and **Level 3 (Scalable)** across different aspects:
 
-| Gap | Impact | Priority | Status |
+| Aspect | Current Level | Evidence | Target Level |
 |---|---|---|---|
-| **Helmfile generates flat manifests** | Cannot customize deployments per environment without editing KCL | P0 | ✅ RESOLVED — Strategy B with values.yaml extraction |
-| **`kcl_to_helmfile.k` is EMPTY** | No automated Helmfile generation from Stack | P0 | ✅ RESOLVED — `generate_helmfile` implemented |
-| **`kcl_to_argocd.k` is EMPTY** | No automated ArgoCD Application CRD generation | P1 | ✅ RESOLVED — `generate_application` + `generate_app_project` |
-| **`values_builder.k` is EMPTY** | No values.yaml extraction from component configs | P0 | ✅ RESOLVED — `extract_helm_values` in `helm_values.k` |
-| **Helm only extracts raw manifests** | `kcl_to_helm.k` doesn't generate Chart.yaml or parameterized templates | P0 | ✅ RESOLVED — `generate_charts_from_stack` + static Go templates |
-| **Hardcoded secrets in video_streaming** | MongoDB credentials in source code | P0 (security) | ✅ RESOLVED — Replaced with `secretKeyRef` |
-| **No `check` validation blocks** | Config errors caught at K8s deploy time, not compile time | P1 | ✅ RESOLVED — DeploymentSpec, ServiceSpec, PVSpec, EnvVar check blocks |
-| **`any` types for env vars/volumes** | No compile-time type checking for K8s fields | P1 | ✅ RESOLVED — EnvVar schema with KeySelector, EnvVarSource |
-| **CLI hardcoded builder filenames** | Different project structures break the CLI | P2 | ✅ RESOLVED — `resolve_builder` with `koncept.yaml` config |
-| **No test infrastructure** | No `.test.k` files; regressions undetected | P2 | ✅ RESOLVED — 232 tests, full TDD workflow |
-| **Hardcoded Git repo URL** | ArgoCD builders can't be forked/multi-tenanted | P2 | ✅ RESOLVED — `gitRepoUrl` in BaseConfigurations |
+| **Investment** | L2 → L3 | Dedicated tooling (KCL + Nushell CLI), 287+ tests, 9 output formats, Backstage templates designed | L3 (Product) → L4 (Ecosystem) |
+| **Adoption** | L2 (Extrinsic push) | CLI requires knowledge of factory structure; Backstage designed but not deployed | L3 (Intrinsic pull) |
+| **Interfaces** | L2 → L3 | CLI + Backstage portal designed; need single-binary distribution | L3 (Self-service) → L4 (Integrated) |
+| **Operations** | L2 (Centrally tracked) | Manual factory creation for each release; `koncept init` scaffolding exists | L3 (Centrally enabled) |
+| **Measurement** | L1 (Ad hoc) | No metrics, no usage analytics, no feedback loops | L3 (Insights) |
 
-### Architecture Diagram (Current → Target)
+### Level 3 Requirements (Target)
+
+| Requirement | Phase | Implementation |
+|---|---|---|
+| Treat platform as product | 11–14 | Go CLI as distributable product, versioned framework packages |
+| Self-service interfaces | 8–10 (done) + 11 | Backstage portal + single-binary CLI |
+| Measurable adoption | 18 | OpenTelemetry metrics on render times, template usage, error rates |
+| Tested user experiences | 12 | E2E validation pipelines, golden file tests |
+| Published roadmap | This document | Phases 11–18 with clear owners and deliverables |
+| Feature removal discipline | 14 | Plugin architecture — deprecate via version, not deletion |
+
+### Level 4 Aspirations (Long-term)
+
+| Aspiration | Phase | How |
+|---|---|---|
+| Enable specialists to extend | 14 | Plugin architecture for custom builders/templates/procedures |
+| Organization-wide efficiency | 15–16 | Policy-as-code for compliance; multi-cluster for scale |
+| Centralized governance | 15 | Automated policy gates in CI/CD pipeline |
+| Ecosystem enablement | 13–14 | OCI registry for community-contributed modules |
+
+---
+
+## 4. Accomplished Phases (1–10) — Summary
+
+> Full implementation details: [Appendix A](#appendix-a--completed-implementation-progress)
+
+### Phase 1 — Foundation Hardening ✅
+
+- Removed hardcoded credentials (replaced with `secretKeyRef`)
+- Fixed `imagePullPolicy` defaults (`IfNotPresent`)
+- Externalized Git repo URLs to `BaseConfigurations`
+- Fixed code style inconsistencies
+
+### Phase 2 — Helmfile Parameterization ✅
+
+- Helm values extraction (`extract_helm_values` + `generate_chart` lambdas)
+- Helmfile generation from Stack components
+- Static Helm Go templates (deployment, service, configmap, serviceaccount, pvc, _helpers.tpl)
+- Strategy B pipeline: KCL generates values.yaml; templates are static Go templates
+- Validated: `helm lint` + `helm template` + `kubeconform` all passing
+
+### Phase 3 — KCL Code Quality ✅
+
+- `EnvVar` schema with `KeySelector`, `EnvVarSource` and validation
+- `check` blocks on `DeploymentSpec`, `ServiceSpec`, `PersistentVolumeSpec`
+- Documented all justified `any` types with `# framework-generic` comments
+- **287 unit tests** in `framework/tests/` — all passing via `kcl test ./...`
+
+### Phase 4 — Developer Experience ✅
+
+- `koncept validate` — pre-render validation
+- `koncept init` — scaffold new factory directories
+- Configurable builder filenames via `koncept.yaml`
+- Generic `render.k` pattern with `-D output=TYPE`
+- `DEVELOPER_QUICKSTART.md` documentation
+
+### Phase 5 — Advanced Platform Features ✅
+
+- ArgoCD Application + AppProject generation from Stack
+- NetworkPolicy builder (ingress/egress/deny-all)
+- PodDisruptionBudget builder
+- Secret management schemas (`SecretReference`, `ExternalSecret`, `build_external_secret`)
+
+### Phase 6 — Production Infrastructure ✅
+
+15 framework templates covering the full infrastructure catalog:
+
+| Template | Operator/Chart | Tests |
+|---|---|---|
+| PostgreSQL | CloudNativePG (`cnpg.io/v1`) | 10 |
+| MongoDB | MCK (`mongodbcommunity.mongodb.com/v1`) | 6 |
+| Kafka | Strimzi | Template |
+| RabbitMQ | cluster-operator (`rabbitmq.com/v1beta1`) | 7 |
+| Redis | OT Operator (`redis.opstreelabs.in/v1beta2`) | 6 |
+| Keycloak | Keycloak Operator (`k8s.keycloak.org/v2alpha1`) | 5 |
+| OpenSearch | opensearch-k8s-operator (`opensearch.org/v1`) | 8 |
+| Vault | VSO (`secrets.hashicorp.com/v1beta1`) ⚠️ BUSL-1.1 | 7 |
+| QuestDB | Helm chart (no operator) | 4 |
+| MinIO | Operator CRD + Bitnami Helm fallback | 8 |
+| OpenTelemetry | OTel Operator (`opentelemetry.io/v1beta1`) | 13 |
+| Observability | Prometheus + Grafana + ServiceMonitor | 8 |
+| Backstage | Official Helm chart | 5 |
+
+### Phase 7 — Multi-Format Output & Ecosystem ✅
+
+**9 output formats** from a single KCL source:
+
+| Format | Procedure | CLI | Tests |
+|---|---|---|---|
+| YAML (ArgoCD/GitOps) | `kcl_to_yaml` | `koncept render argocd` | 5 |
+| ArgoCD Applications | `kcl_to_argocd` | `koncept render argocd` | 5 |
+| Helm Charts | `kcl_to_helm` | `koncept render helmfile` | 5 |
+| Helmfile | `kcl_to_helmfile` | `koncept render helmfile` | 5 |
+| Kusion Spec | `kcl_to_kusion` | `koncept render kusion` | 8 |
+| Kustomize | `kcl_to_kustomize` | `koncept render kustomize` | 8 |
+| Timoni (experimental) | `kcl_to_timoni` | `koncept render timoni` | 11 |
+| Crossplane XRD+Composition | `kcl_to_crossplane` | `koncept render crossplane` | 25 |
+| Backstage Catalog | `kcl_to_backstage` | `koncept render backstage` | 14 |
+
+### Phase 8 — Developer Portal: Backstage Catalog ✅
+
+- `kcl_to_backstage` procedure (Domain → System → Component → Resource entities)
+- Backstage annotations in K8s manifests
+- TechDocs integration via `mkdocs.yml`
+- Backstage Helm chart template
+
+### Phase 9 — Developer Portal: Plugin Integration ✅
+
+- Plugin guide: Kubernetes, TeraSky Ingestor, Crossplane Resources, ArgoCD, Catalog Graph
+- Keycloak auth + RBAC configuration
+- TechDocs setup; full `app-config.yaml` reference
+
+### Phase 10 — Developer Portal: Self-Service Scaffolder ✅
+
+- Custom TypeScript actions: `koncept:render`, `koncept:validate`, `koncept:init`, `koncept:publish`
+- 8 Backstage Templates: Web Application, PostgreSQL, Kafka, Redis, MongoDB, RabbitMQ, New Release, Deploy to Environment
+- End-to-end self-service workflow
+
+### Current Architecture Diagram
 
 ```
-CURRENT (Proof of Concept):
-┌──────────────────────────────────────────────────────────────────┐
-│ KCL Source → builders → raw manifests → kcl_to_yaml / kusion    │
-│ All resources hand-crafted (Deployment, Service, StatefulSet)    │
-│ No operators, no third-party charts, flat YAML output            │
-└──────────────────────────────────────────────────────────────────┘
-
-TARGET (Production-Grade):
-┌──────────────────────────────────────────────────────────────────┐
-│                     DEVELOPER (nu commands)                       │
-│  koncept deploy <app> | koncept validate | koncept status         │
-└─────────────────────────────┬────────────────────────────────────┘
+                     DEVELOPER (nu commands / Backstage portal)
+  koncept render <format> | koncept validate | koncept init | koncept publish
                               │
                               ▼
-┌──────────────────────────────────────────────────────────────────┐
-│                     FACTORY (per release)                          │
-│  factory_seed.k → merge all config layers → instantiate stack     │
-└─────────────────────────────┬────────────────────────────────────┘
+                     FACTORY (per release)
+  factory_seed.k → FactorySeed auto-merges 4 config layers → instantiate stack
                               │
         ┌─────────────────────┼─────────────────────┐
         ▼                     ▼                     ▼
-┌──────────────┐     ┌──────────────┐      ┌──────────────┐
-│  Components  │     │  Accessories │      │  ThirdParty  │
-│ WebAppModule │     │ Operator CRs │      │ Helm Charts  │
-│ (templates)  │     │ (CNPG, Redis │      │ (Bitnami,    │
-│              │     │  Strimzi)    │      │  official)   │
-└──────┬───────┘     └──────┬───────┘      └──────┬───────┘
-       │                    │                     │
-       └────────────────────┼─────────────────────┘
-                            ▼
-              ┌──────────────────────────┐
-              │    Output Procedures      │
-              ├──────────────────────────┤
-              │ kcl_to_yaml     (working)│
-              │ kcl_to_kusion   (working)│
-              │ kcl_to_helm     (working)│
-              │ kcl_to_helmfile (working)│
-              │ kcl_to_argocd   (working)│
-              │ kcl_to_kustomize(working)│
-              │ kcl_to_timoni   (working)│
-              │ kcl_to_crossplane(working)│
-              └───────────────────────────┘
+   Components            Accessories            ThirdParty
+   WebAppModule          Operator CRDs          Helm Charts
+   DatabaseModule        (CNPG, Redis,          (Bitnami,
+   KafkaModule           Strimzi, MCK)          official)
+        │                     │                     │
+        └─────────────────────┼─────────────────────┘
+                              ▼
+                   Output Procedures (9 formats)
+              ┌──────────────────────────────────────┐
+              │ kcl_to_yaml       kcl_to_argocd      │
+              │ kcl_to_helm       kcl_to_helmfile     │
+              │ kcl_to_kusion     kcl_to_kustomize    │
+              │ kcl_to_timoni     kcl_to_crossplane   │
+              │ kcl_to_backstage                      │
+              └──────────────────────────────────────┘
 ```
+
+### Test & Validation Summary
+
+| Metric | Value |
+|---|---|
+| Unit tests | 287 passing |
+| Output formats | 9 |
+| Framework templates | 15 |
+| Builder schemas | 8 |
+| Projects validated | erp_back (dev/stg/prod), video_streaming (dev) |
+| Kubeconform | 29/29 valid, 0 invalid |
 
 ---
 
-## 4. Phase 1 — Foundation Hardening
+## 5. Phase 11 — Go CLI: Hybrid Architecture
 
 **Owner**: Platform Engineer (Low-Level)
-
-### 4.1 Security Fixes (P0)
-
-#### 4.1.1 Remove hardcoded credentials from video_streaming
-
-**Files to fix**:
-- `projects/video_streaming/modules/infrastructure/mongodb/mongodb_single_instance_module_def.k`
-- `projects/video_streaming/modules/appops/video_collector_mongodb_python/video_collector_mongodb_python_module_def.k`
-
-**Pattern** — Replace:
-```kcl
-# ❌ CURRENT
-env = [
-    { name = "MONGO_INITDB_ROOT_USERNAME", value = "admin" }
-    { name = "MONGO_INITDB_ROOT_PASSWORD", value = "admin" }
-]
-```
-
-With:
-```kcl
-# ✅ TARGET
-env = [
-    { name = "MONGO_INITDB_ROOT_USERNAME"
-      valueFrom = { secretKeyRef = { name = "mongo-credentials", key = "username" } } }
-    { name = "MONGO_INITDB_ROOT_PASSWORD"
-      valueFrom = { secretKeyRef = { name = "mongo-credentials", key = "password" } } }
-]
-```
-
-#### 4.1.2 Externalize Git repository URL in ArgoCD builders
-
-Add `gitRepoUrl: str` to `BaseConfigurations` and pass it via site configs.
-
-### 4.2 Fix `imagePullPolicy` inconsistency
-
-**File**: `framework/templates/database.k`
-
-Change `imagePullPolicy` default from `"Always"` to `"IfNotPresent"`. Document that `"Always"` should only be used for mutable tags during development.
-
-### 4.3 Fix code style inconsistencies
-
-**File**: `framework/models/modules/accessory.k`
-
-Fix inconsistent spacing in instance construction:
-```kcl
-# ❌ CURRENT
-instance = AccessoryInstance {
-    name=name
-    kind=kind
-    namespace =namespace
-}
-
-# ✅ TARGET
-instance: AccessoryInstance = AccessoryInstance {
-    name = name
-    kind = kind
-    namespace = namespace
-}
-```
-
----
-
-## 5. Phase 2 — Helmfile Parameterization
-
-**Owner**: Platform Engineer (Low-Level) for procedures; Platform Engineer (High-Level) for project integration
-
-This is the core architectural change: generate Helm charts with **parameterized values** instead of flat/final manifests.
+**CNCF Target**: L2 → L3 (Self-service solutions via single-binary distribution)
+**Priority**: P0 — Highest impact for adoption
 
 ### 5.1 Problem Statement
 
-Currently, `koncept render helmfile` produces:
-1. A `Chart.yaml` with metadata (working)
-2. A `templates/manifests.yaml` containing **fully resolved K8s manifests** (all values baked in)
-3. An **empty** `values.yaml`
-4. A `helmfile.yaml` with **hardcoded dummy releases**
-
-This means every environment gets identical manifests. To customize per-environment, you must re-run KCL with different configs — defeating the purpose of Helm's parameterization.
+The current CLI requires two runtime dependencies: **Nushell** (`nu`) and **KCL** (`kcl`). This creates adoption friction:
+- Developers must install two niche tools before they can use the platform
+- CI/CD pipelines need custom container images with both runtimes
+- Version drift between `nu`/`kcl` versions across team members breaks reproducibility
+- Error messages from Nushell are unfamiliar to most engineers
 
 ### 5.2 Target Architecture
 
+A single Go binary (`koncept`) that embeds the KCL runtime via the [KCL Go SDK](https://www.kcl-lang.io/docs/reference/xlang-api/go-api):
+
 ```
-koncept render helmfile
-       │
-       ├─ Chart.yaml                      ← metadata from Release/Stack
-       ├─ values.yaml                     ← extracted configurable parameters
-       │    replicaCount: 2
-       │    image:
-       │      repository: ghcr.io/org/app
-       │      tag: "1.0.0"
-       │    service:
-       │      type: ClusterIP
-       │      port: 8080
-       │    env:
-       │      SPRING_PROFILES_ACTIVE: dev
-       │      DATABASE_HOST: postgres.svc.local
-       │    resources:
-       │      requests: { cpu: "250m", memory: "512Mi" }
-       │      limits: { cpu: "1", memory: "2Gi" }
-       │
-       ├─ templates/
-       │    ├─ deployment.yaml             ← K8s manifest with {{ .Values.* }} placeholders
-       │    ├─ service.yaml
-       │    ├─ configmap.yaml
-       │    ├─ serviceaccount.yaml
-       │    └─ _helpers.tpl                ← common labels, selectors
-       │
-       └─ helmfile.yaml                   ← auto-generated from Stack releases
-            repositories: [...]
-            releases:
-              - name: erp-api
-                chart: ./charts/erp-api
-                values: [./charts/erp-api/values.yaml]
-                # Per-environment overrides via helmfile environments
-```
-
-### 5.3 Implementation Steps
-
-#### Step 1: Create `HelmValues` extraction schema
-
-**New file**: `framework/procedures/helm_values.k`
-
-This lambda extracts configurable values from component instances:
-
-```kcl
-import models.modules.component
-
-schema HelmValues:
-    """Extracted Helm values from a component."""
-    replicaCount?: int
-    image?: {str:str}
-    service?: {str:any}
-    env?: {str:str}
-    resources?: {str:any}
-    probes?: {str:any}
-    configMap?: {str:str}
-
-extract_helm_values = lambda comp: component.ComponentInstance -> HelmValues {
-    # Extract the first deployment's configurable fields
-    _deploy = [m for m in comp.manifests if m.kind == "Deployment"][0] if [m for m in comp.manifests if m.kind == "Deployment"] else Undefined
-    _svc = [m for m in comp.manifests if m.kind == "Service"][0] if [m for m in comp.manifests if m.kind == "Service"] else Undefined
-    _container = _deploy?.spec?.template?.spec?.containers?[0] if _deploy else Undefined
-
-    HelmValues {
-        if _container:
-            replicaCount = _deploy?.spec?.replicas
-            image = {
-                repository = _container.image.rsplit(":")[0] if ":" in _container.image else _container.image
-                tag = _container.image.rsplit(":")[1] if ":" in _container.image else "latest"
-            }
-            if _container.env:
-                env = {e.name: e.value for e in _container.env if e.value}
-            if _container.resources:
-                resources = _container.resources
-        if _svc:
-            service = {
-                $type = _svc.spec?.$type or "ClusterIP"
-                port = _svc.spec?.ports?[0]?.port
-            }
-    }
-}
+┌───────────────────────────────────────────────────────────────────┐
+│                      koncept (Go binary)                          │
+│                                                                   │
+│  ┌──────────┐  ┌───────────┐  ┌───────────┐  ┌───────────────┐  │
+│  │ cmd/     │  │ internal/ │  │ internal/ │  │ internal/     │  │
+│  │ render   │  │ factory/  │  │ validate/ │  │ scaffold/     │  │
+│  │ validate │  │ discover  │  │ kubecon-  │  │ project/      │  │
+│  │ init     │  │ seed      │  │ form      │  │ release/      │  │
+│  │ publish  │  │ render    │  │ policy    │  │ module/       │  │
+│  │ diff     │  │           │  │           │  │               │  │
+│  │ status   │  │           │  │           │  │               │  │
+│  └──────┬───┘  └─────┬─────┘  └─────┬─────┘  └───────┬───────┘  │
+│         │            │              │                │            │
+│         └────────────┼──────────────┼────────────────┘            │
+│                      ▼                                            │
+│              ┌──────────────────┐                                 │
+│              │   KCL Go SDK     │                                 │
+│              │  kcl.RunFiles()  │                                 │
+│              │  kcl.Validate()  │                                 │
+│              │  kcl.Test()      │                                 │
+│              │  kcl.FormatCode()│                                 │
+│              └──────────────────┘                                 │
+│                      │                                            │
+│              ┌──────────────────┐                                 │
+│              │   KCL Config     │                                 │
+│              │   Layer (as-is)  │                                 │
+│              │   framework/     │                                 │
+│              │   projects/      │                                 │
+│              └──────────────────┘                                 │
+└───────────────────────────────────────────────────────────────────┘
 ```
 
-> **Note**: The exact implementation will depend on verifying KCL's `rsplit` and optional chaining syntax against official docs. This is pseudocode illustrating the data flow — validate each KCL function call before implementation.
+### 5.3 Go CLI Design Principles
 
-#### Step 2: Create `HelmTemplate` generation procedure
+1. **Zero runtime dependencies** — Single binary, `go install` or download from releases
+2. **Backward-compatible** — Same commands as the Nushell CLI (`koncept render argocd`, `koncept validate`, etc.)
+3. **KCL stays untouched** — The Go CLI calls `kcl.RunFiles()` on existing KCL code; no KCL rewriting
+4. **Progressive migration** — Nushell CLI continues to work; Go CLI is the recommended path for new adopters
+5. **Configurable** — YAML config file (`koncept.yaml`) at project root for project-specific settings
 
-**New file**: `framework/procedures/kcl_to_helm_template.k`
+### 5.4 Go Project Structure
 
-This converts a component's manifests into Helm-templated YAML with `{{ .Values.* }}` placeholders:
-
-```kcl
-import models.modules.component
-import models.stack as stack
-import manifests
-
-schema HelmTemplateOutput:
-    """Output structure for a single Helm template file."""
-    filename: str
-    content: str
-
-generate_helm_templates = lambda comp: component.ComponentInstance -> [HelmTemplateOutput] {
-    # For each manifest in the component, generate a Helm template
-    # that references {{ .Values.* }} instead of hardcoded values
-    _templates = []
-    _templates += [_deployment_template(m, comp.name) for m in comp.manifests if m.kind == "Deployment"]
-    _templates += [_service_template(m, comp.name) for m in comp.manifests if m.kind == "Service"]
-    _templates += [_configmap_template(m, comp.name) for m in comp.manifests if m.kind == "ConfigMap"]
-    _templates += [_serviceaccount_template(m, comp.name) for m in comp.manifests if m.kind == "ServiceAccount"]
-    _templates
-}
+```
+cmd/koncept/
+├── main.go                          # CLI entry point (cobra)
+├── cmd/
+│   ├── render.go                    # koncept render <format>
+│   ├── validate.go                  # koncept validate
+│   ├── init.go                      # koncept init
+│   ├── publish.go                   # koncept publish
+│   ├── diff.go                      # koncept diff (NEW)
+│   ├── status.go                    # koncept status (NEW)
+│   ├── test.go                      # koncept test (NEW — wraps kcl test)
+│   └── fmt.go                       # koncept fmt (NEW — wraps kcl fmt)
+├── internal/
+│   ├── factory/
+│   │   ├── discover.go              # Auto-discover factory dirs + render.k
+│   │   ├── seed.go                  # Parse factory_seed.k outputs
+│   │   └── render.go                # Call kcl.RunFiles() with -D options
+│   ├── validate/
+│   │   ├── kcl.go                   # KCL compilation validation
+│   │   ├── kubeconform.go           # K8s manifest validation
+│   │   └── policy.go                # Policy-as-code validation (Phase 15)
+│   ├── scaffold/
+│   │   ├── project.go               # Scaffold new project structure
+│   │   ├── release.go               # Scaffold new release/pre-release
+│   │   ├── module.go                # Scaffold new module from template
+│   │   └── templates/               # Embedded Go templates for scaffolding
+│   │       ├── factory_seed.k.tmpl
+│   │       ├── render.k.tmpl
+│   │       └── kcl.mod.tmpl
+│   ├── output/
+│   │   ├── writer.go                # Write render output to disk
+│   │   ├── helm.go                  # Copy static Helm templates
+│   │   └── kustomize.go             # Write Kustomize overlay structure
+│   └── config/
+│       └── koncept.go               # Parse koncept.yaml project config
+├── go.mod
+├── go.sum
+└── Makefile                          # Cross-platform build targets
 ```
 
-> **Note**: KCL generates static YAML, not Go templates. The approach here is to generate Helm template files where specific values (image, port, replicas, env) are replaced with `{{ .Values.* }}` Helm syntax. Since KCL outputs strings, the template text will be string-interpolated KCL that produces Go template syntax. See Step 4 for the alternative approach.
+### 5.5 koncept.yaml — Project Configuration
 
-#### Step 3: Implement `kcl_to_helmfile.k`
+Each project root can have a `koncept.yaml` that configures the Go CLI:
 
-**File**: `framework/procedures/kcl_to_helmfile.k`
-
-```kcl
-import models.stack as stack
-import models.modules.component
-import custom.helmfile.helmfile as hf
-import manifests
-
-generate_helmfile_from_stack = lambda input_stack: stack.Stack, chart_base_path: str -> hf.Helmfile {
-    _releases = [
-        hf.Release {
-            name = comp.name
-            namespace = comp.namespace
-            chart = "${chart_base_path}/charts/${comp.name}"
-            values = ["${chart_base_path}/charts/${comp.name}/values.yaml"]
-            createNamespace = True
-        }
-        for comp in input_stack.components
-    ] if input_stack.components else []
-
-    hf.Helmfile {
-        releases = _releases
-    }
-}
-
-helmfile_yaml_stream = lambda input_stack: stack.Stack, chart_base_path: str -> any {
-    _helmfile = generate_helmfile_from_stack(input_stack, chart_base_path)
-    manifests.yaml_stream([_helmfile])
-}
-```
-
-#### Step 4: Dual-strategy approach for Helm templates
-
-There are two valid approaches. Choose based on your team's preference:
-
-**Strategy A — KCL generates Go template strings (recommended for this project)**:
-
-KCL outputs `.yaml` files containing Helm `{{ .Values.* }}` placeholders as literal strings. The builder generates each template file's content as a KCL string that contains Go template syntax.
-
-Pros: Full control, one tool generates everything.
-Cons: KCL string manipulation complexity; must escape `{{ }}` properly.
-
-**Strategy B — KCL generates values.yaml only; templates are static**:
-
-KCL extracts configurable values into `values.yaml`. The Helm template files in `templates/` are hand-written Go templates that reference those values. KCL only generates the data layer.
-
-Pros: Simpler KCL code, standard Helm workflow, templates are reviewable by Helm users.
-Cons: Template files maintained separately from KCL models.
-
-**Recommendation**: Start with **Strategy B** (simpler, more standard), then evolve to Strategy A if full automation is needed. Strategy B aligns better with the Developer profile — they already know Helm.
-
-#### Step 5: Update `kcl_to_helm.k`
-
-Expand the current 15-line procedure to support both raw manifests and parameterized output:
-
-```kcl
-import models.modules.component
-import models.stack as stack
-import custom.helm.helm
-import manifests
-
-# Existing: raw manifest extraction (for ArgoCD/YAML output)
-generate_helm_components_templates_from_stack = lambda input_stack: stack.Stack -> any {
-    modules = get_helm_components(input_stack.components)
-    manifests.yaml_stream(modules)
-}
-
-get_helm_components = lambda components: [component.ComponentInstance] -> [any] {
-    [element.manifests for element in components] if components else []
-}
-
-# NEW: Chart.yaml generation from stack metadata
-generate_chart_from_component = lambda comp: component.ComponentInstance, version: str -> helm.Chart {
-    helm.Chart {
-        apiVersion = "v2"
-        name = comp.name
-        description = "Helm chart for ${comp.name}"
-        $type = "application"
-        version = version
-        appVersion = version
-    }
-}
-
-# NEW: values.yaml generation from component configs
-generate_values_from_component = lambda comp: component.ComponentInstance -> helm.HelmChartValues {
-    _deploy = [m for m in comp.manifests if m.kind == "Deployment"]
-    _svc = [m for m in comp.manifests if m.kind == "Service"]
-    _container = _deploy[0]?.spec?.template?.spec?.containers?[0] if _deploy else Undefined
-
-    helm.HelmChartValues {
-        if _container:
-            replicaCount = _deploy[0]?.spec?.replicas
-            image = helm.Image {
-                repository = comp.name
-                tag = "latest"
-                pullPolicy = "IfNotPresent"
-            }
-            resources = helm.Resources {
-                requests = _container?.resources?.requests
-                limits = _container?.resources?.limits
-            }
-        if _svc:
-            service = helm.Service {
-                $type = _svc[0]?.spec?.$type or "ClusterIP"
-                port = _svc[0]?.spec?.ports?[0]?.port or 8080
-            }
-    }
-}
-```
-
-> **Important caveat**: KCL's optional chaining (`?.`) support must be verified against official docs. The lambda pseudo-code above illustrates the data extraction intent. Validate the actual KCL syntax for list indexing with conditionals and optional field access before implementing.
-
-#### Step 6: Create Helm template files (Strategy B static templates)
-
-**New directory**: `framework/templates/helm/`
-
-Create standard Helm Go templates that reference `{{ .Values.* }}`:
-
-**`framework/templates/helm/deployment.yaml.tpl`** (reference template, not KCL):
 ```yaml
-apiVersion: apps/v1
-kind: Deployment
+# koncept.yaml — project-level configuration
+apiVersion: koncept.bluesolution.es/v1
+kind: ProjectConfig
+
 metadata:
-  name: {{ include "chart.fullname" . }}
-  namespace: {{ .Release.Namespace }}
-  labels:
-    {{- include "chart.labels" . | nindent 4 }}
+  name: erp-back
+  version: "1.0.0"
+
 spec:
-  replicas: {{ .Values.replicaCount }}
-  selector:
-    matchLabels:
-      {{- include "chart.selectorLabels" . | nindent 6 }}
-  template:
-    metadata:
-      labels:
-        {{- include "chart.selectorLabels" . | nindent 8 }}
-    spec:
-      containers:
-        - name: {{ .Chart.Name }}
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
-          imagePullPolicy: {{ .Values.image.pullPolicy }}
-          ports:
-            - containerPort: {{ .Values.service.port }}
-          {{- if .Values.env }}
-          env:
-            {{- range $key, $value := .Values.env }}
-            - name: {{ $key }}
-              value: {{ $value | quote }}
-            {{- end }}
-          {{- end }}
-          {{- if .Values.resources }}
-          resources:
-            {{- toYaml .Values.resources | nindent 12 }}
-          {{- end }}
-          {{- if .Values.livenessProbe }}
-          livenessProbe:
-            {{- toYaml .Values.livenessProbe | nindent 12 }}
-          {{- end }}
-          {{- if .Values.readinessProbe }}
-          readinessProbe:
-            {{- toYaml .Values.readinessProbe | nindent 12 }}
-          {{- end }}
+  # Framework location (default: auto-discover from kcl.mod dependencies)
+  frameworkPath: "../../framework"
+
+  # Default output format when running `koncept render` without arguments
+  defaultOutput: argocd
+
+  # Factory pattern configuration
+  factory:
+    seedFile: factory_seed.k       # Default: factory_seed.k
+    renderFile: render.k           # Default: render.k
+
+  # Validation pipeline (Phase 12)
+  validation:
+    kubeconform:
+      enabled: true
+      kubernetesVersion: "1.31.0"
+      strict: true
+      additionalSchemas: []        # Extra CRD schemas
+    policy:
+      enabled: false               # Phase 15
+      engine: "conftest"           # "conftest" (OPA) | "kyverno-cli"
+      policyPath: "policies/"
+
+  # Output settings
+  output:
+    defaultDir: "output"
+    helmTemplatesDir: "framework/templates/helm"
+
+  # Backstage integration
+  backstage:
+    owner: "platform-team"
+    lifecycle: "production"
+    techdocsRef: "dir:."
 ```
 
-These static templates are **copied** into the output `charts/<name>/templates/` directory during `koncept render helmfile`. KCL only generates `Chart.yaml` and `values.yaml`.
+### 5.6 KCL Go SDK Integration Pattern
 
-#### Step 7: Update CLI `koncept render helmfile`
+```go
+package factory
 
-```nushell
-"helmfile" => {
-    let output_dir = (if $output != null { $output } else { "output" })
+import (
+    "fmt"
+    "path/filepath"
 
-    # For each component, generate a chart directory
-    print "[Helmfile] Generating parameterized Helm charts..."
+    kcl "kcl-lang.io/kcl-go"
+)
 
-    # 1. Generate Chart.yaml per component
-    kcl run $"($factory_dir)/chart_builder.k" -o $"($output_dir)/charts/Chart.yaml"
+// Render executes a KCL render with the given output format
+func Render(factoryDir string, outputFormat string) (*kcl.KCLResultList, error) {
+    renderFile := filepath.Join(factoryDir, "render.k")
 
-    # 2. Generate values.yaml per component (NEW)
-    kcl run $"($factory_dir)/values_builder.k" -o $"($output_dir)/charts/values.yaml"
+    result, err := kcl.RunFiles([]string{renderFile},
+        kcl.WithWorkDir(factoryDir),
+        kcl.WithOptions("output="+outputFormat),
+        kcl.WithSortKeys(true),
+    )
+    if err != nil {
+        return nil, fmt.Errorf("KCL render failed: %w", err)
+    }
+    return result, nil
+}
 
-    # 3. Copy static Helm templates
-    let templates_src = ($koncept_dir | path join "templates/helm")
-    let templates_dst = $"($output_dir)/charts/templates"
-    mkdir $templates_dst
-    cp $"($templates_src)/*.tpl" $templates_dst
+// Validate compiles factory_seed.k without rendering
+func Validate(factoryDir string) error {
+    seedFile := filepath.Join(factoryDir, "factory_seed.k")
+    _, err := kcl.RunFiles([]string{seedFile},
+        kcl.WithWorkDir(factoryDir),
+    )
+    return err
+}
 
-    # 4. Generate helmfile.yaml (NEW — from Stack, not hardcoded)
-    kcl run $"($factory_dir)/helmfile_builder.k" -o $"($output_dir)/helmfile.yaml"
-
-    print "[Helmfile] Done."
+// Test runs the KCL test suite
+func Test(testDir string) (*kcl.TestResult, error) {
+    result, err := kcl.Test(&kcl.TestOptions{
+        PkgList: []string{testDir + "/..."},
+    })
+    return &result, err
 }
 ```
 
-### 5.4 Output Structure (Target)
+### 5.7 New Commands (Go CLI Only)
 
-```
-output/
-├── helmfile.yaml                    ← auto-generated from Stack.components
-└── charts/
-    └── erp-api/
-        ├── Chart.yaml               ← from chart_builder.k
-        ├── values.yaml              ← extracted from component configs (NEW)
-        └── templates/
-            ├── _helpers.tpl          ← standard Helm helpers
-            ├── deployment.yaml       ← Go template with {{ .Values.* }}
-            ├── service.yaml
-            ├── configmap.yaml
-            └── serviceaccount.yaml
-```
+| Command | Description | Implementation |
+|---|---|---|
+| `koncept diff` | Show YAML diff between current render and last committed output | `kcl.RunFiles()` → YAML → `diff` against `output/` |
+| `koncept status` | Show factory state, output formats configured, last render timestamp | Parse `koncept.yaml` + check `output/` metadata |
+| `koncept test` | Run `kcl test ./...` on framework or project tests | `kcl.Test()` with formatted output |
+| `koncept fmt` | Format all KCL files in the project | `kcl.FormatPath()` recursively |
+| `koncept lint` | Lint KCL files for common issues | `kcl.LintPath()` + custom rules |
+| `koncept deps` | Show dependency tree from `kcl.mod` | `kcl.ListDepFiles()` + tree visualization |
 
-### 5.5 Per-Environment Values Overrides
+### 5.8 Distribution Strategy
 
-With parameterized Helm charts, per-environment customization becomes standard Helmfile:
+| Channel | Method | Users |
+|---|---|---|
+| **GitHub Releases** | Cross-compiled binaries (linux/amd64, darwin/arm64, windows) | All |
+| **Homebrew** | `brew install koncept` | macOS/Linux |
+| **Go install** | `go install github.com/org/koncept/cmd/koncept@latest` | Go developers |
+| **Container image** | `ghcr.io/org/koncept:v1.0.0` (for CI/CD) | Pipelines |
 
-```yaml
-# helmfile.yaml (generated)
-releases:
-  - name: erp-api
-    chart: ./charts/erp-api
-    values:
-      - ./charts/erp-api/values.yaml          # base values from KCL
-      - ./env/{{ .Environment.Name }}.yaml     # per-environment overrides
-```
+### 5.9 Migration Path (Nushell → Go)
 
-**Per-environment files** (created by Platform Engineer — High-Level):
-```yaml
-# env/production.yaml
-replicaCount: 3
-image:
-  tag: "1.2.0"
-resources:
-  requests:
-    cpu: "1"
-    memory: "2Gi"
-env:
-  SPRING_PROFILES_ACTIVE: production
-  DATABASE_HOST: prod-postgres.rds.amazonaws.com
-```
+1. **Coexistence phase**: Both `platform_cli/koncept` (Nushell) and `cmd/koncept/` (Go) work side by side
+2. **Feature parity**: Go CLI reaches feature parity with Nushell CLI
+3. **Deprecation**: Mark Nushell CLI as "legacy" in docs; new features only in Go CLI
+4. **Removal**: Remove Nushell CLI from `platform_cli/` after 2 release cycles
+
+### 5.10 Deliverables
+
+- [x] `cmd/koncept/` Go project with `go.mod`
+- [x] `koncept render <format>` — all 9 output formats via `kcl.RunFiles()`
+- [x] `koncept validate` — KCL compilation + kubeconform validation
+- [x] `koncept init` — scaffold project/release/module
+- [x] `koncept publish` — OCI push via KCL Go SDK
+- [x] `koncept diff` — YAML diff against committed output
+- [x] `koncept test` — run KCL tests with formatted output
+- [x] `koncept fmt` — format KCL files
+- [x] `koncept.yaml` config file support
+- [x] GitHub Actions workflow: build + test + release binaries
+- [ ] Homebrew formula
+- [ ] Container image published to GHCR
 
 ---
 
-## 6. Phase 3 — KCL Code Quality
+## 6. Phase 12 — CI/CD Integration & Validation Pipeline
 
 **Owner**: Platform Engineer (Low-Level)
+**CNCF Target**: L2 → L3 (Operations: Centrally enabled)
+**Priority**: P0 — Required for production confidence
 
-### 6.1 Add Type Safety
+### 6.1 Problem Statement
 
-#### 6.1.1 Create `EnvVar` schema
+Currently, validation is manual: run `koncept validate`, visually inspect output, run `kubeconform`. There is no automated pipeline to catch regressions, enforce policies, or validate configuration changes in PRs.
 
-**File**: `framework/models/modules/common.k` (new)
+### 6.2 Validation Pipeline Architecture
+
+```
+Developer pushes KCL change
+           │
+           ▼
+┌──────────────────────────────────────────────────────┐
+│                   CI Pipeline                         │
+│                                                       │
+│  Step 1: kcl test ./...                              │
+│  ├─ Run 287+ unit tests                              │
+│  └─ FAIL → Block PR                                  │
+│                                                       │
+│  Step 2: koncept validate                             │
+│  ├─ Compile all factory_seed.k files                 │
+│  └─ FAIL → Block PR                                  │
+│                                                       │
+│  Step 3: koncept render argocd                        │
+│  ├─ Render manifests for all projects/environments   │
+│  └─ FAIL → Block PR                                  │
+│                                                       │
+│  Step 4: kubeconform --strict                         │
+│  ├─ Validate all rendered manifests against K8s 1.31 │
+│  ├─ Include CRD schemas for operators                │
+│  └─ FAIL → Block PR                                  │
+│                                                       │
+│  Step 5: Policy check (Phase 15)                      │
+│  ├─ OPA/Kyverno policy evaluation                    │
+│  └─ FAIL → Block PR                                  │
+│                                                       │
+│  Step 6: Golden file diff                             │
+│  ├─ Compare rendered output against committed golden │
+│  │   files to detect unintended drift                │
+│  └─ WARN → Annotate PR with diff                     │
+│                                                       │
+│  Step 7: Helm lint + template                         │
+│  ├─ For helmfile output: lint charts, template dry-   │
+│  │   run, validate produced YAML                     │
+│  └─ FAIL → Block PR                                  │
+│                                                       │
+│  ALL PASS → PR ready for review                       │
+└──────────────────────────────────────────────────────┘
+```
+
+### 6.3 GitHub Actions Workflow
+
+```yaml
+# .github/workflows/validate.yml
+name: Validate KCL Configurations
+on:
+  pull_request:
+    paths:
+      - 'framework/**'
+      - 'projects/**'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install KCL
+        uses: kcl-lang/setup-kcl@v0.2.1
+        with:
+          kcl-version: "0.10.0"
+
+      - name: Run KCL tests
+        run: cd framework && kcl test ./...
+
+      - name: Validate all factories
+        run: |
+          for factory in $(find projects -name "factory_seed.k" -path "*/factory/*"); do
+            dir=$(dirname "$factory")
+            echo "Validating $dir..."
+            kcl run "$dir/factory_seed.k" --output json > /dev/null
+          done
+
+      - name: Render and validate manifests
+        run: |
+          for factory in $(find projects -name "render.k" -path "*/factory/*"); do
+            dir=$(dirname "$factory")
+            echo "Rendering $dir..."
+            kcl run "$factory" -D output=yaml | kubeconform -strict -summary \
+              -kubernetes-version 1.31.0 \
+              -schema-location default \
+              -schema-location 'https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json'
+          done
+
+      - name: Helm lint (if helmfile output exists)
+        run: |
+          for chart in $(find projects -name "Chart.yaml" -path "*/output/*"); do
+            dir=$(dirname "$chart")
+            echo "Linting $dir..."
+            helm lint "$dir"
+            helm template test "$dir" | kubeconform -strict -summary
+          done
+```
+
+### 6.4 Pre-commit Hooks
+
+```yaml
+# .pre-commit-config.yaml
+repos:
+  - repo: local
+    hooks:
+      - id: kcl-fmt
+        name: Format KCL files
+        entry: kcl fmt
+        language: system
+        files: '\.k$'
+        exclude: 'kcl\.mod'
+
+      - id: kcl-lint
+        name: Lint KCL files
+        entry: kcl lint
+        language: system
+        files: '\.k$'
+        exclude: 'kcl\.mod|tests/'
+
+      - id: kcl-test
+        name: Run KCL tests
+        entry: bash -c 'cd framework && kcl test ./...'
+        language: system
+        pass_filenames: false
+        files: 'framework/.*\.k$'
+```
+
+### 6.5 Golden File Testing
+
+For each project/environment, maintain "golden" output files that represent the expected correct render. Changes to golden files require explicit approval:
+
+```
+projects/erp_back/pre_releases/manifests/dev/
+├── factory/
+│   ├── factory_seed.k
+│   └── render.k
+├── output/                          # Rendered output (gitignored)
+└── golden/                          # Expected output (committed)
+    ├── argocd/
+    │   └── manifests.yaml           # Expected YAML output
+    ├── helmfile/
+    │   └── helmfile.yaml            # Expected helmfile
+    └── backstage/
+        └── catalog-info.yaml        # Expected catalog entities
+```
+
+CI validates: `koncept render argocd | diff - golden/argocd/manifests.yaml`
+
+### 6.6 Deliverables
+
+- [x] `.github/workflows/validate.yml` — Full CI pipeline (7 jobs: kcl-test, validate-factories, render-and-validate, golden-file-check, helm-lint, go-cli-build)
+- [x] `.pre-commit-config.yaml` — Pre-commit hooks (kcl-fmt, kcl-lint, kcl-test)
+- [ ] Golden file structure for erp_back (dev, stg, prod) — requires working KCL render
+- [x] `koncept golden update` command — regenerate golden files after intentional changes
+- [ ] CRD schema catalog for kubeconform (CNPG, Strimzi, etc.)
+- [x] CI badge in README.md
+
+---
+
+## 7. Phase 13 — Framework Package Registry & Versioning
+
+**Owner**: Platform Engineer (Low-Level)
+**CNCF Target**: L3 (Operations: Centrally enabled)
+**Priority**: P1
+
+### 7.1 Problem Statement
+
+Currently, all projects depend on the framework via local paths in `kcl.mod`:
+
+```toml
+[dependencies]
+framework = { path = "../../framework" }
+```
+
+This means: every project must live in the same monorepo, no version isolation, and upgrading the framework is all-or-nothing.
+
+### 7.2 OCI Registry Strategy
+
+Publish the framework as versioned OCI artifacts:
+
+```
+ghcr.io/org/idp-concept/framework:1.0.0
+ghcr.io/org/idp-concept/framework:1.1.0
+ghcr.io/org/idp-concept/framework:2.0.0
+```
+
+Projects consume via version pins:
+
+```toml
+# kcl.mod — version-pinned consumption
+[dependencies]
+framework = "1.0.0"           # From OCI registry
+# OR
+framework = { git = "https://github.com/org/idp-concept.git", tag = "framework-v1.0.0" }
+```
+
+### 7.3 Semantic Versioning Contract
+
+| Change Type | Version Bump | Example |
+|---|---|---|
+| New builder/template/procedure | Minor (1.x.0) | Add `framework/templates/elasticache.k` |
+| New field in schema (optional) | Minor (1.x.0) | Add `topologySpreadConstraints?: [any]` to `DeploymentSpec` |
+| Bug fix in builder output | Patch (1.0.x) | Fix label selector mismatch |
+| Remove/rename field | Major (x.0.0) | Rename `serviceType` to `type` in `ServiceSpec` |
+| Change schema inheritance | Major (x.0.0) | Restructure `Component` schema hierarchy |
+| Change render contract | Major (x.0.0) | Modify FactorySeed exported variables |
+
+### 7.4 Compatibility Metadata
+
+Inspired by k0rdent's TemplateChain pattern — add compatibility metadata to stacks:
 
 ```kcl
-schema EnvVar:
-    """Kubernetes environment variable specification."""
+schema StackMetadata:
+    """Declares framework compatibility for a stack version."""
     name: str
-    value?: str
-    valueFrom?: EnvVarSource
+    version: str
+    frameworkVersion: str              # Minimum framework version required
+    kclVersion: str = "0.10.0"        # KCL language version
+    k8sVersion: str = "1.31.0"        # Target Kubernetes version
+    upgradeFrom?: [str]               # Stack versions this can upgrade from
+    deprecatedBy?: str                 # If non-empty, points to successor version
 
     check:
-        value or valueFrom, "env var must have either value or valueFrom"
-        not (value and valueFrom), "env var cannot have both value and valueFrom"
-
-schema EnvVarSource:
-    secretKeyRef?: KeySelector
-    configMapKeyRef?: KeySelector
-
-schema KeySelector:
-    name: str
-    key: str
+        frameworkVersion, "frameworkVersion is required"
 ```
 
-Then update `framework/builders/deployment.k`:
-```kcl
-# ❌ CURRENT
-env?: [any]
+### 7.5 Multi-Repo Support
 
-# ✅ TARGET (import common.EnvVar)
-env?: [EnvVar]
+With registry-based consumption, teams can have their own repos:
+
+```
+team-alpha-repo/
+├── kcl.mod                          # depends on framework = "1.0.0"
+├── modules/
+├── stacks/
+├── tenants/
+├── sites/
+└── pre_releases/
+
+idp-concept (framework repo)/
+├── framework/                       # published as OCI
+└── .github/workflows/publish.yml    # Auto-publish on tag
 ```
 
-#### 6.1.2 Add validation `check` blocks
+### 7.6 Release Pipeline
 
-**File**: `framework/builders/deployment.k` — add to `DeploymentSpec`:
-```kcl
-check:
-    replicas >= 1 if replicas, "replicas must be at least 1"
-    1 <= port <= 65535 if port, "port must be 1-65535"
+```yaml
+# .github/workflows/publish-framework.yml
+name: Publish Framework
+on:
+  push:
+    tags:
+      - 'framework-v*'
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: kcl-lang/setup-kcl@v0.2.1
+
+      - name: Run tests
+        run: cd framework && kcl test ./...
+
+      - name: Extract version
+        id: version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/framework-v}" >> $GITHUB_OUTPUT
+
+      - name: Publish to OCI
+        run: |
+          cd framework
+          kcl mod push oci://ghcr.io/${{ github.repository }}/framework \
+            --tag ${{ steps.version.outputs.VERSION }}
 ```
 
-**File**: `framework/builders/service.k` — add to `ServiceSpec`:
-```kcl
-check:
-    1 <= port <= 65535, "port must be 1-65535"
-    serviceType in ["ClusterIP", "NodePort", "LoadBalancer"] if serviceType, "invalid service type"
-```
+### 7.7 Deliverables
 
-**File**: `framework/builders/storage.k` — add to `PersistentVolumeSpec`:
-```kcl
-check:
-    size, "storage size is required"
-    hostPath, "hostPath is required"
-```
-
-### 6.2 Document Justified `any` Types
-
-The following `any` usages in framework models are **intentional by design** (the framework must support arbitrary project config schemas):
-
-| File | Field | Reason |
-|---|---|---|
-| `configurations.k` | Lambda params `kernel: any` etc. | Generic merge across project schemas |
-| `project.k` | `configurations: any` | Project-specific config schema |
-| `tenant.k` | `configurations: any` | Tenant-specific config schema |
-| `site.k` | `configurations: any` | Site-specific config schema |
-| `stack.k` | `instanceConfigurations: any` | Merged config from all layers |
-| `factory/seed.k` | `mergeFunc: any`, `stackSchema: any` | Higher-order function parameters |
-
-Add a `# framework-generic: accepts any project config schema` comment to each.
-
-### 6.3 KCL Test Infrastructure
-
-**New directory**: `framework/tests/`
-
-KCL supports testing with `kcl test`. Create test files:
-
-```kcl
-# framework/tests/builders_test.k
-import framework.builders.deployment as deploy
-
-_test_spec = deploy.DeploymentSpec {
-    name = "test-app"
-    namespace = "test-ns"
-    image = "test/image"
-    version = "1.0.0"
-    port = 8080
-}
-
-_result = deploy.build_deployment(_test_spec)
-
-# Assertions
-assert _result.metadata.name == "test-app"
-assert _result.metadata.namespace == "test-ns"
-assert _result.spec.template.spec.containers[0].image == "test/image:1.0.0"
-```
-
-> **Note**: Verify `kcl test` command syntax and assertion patterns against official KCL docs before implementing. The KCL test runner may use a different assertion API.
+- [ ] Semantic versioning policy documented in `CONTRIBUTING.md`
+- [ ] `StackMetadata` schema with compatibility fields
+- [ ] GitHub Actions workflow to publish framework on tag
+- [ ] Migration guide: local path → OCI registry consumption
+- [ ] Changelog generation (conventional commits → CHANGELOG.md)
+- [ ] `koncept deps` command — visualize dependency tree
 
 ---
 
-## 7. Phase 4 — Developer Experience
-
-**Owner**: Platform Engineer (Low-Level) for CLI; Platform Engineer (High-Level) for documentation
-
-### 7.1 CLI Improvements
-
-#### 7.1.1 `koncept validate` — Pre-render validation
-
-```nushell
-"validate" => {
-    print "[Validate] Checking factory configuration..."
-    let result = (^kcl run $"($factory_dir)/factory_seed.k" --output json | complete)
-    if $result.exit_code != 0 {
-        print $"❌ Validation failed:\n($result.stderr)"
-        exit 1
-    }
-    print "✅ Configuration is valid"
-}
-```
-
-#### 7.1.2 `koncept init` — Scaffold new pre-release/release
-
-```nushell
-"init" => {
-    let template_type = $render_type  # "argocd" | "helmfile" | "kusion"
-    print $"[Init] Scaffolding ($template_type) factory..."
-    # Copy template factory files from platform_cli/templates/
-    # Replace placeholders with project-specific values
-}
-```
-
-#### 7.1.3 Remove hardcoded builder filenames
-
-**Current** (brittle):
-```nushell
-kcl run $"($factory_dir)/kubernetes_manifests_builder.k"
-```
-
-**Target** (configurable):
-```nushell
-# Read builder name from factory/koncept.yaml or convention
-let builder = (if ($"($factory_dir)/koncept.yaml" | path exists) {
-    open $"($factory_dir)/koncept.yaml" | get builders.yaml
-} else {
-    "yaml_builder.k"   # default convention
-})
-kcl run $"($factory_dir)/($builder)"
-```
-
-#### 7.1.4 Error handling and user feedback
-
-```nushell
-# Wrap all kcl run calls with error handling
-def kcl_run [file: string, ...args: string] {
-    let result = (^kcl run $file ...$args | complete)
-    if $result.exit_code != 0 {
-        print $"❌ KCL compilation failed for ($file):"
-        print $result.stderr
-        exit 1
-    }
-    $result.stdout
-}
-```
-
-### 7.2 Developer-Facing Documentation
-
-Create `docs/DEVELOPER_QUICKSTART.md`:
-
-```markdown
-# Developer Quickstart
-
-## Deploying Your Application
-
-### 1. Navigate to your release directory
-cd projects/<project>/pre_releases/manifests/<site>/
-
-### 2. Validate configuration
-koncept validate
-
-### 3. Render manifests
-koncept render argocd          # Plain K8s YAML for GitOps
-koncept render helmfile        # Helm charts with values
-koncept render kusion          # Kusion spec
-
-### 4. Review output
-ls output/
-
-### What You Can Configure (as a developer)
-- Application replicas, resource limits
-- Environment variables (via site configurations)
-- Feature flags (via tenant configurations)
-
-### What You Should NOT Edit
-- Files in framework/ (contact platform engineers)
-- Files in modules/ (contact platform engineers)
-- Factory builder files (auto-generated)
-```
-
----
-
-## 8. Phase 5 — Advanced Platform Features
+## 8. Phase 14 — Configuration Extensibility & Plugin Architecture
 
 **Owner**: Platform Engineer (Low-Level)
+**CNCF Target**: L3 → L4 (Enabled ecosystem)
+**Priority**: P1
 
-### 8.1 Implement `kcl_to_argocd.k`
+### 8.1 Problem Statement
 
-Generate ArgoCD `Application` CRDs automatically from Stack:
+Currently, adding a new output format, builder, or template **requires modifying framework internals** (editing `render.k`, adding test files, updating the CLI). Teams cannot extend the platform without contributing to the core repository.
 
-```kcl
-import models.stack as stack
-import models.modules.component
-import custom.argocd.models.v1alpha1.argocd_application as app
-import manifests
+### 8.2 Extension Points
 
-generate_argocd_applications = lambda input_stack: stack.Stack, repo_url: str, base_path: str, target_revision: str -> [any] {
-    _apps = [
-        app.ArgocdApplication {
-            metadata = {
-                name = comp.name
-                namespace = "argocd"
-            }
-            spec = {
-                project = "default"
-                source = {
-                    repoURL = repo_url
-                    targetRevision = target_revision
-                    path = "${base_path}/${comp.name}"
-                }
-                destination = {
-                    server = "https://kubernetes.default.svc"
-                    namespace = comp.namespace
-                }
-                syncPolicy = {
-                    automated = { prune = True, selfHeal = True }
-                }
-            }
-        }
-        for comp in input_stack.components
-    ] if input_stack.components else []
+#### 8.2.1 Custom Output Procedures (Plugins)
 
-    manifests.yaml_stream(_apps)
-}
-```
-
-> **Note**: Verify the exact ArgoCD Application schema structure from `framework/custom/argocd/models/v1alpha1/` before implementing. The field names above are illustrative.
-
-### 8.2 Network Policies
-
-Add `NetworkPolicy` builder to `framework/builders/`:
+Allow external packages to register new output formats without modifying `render.k`:
 
 ```kcl
-schema NetworkPolicySpec:
-    name: str
-    namespace: str
-    podSelector: {str:str}
-    ingressRules?: [any]   # Allow specific ingress
-    egressRules?: [any]    # Allow specific egress
+# In an external package: my_org/fleet_output/fleet.k
+import framework.models.manifests.renderstack as rs
 
-build_network_policy = lambda spec: NetworkPolicySpec -> any {
-    {
-        apiVersion = "networking.k8s.io/v1"
-        kind = "NetworkPolicy"
-        metadata = {
-            name = spec.name
-            namespace = spec.namespace
-        }
+generate_fleet = lambda stack: rs.RenderStack, project_name: str, git_repo_url: str -> [any] {
+    _gitrepo = {
+        apiVersion = "fleet.cattle.io/v1alpha1"
+        kind = "GitRepo"
+        metadata.name = project_name
         spec = {
-            podSelector = { matchLabels = spec.podSelector }
-            if spec.ingressRules:
-                ingress = spec.ingressRules
-            if spec.egressRules:
-                egress = spec.egressRules
-            policyTypes = [
-                "Ingress" if spec.ingressRules
-                "Egress" if spec.egressRules
-            ]
+            repo = git_repo_url
+            paths = [m.name for m in stack.modules]
         }
     }
+    [_gitrepo]
 }
 ```
 
-### 8.3 Pod Disruption Budgets
+```kcl
+# In project's render.k — register the custom output
+import my_org.fleet_output.fleet as fleet_plugin
 
-Add `PDB` builder for HA deployments:
+if _output == "fleet":
+    _manifests = fleet_plugin.generate_fleet(_stack, _project_name, _git_repo_url)
+```
+
+#### 8.2.2 Custom Builder Registration
+
+Allow projects to register custom builders that templates can use:
 
 ```kcl
-schema PDBSpec:
+# my_org/custom_builders/istio_virtual_service.k
+schema VirtualServiceSpec:
     name: str
     namespace: str
-    matchLabels: {str:str}
-    minAvailable?: int | str     # "50%" or 1
-    maxUnavailable?: int | str
+    hosts: [str]
+    httpRoutes: [any]
 
-build_pdb = lambda spec: PDBSpec -> any {
+    check:
+        len(hosts) > 0, "at least one host is required"
+
+build_virtual_service = lambda spec: VirtualServiceSpec -> any {
     {
-        apiVersion = "policy/v1"
-        kind = "PodDisruptionBudget"
+        apiVersion = "networking.istio.io/v1"
+        kind = "VirtualService"
         metadata = { name = spec.name, namespace = spec.namespace }
-        spec = {
-            selector = { matchLabels = spec.matchLabels }
-            if spec.minAvailable:
-                minAvailable = spec.minAvailable
-            if spec.maxUnavailable:
-                maxUnavailable = spec.maxUnavailable
-        }
+        spec = { hosts = spec.hosts, http = spec.httpRoutes }
     }
 }
 ```
 
-### 8.4 Secret Management Schema
+#### 8.2.3 Custom Template Mixins
 
-Formalize how secrets are referenced:
+Allow templates to compose behavior from multiple sources:
 
 ```kcl
-schema SecretReference:
-    """Reference to a Kubernetes Secret."""
-    secretName: str
-    key: str
-    optional?: bool = False
-
-schema ExternalSecret:
-    """Reference to an external secret store (e.g., Vault, AWS Secrets Manager)."""
-    store: str                  # "vault" | "aws-secrets-manager" | "azure-key-vault"
-    key: str
-    property?: str
-    refreshInterval?: str = "1h"
+# Mixin that adds Istio sidecar injection to any component
+schema IstioMixin:
+    istioEnabled: bool = True
+    istioVersion?: str
+    _istio_annotations = {
+        "sidecar.istio.io/inject" = "true" if istioEnabled else "false"
+    } | ({"sidecar.istio.io/proxyImage" = "docker.io/istio/proxyv2:${istioVersion}"} if istioVersion else {})
 ```
 
-### 8.5 Multi-Component Helm Charts
+### 8.3 Framework Extension Registry
 
-For stacks with multiple components, generate a parent chart with subcharts:
+A `koncept.yaml` section for declaring extensions:
 
+```yaml
+spec:
+  extensions:
+    outputFormats:
+      fleet:
+        package: "my_org.fleet_output.fleet"
+        function: "generate_fleet"
+    builders:
+      virtualService:
+        package: "my_org.custom_builders.istio_virtual_service"
+    policies:
+      - package: "my_org.policies.security"
+      - package: "my_org.policies.naming_conventions"
 ```
-output/
-├── helmfile.yaml
-└── charts/
-    └── my-stack/
-        ├── Chart.yaml           ← parent chart with dependencies
-        ├── values.yaml          ← aggregated values
-        └── charts/
-            ├── erp-api/         ← subchart
-            │   ├── Chart.yaml
-            │   ├── values.yaml
-            │   └── templates/
-            └── erp-db/          ← subchart
-                ├── Chart.yaml
-                ├── values.yaml
-                └── templates/
-```
+
+### 8.4 Deliverables
+
+- [ ] Extension point design document
+- [ ] `koncept.yaml` extension registry schema
+- [ ] Example external output format plugin (Fleet)
+- [ ] Example custom builder plugin (Istio VirtualService)
+- [ ] Example template mixin pattern
+- [ ] Go CLI support for discovering and loading extensions
+- [ ] Documentation: "How to create a koncept plugin"
 
 ---
 
-## 9. Phase 6 — Production Infrastructure (Operators & Third-Party)
-
-**Owner**: Platform Engineer (Low-Level) for framework; Platform Engineer (High-Level) for project integration
-
-This phase replaces proof-of-concept raw manifests with production-grade Kubernetes operators and third-party Helm charts. The IDP must simplify deploying both **proprietary application code** AND **production infrastructure** (databases, messaging, caches, identity, secrets, search).
-
-### 9.1 Infrastructure Operator Catalog
-
-Every infrastructure service follows the same integration pattern:
-1. **Install operator** — `ThirdParty` module for the operator's Helm chart
-2. **Import CRDs** — `kcl import --mode crd` generates KCL schemas
-3. **Create template** — `framework/templates/<service>.k` with sensible production defaults
-4. **Add check blocks** — Compile-time validation (instances, storage, version pinning)
-5. **Write tests** — TDD with `kcl test` for builder outputs
-
-#### 9.1.1 PostgreSQL — CloudNativePG
-
-| Detail | Value |
-|---|---|
-| **Operator** | [cloudnative-pg/cloudnative-pg](https://github.com/cloudnative-pg/cloudnative-pg) |
-| **Stars / Contributors** | 8,300+ / 280+ |
-| **License** | Apache-2.0 |
-| **CNCF Status** | Sandbox → Incubation track |
-| **CRDs** | `Cluster`, `Backup`, `ScheduledBackup`, `Pooler` |
-| **Priority** | P0 — Most common database, Kubernetes-native HA, automated failover & backup |
-
-```kcl
-# Target API for Platform Engineer (High-Level):
-schema MyPostgres(postgresql.PostgreSQLClusterModule):
-    instances = 3
-    storageSize = "50Gi"
-    pgVersion = "16"
-    backup = postgresql.BackupSpec {
-        schedule = "0 3 * * *"
-        retentionPolicy = "30d"
-        destination = "s3://backups/pg"
-    }
-    monitoring = True
-    pooler = postgresql.PoolerSpec {
-        instances = 2
-        pgbouncerPoolMode = "transaction"
-    }
-```
-
-#### 9.1.2 MongoDB — MCK (MongoDB Controllers for Kubernetes)
-
-| Detail | Value |
-|---|---|
-| **Operator** | [mongodb/mongodb-kubernetes](https://github.com/mongodb/mongodb-kubernetes) (MCK) |
-| **Stars / Contributors** | 165 / 28 |
-| **License** | Apache-2.0 |
-| **CRDs** | `MongoDBCommunity`, `MongoDB` (Enterprise), `MongoDBMultiCluster` |
-| **Priority** | P1 — Replaces deprecated `mongodb-kubernetes-operator` (EOL Nov 2025); unified Community+Enterprise |
-
-> **Note**: MCK is the official successor. The old `mongodb/mongodb-kubernetes-operator` is deprecated. MCK supports replica sets, sharded clusters, TLS, SCRAM auth, and Prometheus monitoring out of the box.
-
-```kcl
-schema MyMongo(mongodb.MongoDBClusterModule):
-    members = 3
-    storageSize = "20Gi"
-    version = "8.0.5"
-    monitoring = True
-    tls = True
-```
-
-#### 9.1.3 Kafka — Strimzi
-
-| Detail | Value |
-|---|---|
-| **Operator** | [strimzi/strimzi-kafka-operator](https://github.com/strimzi/strimzi-kafka-operator) |
-| **Stars / Contributors** | 4,900+ / 400+ |
-| **License** | Apache-2.0 |
-| **CNCF Status** | Sandbox |
-| **CRDs** | `Kafka`, `KafkaTopic`, `KafkaUser`, `KafkaConnect`, `KafkaMirrorMaker2` |
-| **Priority** | P1 — Already in project (`crossplane_v2/managed_resources/kafka_strimzi/`), needs template integration |
-
-> Already partially integrated. Needs: KCL template wrapping existing CRDs into `KafkaClusterModule`.
-
-#### 9.1.4 RabbitMQ — RabbitMQ Cluster Operator
-
-| Detail | Value |
-|---|---|
-| **Operator** | [rabbitmq/cluster-operator](https://github.com/rabbitmq/cluster-operator) |
-| **Stars / Contributors** | 1,100+ / 65 |
-| **License** | MPL-2.0 |
-| **CRDs** | `RabbitmqCluster` |
-| **Priority** | P1 — Production-grade, official VMware/Broadcom project, v2.20.0, 81 releases |
-
-```kcl
-schema MyRabbitMQ(rabbitmq.RabbitMQClusterModule):
-    replicas = 3
-    storageSize = "10Gi"
-    monitoring = True
-    plugins = ["rabbitmq_management", "rabbitmq_prometheus"]
-```
-
-#### 9.1.5 OpenSearch — OpenSearch K8s Operator
-
-| Detail | Value |
-|---|---|
-| **Operator** | [opensearch-project/opensearch-k8s-operator](https://github.com/opensearch-project/opensearch-k8s-operator) |
-| **Stars / Contributors** | 534 / 134 |
-| **License** | Apache-2.0 |
-| **CRDs** | `OpenSearchCluster` |
-| **Priority** | P2 — Search/analytics engine, supports Dashboards, TLS, multi-node pools, rolling upgrades |
-
-```kcl
-schema MyOpenSearch(opensearch.OpenSearchClusterModule):
-    version = "2.19.2"
-    dataPools = [opensearch.NodePool {
-        component = "data"
-        replicas = 3
-        storageSize = "100Gi"
-    }]
-    dashboards = True
-    monitoring = True
-```
-
-#### 9.1.6 HashiCorp Vault — Vault Secrets Operator (VSO)
-
-| Detail | Value |
-|---|---|
-| **Operator** | [hashicorp/vault-secrets-operator](https://github.com/hashicorp/vault-secrets-operator) |
-| **Stars / Contributors** | 577 / 45 |
-| **License** | BUSL-1.1 (changed from MPL) |
-| **CRDs** | `VaultStaticSecret`, `VaultDynamicSecret`, `VaultPKISecret`, `VaultAuth`, `VaultAuthGlobal`, `VaultConnection` |
-| **Priority** | P1 — Syncs Vault secrets → K8s Secrets, integrates with ExternalSecrets pattern already in framework |
-
-> **License warning**: BUSL-1.1 is NOT fully open-source. Free for non-competing use. Evaluate against your organization's policies. If BUSL is unacceptable, use **ExternalSecrets Operator** (Apache-2.0) as the Vault integration layer instead.
-
-```kcl
-schema MyVaultSecret(vault.VaultStaticSecretModule):
-    mount = "secret"
-    path = "data/myapp/config"
-    destination = "myapp-secrets"
-    refreshAfter = "1h"
-```
-
-#### 9.1.7 Valkey — Valkey Operator
-
-| Detail | Value |
-|---|---|
-| **Operator** | [valkey-io/valkey-operator](https://github.com/valkey-io/valkey-operator) |
-| **Stars / Contributors** | 157 / 14 |
-| **License** | Apache-2.0 |
-| **CRDs** | `Valkey` (v1alpha1) |
-| **Priority** | P3 — **Early development, NOT production-ready**. No releases yet. |
-
-> **⚠️ EARLY DEVELOPMENT**: The Valkey operator explicitly warns it is not ready for production. Monitor progress; for now use **OT-Container-Kit Redis Operator** (Redis/Valkey are protocol-compatible) or deploy Valkey via Helm chart as `ThirdParty` module.
-
-**Fallback plan**: Valkey can run any Redis-compatible orchestration. Use OT Redis Operator with Valkey images, or deploy via Bitnami chart.
-
-#### 9.1.8 Keycloak — Keycloak Operator (built into Keycloak)
-
-| Detail | Value |
-|---|---|
-| **Operator** | [keycloak/keycloak](https://github.com/keycloak/keycloak) (operator directory in main repo) |
-| **Stars / Contributors** | 25,000+ (main repo) |
-| **License** | Apache-2.0 |
-| **CNCF Status** | Incubation |
-| **CRDs** | `Keycloak`, `KeycloakRealmImport` |
-| **Priority** | P1 — Identity/SSO, CNCF Incubation, Quarkus-native, official operator ships with Keycloak |
-
-> **Note**: The old `keycloak/keycloak-operator` repo is **archived** (Nov 2022, WildFly). The current operator lives inside the main `keycloak/keycloak` repository and uses the Quarkus distribution.
-
-```kcl
-schema MyKeycloak(keycloak.KeycloakModule):
-    instances = 2
-    hostname = "auth.example.com"
-    database = keycloak.DatabaseSpec {
-        vendor = "postgres"
-        host = "pg-cluster-rw.data.svc"
-        secretName = "keycloak-db-creds"
-    }
-    realmImports = ["realm-export.json"]
-```
-
-#### 9.1.9 QuestDB — Helm Chart (No Operator Available)
-
-| Detail | Value |
-|---|---|
-| **Project** | [questdb/questdb](https://github.com/questdb/questdb) |
-| **Stars** | 16,800+ |
-| **License** | Apache-2.0 |
-| **K8s Support** | Official Helm chart (no operator exists) |
-| **Priority** | P3 — Time-series DB, niche use case, deploy as `ThirdParty` Helm chart |
-
-> **No Kubernetes operator exists** for QuestDB. Deploy via the official Helm chart as a `ThirdParty` module. QuestDB is a single-node database (HA requires Enterprise edition).
-
-```kcl
-schema MyQuestDB(thirdparty.ThirdPartyHelmModule):
-    chart = "questdb/questdb"
-    version = "0.32.0"
-    values = {
-        persistence.size = "50Gi"
-        service.$type = "ClusterIP"
-        resources.requests.memory = "4Gi"
-        resources.limits.memory = "8Gi"
-    }
-```
-
-#### 9.1.10 Redis — OT-Container-Kit Operator
-
-| Detail | Value |
-|---|---|
-| **Operator** | [OT-CONTAINER-KIT/redis-operator](https://github.com/OT-CONTAINER-KIT/redis-operator) |
-| **Stars / Contributors** | 1,300+ / 50+ |
-| **License** | Apache-2.0 |
-| **CRDs** | `Redis`, `RedisCluster`, `RedisSentinel`, `RedisReplication` |
-| **Priority** | P1 — Covers Redis AND Valkey (protocol-compatible), standalone/cluster/replication/sentinel modes |
-
-```kcl
-schema MyRedis(redis.RedisModule):
-    mode = "cluster"                     # "standalone" | "cluster" | "replication" | "sentinel"
-    clusterSize = 3
-    storageSize = "10Gi"
-    monitoring = True
-    exporter = True
-```
-
-#### 9.1.11 MinIO — MinIO Operator (Archived) + Bitnami Helm Chart
-
-| Detail | Value |
-|---|---|
-| **Operator** | [minio/operator](https://github.com/minio/operator) |
-| **Stars / Contributors** | 1,400+ / 151 |
-| **License** | AGPL-3.0 (free, open-source, copyleft) |
-| **CRDs** | `Tenant` (`minio.min.io/v2`) |
-| **Helm Alternative** | `oci://registry-1.docker.io/bitnamicharts/minio` (Apache-2.0) |
-| **Priority** | P2 — S3-compatible object storage, high-performance, Kubernetes-native |
-
-> **⚠️ ARCHIVED**: The minio/operator was archived March 20, 2026 (last release v7.1.1). The Tenant CRD still works on existing clusters but **no new features or security patches** will be released. The IDP template provides both approaches:
-> - `MinIOTenantSpec` + `build_minio_tenant` — Uses the operator Tenant CRD (for clusters with the operator already installed)
-> - `MinIOHelmSpec` + `build_minio_helm` — Uses the Bitnami Helm chart (recommended for new deployments)
-
-```kcl
-# Option 1: Operator Tenant CRD (existing operator installations)
-schema MyMinIO:
-    _spec = minio.MinIOTenantSpec {
-        name = "my-minio"
-        namespace = "storage"
-        servers = 4
-        volumesPerServer = 4
-        storageSize = "100Gi"
-    }
-    manifests = [minio.build_minio_tenant(_spec)]
-
-# Option 2: Bitnami Helm chart (recommended for new deployments)
-schema MyMinIOHelm:
-    _spec = minio.MinIOHelmSpec {
-        name = "my-minio"
-        namespace = "storage"
-        mode = "distributed"
-        replicas = 4
-        storageSize = "100Gi"
-    }
-    manifests = [minio.build_minio_helm(_spec)]
-```
-
-#### 9.1.12 OpenTelemetry — OpenTelemetry Operator
-
-| Detail | Value |
-|---|---|
-| **Operator** | [open-telemetry/opentelemetry-operator](https://github.com/open-telemetry/opentelemetry-operator) |
-| **Stars / Contributors** | 1,700+ / 268 |
-| **License** | Apache-2.0 |
-| **CNCF Status** | Part of CNCF OpenTelemetry project (Graduated) |
-| **CRDs** | `OpenTelemetryCollector`, `Instrumentation`, `OpAMPBridge`, `TargetAllocator` |
-| **Helm Chart** | `open-telemetry/opentelemetry-operator` (chart v0.109.0, appVersion v0.148.0) |
-| **Priority** | P1 — Unified observability (traces, metrics, logs), CNCF Graduated, auto-instrumentation for Java/Python/Node.js/.NET/Go |
-
-> **Key capabilities**: The operator manages OpenTelemetry Collector instances (deployment, daemonset, statefulset, sidecar modes) and auto-instrumentation injection. The Target Allocator distributes Prometheus scrape targets across collector replicas. Supports ServiceMonitor/PodMonitor discovery from prometheus-operator ecosystem.
-
-```kcl
-# Deploy operator + collector + auto-instrumentation:
-import framework.templates.opentelemetry as otel
-
-_operator = otel.build_otel_operator(otel.OtelOperatorSpec {
-    name = "opentelemetry-operator"
-    namespace = "opentelemetry"
-})
-
-_collector = otel.build_otel_collector(otel.OtelCollectorSpec {
-    name = "otel-collector"
-    namespace = "opentelemetry"
-    mode = "deployment"
-    replicas = 2
-})
-
-_instrumentation = otel.build_instrumentation(otel.InstrumentationSpec {
-    name = "auto-instrumentation"
-    namespace = "apps"
-    exporterEndpoint = "http://otel-collector.opentelemetry.svc:4317"
-    propagators = ["tracecontext", "baggage", "b3"]
-})
-```
-
-### 9.2 Infrastructure Catalog Summary
-
-| Service | Operator / Chart | License | Stars | Maturity | Priority |
-|---|---|---|---|---|---|
-| **PostgreSQL** | CloudNativePG | Apache-2.0 | 8,300+ | CNCF Sandbox | P0 |
-| **MongoDB** | MCK (mongodb-kubernetes) | Apache-2.0 | 165 | Official MongoDB | P1 |
-| **Kafka** | Strimzi | Apache-2.0 | 4,900+ | CNCF Sandbox | P1 |
-| **RabbitMQ** | cluster-operator | MPL-2.0 | 1,100+ | Official Broadcom | P1 |
-| **Redis** | OT Redis Operator | Apache-2.0 | 1,300+ | Production | P1 |
-| **Keycloak** | keycloak (built-in) | Apache-2.0 | 25,000+ | CNCF Incubation | P1 |
-| **Vault** | VSO | BUSL-1.1 ⚠️ | 577 | HashiCorp Official | P1 |
-| **OpenTelemetry** | opentelemetry-operator | Apache-2.0 | 1,700+ | CNCF Graduated | P1 |
-| **MinIO** | minio/operator (archived) + Bitnami | AGPL-3.0 / Apache-2.0 | 1,400+ | ⚠️ Archived 2026 | P2 |
-| **OpenSearch** | opensearch-k8s-operator | Apache-2.0 | 534 | OpenSearch Project | P2 |
-| **Valkey** | valkey-operator | Apache-2.0 | 157 | ⚠️ Early dev | P3 |
-| **QuestDB** | Helm chart (no operator) | Apache-2.0 | 16,800+ | Helm only | P3 |
-
-### 9.3 ThirdParty Module Enhancement
-
-Enhance `framework/models/modules/thirdparty.k`:
-
-```kcl
-schema ThirdPartyHelmSpec:
-    """Specification for deploying a third-party Helm chart."""
-    name: str
-    namespace: str
-    chart: str                           # "oci://registry-1.docker.io/bitnamicharts/mongodb"
-    version: str                         # Pinned version (MANDATORY)
-    repository?: str                     # For non-OCI charts
-    values?: {str:any}                   # Override values
-    valuesFiles?: [str]                  # Paths to values files
-    createNamespace?: bool = True
-    wait?: bool = True
-    timeout?: str = "10m"
-
-    check:
-        version, "Helm chart version must be pinned — no 'latest' or floating tags"
-        "latest" not in version, "version must not contain 'latest'"
-```
-
-### 9.4 Observability Stack
-
-```kcl
-schema MonitoringStack:
-    """Deploy Prometheus + Grafana + OpenTelemetry via kube-prometheus-stack."""
-    prometheus: ThirdPartyHelmSpec = ThirdPartyHelmSpec {
-        name = "prometheus"
-        chart = "oci://registry-1.docker.io/bitnamicharts/kube-prometheus"
-        version = "10.2.0"
-    }
-    grafana: ThirdPartyHelmSpec = ThirdPartyHelmSpec {
-        name = "grafana"
-        chart = "oci://registry-1.docker.io/bitnamicharts/grafana"
-        version = "11.3.0"
-    }
-    serviceMonitors?: [ServiceMonitorSpec]
-```
-
-**OpenTelemetry integration**: The `framework/templates/opentelemetry.k` template provides:
-- `OtelOperatorSpec` + `build_otel_operator` — Deploys the operator via Helm chart (`open-telemetry/opentelemetry-operator` v0.109.0)
-- `OtelCollectorSpec` + `build_otel_collector` — Generates `OpenTelemetryCollector` CRDs (deployment/daemonset/statefulset/sidecar modes) with OTLP receivers, processors, and exporters
-- `InstrumentationSpec` + `build_instrumentation` — Generates `Instrumentation` CRDs for auto-instrumentation injection (Java, Python, Node.js, .NET, Go)
-
-The OpenTelemetry Collector integrates with Prometheus via the Target Allocator, enabling ServiceMonitor/PodMonitor-based metrics collection alongside the existing Prometheus stack.
-
-### 9.5 Strategy: Operator vs Helm Chart
-
-| Criteria | Use Operator | Use Helm Chart |
-|---|---|---|
-| **Stateful with HA** | PostgreSQL, Kafka, RabbitMQ, MongoDB | Simpler single-instance deployments |
-| **Custom lifecycle** | Backup/restore, major upgrades, failover | Standard install/upgrade |
-| **CRD-based API** | Need declarative K8s-native API | Standard values.yaml is sufficient |
-| **License concerns** | All Apache-2.0 / MPL-2.0 ✅ | Vault VSO: BUSL-1.1 ⚠️ |
-| **No operator exists** | — | QuestDB, Valkey (for now) |
-
-**Recommended defaults**:
-- PostgreSQL → **CloudNativePG** (CNCF, HA, backup)
-- MongoDB → **MCK** (official Apache-2.0 operator)
-- Kafka → **Strimzi** (already in project)
-- RabbitMQ → **cluster-operator** (official, production-grade)
-- Redis/Valkey → **OT Redis Operator** (compatible with both)
-- Keycloak → **Keycloak Operator** (CNCF Incubation, built-in)
-- Vault → **VSO** if BUSL acceptable; else **ExternalSecrets Operator** (Apache-2.0)
-- OpenSearch → **opensearch-k8s-operator** (Apache-2.0)
-- QuestDB → **Helm chart** as ThirdParty module
-- Valkey → **OT Redis Operator** with Valkey images (until valkey-operator matures)
-
----
-
-## 10. Phase 7 — Multi-Format Output & Ecosystem Integration
+## 9. Phase 15 — Policy-as-Code & Governance
 
 **Owner**: Platform Engineer (Low-Level)
+**CNCF Target**: L3 → L4 (Governance and compliance)
+**Priority**: P1
 
-This phase extends the IDP to produce and consume multiple K8s packaging formats.
-
-### 10.1 Kustomize Output (`kcl_to_kustomize`)
-
-Generate Kustomize-compatible output structure from KCL:
+### 9.1 Policy Layers
 
 ```
-output/
-├── base/
-│   ├── kustomization.yaml              # Generated from Stack
-│   ├── deployment.yaml                 # Component manifests
-│   ├── service.yaml
-│   └── configmap.yaml
-└── overlays/
-    ├── dev/
-    │   ├── kustomization.yaml          # Patches from site config
-    │   └── replica-patch.yaml
-    └── production/
-        ├── kustomization.yaml
-        └── resource-patch.yaml
+                              Strictness
+                        ─────────────────────▶
+
+  ┌──────────────────┐  ┌──────────────────┐  ┌──────────────────┐
+  │  Layer 1: KCL    │  │  Layer 2: Local   │  │  Layer 3: Cluster│
+  │  check: blocks   │  │  Policy Engine    │  │  Admission Ctrl  │
+  │  (compile time)  │  │  (pre-deploy)     │  │  (runtime)       │
+  │                  │  │                  │  │                  │
+  │  Schema val-     │  │  OPA Rego /       │  │  Kyverno /       │
+  │  idation,        │  │  Kyverno policies │  │  Gatekeeper      │
+  │  type checking   │  │  on rendered YAML │  │  live in cluster │
+  └──────────────────┘  └──────────────────┘  └──────────────────┘
+          ▲                      ▲                      ▲
+       Already               This phase             Out of scope
+       done ✅               (CI gate)              (cluster ops)
 ```
 
-Key implementation:
-- `framework/procedures/kcl_to_kustomize.k` — generates `kustomization.yaml` + base manifests
-- Overlay patches derived from configuration diff between base profile and site-specific configs
-- Strategic merge patches for resources, replicas, env vars
-
-### 10.2 KCL Plugin Integration
-
-Support using KCL as a mutation layer for externally-managed charts:
-
-```
-External Helm Chart (e.g., bitnami/postgresql)
-    ↓ helm template
-Raw manifests
-    ↓ helm-kcl plugin
-KCL mutation (add labels, inject sidecars, enforce policies)
-    ↓
-Final manifests
-```
-
-This enables the IDP to:
-1. Consume any third-party chart without forking
-2. Apply organization-wide policies (network policies, security contexts)
-3. Inject standard labels, annotations, and monitoring sidecars
-
-### 10.3 OCI Artifact Publishing
-
-Publish IDP modules to OCI registries for reuse across teams:
-
-```nushell
-# Publish a KCL module as OCI artifact
-def "main publish" [module: string, version: string, --registry: string = "ghcr.io"] {
-    ^kcl mod push $"oci://($registry)/($module):($version)"
-}
-```
-
-### 10.4 Jsonnet Bundle Consumption
-
-For teams with existing Jsonnet bundles (e.g., kube-prometheus mixins):
+### 9.2 KCL-Native Policy Catalog
 
 ```kcl
-schema JsonnetBundle(ThirdParty):
-    packageManager = "JSONNET"
-    bundlePath: str                # Path to jsonnet bundle
-    extVars?: {str:str}           # External variables for jsonnet
-    tlaVars?: {str:str}           # Top-level argument variables
-```
+# framework/policies/security.k
 
-### 10.5 Timoni / CUE Output Format (`kcl_to_timoni`)
-
-**Priority**: P3 — Experimental. [Timoni](https://timoni.sh/) is a CUE-powered Kubernetes package manager (1.9k stars, Apache-2.0, v0.26.0). It is an alternative to Helm that uses CUE instead of Go templates.
-
-> **⚠️ MATURITY WARNING**: Timoni explicitly states "APIs may change in backwards incompatible manner." Treat this output format as experimental.
-
-#### Why Timoni?
-
-- **Type-safe** values (CUE constraints vs Helm's untyped `values.yaml`)
-- **OCI-native** distribution (push/pull modules from OCI registries)
-- **Drift detection** built-in
-- **CRD import** support (`timoni mod vendor crds`)
-
-#### Integration Approach
-
-KCL→CUE is NOT an automatic language conversion. KCL and CUE are different configuration languages with different type systems. The integration strategy:
-
-**Option A — Generate raw YAML, wrap in CUE module** (recommended, simpler):
-1. Use existing `kcl_to_yaml` to produce K8s manifests
-2. Generate a minimal Timoni module structure that embeds the YAML as CUE values
-3. Create `timoni.cue`, `values.cue`, and `templates/` with raw manifest embedding
-
-```
-output/timoni/<stack-name>/
-├── timoni.cue                    # Module metadata (apiVersion, name, version)
-├── values.cue                    # Generated from IDP config (tenant/site overrides)
-├── templates/
-│   ├── config.cue                # Module config schema
-│   └── resources.cue             # K8s manifests as CUE objects
-└── README.md                     # Auto-generated module docs
-```
-
-**Option B — Generate native CUE** (complex, higher fidelity):
-1. Map KCL schemas → CUE definitions
-2. Generate `values.cue` constraints from BaseConfigurations + check blocks
-3. Generate resource templates using `timoni.sh/core` schemas
-
-#### Implementation
-
-```kcl
-# framework/procedures/kcl_to_timoni.k
-_timoni_module = lambda stack: RenderStack, configs: any -> {str:any} {
-    # Generate Timoni module structure
-    _manifests = [m for module in stack.modules for m in module.manifests]
-    {
-        "timoni.cue" = _generate_timoni_metadata(stack)
-        "values.cue" = _generate_values_cue(configs)
-        "templates/resources.cue" = _generate_resources_cue(_manifests)
-    }
-}
-```
-
-```nushell
-# CLI integration in platform_cli/koncept
-# koncept render timoni
-"timoni" => {
-    let output_path = $"($output_dir)/timoni/($stack_name)"
-    mkdir $output_path
-    ^kcl run factory/ -D output=timoni | save $"($output_path)/module.cue"
-}
-```
-
-#### Deliverables
-
-- `framework/procedures/kcl_to_timoni.k` — CUE module generation from Stack
-- `render.k` updated with `output == "timoni"` branch
-- `platform_cli/koncept` updated with `timoni` render target
-- Tests: `framework/tests/procedures/kcl_to_timoni_test.k`
-- Documentation in `docs/DEVELOPER_GUIDE.md` under output formats
-
----
-
-## 11. Phase 8 — Developer Portal: Backstage Catalog Foundation
-
-**Owner**: Platform Engineer (Low-Level) for procedures; Platform Engineer (High-Level) for configuration
-**CNCF Target**: Level 2 → Level 3 (Scalable) — Self-service interfaces
-**Prerequisite**: Phases 1-7 completed ✅
-**Reference**: [docs/BACKSTAGE_ADOPTION_ANALYSIS.md](./BACKSTAGE_ADOPTION_ANALYSIS.md)
-
-> Backstage (CNCF Incubation, 33k+ stars, Apache-2.0) is the only viable free OSS developer portal. It provides a service catalog, software templates (scaffolder), TechDocs, and 205+ active plugins. See the full analysis in `BACKSTAGE_ADOPTION_ANALYSIS.md`.
-
-### 11.1 `kcl_to_backstage` Output Procedure (TDD)
-
-New output procedure to generate Backstage `catalog-info.yaml` descriptors from the KCL Stack model. Follows the same TDD pattern as all existing procedures.
-
-**Entity mapping**:
-
-| idp-concept Model | Backstage Kind | `spec.type` |
-|---|---|---|
-| Project | Domain | `product-area` |
-| Stack | System | `product` |
-| Component (APPLICATION) | Component | `service` |
-| Component (INFRASTRUCTURE) | Resource | `database`, `cache`, `message-queue` |
-| Accessory (CRD) | Resource | `kubernetes-crd` |
-| Accessory (SECRET) | Resource | `secret` |
-| ThirdParty (HELM) | Component | `library` |
-| Pre-release | `spec.lifecycle` | `experimental` |
-| Release | `spec.lifecycle` | `production` |
-
-**Implementation**:
-
-```kcl
-# framework/procedures/kcl_to_backstage.k
-import models.stack as stack
-
-_BACKSTAGE_API_VERSION = "backstage.io/v1alpha1"
-
-generate_backstage_component = lambda name: str, spec: any, system_name: str -> {str:any} {
-    apiVersion = _BACKSTAGE_API_VERSION
-    kind = "Component"
-    metadata = {
-        name = name
-        annotations = {
-            "backstage.io/kubernetes-id" = name
-            "koncept.io/module-type" = spec.moduleType or "Component"
+validate_no_privileged = lambda manifest: any -> bool {
+    if manifest.kind == "Deployment":
+        _containers = manifest.spec?.template?.spec?.containers or []
+        all c in _containers {
+            not c.securityContext?.privileged
         }
-    }
-    spec = {
-        type = "service"
-        lifecycle = spec.lifecycle or "production"
-        owner = spec.owner or "platform-team"
-        system = system_name
-    }
+    else:
+        True
 }
 
-generate_backstage_resource = lambda name: str, resource_type: str, system_name: str -> {str:any} {
-    apiVersion = _BACKSTAGE_API_VERSION
-    kind = "Resource"
-    metadata.name = name
-    spec = {
-        type = resource_type
-        lifecycle = "production"
-        owner = "platform-team"
-        system = system_name
-    }
+validate_resource_limits = lambda manifest: any -> bool {
+    if manifest.kind == "Deployment":
+        _containers = manifest.spec?.template?.spec?.containers or []
+        all c in _containers {
+            c.resources?.limits?.memory and c.resources?.limits?.cpu
+        }
+    else:
+        True
 }
 
-generate_backstage_system = lambda stack_name: str, domain_name: str -> {str:any} {
-    apiVersion = _BACKSTAGE_API_VERSION
-    kind = "System"
-    metadata.name = stack_name
-    spec = {
-        owner = "platform-team"
-        domain = domain_name
-    }
-}
-
-generate_backstage_domain = lambda project_name: str -> {str:any} {
-    apiVersion = _BACKSTAGE_API_VERSION
-    kind = "Domain"
-    metadata.name = project_name
-    spec.owner = "platform-team"
-}
-
-generate_catalog_from_stack = lambda input_stack: stack.Stack, project_name: str -> [any] {
-    # Compose all entity types from stack into a catalog-info document
-    _domain = generate_backstage_domain(project_name)
-    _system = generate_backstage_system(input_stack.name, project_name)
-    _components = [generate_backstage_component(c.name, c, input_stack.name) for c in input_stack.components if c.kind == "APPLICATION"]
-    _resources = [generate_backstage_resource(c.name, "database", input_stack.name) for c in input_stack.components if c.kind == "INFRASTRUCTURE"]
-    _accessory_resources = [generate_backstage_resource(a.name, "kubernetes-crd", input_stack.name) for a in input_stack.accessories]
-    [_domain, _system] + _components + _resources + _accessory_resources
+validate_image_tag_not_latest = lambda manifest: any -> bool {
+    if manifest.kind == "Deployment":
+        _containers = manifest.spec?.template?.spec?.containers or []
+        all c in _containers {
+            ":" in c.image and not c.image.endswith(":latest")
+        }
+    else:
+        True
 }
 ```
 
-**Deliverables**:
-- `framework/procedures/kcl_to_backstage.k`
-- `framework/tests/procedures/backstage_test.k` — 10+ tests
-- Integration into `framework/factory/render.k` (`output == "backstage"` branch)
-- CLI support: `koncept render backstage`
+### 9.3 External Policy Engine Integration (OPA/Conftest)
 
-### 11.2 Backstage Annotations in K8s Manifests
+```rego
+# policies/security/no_privileged.rego
+package main
 
-Add annotations to generated K8s manifests so the TeraSky Kubernetes Ingestor can auto-create catalog entities from deployed resources.
+deny[msg] {
+    input.kind == "Deployment"
+    container := input.spec.template.spec.containers[_]
+    container.securityContext.privileged == true
+    msg := sprintf("Privileged container not allowed: %s", [container.name])
+}
 
-**Annotations to add**:
+deny[msg] {
+    input.kind == "Deployment"
+    container := input.spec.template.spec.containers[_]
+    not container.resources.limits.memory
+    msg := sprintf("Memory limit required for container: %s", [container.name])
+}
+```
+
+### 9.4 Built-in Policy Catalog
+
+| Policy | Severity | Rule |
+|---|---|---|
+| No privileged containers | DENY | `securityContext.privileged != true` |
+| Resource limits required | DENY | All containers must have `resources.limits` |
+| No latest tags | DENY | Image tags must be pinned, not `:latest` |
+| Naming conventions | DENY | Kebab-case names, 3-63 chars |
+| Label requirements | WARN | `app.kubernetes.io/name`, `app.kubernetes.io/managed-by` |
+| Replica minimum | WARN | Production deployments should have `replicas >= 2` |
+| Network policy present | WARN | Every namespace should have a default deny NetworkPolicy |
+| PDB present | WARN | Deployments with `replicas >= 2` should have a PDB |
+| Secret references only | DENY | No `env[].value` containing passwords; use `valueFrom.secretKeyRef` |
+
+### 9.5 koncept.yaml Policy Configuration
 
 ```yaml
-metadata:
-  annotations:
-    terasky.backstage.io/owner: "platform-team"
-    terasky.backstage.io/system: "<stack-name>"
-    terasky.backstage.io/lifecycle: "production"
-    terasky.backstage.io/component-type: "service"
-    terasky.backstage.io/source-code-repo-url: "<git-repo-url>"
-```
-
-**Changes**:
-- Extend `framework/models/configurations.k` `BaseConfigurations` with optional `backstageOwner: str`, `backstageSystem: str`
-- Update `framework/builders/deployment.k` to inject these as annotations when present
-- Source values from factory_seed context (project name, git repo URL, tenant)
-
-### 11.3 Backstage Instance Setup
-
-Deploy a Backstage instance to the target cluster:
-
-- **PostgreSQL**: Use existing CloudNativePG template (`framework/templates/postgresql.k`)
-- **Backstage app**: Node.js + React, deployed via Helm chart ([backstage/charts](https://github.com/backstage/charts))
-- **app-config.yaml**: Catalog locations pointing to monorepo `catalog-info.yaml` files
-- **Authentication**: GitHub OAuth or Keycloak (Red Hat plugin) for SSO
-
-**Infrastructure as KCL**:
-- New `framework/templates/backstage.k` template (or ThirdPartyHelmSpec wrapping the Backstage Helm chart)
-- PostgreSQL instance from `framework/templates/postgresql.k`
-- Ingress configuration
-
----
-
-## 12. Phase 9 — Developer Portal: Plugin Integration & Auth
-
-**Owner**: Platform Engineer (High-Level) for configuration; Developer for testing
-
-### 12.1 Core Plugin Installation (Tier 1 — Day One)
-
-| Plugin | By | Purpose |
-|---|---|---|
-| **Kubernetes** | Backstage Core | View pods, deployments, objects across clusters |
-| **Kubernetes Ingestor** | TeraSky | Auto-create catalog entities from deployed K8s resources and Crossplane claims |
-| **Crossplane Resources** | TeraSky | View Crossplane claim/XR/managed resource graph and YAML |
-| **Argo CD** | Roadie | View ArgoCD sync status and health per application |
-| **Catalog Graph** | SDA SE | Visualize entity relationships (dependency graphs) |
-
-### 12.2 Auth & RBAC via Keycloak
-
-- Install Keycloak auth plugin (Red Hat) for SSO
-- Map Keycloak roles to Backstage permissions:
-  - `developer` → read-only catalog + template usage
-  - `platform-engineer` → full catalog + admin access
-  - `manager` → read-only catalog + metrics
-- Use existing Keycloak instance (already have Keycloak template in `framework/templates/keycloak.k`)
-
-### 12.3 TechDocs
-
-- Configure TechDocs to read Markdown from `docs/` directory
-- Add `backstage.io/techdocs-ref` annotation to catalog entities
-- Generate TechDocs from existing documentation (DEVELOPER_GUIDE.md, DEVELOPER_QUICKSTART.md, PROJECT_ARCHITECTURE.md)
-
-### 12.4 Observability Plugin Stack (Tier 2)
-
-| Plugin | Purpose |
-|---|---|
-| **Kafka** | Monitor Strimzi clusters and topics |
-| **Vault** | Visualize secrets |
-| **Grafana** | Embed monitoring dashboards per service |
-| **Prometheus** | Metrics and alerts per service |
-| **GitHub Actions** | CI/CD pipeline status |
-
----
-
-## 13. Phase 10 — Developer Portal: Self-Service Scaffolder
-
-**Owner**: Platform Engineer (Low-Level) for custom actions; Platform Engineer (High-Level) for templates
-
-### 13.1 Custom Scaffolder Actions (TypeScript)
-
-Create TypeScript actions wrapping the `koncept` Nushell CLI. Actions follow the Backstage `createTemplateAction` pattern:
-
-```typescript
-// backstage-plugin-koncept/src/actions/render.ts
-import { createTemplateAction } from '@backstage/plugin-scaffolder-node';
-import { z } from 'zod';
-
-export const konceptRenderAction = createTemplateAction({
-  id: 'koncept:render',
-  description: 'Render KCL manifests using koncept CLI',
-  schema: {
-    input: z.object({
-      output: z.enum(['argocd', 'helmfile', 'kusion', 'crossplane', 'kustomize', 'timoni', 'backstage']),
-      factory: z.string().optional(),
-    }),
-  },
-  async handler(ctx) {
-    const { output, factory } = ctx.input;
-    // Execute koncept render (Nushell CLI wrapping KCL)
-    // Never pass raw user input to shell — sanitize via zod schema
-  },
-});
-```
-
-**Actions to implement**:
-- `koncept:render` — render manifests in specified format
-- `koncept:validate` — validate configurations
-- `koncept:init` — scaffold new project/release
-- `koncept:publish` — publish KCL module to OCI registry
-
-### 13.2 Backstage Templates (Scaffolder Wizard)
-
-Map our KCL framework templates to Backstage Software Templates:
-
-| Backstage Template | KCL Template | What it creates |
-|---|---|---|
-| "New Web Application" | `WebAppModule` | Service + Deployment + ConfigMap |
-| "New PostgreSQL Database" | `PostgreSQLClusterModule` | CloudNativePG Cluster |
-| "New Kafka Cluster" | `KafkaClusterModule` | Strimzi Kafka + topics |
-| "New Redis Cache" | `RedisModule` | Redis standalone/cluster |
-| "New MongoDB" | `MongoDBCommunityModule` | MongoDB Community Operator |
-| "New RabbitMQ Cluster" | `RabbitMQClusterModule` | RabbitMQ cluster-operator |
-| "New Release" | `koncept init` | Complete factory structure |
-| "Deploy to Environment" | `koncept render` | Rendered manifests for target |
-
-Each template is a YAML file with `spec.parameters` (wizard form fields) and `spec.steps` (actions to execute):
-
-```yaml
-apiVersion: scaffolder.backstage.io/v1beta3
-kind: Template
-metadata:
-  name: new-web-application
-  title: New Web Application
-  description: Create a new web application using the KCL WebAppModule template
-  tags: [kcl, kubernetes, webapp]
 spec:
-  owner: platform-team
-  type: service
-  parameters:
-    - title: Application Details
-      properties:
-        name:
-          title: Application Name
-          type: string
-        port:
-          title: Port
-          type: integer
-          default: 8080
-        replicas:
-          title: Replicas
-          type: integer
-          default: 1
-  steps:
-    - id: scaffold
-      name: Scaffold KCL module
-      action: koncept:init
-      input:
-        template: webapp
-        name: ${{ parameters.name }}
-    - id: render
-      name: Render manifests
-      action: koncept:render
-      input:
-        output: argocd
-    - id: publish
-      name: Open Pull Request
-      action: publish:github:pull-request
-      input:
-        repoUrl: ${{ parameters.repoUrl }}
-        title: "feat: add ${{ parameters.name }}"
+  validation:
+    policy:
+      enabled: true
+      engine: "conftest"
+      policyPath: "policies/"
+      severity:
+        deny: error                     # Block CI
+        warn: warning                   # Annotate PR, don't block
+      exclusions:
+        - path: "test_to_delete/**"
+        - policy: "naming/conventions"
+          path: "projects/video_streaming/**"
 ```
 
-### 13.3 Self-Service Workflow (End-to-End)
+### 9.6 Deliverables
 
-```
-Developer clicks "New Web Application" in Backstage
-    ↓
-Backstage Template wizard collects: name, port, replicas, environment
-    ↓
-Step 1: koncept:init → creates KCL module from WebAppModule template
-Step 2: koncept:validate → validates generated configuration
-Step 3: koncept:render → generates K8s manifests
-Step 4: publish:github:pull-request → creates PR in Git repo
-    ↓
-Platform engineer reviews and merges PR
-    ↓
-ArgoCD syncs manifests to cluster
-    ↓
-TeraSky Kubernetes Ingestor auto-creates catalog entity in Backstage
-    ↓
-Developer sees their new service in Backstage catalog with health status
-```
-
-### 13.4 CLI and Portal Coexistence
-
-The `koncept` Nushell CLI remains the primary build/render tool. Backstage is the self-service UI layer:
-
-| Use CLI (`koncept`) | Use Portal (Backstage) |
-|---|---|
-| Platform engineer developing templates | Developer creating a new service |
-| CI/CD pipeline rendering manifests | Developer deploying to a new environment |
-| Debugging a failed render | Viewing deployment health |
-| Publishing a KCL module | Discovering what services exist |
-| Offline/local development | New team member onboarding |
+- [ ] `framework/policies/` directory with KCL-native validation lambdas
+- [ ] `policies/` directory with OPA Rego policies
+- [ ] `koncept validate --policy` flag
+- [ ] CI pipeline step for policy checks
+- [ ] `koncept.yaml` policy configuration schema
+- [ ] Built-in policy catalog (9+ policies)
+- [ ] Documentation: "Writing custom policies"
 
 ---
 
-## 14. User Workflow Guides
+## 10. Phase 16 — Fleet Output & Multi-Cluster Strategy
 
-> Developer-oriented documentation for each of the three user profiles. Each section describes **what the user does**, **how they do it**, and **what they should never need to know**.
+**Owner**: Platform Engineer (Low-Level)
+**CNCF Target**: L3 → L4 (Scale: multi-cluster operations)
+**Priority**: P2
 
-### 14.1 Developer Workflow
+### 10.1 Context
 
-**Goal**: Deploy and configure applications with zero Kubernetes knowledge.
+> Based on analysis in [PLATFORM_COMPARISON_AND_KCL_ANALYSIS.md](./PLATFORM_COMPARISON_AND_KCL_ANALYSIS.md) §3.
 
-#### 14.1.1 Day-to-Day Commands
+Rancher Fleet (1,700+ stars, CNCF) provides GitOps at scale across many clusters. Adding Fleet as a 10th output format enables idp-concept to serve as the **configuration source** for Fleet-managed multi-cluster deployments.
 
-```bash
-# 1. Navigate to your release
-cd projects/my-project/pre_releases/manifests/dev/factory
-
-# 2. Validate configuration (catch errors before rendering)
-koncept validate
-
-# 3. Render manifests for GitOps
-koncept render argocd          # Plain K8s YAML → commit to Git → ArgoCD syncs
-
-# 4. Render Helm charts for environment customization
-koncept render helmfile        # Helm charts + values.yaml + helmfile.yaml
-
-# 5. Check what changed
-koncept diff                   # (Phase 4) Compare current vs previous render
-```
-
-#### 14.1.2 What Developers Configure
-
-Developers customize their applications through **site configuration files** (YAML-friendly KCL). They never write raw K8s manifests.
-
-| What to Change | Where | Example |
-|---|---|---|
-| Replicas | `sites/<site>/site_def.k` | `replicas = 3` |
-| Environment variables | `sites/<site>/site_def.k` | `springProfile = "production"` |
-| Resource limits | `sites/<site>/site_def.k` | `memoryLimit = "4Gi"` |
-| Feature flags | `tenants/<tenant>/tenant_def.k` | `featureNewUI = True` |
-| Image version | `sites/<site>/site_def.k` | `version = "2.1.0"` |
-
-#### 14.1.3 What Developers Never Touch
-
-- `framework/` — Platform internals
-- `modules/*_module_def.k` — Module schemas (contact Platform Eng)
-- `factory/` — Auto-generated builder files
-- `stacks/` — Stack composition (contact Platform Eng)
-- `kcl.mod` — Package dependencies
-
-#### 14.1.4 Troubleshooting for Developers
-
-| Problem | Solution |
-|---|---|
-| `koncept validate` fails | Check error message — usually a config value out of range or missing |
-| `koncept render` fails with KCL error | Run `koncept validate` first; if still fails, contact Platform Engineer |
-| "Cannot find module" error | You're in the wrong directory — `cd` to the `factory/` folder |
-| Application not deploying | Check ArgoCD UI → sync status; check events for K8s errors |
-| Need a new environment variable | Add to site config file, run `koncept render`, commit to Git |
-
-### 14.2 Platform Engineer (High-Level) Workflow
-
-**Goal**: Compose deployment topologies — stacks, tenants, sites, modules — using pre-built templates.
-
-#### 14.2.1 Creating a New Project
-
-```bash
-# 1. Start with the template project (erp_back is the reference)
-cp -r projects/erp_back projects/my_new_project
-
-# 2. Define the project kernel
-# Edit: projects/my_new_project/kernel/project_def.k
-#   Set: name, domain, team, base configurations
-
-# 3. Define configuration schema
-# Edit: projects/my_new_project/core_sources/config.k
-#   Extend BaseConfigurations with project-specific fields
-
-# 4. Create application modules
-# Edit: projects/my_new_project/modules/
-#   Use framework templates: WebAppModule, SingleDatabaseModule, etc.
-
-# 5. Compose a stack
-# Edit: projects/my_new_project/stacks/
-#   Declare which modules + namespaces go into the stack
-
-# 6. Create tenant and site configs
-# Edit: projects/my_new_project/tenants/ and sites/
-
-# 7. Create pre-release
-# Edit: projects/my_new_project/pre_releases/
-#   Wire factory_seed.k → builder files
-```
-
-#### 14.2.2 Creating a Module (Using Templates)
+### 10.2 Fleet Output Procedure
 
 ```kcl
-# For a web application:
-import framework.templates.webapp as webapp
-import framework.builders.deployment as deploy
+# framework/procedures/kcl_to_fleet.k
 
-schema MyApiService(webapp.WebAppModule):
-    port = 8080
-    serviceType = "ClusterIP"
-    replicas = 2
-    configData = {
-        "application.yaml" = "server.port: 8080\nspring.profiles.active: ${SPRING_PROFILE}"
-    }
-    env = [
-        { name = "SPRING_PROFILE", value = "dev" }
-        { name = "DB_PASSWORD", valueFrom = { secretKeyRef = { name = "db-creds", key = "password" } } }
-    ]
-    resources = deploy.ResourceSpec {
-        cpuRequest = "500m"
-        memoryRequest = "1Gi"
-        cpuLimit = "2"
-        memoryLimit = "4Gi"
-    }
-    livenessProbe = deploy.ProbeSpec {
-        probeType = "http"
-        path = "/actuator/health"
-        port = 8080
-        initialDelaySeconds = 60
-    }
-
-my_api_service = MyApiService {
-    name = "my-api"
-    namespace = "apps"
-    image = "ghcr.io/org/my-api"
-    version = "1.0.0"
-}
-```
-
-#### 14.2.3 Adding a Database (Operator-Managed)
-
-```kcl
-# Phase 6: Use operator template
-import framework.templates.postgresql as pg
-
-schema MyDatabase(pg.PostgreSQLClusterModule):
-    instances = 3
-    storageSize = "100Gi"
-    pgVersion = "16"
-    monitoring = True
-
-my_db = MyDatabase {
-    name = "my-db"
-    namespace = "data"
-}
-```
-
-```kcl
-# Alternative: Use Bitnami Helm chart
-import framework.templates.thirdparty.bitnami_postgresql as bpg
-
-schema MyDatabase(bpg.BitnamiPostgreSQL):
-    chartVersion = "16.4.3"
-    values = {
-        primary.persistence.size = "100Gi"
-        auth.existingSecret = "pg-credentials"
-        metrics.enabled = True
-    }
-```
-
-#### 14.2.4 Composing a Stack
-
-```kcl
-import framework.assembly.helpers as asm
-import framework.models.stack as stack_model
-
-# Create namespaces
-_apps_ns = asm.create_namespace("apps", instanceConfigurations)
-_data_ns = asm.create_namespace("data", instanceConfigurations)
-
-# Import modules
-import modules.my_api as api
-import modules.my_database as db
-
-# Compose stack
-my_stack = stack_model.Stack {
-    components = [api.my_api_service.instance]
-    accessories = [db.my_db.instance]
-    namespaces = [_apps_ns, _data_ns]
-}
-```
-
-#### 14.2.5 What High-Level PEs Never Touch
-
-- `framework/builders/` — Builder lambdas (Low-Level PE territory)
-- `framework/procedures/` — Output format procedures
-- `framework/models/` — Core domain schemas
-- `kcl.mod` at framework level
-
-#### 14.2.6 Decision Matrix
-
-| Scenario | Action |
-|---|---|
-| New microservice | Create `WebAppModule` in `modules/` |
-| New database | Choose operator template or Bitnami wrapper |
-| New environment | Create `sites/<env>/site_def.k` |
-| New customer | Create `tenants/<customer>/tenant_def.k` |
-| New deployment target | Create `pre_releases/` or `releases/` with factory |
-| Custom infra component | Ask Low-Level PE to create builder/template |
-
-### 14.3 Platform Engineer (Low-Level) Workflow
-
-**Goal**: Design and maintain framework internals — schemas, builders, templates, procedures, and the output pipeline.
-
-#### 14.3.1 Creating a New Builder
-
-Builders are low-level lambdas that generate a single K8s manifest:
-
-```kcl
-# framework/builders/my_resource.k
-
-schema MyResourceSpec:
-    name: str
+schema FleetConfig:
     namespace: str
-    # ... resource-specific fields
+    dependsOn?: [FleetDependency]
+    helm?: FleetHelmConfig
+    targetCustomizations?: [FleetTarget]
 
-    check:
-        # Always add validation
-        len(name) > 0, "name is required"
+schema FleetTarget:
+    name?: str
+    clusterSelector?: {str:str}          # Label selector for target clusters
+    helm?: {str:any}                     # Helm value overrides per cluster group
 
-build_my_resource = lambda spec: MyResourceSpec -> any {
+generate_fleet_from_stack = lambda stack: rs.RenderStack, project_name: str -> {str:any} {
+    # Generate fleet.yaml per component with dependency ordering
+    # and per-cluster customizations from site configurations
+}
+```
+
+### 10.3 Multi-Cluster Site Configuration
+
+Extend the existing site model:
+
+```kcl
+schema MultiClusterSite(site_model.Site):
+    clusters: [ClusterTarget]
+
+schema ClusterTarget:
+    name: str
+    labels: {str:str}                    # Cluster labels for Fleet targeting
+    valueOverrides?: {str:any}           # Per-cluster config overrides
+```
+
+### 10.4 ArgoCD ApplicationSet for Multi-Cluster
+
+Alternative multi-cluster approach using ArgoCD:
+
+```kcl
+generate_application_set = lambda stack: rs.RenderStack, clusters: [ClusterTarget] -> any {
     {
-        apiVersion = "my.api/v1"
-        kind = "MyResource"
-        metadata = {
-            name = spec.name
-            namespace = spec.namespace
-            labels = {
-                "app.kubernetes.io/name" = spec.name
-                "app.kubernetes.io/managed-by" = "idp-concept"
-            }
-        }
+        apiVersion = "argoproj.io/v1alpha1"
+        kind = "ApplicationSet"
+        metadata.name = stack.name
         spec = {
-            # ... resource spec
+            goTemplate = True
+            generators = [{
+                clusters = {
+                    selector.matchLabels = { tier = "production" }
+                }
+            }]
+            template = { /* ... template for each matched cluster */ }
         }
     }
 }
 ```
 
-**Testing requirement**: Every builder must have a matching `*_test.k` file:
-```kcl
-# framework/builders/my_resource_test.k
-import builders.my_resource as res
+### 10.5 Deliverables
 
-test_build_my_resource = lambda {
-    _spec = res.MyResourceSpec { name = "test", namespace = "ns" }
-    _result = res.build_my_resource(_spec)
-    assert _result.metadata.name == "test"
-    assert _result.kind == "MyResource"
-}
-```
-
-#### 14.3.2 Creating a New Template
-
-Templates compose multiple builders into a high-level module:
-
-```kcl
-# framework/templates/my_template.k
-import models.modules.component as component
-import builders.deployment as deploy
-import builders.service as svc
-import builders.leader as leader
-
-schema MyModule(component.Component):
-    port: int
-    serviceType: str = "ClusterIP"
-
-    # Private computed fields
-    _deployment = deploy.build_deployment(deploy.DeploymentSpec {
-        name = name; namespace = namespace; image = image; version = version
-        port = port
-    })
-    _service = svc.build_service(svc.ServiceSpec {
-        name = name; namespace = namespace; port = port
-        serviceType = serviceType
-    })
-    _leader = leader.build_component_leader(name, namespace)
-
-    kind = "APPLICATION"
-    leaders = [_leader]
-    manifests = [_deployment, _service]
-```
-
-**Testing**: Due to the `kcl test` bug with auto-computed `instance` fields, test builder outputs individually (see `TESTING_STRATEGY.md`).
-
-#### 14.3.3 Adding a New Output Procedure
-
-```kcl
-# framework/procedures/kcl_to_<format>.k
-import models.stack as stack
-
-generate_<format> = lambda input_stack: stack.Stack -> any {
-    # Transform stack components/accessories/namespaces into target format
-    # Return serializable output
-}
-```
-
-#### 14.3.4 Importing Operator CRDs
-
-When adding support for a new operator:
-
-```bash
-# 1. Download CRDs from operator
-kubectl get crds -o yaml | grep "group: <operator-group>" > /tmp/crds.yaml
-# Or download from GitHub release
-
-# 2. Import to KCL schemas
-kcl import --mode crd -f /tmp/crds.yaml -o framework/custom/<operator>/models/
-
-# 3. Review generated schemas — may need manual tweaks
-# 4. Create a template that wraps the CRDs with sensible defaults
-# 5. Write tests for the new template
-# 6. Update kcl.mod if new dependencies are needed
-```
-
-#### 14.3.5 Maintaining the Module System
-
-```bash
-# Verify all kcl.mod files resolve correctly
-cd framework && kcl run main.k
-
-# Run full test suite
-cd framework && kcl test ./...
-
-# Validate all projects compile
-cd projects/erp_back/pre_releases/manifests/dev/factory && kcl run yaml_builder.k | kubeconform -summary
-
-# After adding dependencies, delete lock file and re-resolve
-rm kcl.mod.lock && kcl run main.k
-```
-
-#### 14.3.6 Low-Level PE Checklist for New Features
-
-- [ ] Create builder with `check` blocks
-- [ ] Write `*_test.k` file with tests for valid and invalid inputs
-- [ ] Run `kcl test ./...` — all tests must pass
-- [ ] Run `kubeconform` on at least one project's output
-- [ ] Update `framework-builders.instructions.md` if new builder
-- [ ] Update `copilot-instructions.md` directory mapping if new directory
-- [ ] Update `IDP_EVOLUTION_PLAN.md` implementation progress if completing a planned item
+- [ ] `framework/procedures/kcl_to_fleet.k` — Fleet output procedure
+- [ ] `framework/tests/procedures/fleet_test.k` — Tests
+- [ ] `render.k` updated with `-D output=fleet` branch
+- [ ] `MultiClusterSite` schema extension
+- [ ] ArgoCD ApplicationSet generation
+- [ ] CLI: `koncept render fleet`
 
 ---
 
-## Implementation Progress — Testing & TDD
+## 11. Phase 17 — Score Spec Input Format
 
-> This section tracks completed implementation work with dates and test evidence.
+**Owner**: Platform Engineer (Low-Level)
+**CNCF Target**: L4 (Ecosystem: accept standard input formats)
+**Priority**: P3
 
-### Testing Infrastructure (Implemented)
+### 11.1 Context
 
-**287 unit tests** covering the full framework, all passing via `kcl test ./...`.
+[Score](https://score.dev/) (8,000+ stars, CNCF) defines a platform-agnostic workload specification. Supporting Score as an **input format** lets developers describe workloads without KCL knowledge.
+
+### 11.2 Score Resource Type Mapping
+
+| Score `type` | KCL Template | Output |
+|---|---|---|
+| `postgres` | `PostgreSQLClusterModule` | CloudNativePG Cluster |
+| `redis` | `RedisModule` | OT Redis Operator |
+| `mongodb` | `MongoDBCommunityModule` | MCK MongoDBCommunity |
+| `kafka-topic` | `KafkaClusterModule` | Strimzi KafkaTopic |
+| `rabbitmq` | `RabbitMQClusterModule` | RabbitMQ Cluster |
+| `s3` | `MinIOHelmSpec` | MinIO Bitnami Helm |
+| `environment` | (configmap/secret) | ConfigMap or Secret |
+
+### 11.3 Deliverables
+
+- [ ] `koncept import score <file>` — Parse score.yaml → generate KCL module
+- [ ] Score resource type → KCL template mapping catalog
+- [ ] Tests for Score-to-KCL translation
+- [ ] Documentation: "Using Score with idp-concept"
+
+---
+
+## 12. Phase 18 — Observability-Driven Platform
+
+**Owner**: Platform Engineer (Low-Level)
+**CNCF Target**: L3 (Measurement: Insights)
+**Priority**: P2
+
+### 12.1 Problem Statement
+
+The CNCF Maturity Model requires **measurement** at Level 3. Currently, the platform has zero observability into its own usage.
+
+### 12.2 Platform Telemetry
+
+Instrument the Go CLI to emit OpenTelemetry metrics:
+
+| Metric | Type | Attributes |
+|---|---|---|
+| `koncept.render.duration` | Histogram | `output.format`, `project.name` |
+| `koncept.render.count` | Counter | `output.format`, `project.name` |
+| `koncept.render.errors` | Counter | `error.type`, `project.name` |
+| `koncept.validate.count` | Counter | `project.name` |
+| `koncept.validate.errors` | Counter | `error.type` |
+| `koncept.test.count` | Counter | `project.name` |
+| `koncept.test.failures` | Counter | `project.name` |
+| `koncept.scaffold.count` | Counter | `template.name` |
+
+### 12.3 Configuration Drift Detection
+
+```
+koncept drift check
+├─ Render current configuration
+├─ Compare against last committed output (golden files)
+├─ Compare against live cluster state (if k8s access available)
+└─ Report:
+   ├─ Configuration drift (KCL source changed, output not re-rendered)
+   ├─ Deployment drift (rendered output differs from live state)
+   └─ Dependency drift (framework version changed, output not updated)
+```
+
+### 12.4 Privacy & Opt-in
+
+- Telemetry is **opt-in** via `koncept.yaml`: `spec.telemetry.enabled: true`
+- No PII collected — only aggregate metrics
+- Data stays within the organization's own OTLP collector
+- CLI works fully offline with telemetry disabled
+
+### 12.5 Deliverables
+
+- [ ] OpenTelemetry instrumentation in Go CLI
+- [ ] `koncept drift check` command
+- [ ] Grafana dashboard templates for platform metrics
+- [ ] `koncept.yaml` telemetry configuration
+- [ ] Privacy policy and opt-in documentation
+
+---
+
+## 13. Strategic Roadmap Overview
+
+### Phase Priority Matrix
+
+| Phase | Priority | Owner | CNCF Target | Dependencies |
+|---|---|---|---|---|
+| **11: Go CLI Hybrid** | P0 | Low-Level PE | L3 Interfaces | None |
+| **12: CI/CD Pipeline** | P0 | Low-Level PE | L3 Operations | None (can start with Nushell) |
+| **13: Package Registry** | P1 | Low-Level PE | L3 Operations | Phase 11 (publish command) |
+| **14: Plugin Architecture** | P1 | Low-Level PE | L4 Ecosystem | Phase 13 (registry for plugins) |
+| **15: Policy-as-Code** | P1 | Low-Level PE | L3-L4 Governance | Phase 12 (CI integration) |
+| **16: Fleet + Multi-Cluster** | P2 | Low-Level PE | L4 Scale | Phase 14 (extension point) |
+| **17: Score Input** | P3 | Low-Level PE | L4 Ecosystem | Phase 11 (Go CLI for parser) |
+| **18: Observability** | P2 | Low-Level PE | L3 Measurement | Phase 11 (Go CLI for metrics) |
+
+### Execution Order (Recommended)
+
+```
+                     ┌───────────────────────────────────────────────────────────┐
+                     │                   Parallel Workstreams                     │
+                     ├───────────────────────────────────────────────────────────┤
+                     │                                                           │
+ Stream A (Tooling)  │  Phase 11 ──▶ Phase 13 ──▶ Phase 14 ──▶ Phase 17        │
+                     │  Go CLI       Registry     Plugins      Score Input       │
+                     │                                                           │
+ Stream B (Quality)  │  Phase 12 ──▶ Phase 15 ──▶ Phase 18                      │
+                     │  CI/CD        Policy       Observability                  │
+                     │                                                           │
+ Stream C (Scale)    │              Phase 16                                     │
+                     │              Fleet + Multi-Cluster                        │
+                     │              (can start after Phase 14)                   │
+                     └───────────────────────────────────────────────────────────┘
+```
+
+Streams A and B can be executed **in parallel** since they have no cross-dependencies until Phase 14.
+
+### CNCF Maturity Progression
+
+```
+Current State (Phases 1-10 complete)
+├── Investment: L2-L3 (dedicated tooling, product-like development)
+├── Adoption: L2 (CLI requires factory knowledge)
+├── Interfaces: L2-L3 (CLI + Backstage designed)
+├── Operations: L2 (manual factory creation)
+└── Measurement: L1 (no metrics)
+
+After Phases 11-12 (Go CLI + CI/CD)
+├── Investment: L3 (distributable product)
+├── Adoption: L3 (zero-dependency CLI, validated pipelines)
+├── Interfaces: L3 (self-service single binary)
+├── Operations: L3 (automated validation, golden files)
+└── Measurement: L2 (CI success/failure tracking)
+
+After Phases 13-15 (Registry + Plugins + Policy)
+├── Investment: L3-L4 (ecosystem enablement)
+├── Adoption: L3 (teams consume published packages)
+├── Interfaces: L3-L4 (extensible via plugins)
+├── Operations: L3 (centrally enabled, policy gates)
+└── Measurement: L2-L3 (policy violation tracking)
+
+After Phases 16-18 (Fleet + Score + Observability)
+├── Investment: L4 (enabled ecosystem)
+├── Adoption: L3-L4 (standard input formats, multi-repo)
+├── Interfaces: L4 (integrated services, multiple input/output)
+├── Operations: L4 (managed services, drift detection)
+└── Measurement: L3 (insights-driven decisions)
+```
+
+---
+
+## 14. Architecture Decision Records
+
+### ADR-001: Keep KCL, Strengthen Go Tooling
+
+**Status**: Accepted
+**Context**: Most IDP tools use Go. Should we migrate from KCL to Go?
+**Decision**: Keep KCL for configuration; use Go only for CLI/tooling via KCL Go SDK.
+**Rationale**: See [PLATFORM_COMPARISON_AND_KCL_ANALYSIS.md §4](./PLATFORM_COMPARISON_AND_KCL_ANALYSIS.md).
+**Consequences**: Must maintain expertise in both KCL and Go. Benefit: best-of-both-worlds.
+
+### ADR-002: Strategy B for Helm Templates
+
+**Status**: Accepted
+**Context**: Should KCL generate Go template strings (Strategy A) or only values.yaml with static templates (Strategy B)?
+**Decision**: Strategy B — KCL generates values.yaml; templates are static Go templates.
+**Rationale**: Simpler KCL code, standard Helm workflow, templates reviewable by Helm users.
+
+### ADR-003: Conftest (OPA) for Policy-as-Code
+
+**Status**: Proposed (Phase 15)
+**Context**: Which policy engine to use for pre-deploy validation?
+**Decision**: Conftest (OPA Rego) for CI gate; Kyverno for cluster admission.
+**Rationale**: OPA is CNCF Graduated (most mature), Conftest works client-side, Rego is well-documented.
+
+### ADR-004: OCI Registry for Framework Distribution
+
+**Status**: Proposed (Phase 13)
+**Context**: How to distribute the framework to multi-repo consumers?
+**Decision**: Publish framework as OCI artifacts to GHCR.
+**Rationale**: KCL natively supports `kcl mod push` to OCI. OCI is the standard. Version pinning via tags.
+
+### ADR-005: OpenTelemetry for Platform Metrics
+
+**Status**: Proposed (Phase 18)
+**Context**: How to measure platform adoption and performance?
+**Decision**: Instrument Go CLI with OpenTelemetry, export to OTLP collector.
+**Rationale**: OpenTelemetry is CNCF Graduated, vendor-agnostic, already in our stack (Phase 6 template). Opt-in.
+
+---
+
+## 15. User Workflow Guides
+
+> **→ Standalone: [USER_WORKFLOW_GUIDES.md](./USER_WORKFLOW_GUIDES.md)**
+
+---
+
+## 16. Work Matrix by User Profile
+
+> **→ Standalone: [WORK_MATRIX.md](./WORK_MATRIX.md)**
+
+### Extended Work Matrix (Phases 11–18)
+
+#### Developer
+
+| Phase | Task | Input | Output |
+|---|---|---|---|
+| 11 | Use `koncept` Go binary — zero install dependencies | Download binary | All existing commands work |
+| 11 | Use `koncept diff` to see what changed | CLI command | YAML diff output |
+| 12 | CI pipeline validates PRs automatically | Push to Git | Green/red pipeline status |
+| 17 | Write `score.yaml` instead of KCL (optional) | Score spec | Auto-generated KCL modules |
+
+#### Platform Engineer — High-Level
+
+| Phase | Task | Input | Output |
+|---|---|---|---|
+| 13 | Consume framework via version pin | `kcl.mod` version | Isolated, versioned dependencies |
+| 14 | Register custom output formats | `koncept.yaml` extensions | New render targets |
+| 16 | Define multi-cluster sites | `MultiClusterSite` schema | Per-cluster deployment configs |
+
+#### Platform Engineer — Low-Level
+
+| Phase | Task | Input | Output |
+|---|---|---|---|
+| 11 | Build Go CLI with KCL Go SDK | Go code | Single distributable binary |
+| 12 | Configure CI/CD validation pipeline | GitHub Actions | Automated quality gates |
+| 13 | Publish framework to OCI registry | `kcl mod push` | Versioned framework packages |
+| 14 | Design plugin architecture | KCL extension points | Extensible framework |
+| 15 | Write OPA policies | Rego files | Governance rules |
+| 16 | Implement Fleet output procedure | KCL procedure | 10th output format |
+| 17 | Implement Score-to-KCL translation | Go parser | Score input support |
+| 18 | Instrument Go CLI with OpenTelemetry | Go metrics | Platform observability |
+
+---
+
+## 17. Migration Guide: video_streaming → template pattern
+
+> **→ Standalone: [MIGRATION_GUIDE.md](./MIGRATION_GUIDE.md)**
+
+### Priority Order
+
+| Module | Type | Template Target | Estimated Effort |
+|---|---|---|---|
+| `kafka_video_consumer_mongodb_python` | APPLICATION | `WebAppModule` | 1-2 hours |
+| `mongodb_single_instance` | INFRASTRUCTURE | `MongoDBCommunityModule` | 1 hour |
+| `kafka_strimzi` | CRD | `KafkaClusterModule` | 1 hour |
+
+---
+
+## Appendix A — Completed Implementation Progress
+
+### Testing Infrastructure
+
+**287 unit tests** across 40+ test files, all passing via `kcl test ./...`.
+
+<details>
+<summary>Full test matrix (click to expand)</summary>
 
 | Layer | Test File | Tests | Status |
 |---|---|---|---|
@@ -2207,10 +1418,14 @@ rm kcl.mod.lock && kcl run main.k
 | **Builders** | `tests/builders/storage_test.k` | 5 | PASS |
 | **Builders** | `tests/builders/service_account_test.k` | 2 | PASS |
 | **Builders** | `tests/builders/leader_test.k` | 3 | PASS |
+| **Builders** | `tests/builders/network_policy_test.k` | 4 | PASS |
+| **Builders** | `tests/builders/pdb_test.k` | 4 | PASS |
 | **Models** | `tests/models/configurations_test.k` | 4 | PASS |
 | **Models** | `tests/models/configurations_git_test.k` | 4 | PASS |
 | **Models** | `tests/models/modules/k8snamespace_test.k` | 4 | PASS |
 | **Models** | `tests/models/modules/common_test.k` | 7 | PASS |
+| **Models** | `tests/models/modules/secrets_test.k` | 6 | PASS |
+| **Models** | `tests/models/modules/thirdparty_helm_test.k` | 5 | PASS |
 | **Assembly** | `tests/assembly/helpers_test.k` | 3 | PASS |
 | **Procedures** | `tests/procedures/helper_test.k` | 3 | PASS |
 | **Procedures** | `tests/procedures/kusion_test.k` | 8 | PASS |
@@ -2219,14 +1434,12 @@ rm kcl.mod.lock && kcl run main.k
 | **Procedures** | `tests/procedures/helmfile_test.k` | 5 | PASS |
 | **Procedures** | `tests/procedures/helm_test.k` | 5 | PASS |
 | **Procedures** | `tests/procedures/argocd_test.k` | 5 | PASS |
+| **Procedures** | `tests/procedures/kustomize_test.k` | 8 | PASS |
+| **Procedures** | `tests/procedures/timoni_test.k` | 11 | PASS |
+| **Procedures** | `tests/procedures/crossplane_test.k` | 25 | PASS |
+| **Procedures** | `tests/procedures/backstage_test.k` | 14 | PASS |
 | **Templates** | `tests/templates/webapp_test.k` | 8 | PASS |
 | **Templates** | `tests/templates/database_test.k` | 8 | PASS |
-| **Builders** | `tests/builders/network_policy_test.k` | 4 | PASS |
-| **Builders** | `tests/builders/pdb_test.k` | 4 | PASS |
-| **Models** | `tests/models/modules/secrets_test.k` | 6 | PASS |
-| **Templates** | `tests/templates/observability_test.k` | 8 | PASS |
-| **Procedures** | `tests/procedures/kustomize_test.k` | 8 | PASS |
-| **Models** | `tests/models/modules/thirdparty_helm_test.k` | 5 | PASS |
 | **Templates** | `tests/templates/postgresql_test.k` | 10 | PASS |
 | **Templates** | `tests/templates/mongodb_test.k` | 6 | PASS |
 | **Templates** | `tests/templates/rabbitmq_test.k` | 7 | PASS |
@@ -2237,428 +1450,73 @@ rm kcl.mod.lock && kcl run main.k
 | **Templates** | `tests/templates/questdb_test.k` | 4 | PASS |
 | **Templates** | `tests/templates/minio_test.k` | 8 | PASS |
 | **Templates** | `tests/templates/opentelemetry_test.k` | 13 | PASS |
-| **Procedures** | `tests/procedures/timoni_test.k` | 11 | PASS |
-| **Procedures** | `tests/procedures/crossplane_test.k` | 25 | PASS |
-| **Procedures** | `tests/procedures/backstage_test.k` | 14 | PASS |
+| **Templates** | `tests/templates/observability_test.k` | 8 | PASS |
 | **Templates** | `tests/templates/backstage_test.k` | 5 | PASS |
+
+</details>
 
 #### Known Limitation: `kcl test` + Schema Instance Bug
 
-Template schemas (WebAppModule, SingleDatabaseModule) cannot be directly instantiated in `kcl test` lambdas due to a KCL bug: when a parent schema (Component/Accessory) has an auto-computed `instance` field that references `manifests`, and `manifests` is computed from builder lambdas, `kcl test` evaluates the `instance` default before the child schema's private computed fields are resolved, causing `UndefinedType` errors. `kcl run` handles this correctly. **Workaround**: Template tests validate the individual builder outputs that templates compose. Full template integration is validated via `kcl run` + `kubeconform`.
+Template schemas cannot be directly instantiated in `kcl test` lambdas due to a KCL bug with auto-computed `instance` fields. **Workaround**: Template tests validate individual builder outputs. Full integration validated via `kcl run` + `kubeconform`.
 
-### Phase 1 Completed Items
+### Phase Completion Summary
 
-| Item | File(s) | Status |
+| Phase | Items | Status |
 |---|---|---|
-| Remove hardcoded credentials | `mongodb_single_instance_module_def.k`, `video_collector_mongodb_python_module_def.k` | DONE — Replaced with `secretKeyRef` |
-| Fix `imagePullPolicy` | `framework/templates/database.k` | DONE — Changed default `"Always"` → `"IfNotPresent"` |
-| Fix code style | `framework/models/modules/accessory.k` | DONE — Consistent spacing |
-| Fix `imagePullPolicy` (mongodb) | `mongodb_single_instance_module_def.k` | DONE — Changed `"Always"` → `"IfNotPresent"` |
-| Externalize Git repo URL | `framework/models/configurations.k`, `erp_back/kernel/configurations.k`, `erp_back/.../argocd_builder.k` | DONE — Added `gitRepoUrl` to BaseConfigurations, removed hardcoded URL |
+| 1 — Foundation Hardening | 5 | ✅ |
+| 2 — Helmfile Parameterization | 11 | ✅ |
+| 3 — KCL Code Quality | 4 | ✅ |
+| 4 — Developer Experience | 7 | ✅ |
+| 5 — Advanced Platform Features | 9 | ✅ |
+| Architecture Restructuring | 6 | ✅ |
+| 6 — Production Infrastructure | 18 | ✅ |
+| 7 — Multi-Format Output | 13 | ✅ |
+| 8 — Backstage Catalog | 10 | ✅ |
+| 9 — Plugin Integration | 6 | ✅ |
+| 10 — Self-Service Scaffolder | 10 | ✅ |
 
-### Phase 2 Completed Items
+### Kubeconform Validation
 
-| Item | File(s) | Status |
-|---|---|---|
-| Helm values extraction | `framework/procedures/helm_values.k` | DONE — `extract_helm_values` + `generate_chart` lambdas |
-| Helmfile generation | `framework/procedures/kcl_to_helmfile.k` | DONE — `generate_helmfile` from components + accessories |
-| kcl_to_helm expansion | `framework/procedures/kcl_to_helm.k` | DONE — `generate_chart_data` + `generate_charts_from_stack` lambdas |
-| Static Helm Go templates | `framework/templates/helm/` | DONE — deployment, service, configmap, serviceaccount, pvc, _helpers.tpl |
-| erp_back helmfile builder | `erp_back/.../factory/helmfile_builder.k` | DONE — Generates helmfile.yaml with per-component releases |
-| erp_back chart+values builder | `erp_back/.../factory/chart_values_builder.k` | DONE — Uses `generate_charts_from_stack` |
-| CLI `koncept render helmfile` | `platform_cli/koncept` | DONE — Strategy B pipeline: chart data + static templates + helmfile |
-| Helm values tests (TDD) | `framework/tests/procedures/helm_values_test.k` | DONE — 5 tests |
-| Helmfile tests (TDD) | `framework/tests/procedures/helmfile_test.k` | DONE — 5 tests |
-| kcl_to_helm tests (TDD) | `framework/tests/procedures/helm_test.k` | DONE — 5 tests |
-| Helm lint validation | erp-api chart | DONE — `helm lint` + `helm template` + kubeconform 2/2 valid |
-
-### Phase 3 Completed Items
-
-| Item | File(s) | Status |
-|---|---|---|
-| Check blocks: DeploymentSpec | `framework/builders/deployment.k` | DONE — port 1-65535, replicas >= 1 |
-| Check blocks: ServiceSpec | `framework/builders/service.k` | DONE — port range, serviceType enum |
-| Check blocks: PersistentVolumeSpec | `framework/builders/storage.k` | DONE — accessMode enum, reclaimPolicy enum |
-| EnvVar schema + validation | `framework/models/modules/common.k` | DONE — KeySelector, EnvVarSource, EnvVar with check blocks |
-
-### Phase 4 Completed Items
-
-| Item | File(s) | Status |
-|---|---|---|
-| Configurable builder filenames | `platform_cli/koncept` | DONE — `resolve_builder` reads `koncept.yaml` or uses convention defaults |
-| `koncept validate` command | `platform_cli/koncept` | DONE — Validates factory_seed.k compilation |
-| CLI error handling wrapper | `platform_cli/koncept` | DONE — `kcl_run` wrapper with clear error messages |
-| ArgoCD render default changed | `platform_cli/koncept` | DONE — Default builder is `yaml_builder.k` (not `kubernetes_manifests_builder.k`) |
-| Generic render.k CLI support | `platform_cli/koncept` | DONE — Auto-detects `render.k` pattern, uses `-D output=TYPE` |
-| Developer quickstart docs | `docs/DEVELOPER_QUICKSTART.md` | DONE — Prerequisites, commands, project structure, troubleshooting |
-| `koncept init` scaffolding | `platform_cli/koncept` | DONE — Copies render.k from framework, generates factory_seed.k template |
-
-### Phase 5 Completed Items
-
-| Item | File(s) | Status |
-|---|---|---|
-| ArgoCD Application generation | `framework/procedures/kcl_to_argocd.k` | DONE — `generate_application`, `generate_applications_from_stack`, `generate_app_project` |
-| ArgoCD procedure tests (TDD) | `framework/tests/procedures/argocd_test.k` | DONE — 5 tests |
-| erp_back ArgoCD builder refactor | `erp_back/.../factory/argocd_builder.k` | DONE — Uses framework procedure, generates for all components |
-| NetworkPolicy builder (TDD) | `framework/builders/network_policy.k` | DONE — `NetworkPolicySpec` schema + `build_network_policy` lambda, dynamic policyTypes |
-| NetworkPolicy tests | `framework/tests/builders/network_policy_test.k` | DONE — 4 tests (ingress, egress, both, deny-all) |
-| PDB builder (TDD) | `framework/builders/pdb.k` | DONE — `PDBSpec` schema + `build_pdb` lambda, int|str support |
-| PDB tests | `framework/tests/builders/pdb_test.k` | DONE — 4 tests (minAvailable, maxUnavailable, percentage, both) |
-| Secret management schemas (TDD) | `framework/models/modules/secrets.k` | DONE — `SecretReference`, `ExternalSecret`, `build_external_secret` with check block validation |
-| Secret management tests | `framework/tests/models/modules/secrets_test.k` | DONE — 6 tests (basic, optional, vault, custom refresh, invalid store, manifest generation) |
-
-### Architecture Restructuring Completed Items
-
-| Item | File(s) | Status |
-|---|---|---|
-| Generic render.k pattern | `framework/factory/render.k` | DONE — Single file replaces 5 builder files per factory; uses `option("output")` for yaml/argocd/helmfile/helm |
-| Factory Seed Contract | All `factory_seed.k` files | DONE — Standardized exports: `_stack`, `_project_name`, `_git_repo_url`, `_manifest_path` |
-| erp_back stg environment | `sites/development/stg_cluster/`, `pre_releases/manifests/stg/` | DONE — Full stg site config + factory with render.k |
-| erp_back releases structure | `releases/v1_0_0_production/`, `stacks/versioned/v1_0_0/` | DONE — Versioned stack, production site, transitive deps via `erp_back = { path = "../" }` |
-| CLI render.k auto-detection | `platform_cli/koncept` | DONE — `has_render_k` function; new pattern uses `-D output=TYPE`, legacy falls back to per-builder files |
-| erp_back dev factory cleanup | `pre_releases/manifests/dev/factory/` | DONE — Removed 4 old builder files, replaced with render.k + factory_seed.k |
-
-### Kubeconform Validation Results
-
-| Project | Manifests | Valid | Invalid | Errors |
-|---|---|---|---|---|
-| erp_back (dev) | 8 | 8 | 0 | 0 |
-| erp_back (stg) | 8 | 8 | 0 | 0 |
-| erp_back (release v1.0.0) | 8 | 8 | 0 | 0 |
-| video_streaming (dev) | 5 | 5 | 0 | 0 |
-
-### Phase 6 Completed Items
-
-| Item | File(s) | Status |
-|---|---|---|
-| ThirdPartyHelmSpec schema | `framework/models/modules/thirdparty_helm.k` | DONE — `ThirdPartyHelmSpec` + `build_thirdparty_helm` → HelmRelease manifests |
-| ThirdPartyHelm tests | `framework/tests/models/modules/thirdparty_helm_test.k` | DONE — 5 tests |
-| PostgreSQL template (TDD) | `framework/templates/postgresql.k` | DONE — `CNPGClusterSpec`, `PoolerSpec`, `BackupSpec`, `build_cnpg_cluster`, `build_pooler`, `build_scheduled_backup` (CloudNativePG `postgresql.cnpg.io/v1`) |
-| PostgreSQL tests | `framework/tests/templates/postgresql_test.k` | DONE — 10 tests (defaults, backup, bootstrap, image, monitoring, pg_params, wal_storage, pooler, scheduled_backup, validation) |
-| MongoDB template (TDD) | `framework/templates/mongodb.k` | DONE — `MongoDBCommunitySpec`, `build_mongodb_community`, `MongoDBCommunityModule` (`mongodbcommunity.mongodb.com/v1`) |
-| MongoDB tests | `framework/tests/templates/mongodb_test.k` | DONE — 6 tests (basic, resources, storage_class, user, validation x2) |
-| RabbitMQ template (TDD) | `framework/templates/rabbitmq.k` | DONE — `RabbitMQClusterSpec`, `build_rabbitmq_cluster`, `RabbitMQClusterModule` (`rabbitmq.com/v1beta1`) |
-| RabbitMQ tests | `framework/tests/templates/rabbitmq_test.k` | DONE — 7 tests (basic, defaults, config, image, plugins, resources, storage_class, validation x2) |
-| Redis template (TDD) | `framework/templates/redis.k` | DONE — `RedisSpec`, `build_redis`, standalone/cluster modes (`redis.redis.opstreelabs.in/v1beta2`) |
-| Redis tests | `framework/tests/templates/redis_test.k` | DONE — 6 tests (standalone, cluster, image, resources, storage_class, validation x2) |
-| Keycloak template (TDD) | `framework/templates/keycloak.k` | DONE — `KeycloakSpec`, `build_keycloak`, `KeycloakModule` (`k8s.keycloak.org/v2alpha1`) |
-| Keycloak tests | `framework/tests/templates/keycloak_test.k` | DONE — 5 tests (basic, defaults, db, http, realm_import, validation x2) |
-| OpenSearch template (TDD) | `framework/templates/opensearch.k` | DONE — `OpenSearchClusterSpec`, `NodePoolSpec`, `DashboardsSpec`, `build_opensearch_cluster`, `OpenSearchClusterModule` (`opensearch.org/v1`) |
-| OpenSearch tests | `framework/tests/templates/opensearch_test.k` | DONE — 8 tests (basic, dashboards, multi_pool, config, monitoring, validation x3) |
-| Vault VSO template (TDD) | `framework/templates/vault.k` | DONE — `VaultConnectionSpec`, `VaultAuthSpec`, `VaultStaticSecretSpec`, 3 build lambdas (`secrets.hashicorp.com/v1beta1`) ⚠️ BUSL-1.1 |
-| Vault tests | `framework/tests/templates/vault_test.k` | DONE — 7 tests (connection basic/TLS, auth kubernetes, static secret, custom dest, validation x2) |
-| QuestDB template (TDD) | `framework/templates/questdb.k` | DONE — `QuestDBSpec`, `build_questdb_release` wrapping ThirdPartyHelmSpec (Helm chart, no operator) |
-| QuestDB tests | `framework/tests/templates/questdb_test.k` | DONE — 4 tests (default, custom, ports, service_type) |
-| MinIO template (TDD) | `framework/templates/minio.k` | DONE — `MinIOTenantSpec` + `build_minio_tenant` (Operator CRD `minio.min.io/v2`) + `MinIOHelmSpec` + `build_minio_helm` (Bitnami chart fallback) |
-| MinIO tests | `framework/tests/templates/minio_test.k` | DONE — 8 tests (default, custom_pools, resources, storage_class, no_autocert, env_vars, validation, helm_fallback) |
-| Observability stack (TDD) | `framework/templates/observability.k` | DONE — `PrometheusSpec`, `GrafanaSpec`, `ServiceMonitorSpec` + 3 build lambdas (Bitnami Helm charts + Prometheus CRD) |
-| Observability tests | `framework/tests/templates/observability_test.k` | DONE — 8 tests (prometheus default/custom/alertmanager, grafana default/custom/ingress, service_monitor basic/interval) |
-| OpenTelemetry template (TDD) | `framework/templates/opentelemetry.k` | DONE — `OtelOperatorSpec` + `build_otel_operator` (Helm chart `open-telemetry/opentelemetry-operator` v0.109.0), `OtelCollectorSpec` + `build_otel_collector` (`opentelemetry.io/v1beta1`), `InstrumentationSpec` + `build_instrumentation` (`opentelemetry.io/v1alpha1`) |
-| OpenTelemetry tests | `framework/tests/templates/opentelemetry_test.k` | DONE — 13 tests (operator default/auto_cert/custom_image/validation, collector default/daemonset/custom_config/target_allocator/invalid_mode/sidecar, instrumentation default/custom_endpoint/custom_images) |
-
-### Phase 7 Completed Items
-
-| Item | File(s) | Status |
-|---|---|---|
-| Kustomize output procedure (TDD) | `framework/procedures/kcl_to_kustomize.k` | DONE — `generate_kustomization`, `generate_kustomization_from_stack`, `generate_overlay_patch` |
-| Kustomize tests | `framework/tests/procedures/kustomize_test.k` | DONE — 8 tests (single, multiple, accessories, labels, from_stack, resource_names, empty, overlay_patch) |
-| render.k kustomize support | `framework/factory/render.k` | DONE — Added `-D output=kustomize` block |
-| CLI kustomize render | `platform_cli/koncept` | DONE — `koncept render kustomize` generates `base/kustomization.yaml` + individual manifest files |
-| CLI OCI publish | `platform_cli/koncept` | DONE — `koncept publish <module> --output <version>` wraps `kcl mod push` |
-| Timoni output procedure (TDD) | `framework/procedures/kcl_to_timoni.k` | DONE — `generate_timoni_metadata`, `generate_timoni_values`, `generate_timoni_resources`, `generate_timoni_module_from_stack` |
-| Timoni tests | `framework/tests/procedures/timoni_test.k` | DONE — 11 tests (metadata, version, values components/accessories/namespaces, resources single/multiple/empty, module from_stack/empty/components_only) |
-| render.k timoni support | `framework/factory/render.k` | DONE — Added `-D output=timoni` block |
-| CLI timoni render | `platform_cli/koncept` | DONE — `koncept render timoni` generates Timoni module directory structure |
-| Standalone User Workflow Guides | `docs/USER_WORKFLOW_GUIDES.md` | DONE — Developer, High-Level PE, Low-Level PE workflows |
-| Standalone Work Matrix | `docs/WORK_MATRIX.md` | DONE — Tasks mapped by user profile across all phases |
-| Standalone Migration Guide | `docs/MIGRATION_GUIDE.md` | DONE — video_streaming → template pattern step-by-step |
-| Crossplane output procedure (TDD) | `framework/procedures/kcl_to_crossplane.k` | DONE — `generate_xrd`, `generate_composition`, `generate_xr`, `generate_prerequisites`, `generate_crossplane_from_stack` |
-| Crossplane tests | `framework/tests/procedures/crossplane_test.k` | DONE — 25 tests (xr_kind, xrd_structure, composition pipeline, sequencer rules, object wrapping, full_stack, prerequisites) |
-| render.k crossplane support | `framework/factory/render.k` | DONE — Added `-D output=crossplane` block |
-| CLI crossplane render | `platform_cli/koncept` | DONE — `koncept render crossplane` generates xrd.yaml, composition.yaml, xr.yaml, prerequisites/ |
-
-### Phase 8 Completed Items
-
-| Item | File(s) | Status |
-|---|---|---|
-| Backstage output procedure (TDD) | `framework/procedures/kcl_to_backstage.k` | DONE — `generate_domain`, `generate_system`, `generate_component_entity`, `generate_resource_from_component`, `generate_resource_from_accessory`, `generate_resource_from_namespace`, `generate_catalog_from_stack` |
-| Backstage procedure tests | `framework/tests/procedures/backstage_test.k` | DONE — 14 tests (domain, system, component, infra resource, CRD accessory, SECRET accessory, namespace, full catalog, empty stack, components only, lifecycle/owner, repo_url, techdocs annotation, no techdocs when empty) |
-| Backstage fields in BaseConfigurations | `framework/models/configurations.k` | DONE — Added `backstageOwner`, `backstageSystem`, `backstageLifecycle` optional fields |
-| Deployment annotations support | `framework/builders/deployment.k` | DONE — Added `annotations?: {str:str}` to DeploymentSpec, conditional injection in `build_deployment` |
-| render.k backstage support | `framework/factory/render.k` | DONE — Added `-D output=backstage` block with TechDocs ref parameter |
-| CLI backstage render | `platform_cli/koncept` | DONE — `koncept render backstage` generates `catalog-info.yaml` with all entities |
-| Backstage Helm template (TDD) | `framework/templates/backstage.k` | DONE — `BackstageHelmSpec` + `build_backstage_release` wrapping official Backstage Helm chart |
-| Backstage template tests | `framework/tests/templates/backstage_test.k` | DONE — 5 tests (default, host/ingress, postgres, resources, custom version) |
-| TechDocs annotation support | `framework/procedures/kcl_to_backstage.k` | DONE — `generate_domain` and `generate_system` accept `techdocs_ref` parameter |
-| mkdocs.yml for TechDocs | `mkdocs.yml` | DONE — Site navigation for Backstage TechDocs integration |
-| Document justified `any` types (Phase 3 gap) | `project.k`, `tenant.k`, `site.k`, `stack.k`, `seed.k`, `configurations.k` | DONE — `# framework-generic` comments on all intentional `any` types |
-
-### Phase 9 Completed Items
-
-| Item | File(s) | Status |
-|---|---|---|
-| Plugin Integration Guide | `docs/BACKSTAGE_PLUGIN_GUIDE.md` | DONE — Kubernetes, TeraSky Ingestor, Crossplane Resources, ArgoCD, Catalog Graph plugins |
-| Keycloak auth guide | `docs/BACKSTAGE_PLUGIN_GUIDE.md` §3 | DONE — Plugin installation, realm config, role mapping, permission framework |
-| TechDocs configuration guide | `docs/BACKSTAGE_PLUGIN_GUIDE.md` §4 | DONE — TechDocs setup, mkdocs.yml, annotation integration |
-| Observability plugins guide | `docs/BACKSTAGE_PLUGIN_GUIDE.md` §5 | DONE — Grafana, Prometheus, Kafka, GitHub Actions plugins |
-| Complete app-config.yaml reference | `docs/BACKSTAGE_PLUGIN_GUIDE.md` §6 | DONE — Full config template with all plugin sections |
-| Entity annotations cheat sheet | `docs/BACKSTAGE_PLUGIN_GUIDE.md` §6 | DONE — All annotations with source and purpose |
-
-### Phase 10 Completed Items
-
-| Item | File(s) | Status |
-|---|---|---|
-| Custom scaffolder actions (TypeScript) | `backstage/plugins/koncept-actions/src/actions/` | DONE — `koncept:render`, `koncept:validate`, `koncept:init`, `koncept:publish` |
-| CLI executor library | `backstage/plugins/koncept-actions/src/lib/executor.ts` | DONE — Safe process spawning (no shell interpolation) |
-| Plugin package setup | `backstage/plugins/koncept-actions/package.json` | DONE — TypeScript project with Backstage dependencies |
-| New Web Application template | `backstage/templates/new-web-application.yaml` | DONE — Wizard for WebAppModule (name, port, replicas, resources, health checks, environment) |
-| New PostgreSQL Database template | `backstage/templates/new-postgresql-database.yaml` | DONE — Wizard for PostgreSQLClusterModule (instances, version, storage, backup) |
-| New Kafka Cluster template | `backstage/templates/new-kafka-cluster.yaml` | DONE — Wizard for KafkaClusterModule (replicas, storage, topics) |
-| New Redis Cache template | `backstage/templates/new-redis-cache.yaml` | DONE — Wizard for RedisModule (standalone/cluster, replicas, storage) |
-| New MongoDB Database template | `backstage/templates/new-mongodb-database.yaml` | DONE — Wizard for MongoDBCommunityModule (members, version, storage) |
-| New RabbitMQ Cluster template | `backstage/templates/new-rabbitmq-cluster.yaml` | DONE — Wizard for RabbitMQClusterModule (replicas, storage, plugins) |
-| New Release template | `backstage/templates/new-release.yaml` | DONE — Wizard for creating versioned releases with backstage catalog generation |
-| Deploy to Environment template | `backstage/templates/deploy-to-environment.yaml` | DONE — Wizard for environment promotion (dev → stg → production) |
-| Backstage catalog locations | `backstage/catalog-info.yaml` | DONE — Location file referencing all template YAML files |
-
-### Strategy Document
-
-Full testing strategy: [`docs/TESTING_STRATEGY.md`](./TESTING_STRATEGY.md)
+| Project | Manifests | Valid | Invalid |
+|---|---|---|---|
+| erp_back (dev) | 8 | 8 | 0 |
+| erp_back (stg) | 8 | 8 | 0 |
+| erp_back (release v1.0.0) | 8 | 8 | 0 |
+| video_streaming (dev) | 5 | 5 | 0 |
 
 ---
 
-## 15. Work Matrix by User Profile
+## Appendix B — Reference Patterns & Competitive Positioning
 
-### Developer
+### Competitive Positioning
 
-| Phase | Task | Input | Output |
+| Platform | Language | Scope | Our Advantage |
 |---|---|---|---|
-| 4 | Use `koncept validate` before rendering | CLI command | Validation result |
-| 4 | Use `koncept render helmfile` for param charts | CLI command | Helm charts + values.yaml |
-| 4 | Create per-environment value overrides | `env/<env>.yaml` files | Customized deployments |
-| 5 | Report configuration issues via `koncept validate` | CLI output | Bug reports |
-| 6 | Configure operator-managed database resources | Site/tenant YAML configs | Custom DB settings per env |
-| 7 | Use `koncept render kustomize` (future) | CLI command | Kustomize overlays |
-| 8-10 | Create a new service via Backstage portal | Backstage Template wizard | Scaffolded service + PR |
-| 8-10 | Deploy to new environment via portal | Backstage Template wizard | Rendered manifests |
-| 8-10 | Browse service catalog and dependencies | Backstage Catalog UI | Discovery + health status |
+| **k0rdent** | Go | Multi-cluster lifecycle | KCL schemas > JSON Schema; no cluster-side controller |
+| **Fleet** | Go | Multi-cluster GitOps | Multiple formats from one source; Fleet converts all to Helm |
+| **Kusion** | Go + KCL | Platform orchestrator | Most aligned. We focus on multi-format output |
+| **Crossplane** | Go | Infrastructure provisioning | Complementary — we generate Crossplane output |
+| **Kratix** | Go | Platform-as-a-Product | Promises ≈ our Stack + Templates |
+| **Score** | Go | Workload specification | Future input format (Phase 17) |
+| **Timoni** | Go + CUE | K8s package manager | We generate Timoni modules from KCL |
 
-### Platform Engineer — High-Level
+**Unique Value**: No other tool offers **9+ output formats from a single KCL source** with compile-time validation, extensible plugin architecture, and zero-dependency binary distribution.
 
-| Phase | Task | Input | Output |
-|---|---|---|---|
-| 1 | Fix hardcoded secrets in video_streaming modules | Module `.k` files | Secure `secretKeyRef` patterns |
-| 1 | Add `gitRepoUrl` to project configurations | `BaseConfigurations` extension | Configurable ArgoCD sources |
-| 2 | Create project-specific `values_builder.k` | Component configs | Generated `values.yaml` |
-| 2 | Create project-specific `helmfile_builder.k` | Stack definition | Generated `helmfile.yaml` |
-| 2 | Define per-environment value overrides | `env/*.yaml` files | Environment-specific configs |
-| 3 | Migrate video_streaming modules to template pattern | Raw modules | Template-based modules |
-| 4 | Write developer quickstart documentation | Architecture knowledge | `DEVELOPER_QUICKSTART.md` |
-| 6 | Create operator-backed modules (PostgreSQL, Redis) | Operator CRDs + templates | Production database modules |
-| 6 | Add Bitnami chart wrappers to stacks | ThirdParty module configs | Third-party integrations |
-| 6 | Configure ExternalSecrets for vault integration | Secret store configs | Externalized secrets |
-| 8 | Configure Backstage annotations in BaseConfigurations | `configurations.k` | Backstage-annotated manifests |
-| 9 | Install and configure Backstage plugins | Plugin configs | Working Backstage portal |
-| 9 | Configure Keycloak auth for Backstage | Keycloak instance | SSO + RBAC |
-| 10 | Create Backstage Templates for KCL templates | Template YAML files | Self-service wizards |
+### Industry Patterns Applied
 
-### Platform Engineer — Low-Level
+| Source | Pattern | How We Use It |
+|---|---|---|
+| k0rdent | TemplateChain (versioned upgrade paths) | `StackMetadata.upgradeFrom` (Phase 13) |
+| k0rdent | DryRun with auto-defaults | `koncept validate` + FactorySeed auto-computation |
+| Fleet | fleet.yaml per-path config | Per-component output config (Phase 16) |
+| Kusion | Go CLI + KCL config (hybrid) | Phase 11 — same validated approach |
+| Score | Platform-agnostic workload spec | Phase 17 — accept Score as input |
+| CNCF Maturity Model | Level 3: Self-service, measured | Phases 11-18 target each aspect |
 
-| Phase | Task | Input | Output |
-|---|---|---|---|
-| 1 | Fix `imagePullPolicy` defaults | `database.k` | Consistent defaults |
-| 1 | Fix accessory.k code style | `accessory.k` | Clean formatting |
-| 2 | Implement `kcl_to_helmfile.k` procedure | Stack schema | Helmfile YAML generation |
-| 2 | Expand `kcl_to_helm.k` with Chart + Values generation | Component schema | Helm Chart generation |
-| 2 | Create Helm value extraction lambdas | Component manifests | `HelmValues` schema |
-| 2 | Create static Helm template files | Builder patterns | `templates/*.tpl` |
-| 2 | Update CLI `koncept render helmfile` flow | Nushell script | Full Helmfile pipeline |
-| 3 | Create `EnvVar` schema + type safety | `common.k` | Typed env declarations |
-| 3 | Add `check` validation blocks to builders | Builder schemas | Compile-time validation |
-| 3 | Document justified `any` types | Framework models | Clear intent markers |
-| 3 | Create KCL test infrastructure | Test patterns | `framework/tests/` |
-| 4 | Implement `koncept validate` | CLI command | Pre-render validation |
-| 4 | Implement `koncept init` scaffolding | CLI command | Project scaffolding |
-| 4 | Remove hardcoded builder filenames | CLI refactor | Configurable builders |
-| 5 | Implement `kcl_to_argocd.k` | Stack schema | ArgoCD Application CRDs |
-| 5 | Create NetworkPolicy builder | Builder pattern | Network isolation |
-| 5 | Create PDB builder | Builder pattern | HA guarantees |
-| 5 | Design secret management schemas | Security patterns | Formalized secret refs |
-| 6 | Import operator CRDs → KCL schemas | Operator CRDs | KCL schema definitions |
-| 6 | Create PostgreSQL/Redis/MongoDB templates | Operator models | Production templates |
-| 6 | Create ThirdPartyHelmSpec schema | Framework models | Helm chart integration |
-| 6 | Create Bitnami chart catalog templates | Bitnami charts | IDP wrappers |
-| 6 | Create ExternalSecret builder/template | Security models | Secret management |
-| 7 | Implement `kcl_to_kustomize.k` procedure | Stack schema | Kustomize output |
-| 7 | Implement KCL plugin integration layer | helm-kcl/kustomize-kcl | Mutation pipeline |
-| 7 | Create OCI artifact publishing pipeline | Nushell CLI | `koncept publish` command |
-| 8 | Implement `kcl_to_backstage.k` procedure (TDD) | Stack schema | catalog-info.yaml generation |
-| 8 | Add Backstage annotations to deployment builder | Builder schemas | TeraSky Ingestor-compatible manifests |
-| 8 | Set up Backstage instance (Helm chart + PostgreSQL) | Framework templates | Running Backstage portal |
-| 10 | Create custom scaffolder actions (TypeScript) | `koncept` CLI commands | Backstage actions wrapping CLI |
-| 10 | Update CLI for `koncept render backstage` | Nushell script | New render target |
+### Reference Documentation
 
----
-
-## 16. Migration Guide: video_streaming → template pattern
-
-The `video_streaming` project predates framework templates. Its modules use raw manifests (~190 lines each). The `erp_back` project demonstrates the recommended template pattern (~50 lines each, 74% reduction).
-
-### Migration Steps Per Module
-
-1. **Identify the module type**: APPLICATION → `WebAppModule`, database → `SingleDatabaseModule`, Kafka → `KafkaClusterModule`
-
-2. **Create new module definition** using templates:
-```kcl
-import framework.templates.webapp as webapp
-import framework.builders.deployment as deploy
-
-schema MyAppModule(webapp.WebAppModule):
-    port = 8080
-    serviceType = "ClusterIP"
-    resources = deploy.ResourceSpec {
-        cpuRequest = "250m"
-        memoryRequest = "512Mi"
-    }
-    livenessProbe = deploy.ProbeSpec {
-        probeType = "http"
-        path = "/health"
-        port = 8080
-    }
-    env = [
-        { name = "DB_HOST", valueFrom = { secretKeyRef = { name = "db-creds", key = "host" } } }
-    ]
-```
-
-3. **Compare outputs**: Run `kcl run` on both old and new module definitions, diff the YAML output.
-
-4. **Replace module reference** in stack definition (update `.instance` reference).
-
-5. **Remove old module file** once validated.
-
-### Priority Order
-
-| Module | Type | Complexity | Estimated Effort |
-|---|---|---|---|
-| `kafka_video_consumer_mongodb_python` | APPLICATION | Medium (env vars, MongoDB deps) | 1-2 hours |
-| `mongodb_single_instance` | INFRASTRUCTURE | Low (basic DB pattern) | 30 min |
-| `kafka_strimzi` | CRD | Requires `KafkaClusterModule` | 1 hour |
-
----
-
-## Appendix A: Reference Patterns
-
-### vfarcic/crossplane-kubernetes Pattern
-
-Viktor Farcic's project (66% KCL + 30.6% Nushell) demonstrates:
-- KCL source → generated YAML pipeline (`just package-generate`)
-- Per-provider Compositions with KCL functions
-- Kyverno Chainsaw testing for infrastructure
-- `CLAUDE.md` with AI instruction patterns
-
-**Applicable to our project**: Their KCL→YAML generation pipeline is similar to our `kcl_to_yaml` approach. Their testing with Chainsaw could inspire our test infrastructure.
-
-### CNCF Platform Engineering Maturity Model
-
-Key takeaways for our platform:
-- **Level 3 target**: Treat the platform as a product — measure adoption, test user experience, publish roadmap
-- **Self-service interfaces**: `koncept` CLI must enable developers without K8s knowledge
-- **Measurable outcomes**: Track render success/failure rates, configuration drift detection
-
-### Score Workload Specification
-
-Score defines a platform-agnostic workload spec. While we use KCL as our spec language, Score's mental model (declare what you need, not how to deploy it) aligns with our template pattern where developers set `port`, `replicas`, `env` and the framework handles the rest.
-
-### Backstage (CNCF Incubation)
-
-Backstage is the de-facto standard OSS developer portal (33k+ stars, 1,867 contributors, Apache-2.0). Key integration points for idp-concept:
-- **TeraSky Kubernetes Ingestor**: Auto-ingests deployed K8s workloads and Crossplane Claims as Backstage catalog entities. Auto-creates Templates from XRDs.
-- **TeraSky Crossplane Resources**: Graph view of Crossplane claim/XR/managed resources.
-- **Custom Scaffolder Actions**: Wrap `koncept` CLI in TypeScript actions for self-service.
-- **Catalog Entity Model**: 9 entity kinds (Component, API, Resource, System, Domain, Group, User, Template, Location) map directly to our framework models.
-- See [docs/BACKSTAGE_ADOPTION_ANALYSIS.md](./BACKSTAGE_ADOPTION_ANALYSIS.md) for the full analysis.
-
----
-
-## Appendix B: Implementation Priority
-
-```
-Phase 1 (Foundation) ✅             Phase 2 (Helmfile) ✅
-├─ Security fixes (P0) ✅          ├─ HelmValues extraction ✅
-├─ imagePullPolicy fix ✅           ├─ kcl_to_helmfile.k implementation ✅
-└─ Code style cleanup ✅            ├─ kcl_to_helm.k expansion ✅
-                                    ├─ Static Helm templates ✅
-Phase 3 (Code Quality) ✅          ├─ values_builder.k implementation ✅
-├─ EnvVar schema ✅                 └─ CLI update for helmfile flow ✅
-├─ check validation blocks ✅
-├─ Document any types               Phase 4 (Developer Experience) ✅
-└─ Test infrastructure ✅           ├─ koncept validate ✅
-                                    ├─ koncept init (nice-to-have) ✅
-Phase 5 (Advanced) ✅               ├─ Configurable builder names ✅
-├─ kcl_to_argocd.k ✅               ├─ Generic render.k + CLI support ✅
-├─ NetworkPolicy builder ✅         └─ DEVELOPER_QUICKSTART.md ✅
-├─ PDB builder ✅
-├─ Secret management schemas ✅
-└─ Multi-component Helm charts
-
-Phase 6 (Production Infrastructure) ✅  Phase 7 (Ecosystem) ✅
-├─ P0: CloudNativePG (PostgreSQL) ✅  ├─ kcl_to_kustomize.k ✅
-├─ P1: MCK (MongoDB) ✅               ├─ KCL plugin integration (docs)
-├─ P1: Strimzi (Kafka) — integrate    ├─ OCI artifact publishing ✅
-├─ P1: RabbitMQ cluster-operator ✅   ├─ Jsonnet bundle consumption
-├─ P1: OT Redis Operator ✅           └─ kcl_to_timoni.k ✅ [experimental]
-├─ P1: Keycloak Operator (CNCF) ✅        ├─ CUE module generation ✅
-├─ P1: Vault VSO (⚠️ BUSL-1.1) ✅        ├─ Timoni module structure ✅
-├─ P2: MinIO (operator+Bitnami) ✅       └─ CLI render target ✅
-├─ P2: OpenSearch k8s-operator ✅    kcl_to_crossplane.k ✅
-├─ P3: Valkey (not ready — use Redis)    ├─ XRD + Composition + XR generation ✅
-├─ P3: QuestDB (Helm chart only) ✅      ├─ function-sequencer ordering ✅
-├─ ThirdPartyHelmSpec enhancement ✅     └─ CLI render target ✅
-├─ P2: OpenSearch k8s-operator ✅
-├─ P3: Valkey (not ready — use Redis)
-├─ P3: QuestDB (Helm chart only) ✅
-├─ ThirdPartyHelmSpec enhancement ✅
-├─ ExternalSecrets operator ✅
-└─ Observability stack ✅
-
-Phase 8 (Portal: Catalog)          Phase 9 (Portal: Plugins)
-├─ kcl_to_backstage procedure       ├─ K8s + Ingestor + Crossplane plugins
-├─ Backstage annotations in K8s     ├─ ArgoCD + Catalog Graph plugins
-├─ Backstage instance setup          ├─ Keycloak auth + RBAC
-└─ catalog-info.yaml generation      ├─ TechDocs integration
-                                     └─ Observability plugins (Kafka, Vault,
-Phase 10 (Portal: Self-Service)         Grafana, Prometheus)
-├─ Custom scaffolder actions
-│   (koncept:render, :validate,
-│    :init, :publish)
-├─ Backstage Templates mapping
-│   KCL templates → wizard forms
-├─ Self-service end-to-end workflow
-└─ CLI + Portal coexistence docs
-```
-
-### Proof-of-Concept → Production Transition Map
-
-```
-POC (current)                        Production Target
-─────────────                        ──────────────────
-Raw Deployments/StatefulSets    →    K8s Operators (CNPG, Strimzi, MCK, OT Redis, ...)
-Hand-crafted all manifests      →    Operator CRDs + ThirdParty Helm charts
-Hardcoded secrets in code       →    ExternalSecrets + Vault VSO / Cloud KMS
-No object storage               →    MinIO Operator (Tenant CRD) + Bitnami Helm
-No identity management          →    Keycloak Operator (CNCF Incubation)
-No messaging beyond Kafka       →    RabbitMQ cluster-operator
-No search/analytics             →    OpenSearch k8s-operator
-No monitoring                   →    Prometheus + Grafana + OpenTelemetry (auto-configured)
-No network policies             →    NetworkPolicy per component
-No HA guarantees                →    PDB + topology spread constraints
-Single output format (YAML)     →    YAML + Helm + Helmfile + Kustomize + ArgoCD + Timoni + Crossplane ✅
-Manual project setup            →    `koncept init` scaffolding ✅
-No validation before deploy     →    `koncept validate` + check blocks + kubeconform ✅
-No tests                        →    268 unit tests + integration validation ✅
-CLI-only interface              →    CLI + Backstage developer portal (self-service)
-No service catalog              →    Backstage catalog (auto-ingested via TeraSky Ingestor)
-No self-service for developers  →    Backstage Templates wrapping KCL templates
-No dependency visualization     →    Backstage Catalog Graph + Crossplane resource graph
-No centralized docs             →    TechDocs from Markdown alongside code
-```
+- Testing strategy: [TESTING_STRATEGY.md](./TESTING_STRATEGY.md)
+- Security policy: [SECURITY.md](./SECURITY.md)
+- Platform comparison: [PLATFORM_COMPARISON_AND_KCL_ANALYSIS.md](./PLATFORM_COMPARISON_AND_KCL_ANALYSIS.md)
+- Backstage analysis: [BACKSTAGE_ADOPTION_ANALYSIS.md](./BACKSTAGE_ADOPTION_ANALYSIS.md)
+- Developer guide: [DEVELOPER_GUIDE.md](./DEVELOPER_GUIDE.md)

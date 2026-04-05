@@ -1,0 +1,209 @@
+name: Validate KCL Configurations
+
+on:
+  pull_request:
+    paths:
+      - "framework/**"
+      - "projects/**"
+      - "cmd/**"
+  push:
+    branches: [main]
+    paths:
+      - "framework/**"
+      - "projects/**"
+      - "cmd/**"
+
+permissions:
+  contents: read
+
+env:
+  KCL_VERSION: "0.10.0"
+  K8S_VERSION: "1.31.0"
+
+jobs:
+  kcl-test:
+    name: KCL Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install KCL
+        uses: kcl-lang/setup-kcl@v0.2.1
+        with:
+          kcl-version: ${{ env.KCL_VERSION }}
+
+      - name: Run KCL tests
+        run: cd framework && kcl test ./...
+
+  validate-factories:
+    name: Validate All Factories
+    runs-on: ubuntu-latest
+    needs: kcl-test
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install KCL
+        uses: kcl-lang/setup-kcl@v0.2.1
+        with:
+          kcl-version: ${{ env.KCL_VERSION }}
+
+      - name: Validate all factory_seed.k files
+        run: |
+          set -euo pipefail
+          failed=0
+          for factory in $(find projects -name "factory_seed.k" -path "*/factory/*"); do
+            dir=$(dirname "$factory")
+            echo "::group::Validating $dir"
+            if kcl run "$factory" --output json > /dev/null 2>&1; then
+              echo "✓ $dir"
+            else
+              echo "::error::Validation failed for $dir"
+              failed=1
+            fi
+            echo "::endgroup::"
+          done
+          if [ "$failed" -ne 0 ]; then
+            echo "::error::One or more factory validations failed"
+            exit 1
+          fi
+
+  render-and-validate:
+    name: Render & Kubeconform
+    runs-on: ubuntu-latest
+    needs: validate-factories
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install KCL
+        uses: kcl-lang/setup-kcl@v0.2.1
+        with:
+          kcl-version: ${{ env.KCL_VERSION }}
+
+      - name: Install kubeconform
+        run: |
+          curl -sSL https://github.com/yannh/kubeconform/releases/download/v0.6.7/kubeconform-linux-amd64.tar.gz \
+            | tar xz -C /usr/local/bin kubeconform
+
+      - name: Render and validate manifests
+        run: |
+          set -euo pipefail
+          failed=0
+          for factory in $(find projects -name "render.k" -path "*/factory/*"); do
+            dir=$(dirname "$factory")
+            echo "::group::Rendering $dir"
+            output=$(kcl run "$factory" -D output=yaml 2>&1) || {
+              echo "::error::Render failed for $dir"
+              echo "$output"
+              failed=1
+              echo "::endgroup::"
+              continue
+            }
+            echo "$output" | kubeconform -strict -summary \
+              -kubernetes-version "$K8S_VERSION" \
+              -schema-location default \
+              -schema-location 'https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json' \
+              || {
+                echo "::error::Kubeconform failed for $dir"
+                failed=1
+              }
+            echo "::endgroup::"
+          done
+          if [ "$failed" -ne 0 ]; then
+            echo "::error::One or more render validations failed"
+            exit 1
+          fi
+
+  golden-file-check:
+    name: Golden File Diff
+    runs-on: ubuntu-latest
+    needs: validate-factories
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install KCL
+        uses: kcl-lang/setup-kcl@v0.2.1
+        with:
+          kcl-version: ${{ env.KCL_VERSION }}
+
+      - name: Check golden file diffs
+        run: |
+          set -euo pipefail
+          drift=0
+          for golden_dir in $(find projects -type d -name "golden"); do
+            factory_dir=$(dirname "$golden_dir")/factory
+            [ -d "$factory_dir" ] || continue
+
+            echo "::group::Checking golden files in $golden_dir"
+            for golden_file in $(find "$golden_dir" -name "*.yaml" -o -name "*.yml"); do
+              format=$(basename "$(dirname "$golden_file")")
+              echo "  Checking $golden_file (format: $format)..."
+              rendered=$(kcl run "$factory_dir/render.k" -D output="$format" 2>/dev/null) || continue
+              if ! echo "$rendered" | diff -u "$golden_file" - > /tmp/golden_diff 2>&1; then
+                echo "::warning file=$golden_file::Golden file drift detected"
+                cat /tmp/golden_diff
+                drift=1
+              fi
+            done
+            echo "::endgroup::"
+          done
+          if [ "$drift" -ne 0 ]; then
+            echo "::warning::Golden file drift detected — review the diffs above"
+          fi
+
+  helm-lint:
+    name: Helm Lint
+    runs-on: ubuntu-latest
+    needs: validate-factories
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.16.3
+
+      - name: Install kubeconform
+        run: |
+          curl -sSL https://github.com/yannh/kubeconform/releases/download/v0.6.7/kubeconform-linux-amd64.tar.gz \
+            | tar xz -C /usr/local/bin kubeconform
+
+      - name: Lint Helm charts
+        run: |
+          charts=$(find projects -name "Chart.yaml" -path "*/output/*" 2>/dev/null || true)
+          if [ -z "$charts" ]; then
+            echo "No Helm charts found in output directories — skipping"
+            exit 0
+          fi
+          set -euo pipefail
+          failed=0
+          for chart in $charts; do
+            dir=$(dirname "$chart")
+            echo "::group::Linting $dir"
+            helm lint "$dir" || { failed=1; }
+            helm template test "$dir" | kubeconform -strict -summary \
+              -kubernetes-version "$K8S_VERSION" || { failed=1; }
+            echo "::endgroup::"
+          done
+          if [ "$failed" -ne 0 ]; then
+            exit 1
+          fi
+
+  go-cli-build:
+    name: Build Go CLI
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: cmd/koncept/go.mod
+
+      - name: Build
+        working-directory: cmd/koncept
+        run: go build -o bin/koncept .
+
+      - name: Run Go tests
+        working-directory: cmd/koncept
+        run: go test ./...
