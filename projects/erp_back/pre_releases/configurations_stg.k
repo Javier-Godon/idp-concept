@@ -6,14 +6,14 @@ import erp_back.stacks.development.profile_def
 import erp_back.tenants.vendor
 import erp_back.sites.development.stg_cluster.site_def
 import erp_back.kernel.project_def
-import erp_back.core_sources.merge_configurations as merge
+import framework.models.configurations as base
 
 _tenant = vendor.tenant_vendor
 _project = project_def.erp_back_project
 _site = site_def.stg_cluster_site
 _profile = profile_def.erp_back_development_profile
 
-_pre_release_configurations_stg_cluster = merge.merge_configurations(
+_pre_release_configurations_stg_cluster = base.merge_configurations(
     _project.configurations
     _profile.configurations
     _tenant.configurations

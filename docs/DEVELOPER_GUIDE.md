@@ -539,7 +539,7 @@ schema MyProjectConfigurations(base.BaseConfigurations):
     springProfile?: str
 ```
 
-**Generic merge function:**
+**Generic merge function (optional wrapper):**
 ```kcl
 import framework.models.configurations as base
 
@@ -549,7 +549,7 @@ merge_configurations = lambda kernel, profile, tenant, site -> any {
 }
 ```
 
-This replaces the manual `_configs = kernel | profile | tenant | site` pattern with a reusable function.
+Use this only if you need custom merge behavior. `FactorySeed` now defaults to `framework.models.configurations.merge_configurations` when `mergeFunc` is omitted.
 
 ### 4.9 Factory Seed (Scaffolding)
 
@@ -559,15 +559,15 @@ This replaces the manual `_configs = kernel | profile | tenant | site` pattern w
 
 **Key fields:**
 - `project`, `profile`, `tenant`, `site` — The four inputs
-- `mergeFunction` — Your project's merge lambda
-- `stackBuilder` — A lambda that takes merged config and returns a Stack
+- `mergeFunc` — Optional custom merge lambda (defaults to framework merge)
+- `stackSchema` — Stack schema to instantiate with merged config
 
 **Auto-computed fields:**
 - `mergedConfigurations` — Result of merging all 4 layers
 - `stack` — The built stack
 - `release` — A Release combining all instances
 
-This schema exists for convenience. The `erp_back` project uses a manual approach (importing directly in `factory_seed.k`) because it needs finer control over RenderStack creation. Both patterns are valid.
+This schema is the recommended approach. `erp_back` now uses `FactorySeed` directly with default merge behavior and no project-local merge wrapper.
 
 ---
 

@@ -230,10 +230,10 @@ framework/
     │   ├── helper_test.k               ← 3 tests
     │   ├── kusion_test.k               ← 8 tests
     │   ├── yaml_test.k                 ← 5 tests
-    │   ├── helm_values_test.k          ← 5 tests
+    │   ├── helm_values_test.k          ← 8 tests
     │   ├── helmfile_test.k             ← 5 tests
     │   ├── helm_test.k                 ← 5 tests
-    │   └── argocd_test.k               ← 5 tests
+    │   ├── argocd_test.k               ← 5 tests
     │   └── kustomize_test.k            ← 8 tests
     └── templates/
         ├── webapp_test.k               ← 8 tests
@@ -245,9 +245,12 @@ framework/
         ├── keycloak_test.k             ← 5 tests (Keycloak Operator)
         ├── opensearch_test.k           ← 8 tests (k8s-operator)
         ├── vault_test.k                ← 7 tests (VSO)
-        └── questdb_test.k              ← 4 tests (Helm chart)
+        ├── questdb_test.k              ← 4 tests (Helm chart)
         ├── minio_test.k                ← 8 tests (Operator + Bitnami)
-        └── observability_test.k         ← 8 tests (Prometheus + Grafana + ServiceMonitor)
+        ├── observability_test.k        ← 8 tests (Prometheus + Grafana + ServiceMonitor)
+        ├── valkey_test.k               ← 4 tests (Helm chart)
+        ├── openbao_test.k              ← 4 tests (Helm chart)
+        └── ceph_test.k                 ← 4 tests (Helm chart)
 ```
 
 Test files are in a dedicated `tests/` directory mirroring the source tree. Imports use package-relative paths (e.g., `import builders.deployment as deploy`) which resolve from the `framework` package root regardless of the test file's location.
@@ -258,18 +261,12 @@ Schemas with auto-computed `instance` fields (like `Component` and `Accessory`) 
 
 **Workaround**: Template tests validate the individual builder outputs that templates compose, rather than instantiating the full template schema. Integration testing via `kcl run` + `kubeconform` validates the complete pipeline.
 
-### Current Test Count: 219 tests (all PASS)
+### Current Test Count: 318 tests (all PASS)
 
 | Category | Tests |
 |---|---|
-| Builder lambdas | 52 |
-| Model schemas | 30 |
-| Assembly helpers | 3 |
-| Procedures | 44 |
-| Template builders (apps) | 16 |
-| Template builders (operators) | 69 |
-| Template builders (helm charts) | 5 |
-| **Total** | **219** |
+| Framework suite total | 318 |
+| Notes | Includes builders, models, assembly, procedures, and templates |
 
 ---
 
@@ -302,6 +299,9 @@ cd framework && kcl test ./... --fail-fast
 ### Full Validation Pipeline
 
 ```bash
+# 0. Canonical one-command verification
+./scripts/verify.sh
+
 # 1. KCL unit tests
 cd framework && kcl test ./...
 

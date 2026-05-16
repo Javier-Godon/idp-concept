@@ -80,7 +80,7 @@ koncept render kustomize
 ### 4. Run Tests
 
 ```bash
-cd framework && kcl test ./...
+./scripts/verify.sh
 ```
 
 ## Project Structure
@@ -103,7 +103,7 @@ idp-concept/
 └── docs/                # Documentation
 ```
 
-## 17 Built-In Templates
+## 20 Built-In Templates
 
 Templates auto-generate Kubernetes manifests — Deployment, Service, ConfigMap, PV/PVC, leaders, and dependency tracking — from a few configuration fields.
 
@@ -120,6 +120,9 @@ Templates auto-generate Kubernetes manifests — Deployment, Service, ConfigMap,
 | `OpenSearchClusterModule` | OpenSearch with dashboards |
 | `VaultStaticSecretModule` | Vault → K8s secret sync |
 | `QuestDBModule` | QuestDB time-series database |
+| `ValkeySpec` | Valkey cache via HelmRelease |
+| `OpenBaoSpec` | OpenBao secrets management via HelmRelease |
+| `CephSpec` | Rook Ceph operator via HelmRelease |
 | `MinIOTenantSpec` / `MinIOHelmSpec` | S3-compatible object storage |
 | `ObservabilityModule` | Prometheus + Grafana stack |
 | `OpenTelemetryModule` | OpenTelemetry collector |
@@ -163,6 +166,7 @@ See [projects/erp_back/](projects/erp_back/) for the template approach and [proj
 | [FRAMEWORK_SCHEMAS](docs/FRAMEWORK_SCHEMAS.md) | Platform engineers | Complete schema reference |
 | [DEVELOPER_GUIDE](docs/DEVELOPER_GUIDE.md) | Platform engineers | How to extend the framework |
 | [TESTING_STRATEGY](docs/TESTING_STRATEGY.md) | Contributors | Testing patterns and conventions |
+| [VERIFICATION_MATRIX](docs/VERIFICATION_MATRIX.md) | Contributors | Canonical lint/test/render verification workflow |
 | [TOOLING_SETUP](docs/TOOLING_SETUP.md) | All | Installation and environment setup |
 | [SECURITY](docs/SECURITY.md) | All | Security policy and approved tools |
 | [PLATFORM_COMPARISON](docs/PLATFORM_COMPARISON_AND_KCL_ANALYSIS.md) | Platform engineers | KCL vs Go, k0rdent/Fleet patterns |

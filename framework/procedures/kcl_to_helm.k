@@ -3,8 +3,6 @@ Helm chart generation — produces Chart.yaml + values.yaml from stack structure
 Supports both raw manifest extraction (legacy) and parameterized output (Phase 2 Strategy B).
 """
 import models.modules.component
-import models.modules.accessory
-import models.modules.k8snamespace
 import models.stack as stack
 import manifests
 import procedures.helm_values as hv

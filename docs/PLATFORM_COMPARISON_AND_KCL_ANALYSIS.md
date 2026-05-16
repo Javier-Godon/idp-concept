@@ -46,7 +46,6 @@ _factory = seed.FactorySeed {
     profile = profile_def.erp_back_v1_0_0_profile
     tenant = tenant_def.tenant_acme
     site = site_def.production_site
-    mergeFunc = merge.merge_configurations
     stackSchema = stack.ErpBackV1_0_0Stack
     gitRepoUrl = "https://github.com/Javier-Godon/idp-concept"
     manifestPath = "projects/erp_back/releases/v1_0_0_production/output"
@@ -61,7 +60,7 @@ _manifest_path = _factory.manifestPath
 
 | Element | Why it stays per-factory |
 |---|---|
-| `render.k` copy | KCL's `import .factory_seed` requires co-location. No way to make a single render.k that dynamically discovers factory_seed from another package. |
+| `render.k` wrapper | Still per-factory for local `import .factory_seed`, but now reduced to a thin wrapper that delegates to `framework.factory.render_entry`. |
 | `factory_seed.k` | Must specify environment-specific imports (which stack, tenant, site, profile). This is inherently per-environment data. |
 | `kcl.mod` per factory dir | KCL requires a `kcl.mod` at or above every entry point. |
 

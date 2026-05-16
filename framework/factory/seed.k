@@ -33,6 +33,7 @@ import models.project as project_model
 import models.tenant as tenant_model
 import models.site as site_model
 import models.manifests.renderstack as rs
+import models.configurations as base_config
 
 schema FactorySeed:
     """Factory seed that merges configs, builds stack, and exports render contract."""
@@ -42,8 +43,8 @@ schema FactorySeed:
     profile: profile_model.Profile
     tenant: tenant_model.Tenant
     site: site_model.Site
-    # framework-generic: higher-order function — merge lambda varies per project
-    mergeFunc: any
+    # framework-generic: optional override. Defaults to framework merge order.
+    mergeFunc?: any = base_config.merge_configurations
     # framework-generic: stack schema type varies per project
     stackSchema: any
     # Render contract inputs

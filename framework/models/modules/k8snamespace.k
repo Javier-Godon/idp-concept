@@ -1,5 +1,4 @@
 import k8s.api.core.v1 as k8core
-import k8s.api.apps.v1 as k8sapps
 import models.modules.leader as base_leader
 
 schema K8sNamespaceLeader(base_leader.Leader):

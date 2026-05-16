@@ -1,46 +1,44 @@
 """
-PostgreSQL Module — single-instance PostgreSQL database.
-Uses the SingleDatabaseModule template from framework, reducing ~120 lines to ~20.
+PostgreSQL Module — CloudNativePG operator-based PostgreSQL cluster.
+Uses framework PostgreSQLClusterModule for production-ready primitives.
 """
-import framework.templates.database as database
-import framework.builders.deployment as deploy
+import framework.templates.postgresql as postgresql
 
-schema PostgresModule(database.SingleDatabaseModule):
-    port = 5432
-    portName = "postgresql"
-    dataPath = "/var/lib/postgresql/data"
+schema PostgresModule(postgresql.PostgreSQLClusterModule):
+    clusterName = name
+    instances = 3
     storageSize = "20Gi"
-    storageHostPath = "/mnt/data"
-    serviceType = "ClusterIP"
+    storageClass = Undefined
+    databaseName = configurations.postgresDatabase if configurations.postgresDatabase else "erp_db"
+    databaseOwner = "erp_app"
+    enablePodMonitor = True
+    backupRetentionPolicy = "7d"
+    primaryUpdateStrategy = "unsupervised"
+    imageName = "${asset.image}:${asset.version}" if asset.image and asset.version else Undefined
 
-    resources = deploy.ResourceSpec {
-        cpuRequest = "250m"
-        cpuLimit = "1"
-        memoryRequest = "512Mi"
-        memoryLimit = "2Gi"
+    resources = {
+        requests = {
+            cpu = "500m"
+            memory = "1Gi"
+        }
+        limits = {
+            cpu = "2"
+            memory = "4Gi"
+        }
     }
 
-    env = [
-        {
-            name = "POSTGRES_DB"
-            value = "erp_db"
-        }
-        {
-            name = "POSTGRES_USER"
-            valueFrom = {
-                secretKeyRef = {
-                    name = "erp-db-credentials"
-                    key = "username"
-                }
-            }
-        }
-        {
-            name = "POSTGRES_PASSWORD"
-            valueFrom = {
-                secretKeyRef = {
-                    name = "erp-db-credentials"
-                    key = "password"
-                }
-            }
-        }
-    ]
+    scheduledBackup = postgresql.CNPGScheduledBackupSpec {
+        name = "${name}-daily-backup"
+        namespace = namespace
+        clusterName = name
+        schedule = "0 0 2 * * *"
+    }
+
+    pooler = postgresql.CNPGPoolerSpec {
+        name = "${name}-rw"
+        namespace = namespace
+        clusterName = name
+        instances = 2
+        poolMode = "session"
+        poolerType = "rw"
+    }

@@ -479,6 +479,9 @@ Lambda: `build_pdb` → `policy/v1 PodDisruptionBudget`.
 | `OpenSearchClusterModule` | `opensearch.k` | OpenSearch k8s-operator | `opensearch.org/v1 OpenSearchCluster` |
 | `VaultStaticSecretModule` | `vault.k` | Vault Secrets Operator | `secrets.hashicorp.com/v1beta1` ⚠️ BUSL-1.1 |
 | `QuestDBModule` | `questdb.k` | Helm chart (no operator) | ThirdPartyHelmSpec wrapper |
+| `ValkeySpec` | `valkey.k` | Bitnami Helm chart | ThirdPartyHelmSpec wrapper |
+| `OpenBaoSpec` | `openbao.k` | OpenBao Helm chart | ThirdPartyHelmSpec wrapper |
+| `CephSpec` | `ceph.k` | Rook Ceph Helm chart | ThirdPartyHelmSpec wrapper |
 | `MinIOTenantSpec` | `minio.k` | MinIO Operator (archived) | `minio.min.io/v2 Tenant` ⚠️ Archived |
 | `MinIOHelmSpec` | `minio.k` | Bitnami Helm chart | ThirdPartyHelmSpec wrapper (recommended) |
 
@@ -548,6 +551,9 @@ Accessory (framework/models/modules/accessory.k)
 ├── OpenSearchClusterModule   (template — OpenSearch)
 ├── VaultStaticSecretModule   (template — Vault VSO)
 ├── QuestDBModule             (template — Helm chart)
+├── ValkeySpec                (template — Helm chart)
+├── OpenBaoSpec               (template — Helm chart)
+├── CephSpec                  (template — Helm chart)
 ├── MinIOTenantSpec / MinIOHelmSpec (template — MinIO)
 └── ... (project CRD / SECRET modules)
 

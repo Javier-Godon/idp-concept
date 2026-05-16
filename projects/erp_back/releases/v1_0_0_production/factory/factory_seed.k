@@ -10,7 +10,6 @@ import erp_back.stacks.versioned.v1_0_0.profile_def
 import erp_back.tenants.acme_corp.tenant_def
 import erp_back.sites.production.default.site_def
 import erp_back.kernel.project_def
-import erp_back.core_sources.merge_configurations as merge
 
 _factory = seed.FactorySeed {
     releaseName = "release_v1_0_0_production"
@@ -19,7 +18,6 @@ _factory = seed.FactorySeed {
     profile = profile_def.erp_back_v1_0_0_profile
     tenant = tenant_def.tenant_acme
     site = site_def.production_site
-    mergeFunc = merge.merge_configurations
     stackSchema = stack.ErpBackV1_0_0Stack
     gitRepoUrl = "https://github.com/Javier-Godon/idp-concept"
     manifestPath = "projects/erp_back/releases/v1_0_0_production/output"

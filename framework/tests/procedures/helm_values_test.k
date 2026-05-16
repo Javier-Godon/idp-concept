@@ -157,6 +157,87 @@ test_extract_values_no_service = lambda {
     assert _values.service is Undefined
 }
 
+# === Test: Extract values — service defaults without deployment ===
+test_extract_values_service_only_defaults = lambda {
+    _comp = component.ComponentInstance {
+        name = "public-api"
+        kind = "APPLICATION"
+        namespace = "apps"
+        configurations = {}
+        asset = { version = "1.0.0" }
+        leaders = [{ name = "public-api", kind = "Service", apiVersion = "v1" }]
+        manifests = [
+            {
+                apiVersion = "v1"
+                kind = "Service"
+                metadata = { name = "public-api", namespace = "apps" }
+                spec = {
+                    ports = []
+                }
+            }
+        ]
+        dependsOn = []
+    }
+
+    _values = hv.extract_helm_values(_comp)
+    assert _values.replicaCount is Undefined
+    assert _values.image is Undefined
+    assert _values.service.$type == "ClusterIP"
+    assert _values.service.port == 80
+}
+
+# === Test: Extract values — ignore env entries with only valueFrom ===
+test_extract_values_env_valuefrom_only = lambda {
+    _comp = component.ComponentInstance {
+        name = "worker"
+        kind = "APPLICATION"
+        namespace = "apps"
+        configurations = {}
+        asset = { version = "1.0.0" }
+        leaders = [{ name = "worker", kind = "Deployment", apiVersion = "apps/v1" }]
+        manifests = [
+            {
+                apiVersion = "apps/v1"
+                kind = "Deployment"
+                metadata = { name = "worker", namespace = "apps" }
+                spec = {
+                    replicas = 1
+                    template.spec.containers = [{
+                        name = "worker"
+                        image = "myregistry/worker:1.0.0"
+                        env = [
+                            { name = "DB_PASSWORD", valueFrom = { secretKeyRef = { name = "creds", key = "pw" } } }
+                            { name = "DB_HOST", valueFrom = { configMapKeyRef = { name = "db-cm", key = "host" } } }
+                        ]
+                    }]
+                }
+            }
+        ]
+        dependsOn = []
+    }
+
+    _values = hv.extract_helm_values(_comp)
+    assert _values.replicaCount == 1
+    assert _values.env is Undefined
+}
+
+# === Test: Extract values — empty manifests produces empty values map ===
+test_extract_values_empty_manifests = lambda {
+    _comp = component.ComponentInstance {
+        name = "noop"
+        kind = "APPLICATION"
+        namespace = "apps"
+        configurations = {}
+        asset = { version = "1.0.0" }
+        leaders = []
+        manifests = []
+        dependsOn = []
+    }
+
+    _values = hv.extract_helm_values(_comp)
+    assert len(_values) == 0
+}
+
 # === Test: Generate Chart.yaml from component ===
 test_generate_chart = lambda {
     _comp = component.ComponentInstance {
