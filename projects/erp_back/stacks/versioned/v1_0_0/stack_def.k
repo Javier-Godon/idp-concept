@@ -1,6 +1,7 @@
 """
 ERP Back v1.0.0 release stack — production-pinned versions.
 """
+
 import framework.models.modules.k8snamespace as k8snamespace
 import framework.models.stack
 import framework.assembly.helpers as asm
@@ -44,3 +45,4 @@ schema ErpBackV1_0_0Stack(stack.Stack):
     }.instance
 
     accessories = [_postgres]
+

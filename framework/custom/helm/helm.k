@@ -1,8 +1,10 @@
 schema Chart:
-    apiVersion: str  # 'v1' or 'v2'
+    # 'v1' or 'v2'
+    apiVersion: str
     name: str
     description?: str
-    type?: str = "application"  # optional, default is 'application'
+    # optional, default is 'application'
+    type?: str = "application"
     version: str
     appVersion?: str
     kubeVersion?: str
@@ -12,7 +14,7 @@ schema Chart:
     maintainers?: [Maintainer]
     icon?: str
     dependencies?: [Dependency]
-    annotations?: {str: str}
+    annotations?: {str:str}
     condition?: str
     tags?: [str]
 
@@ -41,7 +43,7 @@ schema HelmChartValues:
     service?: Service
     ingress?: Ingress
     resources?: Resources
-    nodeSelector?: {str: str}
+    nodeSelector?: {str:str}
     tolerations?: [any]
     affinity?: any
 
@@ -57,7 +59,7 @@ schema Service:
 schema Ingress:
     enabled: bool
     className?: str
-    annotations?: {str: str}
+    annotations?: {str:str}
     hosts?: [Host]
     tls?: [TLS]
 
@@ -80,3 +82,4 @@ schema Resources:
 schema ResourceQuantity:
     cpu?: str
     memory?: str
+

@@ -1,19 +1,20 @@
 schema Helmfile:
     repositories?: [Repository]
     releases?: [Release]
-    environments?: {str: Environment}
+    environments?: {str:Environment}
     helmfiles?: [HelmfilePath]
     defaults?: ReleaseDefaults
     baseChartPath?: str
     kubeContext?: str
     namespace?: str
     selectors?: [Selector]
-    labels?: {str: str}
+    labels?: {str:str}
     values?: [any]
     secrets?: [str]
-    templates?: {str: str}
+    templates?: {str:str}
     hooks?: Hooks
-    _kcl_annotation?: str  # For KCL conditional expressions if needed
+    # For KCL conditional expressions if needed
+    _kcl_annotation?: str
 
 schema Repository:
     name: str
@@ -35,8 +36,9 @@ schema Release:
     disabled?: bool
     createNamespace?: bool
     kubeContext?: str
-    labels?: {str: str}
-    values?: [any]  # YAML object or string path
+    labels?: {str:str}
+    # YAML object or string path
+    values?: [any]
     secrets?: [str]
     needs?: [str]
     hooks?: Hooks
@@ -97,3 +99,4 @@ schema Hook:
     command: str
     args?: [str]
     showOutput?: bool
+

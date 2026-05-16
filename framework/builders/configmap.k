@@ -1,6 +1,7 @@
 """
 ConfigMap Builder — generates a Kubernetes ConfigMap from a high-level spec.
 """
+
 import k8s.api.core.v1 as core
 
 schema ConfigMapSpec:

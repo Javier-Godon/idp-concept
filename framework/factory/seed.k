@@ -27,6 +27,7 @@ Usage:
     _git_repo_url = _factory.gitRepoUrl
     _manifest_path = _factory.manifestPath
 """
+
 import models.release as release_model
 import models.profile as profile_model
 import models.project as project_model
@@ -52,12 +53,7 @@ schema FactorySeed:
     manifestPath: str
 
     # Auto-computed: merge all 4 layers
-    mergedConfigurations: any = mergeFunc(
-        project.configurations,
-        profile.configurations,
-        tenant.configurations,
-        site.configurations
-    )
+    mergedConfigurations: any = mergeFunc(project.configurations, profile.configurations, tenant.configurations, site.configurations)
 
     # Auto-computed: instantiate the stack with merged config
     stack = stackSchema {
@@ -83,3 +79,4 @@ schema FactorySeed:
         accessories = stack.accessories
     }
     projectName: str = project.instance.name
+

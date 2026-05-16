@@ -30,6 +30,7 @@ Usage:
     }
     _pg_manifest = pg.build_cnpg_cluster(_pg_spec)
 """
+
 import models.modules.thirdparty_helm as th
 
 schema BackstageHelmSpec:
@@ -38,7 +39,6 @@ schema BackstageHelmSpec:
     namespace: str
     chartVersion: str = "2.3.0"
     host?: str
-
     # PostgreSQL connection (external DB recommended — use CloudNativePG template)
     postgresHost?: str
     postgresPort: int = 5432
@@ -48,10 +48,8 @@ schema BackstageHelmSpec:
 
     # Catalog configuration
     catalogLocations?: [str]
-
     # Auth provider
     authProvider?: str
-
     # TechDocs
     techdocsBuilder: str = "local"
     techdocsGeneratorType: str = "mkdocs"
@@ -61,7 +59,6 @@ schema BackstageHelmSpec:
     memoryRequest?: str
     cpuLimit?: str
     memoryLimit?: str
-
     # Replicas
     replicas: int = 1
 
@@ -115,12 +112,7 @@ build_backstage_release = lambda spec: BackstageHelmSpec -> any {
             "ingress.host" = spec.host
     }
 
-    _all_values: {str:str} = _base_values \
-        | _postgres_values \
-        | _techdocs_values \
-        | _resource_values \
-        | _ingress_values \
-        | (spec.extraValues or {})
+    _all_values: {str:str} = _base_values | _postgres_values | _techdocs_values | _resource_values | _ingress_values | (spec.extraValues or {})
 
     _helm_spec = th.ThirdPartyHelmSpec {
         name = spec.name

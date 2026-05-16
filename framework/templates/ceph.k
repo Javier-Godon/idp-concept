@@ -14,6 +14,7 @@ Usage:
     }
     _resources = ceph.build_ceph_resources(_spec)
 """
+
 import models.modules.thirdparty_helm as th
 import models.modules.accessory as accessory
 import builders.leader as leader
@@ -130,7 +131,6 @@ schema CephModule(accessory.Accessory):
     discoveryEnabled?: bool = True
     pspEnable?: bool = False
     extraValues?: {str:str}
-
     leaders = [leader.build_accessory_leader(clusterName, namespace, "CephCluster", _CEPH_API_VERSION)]
 
     _ceph_resources = build_ceph_resources(CephSpec {

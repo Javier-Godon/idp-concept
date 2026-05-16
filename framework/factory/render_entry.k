@@ -4,6 +4,7 @@ Shared render entrypoint helpers for factory render wrappers.
 This module centralizes output rendering logic so project factories can keep
 minimal `render.k` files that only pass local `factory_seed` context.
 """
+
 import manifests
 import procedures.kcl_to_yaml as yaml_proc
 import procedures.kcl_to_argocd as argocd_proc
@@ -19,21 +20,11 @@ render_from_seed = lambda stack: any, project_name: str, git_repo_url: str, mani
         yaml_proc.yaml_stream_stack(stack)
 
     if output == "argocd":
-        _argocd_apps = argocd_proc.generate_applications_from_stack(
-            stack
-            project_name
-            git_repo_url
-            "HEAD"
-            manifest_path
-        )
+        _argocd_apps = argocd_proc.generate_applications_from_stack(stack, project_name, git_repo_url, "HEAD", manifest_path)
         manifests.yaml_stream(_argocd_apps)
 
     if output == "helmfile":
-        _helmfile = helmfile_proc.generate_helmfile(
-            stack.components
-            stack.accessories
-            "./charts"
-        )
+        _helmfile = helmfile_proc.generate_helmfile(stack.components, stack.accessories, "./charts")
         manifests.yaml_stream([_helmfile])
 
     if output == "helm":
@@ -41,51 +32,20 @@ render_from_seed = lambda stack: any, project_name: str, git_repo_url: str, mani
         manifests.yaml_stream(_charts)
 
     if output == "kustomize":
-        _kustomization = kustomize_proc.generate_kustomization_from_stack(
-            stack.components
-            stack.accessories
-            stack.k8snamespaces
-            project_name
-            "1.0.0"
-        )
+        _kustomization = kustomize_proc.generate_kustomization_from_stack(stack.components, stack.accessories, stack.k8snamespaces, project_name, "1.0.0")
         manifests.yaml_stream([_kustomization])
 
     if output == "timoni":
-        _timoni_module = timoni_proc.generate_timoni_module_from_stack(
-            stack.components
-            stack.accessories
-            stack.k8snamespaces
-            project_name
-            "1.0.0"
-        )
+        _timoni_module = timoni_proc.generate_timoni_module_from_stack(stack.components, stack.accessories, stack.k8snamespaces, project_name, "1.0.0")
         manifests.yaml_stream([_timoni_module])
 
     if output == "crossplane":
-        _crossplane = crossplane_proc.generate_crossplane_from_stack(
-            stack.components
-            stack.accessories
-            stack.k8snamespaces
-            project_name
-            "1.0.0"
-        )
+        _crossplane = crossplane_proc.generate_crossplane_from_stack(stack.components, stack.accessories, stack.k8snamespaces, project_name, "1.0.0")
         manifests.yaml_stream([_crossplane])
 
     if output == "backstage":
-        _backstage = backstage_proc.generate_catalog_from_stack(
-            stack.components
-            stack.accessories
-            stack.k8snamespaces
-            project_name
-            "1.0.0"
-            "platform-team"
-            "production"
-            git_repo_url
-            "dir:docs/"
-        )
+        _backstage = backstage_proc.generate_catalog_from_stack(stack.components, stack.accessories, stack.k8snamespaces, project_name, "1.0.0", "platform-team", "production", git_repo_url, "dir:docs/")
         manifests.yaml_stream([_backstage])
 
     Undefined
 }
-
-
-

@@ -2,6 +2,7 @@
 ERP Back project-specific configuration schema.
 Extends BaseConfigurations with project-specific fields.
 """
+
 import framework.models.configurations as base
 
 schema ErpBackConfigurations(base.BaseConfigurations):
@@ -11,3 +12,4 @@ schema ErpBackConfigurations(base.BaseConfigurations):
     postgresDatabase?: str = "erp_db"
     springProfile?: str = "default"
     javaOpts?: str = "-Xmx1g -Xms512m"
+

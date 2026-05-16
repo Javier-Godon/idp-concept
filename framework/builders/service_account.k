@@ -1,6 +1,7 @@
 """
 ServiceAccount Builder — generates a Kubernetes ServiceAccount with optional imagePullSecrets.
 """
+
 import k8s.api.core.v1 as core
 
 schema ServiceAccountSpec:

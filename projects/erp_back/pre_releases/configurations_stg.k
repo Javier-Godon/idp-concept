@@ -1,6 +1,7 @@
 """
 Pre-release configurations for stg cluster — merges all 4 configuration layers.
 """
+
 import erp_back.stacks.development.stack_def
 import erp_back.stacks.development.profile_def
 import erp_back.tenants.vendor
@@ -13,12 +14,7 @@ _project = project_def.erp_back_project
 _site = site_def.stg_cluster_site
 _profile = profile_def.erp_back_development_profile
 
-_pre_release_configurations_stg_cluster = base.merge_configurations(
-    _project.configurations
-    _profile.configurations
-    _tenant.configurations
-    _site.configurations
-)
+_pre_release_configurations_stg_cluster = base.merge_configurations(_project.configurations, _profile.configurations, _tenant.configurations, _site.configurations)
 
 _stack = stack_def.ErpBackDevelopmentStack {
     instanceConfigurations = _pre_release_configurations_stg_cluster

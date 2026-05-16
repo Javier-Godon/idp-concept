@@ -4,6 +4,7 @@ Uses the framework FactorySeed to eliminate boilerplate.
 
 Contract exports: _stack, _project_name, _git_repo_url, _manifest_path
 """
+
 import framework.factory.seed as seed
 import erp_back.stacks.development.stack_def
 import erp_back.stacks.development.profile_def

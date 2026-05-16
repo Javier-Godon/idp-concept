@@ -12,6 +12,7 @@ Usage:
     }
     _manifest = valkey.build_valkey_release(_spec)
 """
+
 import models.modules.thirdparty_helm as th
 import models.modules.accessory as accessory
 import builders.leader as leader
@@ -89,7 +90,6 @@ schema ValkeyModule(accessory.Accessory):
     serviceType?: str = "ClusterIP"
     authEnabled?: bool = False
     extraValues?: {str:str}
-
     leaders = [leader.build_accessory_leader(valkeyName, namespace, "HelmRelease", _HELM_RELEASE_API)]
 
     _valkey_manifest = build_valkey_release(ValkeySpec {

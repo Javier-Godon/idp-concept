@@ -16,6 +16,7 @@ Usage in stack definitions:
         dependsOn = [_ns]
     })
 """
+
 import models.modules.k8snamespace as k8snamespace
 
 create_namespace = lambda name: str, configurations: any -> k8snamespace.K8sNamespaceInstance {

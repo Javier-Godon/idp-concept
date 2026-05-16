@@ -2,14 +2,14 @@ schema ApplicationProperties:
     applicationName: str
     serverPort: int
     contextPath: str = "/${applicationName}"
-    moduleSpring?: ModuleSpring 
+    moduleSpring?: ModuleSpring
     jwtAuthKcClientId?: str = "frontend"
     flyway?: SubModuleFlyway
     keycloak?: ModuleKeycloak
     management?: ModuleManagement
     springDoc?: ModuleSpringDoc
     opensearchClient?: ModuleOpensearchClient
-    questdbClient?: ModuleQuestDBClient  
+    questdbClient?: ModuleQuestDBClient
     scheduler?: scheduler
 
 schema ModuleSpring:
@@ -19,7 +19,7 @@ schema ModuleSpring:
     oauth2Security?: SubModuleOauth2Security
 
 schema SubModulePostgres:
-    driverClassName: str ="org.postgresql.Driver"
+    driverClassName: str = "org.postgresql.Driver"
     namespace: str
     username: str
     password: str
@@ -27,11 +27,10 @@ schema SubModulePostgres:
     validationQuery?: str
 
 schema SubModuleQuestDB:
-    driverClassName: str ="org.postgresql.Driver"
+    driverClassName: str = "org.postgresql.Driver"
     namespace: str
     username: str
     password: str
-
 
 schema SubModuleFlyway:
     flywayBoundedContext: [FlywayBoundedContext]
@@ -39,10 +38,9 @@ schema SubModuleFlyway:
 schema FlywayBoundedContext:
     schemas: str | [str]
     locations: [str]
-    table?: str = "flyway_schema_history"   
+    table?: str = "flyway_schema_history"
     baselineOnMigrate?: bool
     createSchemas?: bool = True
-     
 
 schema SubModuleOauth2Security:
     providerUrl: str
@@ -55,7 +53,8 @@ schema ModuleKeycloak:
     bearerOnly: bool = True
     resource: str = "frontend"
     useResourceRoleMappings: bool = True
-    principalAttribute: str "preferred-username"
+    principalAttribute: str
+    "preferred-username"
     cors: bool = False
     sslRequired: str = "none"
     publicClient: bool = True
@@ -78,15 +77,15 @@ schema SwaggerUi:
 
 schema GroupUrl:
     name: str
-    url: str    
+    url: str
 
 schema ApiDocs:
     rootPath: str
-    enableGroups: bool = True        
+    enableGroups: bool = True
 
 schema ApiDocConfigGroup:
     group: str
-    packagesToScan: str    
+    packagesToScan: str
 
 schema ModuleOpensearchClient:
     httpsEnabled: bool = True
@@ -102,7 +101,7 @@ schema ModuleQuestDBClient:
     localZone: str = "Europe/Madrid"
     questDBTables: {str:str}
 
-
 schema scheduler:
     timeExpression: str
     activations: {str:str}
+

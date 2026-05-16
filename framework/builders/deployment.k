@@ -2,6 +2,7 @@
 Deployment Builder — generates a Kubernetes Deployment from a high-level spec.
 Eliminates ~80 lines of boilerplate per module.
 """
+
 import k8s.api.apps.v1 as apps
 
 schema DeploymentSpec:
@@ -104,6 +105,7 @@ _compute_volumes = lambda spec: DeploymentSpec -> [any] {
             }
             name = "application-configuration"
         }]
+
     _vols
 }
 
@@ -115,6 +117,7 @@ _compute_volume_mounts = lambda spec: DeploymentSpec -> [any] {
             name = "application-configuration"
             subPath = spec.configMapKey
         }]
+
     _mounts
 }
 
