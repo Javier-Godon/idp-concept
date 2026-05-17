@@ -355,7 +355,26 @@ These model the output format structures themselves:
 - **`helm/helm.k`** — `Chart` (Chart.yaml), `HelmChartValues` (values.yaml), `Dependency`, `Maintainer`
 - **`helmfile/helmfile.k`** — `Helmfile`, `Repository`, `Release`, `Environment`, `Hooks`
 - **`argocd/models/`** — Auto-generated from ArgoCD CRDs: `Application`, `ApplicationSet`, `AppProject`
-- **`spring_application_properties.k`** — Spring Boot `application.properties` for Java microservices (Postgres, Keycloak, Flyway, OpenSearch, QuestDB, SpringDoc, Actuator)
+- **`application_configurations.k`** — General ConfigMap/env helper for Python, Go, Rust, Kotlin, Vue/Nuxt, Angular, React/Next.js apps
+- **`spring_application_properties.k`** — General Spring Boot `application.properties` helper with standard sections plus free-form overrides for ad hoc properties
+
+### 4.4.1 Common IDP Metadata
+
+Core domain models (`Project`, `Tenant`, `Site`, `Profile`, `Stack`, and `Release`) support optional `metadata` for IDP/catalog integrations:
+
+```kcl
+metadata = meta.Metadata {
+    owner = "team-platform"
+    system = "erp"
+    domain = "commerce"
+    lifecycle = "production"
+    tier = "tier-1"
+    repository = "https://github.com/org/service"
+    tags = ["api", "backend"]
+}
+```
+
+Use this for portable platform fields such as ownership, lifecycle, taxonomy, links, contacts, labels, and annotations. Keep environment-specific values in `configurations`.
 
 ### 4.5 Builders (Manifest Generators)
 
@@ -370,7 +389,7 @@ These model the output format structures themselves:
 | `deployment.k` | `build_deployment` | `DeploymentSpec` | `apps.Deployment` |
 | `service.k` | `build_service` | `ServiceSpec` | `core.Service` |
 | `configmap.k` | `build_configmap` | `ConfigMapSpec` | `core.ConfigMap` |
-| `storage.k` | `build_pv_and_pvc` | `PersistentVolumeSpec` | `[PV, PVC]` (list of 2) |
+| `storage.k` | `build_pv_and_pvc` | `PersistentVolumeSpec` | `[PVC]` by default, `[PV, PVC]` for local PV mode |
 | `service_account.k` | `build_service_account` | `ServiceAccountSpec` | `core.ServiceAccount` |
 | `leader.k` | `build_component_leader` / `build_accessory_leader` | name, namespace, ... | Leader instances |
 

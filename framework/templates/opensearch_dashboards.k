@@ -1,0 +1,18 @@
+"""Backward-compatible OpensearchDashboards template wrapper.
+
+The implementation lives in `templates.opensearch.v2_17_0.opensearch_dashboards`. Keep this root module thin so
+existing imports such as `import templates.opensearch_dashboards as opensearch_dashboards` continue to work
+without duplicating template implementation code.
+"""
+
+import templates.opensearch.v2_17_0.opensearch_dashboards as opensearch_dashboards_compat
+
+OpenSearchDashboardsResources = opensearch_dashboards_compat.OpenSearchDashboardsResources
+OpenSearchDashboardsSpec = opensearch_dashboards_compat.OpenSearchDashboardsSpec
+build_opensearch_dashboards_config = opensearch_dashboards_compat.build_opensearch_dashboards_config
+build_opensearch_dashboards_configmap = opensearch_dashboards_compat.build_opensearch_dashboards_configmap
+build_opensearch_dashboards_deployment = opensearch_dashboards_compat.build_opensearch_dashboards_deployment
+build_opensearch_dashboards_service = opensearch_dashboards_compat.build_opensearch_dashboards_service
+build_opensearch_dashboards_pdb = opensearch_dashboards_compat.build_opensearch_dashboards_pdb
+build_opensearch_dashboards_resources = opensearch_dashboards_compat.build_opensearch_dashboards_resources
+OpenSearchDashboardsModule = opensearch_dashboards_compat.OpenSearchDashboardsModule

@@ -38,19 +38,19 @@ import models.configurations as base_config
 
 schema FactorySeed:
     """Factory seed that merges configs, builds stack, and exports render contract."""
-    releaseName: str
-    version: str
     project: project_model.Project
     profile: profile_model.Profile
     tenant: tenant_model.Tenant
     site: site_model.Site
+    version: str = option("koncept_version", default="0.0.0")
+    releaseName: str = option("koncept_release_name", default="release_${version}")
     # framework-generic: optional override. Defaults to framework merge order.
     mergeFunc?: any = base_config.merge_configurations
     # framework-generic: stack schema type varies per project
     stackSchema: any
     # Render contract inputs
-    gitRepoUrl: str
-    manifestPath: str
+    gitRepoUrl: str = option("koncept_git_repo_url", default=project.configurations.gitRepoUrl if (project.configurations.gitRepoUrl is not Undefined) else "")
+    manifestPath: str = option("koncept_manifest_path", default="output")
 
     # Auto-computed: merge all 4 layers
     mergedConfigurations: any = mergeFunc(project.configurations, profile.configurations, tenant.configurations, site.configurations)

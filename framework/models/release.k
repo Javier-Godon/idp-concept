@@ -7,10 +7,12 @@ import models.project
 import models.tenant
 import models.site
 import models.stack
+import models.metadata as meta
 
 schema Release:
     name: str
     version: str
+    metadata?: meta.Metadata
     project: project.ProjectInstance
     tenant: tenant.TenantInstance
     profile: profile.ProfileInstance

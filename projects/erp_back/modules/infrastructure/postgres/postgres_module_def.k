@@ -8,7 +8,7 @@ schema PostgresModule(postgresql.PostgreSQLClusterModule):
     clusterName = name
     instances = 3
     storageSize = "20Gi"
-    storageClass = Undefined
+    storageClass = configurations.storageClassName if configurations.storageClassName else "rook-ceph-block"
     databaseName = configurations.postgresDatabase if configurations.postgresDatabase else "erp_db"
     databaseOwner = "erp_app"
     enablePodMonitor = True

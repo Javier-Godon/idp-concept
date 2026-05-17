@@ -66,7 +66,7 @@ cm.build_configmap(cm.ConfigMapSpec {
 ```
 
 ### build_pv_and_pvc (storage.k)
-Returns a **list of 2** items: [PV, PVC].
+Returns a PVC by default (Ceph-friendly). Returns [PV, PVC] only when local PV mode is enabled.
 ```kcl
 import framework.builders.storage as store
 
@@ -74,8 +74,11 @@ store.build_pv_and_pvc(store.PersistentVolumeSpec {
     name = "my-db"
     namespace = "infra"
     size = "50Gi"
+    storageClassName = "rook-ceph-block"  # default
+    # Local-dev only: create PV + PVC backed by hostPath
+    createPersistentVolume = True
     hostPath = "/mnt/data/my-db"
-    # Optional: storageClassName, accessMode ("ReadWriteOnce"), reclaimPolicy ("Retain")
+    # Optional: accessMode ("ReadWriteOnce"), reclaimPolicy ("Retain")
 })
 ```
 
@@ -104,6 +107,9 @@ leader.build_accessory_leader(name, namespace, "Kafka", "kafka.strimzi.io/v1beta
 ## Templates (`framework/templates/`)
 
 High-level modules that auto-generate all manifests from a few fields.
+
+Template files are organized by ecosystem and version under `framework/templates/<ecosystem>/<version>/...`.
+Prefer explicit versioned imports in new code. Root template files are maintained for backward compatibility.
 
 ### WebAppModule (webapp.k) — extends Component
 Set: `port`, `serviceType`, `replicas`, `configData`, `env`, `resources`, `livenessProbe`, `readinessProbe`, `startupProbe`, `imagePullSecretName`
@@ -143,6 +149,33 @@ Set: `instances`, `hostname`, `database` (DatabaseSpec), `httpEnabled`, `tlsSecr
 Wraps OpenSearch K8s Operator (`opensearch.org/v1`).
 Build lambda: `build_opensearch_cluster`
 Set: `version`, `nodePools` (list of NodePoolSpec), `dashboards` (DashboardsSpec), `securityConfig`, `monitoring`
+
+### DataPrepperModule (dataprepper.k) — extends Component
+OpenSearch Data Prepper ingestion pipeline. Kubernetes-native because there is no widely adopted dedicated OSS Data Prepper operator.
+Build lambdas: `build_dataprepper_configmap`, `build_dataprepper_deployment`, `build_dataprepper_service`, `build_dataprepper_pdb`, `build_dataprepper_resources`
+Set: `pipelineConfig`, `dataPrepperConfig`, `log4j2Properties`, `replicas`, `port`, `metricsPort`, `env`, `resources`
+
+### OpenSearchDashboardsModule (opensearch_dashboards.k) — extends Component
+Standalone OpenSearch Dashboards deployment. Prefer `OpenSearchClusterModule.dashboards` when Dashboards should be managed by the OpenSearch operator with the cluster.
+Build lambdas: `build_opensearch_dashboards_config`, `build_opensearch_dashboards_configmap`, `build_opensearch_dashboards_deployment`, `build_opensearch_dashboards_service`, `build_opensearch_dashboards_pdb`, `build_opensearch_dashboards_resources`
+Set: `opensearchHosts`, `serverBasePath`, `replicas`, `port`, `env`, `extraConfig`, `resources`
+
+### ElasticsearchModule / KibanaModule / LogstashModule — versioned Elastic templates
+Prefer explicit versioned imports:
+- `templates.elastic.v7_10_2.*`: last Apache-2.0 OSS artifact line (`7.10.2`), Kubernetes-native resources, no ECK.
+- `templates.elastic.v9_4_1.*`: Elastic 9.4.1 via ECK CRDs, only for usages compatible with Elastic's license terms.
+
+Flat imports (`templates.elasticsearch`, `templates.kibana`, `templates.logstash`) remain backward-compatible wrappers for `v7_10_2`.
+
+`v7_10_2` resources:
+- `ElasticsearchModule`: StatefulSet + headless Service + client Service + ConfigMap + PDB. Set `replicas`, `storageSize`, `storageClassName`, `javaOpts`, `extraConfig`, `resources`.
+- `KibanaModule`: Deployment + Service + ConfigMap + PDB. Set `elasticsearchHosts`, `serverBasePath`, `replicas`, `extraConfig`, `resources`.
+- `LogstashModule`: Deployment + Service + ConfigMap + PDB. Set `pipelineConfig`, `logstashConfig`, `pipelinesConfig`, `beatsPort`, `monitoringPort`, `javaOpts`, `resources`.
+
+`v9_4_1` resources:
+- `ElasticsearchModule`: `elasticsearch.k8s.elastic.co/v1 Elasticsearch`; set `nodeSets`, `serviceType`, `monitoring`, `secureSettings`.
+- `KibanaModule`: `kibana.k8s.elastic.co/v1 Kibana`; set `elasticsearchRef`, `count`, `config`, `secureSettings`.
+- `LogstashModule`: `logstash.k8s.elastic.co/v1alpha1 Logstash`; set `pipelines`, `elasticsearchRefs`, `config`, `secureSettings`.
 
 ### VaultStaticSecretModule (vault.k) — Vault Secrets Operator
 Wraps HashiCorp VSO (`secrets.hashicorp.com/v1beta1`). ⚠️ BUSL-1.1 license.

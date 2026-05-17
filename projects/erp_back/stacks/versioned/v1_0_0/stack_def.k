@@ -1,48 +1,11 @@
-"""
-ERP Back v1.0.0 release stack — production-pinned versions.
-"""
+"""ERP Back v1.0.0 release stack — only version-specific pins live here."""
 
-import framework.models.modules.k8snamespace as k8snamespace
-import framework.models.stack
-import framework.assembly.helpers as asm
-import erp_back.modules.appops.erp_api.erp_api_module_def as erp_api
-import erp_back.modules.infrastructure.postgres.postgres_module_def as postgres
+import erp_back.stacks.erp_back_stack as common
 
-schema ErpBackV1_0_0Stack(stack.Stack):
-    # Namespaces
-    _apps_namespace = asm.create_namespace(instanceConfigurations.appsNamespace, instanceConfigurations)
-    _postgres_namespace = asm.create_namespace(instanceConfigurations.postgresNamespace, instanceConfigurations)
+schema Stack(common.ErpBackStack):
+    erpApiVersion = "1.0.0"
+    postgresVersion = "16.4-alpine"
 
-    k8snamespaces = [
-        _apps_namespace
-        _postgres_namespace
-    ]
-
-    # Components — pinned production versions
-    _erp_api = erp_api.ErpApiModule {
-        name = "erp-api"
-        namespace = _apps_namespace.name
-        asset = {
-            image = "ghcr.io/javier-godon/erp-back-api"
-            version = "1.0.0"
-        }
-        configurations = instanceConfigurations
-        dependsOn = [_apps_namespace]
-    }.instance
-
-    components = [_erp_api]
-
-    # Accessories — pinned production versions
-    _postgres = postgres.PostgresModule {
-        name = "erp-postgres"
-        namespace = _postgres_namespace.name
-        asset = {
-            image = "postgres"
-            version = "16.4-alpine"
-        }
-        configurations = instanceConfigurations
-        dependsOn = [_postgres_namespace]
-    }.instance
-
-    accessories = [_postgres]
+schema ErpBackV1_0_0Stack(Stack):
+    # Backward-compatible alias for existing imports.
 

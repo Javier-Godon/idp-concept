@@ -55,22 +55,18 @@ test_database_image_pull_policy_default = lambda {
     assert _container.imagePullPolicy == "IfNotPresent"
 }
 
-# === Test: Database PV and PVC generation ===
-test_database_pv_pvc = lambda {
+# === Test: Database PVC generation with default Ceph storage class ===
+test_database_default_pvc = lambda {
     _result = storage.build_pv_and_pvc(storage.PersistentVolumeSpec {
         name = "postgres"
         namespace = "data"
         size = "50Gi"
-        hostPath = "/data/mongo/mongo-volume"
     })
-    assert len(_result) == 2
-    _pv = _result[0]
-    _pvc = _result[1]
-    assert _pv.kind == "PersistentVolume"
-    assert _pv.spec.capacity.storage == "50Gi"
-    assert _pv.spec.hostPath.path == "/data/mongo/mongo-volume"
+    assert len(_result) == 1
+    _pvc = _result[0]
     assert _pvc.kind == "PersistentVolumeClaim"
     assert _pvc.spec.resources.requests.storage == "50Gi"
+    assert _pvc.spec.storageClassName == "rook-ceph-block"
 }
 
 # === Test: Database leader is Deployment type ===
@@ -131,15 +127,18 @@ test_database_deployment_with_env = lambda {
     assert _container.env[1].name == "POSTGRES_PASSWORD"
 }
 
-# === Test: Database PV with custom storage class ===
-test_database_custom_storage_class = lambda {
+# === Test: Database PV and PVC with local development mode ===
+test_database_local_pv_mode = lambda {
     _result = storage.build_pv_and_pvc(storage.PersistentVolumeSpec {
         name = "postgres"
         namespace = "data"
+        hostPath = "/data/mongo/mongo-volume"
+        createPersistentVolume = True
         storageClassName = "fast-ssd"
     })
     _pv = _result[0]
     _pvc = _result[1]
     assert _pv.spec.storageClassName == "fast-ssd"
+    assert _pv.spec.hostPath.path == "/data/mongo/mongo-volume"
     assert _pvc.spec.storageClassName == "fast-ssd"
 }

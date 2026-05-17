@@ -1,0 +1,19 @@
+"""Backward-compatible Elasticsearch template wrapper.
+
+New code should prefer explicit versioned imports such as:
+`import templates.elastic.v7_10_2.elasticsearch as es` or
+`import templates.elastic.v9_4_1.elasticsearch as es`.
+"""
+
+import templates.elastic.v7_10_2.elasticsearch as elasticsearch_v7_wrapper
+
+ElasticsearchResources = elasticsearch_v7_wrapper.ElasticsearchResources
+ElasticsearchSpec = elasticsearch_v7_wrapper.ElasticsearchSpec
+ElasticsearchModule = elasticsearch_v7_wrapper.ElasticsearchModule
+build_elasticsearch_config = elasticsearch_v7_wrapper.build_elasticsearch_config
+build_elasticsearch_configmap = elasticsearch_v7_wrapper.build_elasticsearch_configmap
+build_elasticsearch_service = elasticsearch_v7_wrapper.build_elasticsearch_service
+build_elasticsearch_headless_service = elasticsearch_v7_wrapper.build_elasticsearch_headless_service
+build_elasticsearch_statefulset = elasticsearch_v7_wrapper.build_elasticsearch_statefulset
+build_elasticsearch_pdb = elasticsearch_v7_wrapper.build_elasticsearch_pdb
+build_elasticsearch_resources = elasticsearch_v7_wrapper.build_elasticsearch_resources

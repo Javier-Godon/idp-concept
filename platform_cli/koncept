@@ -31,6 +31,84 @@ def has_render_k [factory_dir: string] -> bool {
     ($"($factory_dir)/render.k" | path exists)
 }
 
+def read_kcl_mod_version [project_dir: string] -> string {
+    let mod_path = ($project_dir | path join "kcl.mod")
+    if not ($mod_path | path exists) {
+        return ""
+    }
+
+    let line = (open $mod_path | lines | where {|it| ($it | str trim | str starts-with "version") } | get -i 0)
+    if $line == null {
+        ""
+    } else {
+        ($line | split row "=" | get 1 | str trim | str trim --char '"')
+    }
+}
+
+def version_from_release_id [release_id: string] -> string {
+    let parsed = ($release_id | parse --regex '^v(?P<version>[0-9]+(?:_[0-9]+)*)(?:_|$)' | get -i 0)
+    if $parsed == null { "" } else { ($parsed.version | str replace -a "_" ".") }
+}
+
+def environment_from_release_id [release_id: string] -> string {
+    let version = (version_from_release_id $release_id | str replace -a "." "_")
+    let prefix = $"v($version)_"
+    if ($release_id | str starts-with $prefix) {
+        ($release_id | str replace $prefix "")
+    } else {
+        ""
+    }
+}
+
+def append_option [args: list<string>, key: string, value: string] -> list<string> {
+    if $value == "" { $args } else { $args | append "-D" | append $"($key)=($value)" }
+}
+
+def derive_convention_args [factory_dir: string] -> list<string> {
+    let abs_factory = ($factory_dir | path expand)
+    let parent_dir = ($abs_factory | path dirname)
+    let parent_name = ($parent_dir | path basename)
+    let grandparent_name = ($parent_dir | path dirname | path basename)
+    let great_grandparent_name = ($parent_dir | path dirname | path dirname | path basename)
+
+    let is_pre_release = ($grandparent_name == "manifests" and $great_grandparent_name == "pre_releases")
+    let is_release = ($grandparent_name == "releases")
+    let project_dir = if $is_pre_release {
+        ($parent_dir | path dirname | path dirname | path dirname)
+    } else if $is_release {
+        ($parent_dir | path dirname | path dirname)
+    } else {
+        ""
+    }
+    let project_slug = if $project_dir == "" { "" } else { ($project_dir | path basename) }
+    let project_version = if $project_dir == "" { "" } else { read_kcl_mod_version $project_dir }
+
+    let release_kind = if $is_pre_release { "pre_release" } else if $is_release { "release" } else { "" }
+    let release_id = if $is_pre_release { $parent_name } else if $is_release { $parent_name } else { "" }
+    let environment = if $is_pre_release { $parent_name } else if $is_release { environment_from_release_id $release_id } else { "" }
+    let version = if $is_pre_release and $project_version != "" { $"($project_version)-($environment)" } else if $is_release { version_from_release_id $release_id } else { "" }
+    let release_name = if $is_pre_release { $"pre_release_($environment)" } else if $is_release { $"release_($release_id)" } else { "" }
+    let manifest_path = if $project_slug == "" {
+        ""
+    } else if $is_pre_release {
+        $"projects/($project_slug)/pre_releases/manifests/($environment)/output"
+    } else if $is_release {
+        $"projects/($project_slug)/releases/($release_id)/output"
+    } else {
+        ""
+    }
+
+    []
+        | append_option "koncept_project_slug" $project_slug
+        | append_option "koncept_project_version" $project_version
+        | append_option "koncept_release_kind" $release_kind
+        | append_option "koncept_release_id" $release_id
+        | append_option "koncept_environment" $environment
+        | append_option "koncept_version" $version
+        | append_option "koncept_release_name" $release_name
+        | append_option "koncept_manifest_path" $manifest_path
+}
+
 def main [
   command: string
   render_type?: string
@@ -48,7 +126,8 @@ def main [
     "validate" => {
       print "[Validate] Checking factory configuration..."
       let seed_file = (resolve_builder $factory_dir "seed" "factory_seed.k")
-      let result = (^kcl run $"($factory_dir)/($seed_file)" | complete)
+      let convention_args = (derive_convention_args $factory_dir)
+      let result = (^kcl run $"($factory_dir)/($seed_file)" ...$convention_args | complete)
       if $result.exit_code != 0 {
           print $"❌ Validation failed:\n($result.stderr)"
           exit 1
@@ -145,6 +224,7 @@ def main [
       # New pattern: generic render.k with -D output=TYPE
       if (has_render_k $factory_dir) {
         let render_file = $"($factory_dir)/render.k"
+        let convention_args = (derive_convention_args $factory_dir)
 
         match $render_type {
           "argocd" => {
@@ -153,7 +233,7 @@ def main [
             let manifest_path = $"($output_path)/kubernetes_manifests.yaml"
             print $"[ArgoCD] Generating manifests for app=($app) in env=($base)..."
             mkdir $output_path
-            kcl_run $render_file -D "output=yaml" -o $manifest_path
+            kcl_run $render_file ...$convention_args -D "output=yaml" -o $manifest_path
           }
 
           "helmfile" => {
@@ -162,7 +242,7 @@ def main [
 
             print "[Helmfile] Generating parameterized Helm charts (Strategy B)..."
 
-            let charts_data = (kcl_run $render_file -D "output=helm" | from yaml -a)
+            let charts_data = (kcl_run $render_file ...$convention_args -D "output=helm" | from yaml -a)
 
             for entry in $charts_data {
                 let chart_name = $entry.chart.name
@@ -179,7 +259,7 @@ def main [
                 print $"  [Chart] ($chart_name) -> ($chart_dir)"
             }
 
-            kcl_run $render_file -D "output=helmfile" -o $"($output_dir)/helmfile.yaml"
+            kcl_run $render_file ...$convention_args -D "output=helmfile" -o $"($output_dir)/helmfile.yaml"
             print "[Helmfile] Done."
           }
 
@@ -188,7 +268,7 @@ def main [
             let output_file = $"($output_path)/kusion_spec.yaml"
             print $"[Kusion] Running KCL for app=($app), env=($base) -> ($output_file)..."
             mkdir $output_path
-            kcl_run $render_file -D "output=yaml" -o $output_file
+            kcl_run $render_file ...$convention_args -D "output=yaml" -o $output_file
           }
 
           "kustomize" => {
@@ -198,10 +278,10 @@ def main [
             mkdir $base_dir
 
             # Generate kustomization.yaml
-            kcl_run $render_file -D "output=kustomize" -o $"($base_dir)/kustomization.yaml"
+            kcl_run $render_file ...$convention_args -D "output=kustomize" -o $"($base_dir)/kustomization.yaml"
 
             # Generate individual manifest files
-            let manifests = (kcl_run $render_file -D "output=yaml" | from yaml -a)
+            let manifests = (kcl_run $render_file ...$convention_args -D "output=yaml" | from yaml -a)
             for m in $manifests {
                 let kind = ($m.kind | str downcase)
                 let name = $m.metadata.name
@@ -214,7 +294,7 @@ def main [
 
           "timoni" => {
             let output_dir = (if $output != null { $output } else { "output" })
-            let module_data = (kcl_run $render_file -D "output=timoni" | from yaml)
+            let module_data = (kcl_run $render_file ...$convention_args -D "output=timoni" | from yaml)
             let stack_name = $module_data.metadata.metadata.name
             let module_dir = $"($output_dir)/timoni/($stack_name)"
             print $"[Timoni] Generating CUE module for ($stack_name)..."
@@ -243,7 +323,7 @@ def main [
             print "[Crossplane] Generating XRD, Composition, and XR..."
             mkdir $"($xp_dir)/prerequisites"
 
-            let xp_data = (kcl_run $render_file -D "output=crossplane" | from yaml)
+            let xp_data = (kcl_run $render_file ...$convention_args -D "output=crossplane" | from yaml)
 
             # Write XRD
             $xp_data.xrd | to yaml | save -f $"($xp_dir)/xrd.yaml"
@@ -270,7 +350,7 @@ def main [
             print "[Backstage] Generating catalog-info.yaml entities..."
             mkdir $bs_dir
 
-            let bs_data = (kcl_run $render_file -D "output=backstage" | from yaml)
+            let bs_data = (kcl_run $render_file ...$convention_args -D "output=backstage" | from yaml)
 
             # Write catalog-info.yaml (all entities as multi-doc YAML)
             let entities = $bs_data.entities

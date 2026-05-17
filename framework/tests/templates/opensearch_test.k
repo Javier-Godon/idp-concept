@@ -123,6 +123,37 @@ test_build_opensearch_with_monitoring = lambda {
     assert _result.spec.general.monitoring.enable == True
 }
 
+test_build_opensearch_with_plugins_and_security = lambda {
+    _result = os.build_opensearch_cluster(os.OpenSearchClusterSpec {
+        name = "my-os"
+        namespace = "search"
+        version = "2.17.0"
+        pluginsList = ["repository-s3"]
+        securityDisabled = True
+        dashboards = os.DashboardsSpec {
+            enable = True
+            replicas = 2
+            basePath = "/dashboards"
+        }
+        nodePools = [os.NodePoolSpec {
+            component = "nodes"
+            replicas = 3
+            diskSize = "30Gi"
+            roles = ["cluster_manager", "data"]
+            jvm = "-Xms2g -Xmx2g"
+            labels = {tier = "search"}
+            annotations = {"idp-concept/test" = "true"}
+        }]
+    })
+
+    assert _result.spec.general.pluginsList[0] == "repository-s3"
+    assert _result.spec.security.disable == True
+    assert _result.spec.dashboards.basePath == "/dashboards"
+    assert _result.spec.nodePools[0].jvm == "-Xms2g -Xmx2g"
+    assert _result.spec.nodePools[0].labels.tier == "search"
+    assert _result.spec.nodePools[0].annotations["idp-concept/test"] == "true"
+}
+
 # === Test: Validation — version must not be empty ===
 test_opensearch_rejects_empty_version = lambda {
     _err = runtime.catch(lambda {

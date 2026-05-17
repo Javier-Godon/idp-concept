@@ -532,5 +532,6 @@ fabric.properties
 *credentials
 
 # idp-concept
+.idea/
 **/output/
 cmd/koncept/bin/

@@ -22,7 +22,7 @@ func Render(factoryDir string, outputFormat string) (string, error) {
 
 	result, err := kcl.RunFiles([]string{renderFile},
 		kcl.WithWorkDir(absDir),
-		kcl.WithOptions("output="+outputFormat),
+		kcl.WithOptions(append([]string{"output=" + outputFormat}, ConventionOptions(factoryDir)...)...),
 		kcl.WithSortKeys(true),
 	)
 	if err != nil {
@@ -45,6 +45,7 @@ func Validate(factoryDir string, seedFile string) error {
 
 	_, err = kcl.RunFiles([]string{seedPath},
 		kcl.WithWorkDir(absDir),
+		kcl.WithOptions(ConventionOptions(factoryDir)...),
 	)
 	return err
 }

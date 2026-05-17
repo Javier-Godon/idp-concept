@@ -31,6 +31,8 @@ schema BaseConfigurations:
     backstageOwner?: str
     backstageSystem?: str
     backstageLifecycle?: str
+    storageClassName?: str = "rook-ceph-block"
+    useLocalPersistentVolumes?: bool = False
 
 # framework-generic: accepts any project config schema — each layer may be a different project-specific type
 merge_configurations = lambda kernel: any, profile: any, tenant: any, site: any -> any {

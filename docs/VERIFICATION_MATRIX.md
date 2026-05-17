@@ -17,6 +17,7 @@ The script runs scoped lint, framework unit tests, and output render smoke check
 | Lint | framework sources (excluding `framework/main.k`) | `cd framework && kcl lint builders/*.k models/*.k models/modules/*.k procedures/*.k templates/*.k assembly/*.k` | No errors |
 | Unit tests | full framework suite | `cd framework && kcl test ./...` | All tests pass |
 | Render smoke | `erp_back` dev factory, all outputs | `cd projects/erp_back/pre_releases/manifests/dev/factory && kcl run render.k -D output=<mode>` | Command succeeds |
+| Acceptance smoke | optional kind cluster | `./scripts/acceptance_kind.sh --case basic` | Generated resources apply and Deployment rolls out |
 
 Supported `<mode>` values for smoke checks:
 
@@ -41,6 +42,19 @@ kcl run render.k -D output=yaml | kubeconform -summary -strict
 # Run only template tests while iterating on templates
 cd framework
 kcl test ./tests/templates/...
+
+# Check local kind acceptance prerequisites
+./scripts/acceptance_kind.sh --preflight-only
+
+# Deploy the lightweight generated workload into an ephemeral kind cluster
+./scripts/acceptance_kind.sh --case basic
+
+# Run additional lightweight template rollout checks
+./scripts/acceptance_kind.sh --case webapp --case database
+
+# Run heavier or dry-run-only acceptance smoke cases explicitly
+./scripts/acceptance_kind.sh --case dataprepper
+./scripts/acceptance_kind.sh --case search
 ```
 
 ## CI Recommendation

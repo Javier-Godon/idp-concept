@@ -7,6 +7,35 @@
 
 ## 1. Core Domain Models (`framework/models/`)
 
+### Common Metadata
+
+**File**: `framework/models/metadata.k`  
+**Purpose**: Optional portable metadata for IDP/catalog integrations and governance.
+
+```kcl
+schema Metadata:
+    displayName?: str
+    description?: str
+    owner?: str
+    team?: str
+    system?: str
+    domain?: str
+    lifecycle?: str
+    tier?: str
+    criticality?: str
+    costCenter?: str
+    repository?: str
+    documentation?: str
+    support?: str
+    tags?: [str]
+    labels?: {str:str}
+    annotations?: {str:str}
+    links?: [Link]
+    contacts?: [Contact]
+```
+
+Available on `Project`, `Tenant`, `Site`, `Profile`, `Stack`, and `Release` as `metadata?: Metadata`.
+
 ### Project
 
 **File**: `framework/models/project.k`  
@@ -16,12 +45,14 @@
 schema ProjectInstance:
     name: str                  # Project name (e.g., "Video Streaming")
     description: str           # Human-readable description
+    metadata?: Metadata        # Optional IDP/catalog metadata
     configurations: any        # Project-specific configuration (typed per project)
 
 schema Project:
     instance: ProjectInstance  # Auto-generated flat instance
     name: str
     description: str
+    metadata?: Metadata
     configurations: any
 ```
 
@@ -34,12 +65,14 @@ schema Project:
 schema TenantInstance:
     name: str                  # Tenant name (e.g., "Germany")
     description: str           # Description
+    metadata?: Metadata        # Optional IDP/catalog metadata
     configurations: any        # Tenant-specific config overrides
 
 schema Tenant:
     instance: TenantInstance
     name: str
     description: str
+    metadata?: Metadata
     configurations: any
 ```
 
@@ -52,12 +85,14 @@ schema Tenant:
 schema SiteInstance:
     name: str                  # Site name (e.g., "berlin", "dev_cluster")
     tenant: Tenant             # Which tenant owns this site
+    metadata?: Metadata        # Optional IDP/catalog metadata
     configurations: any        # Site-specific config overrides
 
 schema Site:
     instance: SiteInstance
     name: str
     tenant: Tenant
+    metadata?: Metadata
     configurations: any
 ```
 
@@ -69,11 +104,13 @@ schema Site:
 ```kcl
 schema ProfileInstance:
     name: str                  # Profile name (e.g., "development", "v1_0_0")
+    metadata?: Metadata        # Optional IDP/catalog metadata
     configurations: any        # Profile-specific configurations
 
 schema Profile:
     instance: ProfileInstance
     name: str
+    metadata?: Metadata
     configurations: any
 ```
 
@@ -85,6 +122,7 @@ schema Profile:
 ```kcl
 schema StackInstance:
     instanceConfigurations: any                    # Merged configurations
+    metadata?: Metadata                            # Optional IDP/catalog metadata
     components: [ComponentInstance]                 # Application/infrastructure components
     accessories?: [AccessoryInstance]               # Supporting resources
     k8snamespaces?: [K8sNamespaceInstance]          # Namespaces to create
@@ -93,6 +131,7 @@ schema StackInstance:
 schema Stack:
     instance: StackInstance
     instanceConfigurations: any
+    metadata?: Metadata
     components: [ComponentInstance]
     accessories?: [AccessoryInstance]
     k8snamespaces?: [K8sNamespaceInstance]
@@ -130,6 +169,7 @@ schema RenderStack:
 schema Release:
     name: str                              # Release name
     version: str                           # Version string (e.g., "1.0.0/berlin")
+    metadata?: Metadata                    # Optional IDP/catalog metadata
     project: ProjectInstance               # Project (flat instance)
     tenant: TenantInstance                 # Tenant (flat instance)
     profile: ProfileInstance               # Profile (flat instance)
@@ -381,15 +421,51 @@ schema Release:
 
 ```kcl
 schema ApplicationProperties:
-    applicationName: str
-    serverPort: int
-    contextPath: str
-    moduleSpring?: ModuleSpring
-    keycloak?: ModuleKeycloak
-    management?: ModuleManagement
-    springDoc?: ModuleSpringDoc
-    opensearchClient?: ModuleOpensearchClient
+    applicationName?: str
+    serverPort?: int
+    contextPath?: str
+    server?: ServerProperties
+    spring?: SpringProperties
+    management?: any              # ManagementProperties, or ModuleManagement for legacy code
+    logging?: LoggingProperties
+    springdoc?: SpringDocProperties
+    security?: SecurityProperties
+    properties?: {str:str}       # free-form properties
+    extraProperties?: {str:str}  # applied last, can override generated values
 ```
+
+Lambda: `build_properties` → `{str:str}` map for `application.properties` data.
+Lambda: `render_properties` → newline-separated `key=value` string.
+
+Legacy team-specific schemas (`ModuleSpring`, `ModuleKeycloak`, `ModuleSpringDoc`, etc.) remain available for existing projects, but new definitions should prefer the standard sections plus `extraProperties` for ad hoc keys.
+
+### Application Configuration Files & Env Vars
+
+**File**: `framework/custom/application_configurations.k`
+
+```kcl
+schema ApplicationConfigSpec:
+    runtime: "python" | "go" | "rust" | "kotlin" | "vue" | "nuxt" | "angular" | "react" | "next"
+    applicationName: str
+    environment?: str = "default"
+    port?: int
+    logLevel?: str = "INFO"
+    apiBaseUrl?: str
+    publicBaseUrl?: str
+    properties?: {str:str}
+    extraProperties?: {str:str}
+    configFiles?: {str:str}
+    extraConfigFiles?: {str:str}
+    env?: {str:str}
+    extraEnv?: {str:str}
+    envVars?: [EnvVar]
+    secretEnvVars?: [EnvVar]
+```
+
+Lambdas:
+- `build_config_data` → `{str:str}` for `WebAppModule.configData`
+- `build_env_vars` → `[any]` for `WebAppModule.env`
+- `build_config_bundle` → `{configData, env}` ready for `WebAppModule`
 
 ---
 
@@ -459,12 +535,30 @@ Lambda: `build_pdb` → `policy/v1 PodDisruptionBudget`.
 
 ## 6. Templates (`framework/templates/`)
 
+### Versioned ecosystem folder convention
+
+Templates now follow a versioned ecosystem layout under `framework/templates/<ecosystem>/<version>/...`.
+
+Examples:
+
+- `framework/templates/elastic/v7_10_2/elasticsearch.k`
+- `framework/templates/elastic/v9_4_1/elasticsearch.k`
+- `framework/templates/opensearch/v2_17_0/opensearch.k`
+- `framework/templates/postgresql/v1_0_0/postgresql.k`
+
+Root files (for example `framework/templates/postgresql.k` or `framework/templates/opensearch.k`) are kept for backward compatibility while projects migrate to explicit versioned imports.
+
 ### Application Templates
 
 | Template | File | Parent | Purpose |
 |---|---|---|---|
 | `WebAppModule` | `webapp.k` | `Component` | Web applications (Deployment + Service + optional ConfigMap) |
-| `SingleDatabaseModule` | `database.k` | `Accessory` | Simple database (Deployment + Service + PV/PVC) |
+| `DataPrepperModule` | `dataprepper.k` | `Component` | OpenSearch Data Prepper ingestion (ConfigMap + Deployment + Service + PDB) |
+| `OpenSearchDashboardsModule` | `opensearch_dashboards.k` | `Component` | Standalone OpenSearch Dashboards (ConfigMap + Deployment + Service + PDB) |
+| `ElasticsearchModule` | `elastic/v7_10_2/elasticsearch.k` | `Component` | Elasticsearch OSS 7.10.2 StatefulSet (no ECK) |
+| `KibanaModule` | `elastic/v7_10_2/kibana.k` | `Component` | Kibana OSS 7.10.2 Deployment (no ECK) |
+| `LogstashModule` | `elastic/v7_10_2/logstash.k` | `Component` | Logstash OSS 7.10.2 Deployment (no ECK) |
+| `SingleDatabaseModule` | `database.k` | `Accessory` | Simple database (Deployment + Service + PVC; optional local PV) |
 | `KafkaClusterModule` | `kafka.k` | `Accessory` | Strimzi Kafka cluster (`kafka.strimzi.io/v1beta2`) |
 
 ### Operator Templates (Phase 6)
@@ -477,13 +571,27 @@ Lambda: `build_pdb` → `policy/v1 PodDisruptionBudget`.
 | `RedisModule` | `redis.k` | OT Redis Operator | `redis.redis.opstreelabs.in/v1beta2 Redis/RedisCluster` |
 | `KeycloakModule` | `keycloak.k` | Keycloak Operator (CNCF) | `k8s.keycloak.org/v2alpha1 Keycloak` |
 | `OpenSearchClusterModule` | `opensearch.k` | OpenSearch k8s-operator | `opensearch.org/v1 OpenSearchCluster` |
+| `ElasticsearchModule` | `elastic/v9_4_1/elasticsearch.k` | Elastic ECK | `elasticsearch.k8s.elastic.co/v1 Elasticsearch` ⚠️ Elastic license |
+| `KibanaModule` | `elastic/v9_4_1/kibana.k` | Elastic ECK | `kibana.k8s.elastic.co/v1 Kibana` ⚠️ Elastic license |
+| `LogstashModule` | `elastic/v9_4_1/logstash.k` | Elastic ECK | `logstash.k8s.elastic.co/v1alpha1 Logstash` ⚠️ Elastic license |
 | `VaultStaticSecretModule` | `vault.k` | Vault Secrets Operator | `secrets.hashicorp.com/v1beta1` ⚠️ BUSL-1.1 |
 | `QuestDBModule` | `questdb.k` | Helm chart (no operator) | ThirdPartyHelmSpec wrapper |
 | `ValkeySpec` | `valkey.k` | Bitnami Helm chart | ThirdPartyHelmSpec wrapper |
 | `OpenBaoSpec` | `openbao.k` | OpenBao Helm chart | ThirdPartyHelmSpec wrapper |
 | `CephSpec` | `ceph.k` | Rook Ceph Helm chart | ThirdPartyHelmSpec wrapper |
+| `LonghornSpec` | `longhorn.k` | Longhorn Helm chart | ThirdPartyHelmSpec wrapper + optional StorageClass |
 | `MinIOTenantSpec` | `minio.k` | MinIO Operator (archived) | `minio.min.io/v2 Tenant` ⚠️ Archived |
 | `MinIOHelmSpec` | `minio.k` | Bitnami Helm chart | ThirdPartyHelmSpec wrapper (recommended) |
+
+### Search and Logging Template Licensing Notes
+
+- `OpenSearchClusterModule` is operator-backed by the OpenSearch Kubernetes Operator (`opensearch.org/v1`). Use its built-in `DashboardsSpec` when Dashboards should be lifecycle-managed with the cluster.
+- `OpenSearchDashboardsModule` is standalone and Kubernetes-native for cases where Dashboards must be managed separately from the OpenSearch cluster.
+- `DataPrepperModule` is Kubernetes-native because there is no widely adopted dedicated OSS Data Prepper operator.
+- Flat imports (`templates.elasticsearch`, `templates.kibana`, `templates.logstash`) are backward-compatible wrappers for `elastic/v7_10_2/*`.
+- New code should prefer explicit versioned imports: `templates.elastic.v7_10_2.*` or `templates.elastic.v9_4_1.*`.
+- `elastic/v7_10_2/*` templates intentionally avoid Elastic ECK and pin the last Apache-2.0 OSS artifact line (`7.10.2`).
+- `elastic/v9_4_1/*` templates use Elastic ECK CRDs and are suitable only when your intended internal usage is compatible with Elastic's license terms. See `docs/SEARCH_STACK_DECISION.md`.
 
 ### Secret Management
 
@@ -537,6 +645,11 @@ Leader (framework/models/modules/leader.k — base for all leader types)
 
 Component (framework/models/modules/component.k)
 ├── WebAppModule          (template — web applications)
+├── DataPrepperModule     (template — OpenSearch ingestion)
+├── OpenSearchDashboardsModule (template — OpenSearch Dashboards)
+├── ElasticsearchModule   (template — Elastic OSS 7.10.2 compatibility wrapper)
+├── KibanaModule          (template — Kibana OSS 7.10.2 compatibility wrapper)
+├── LogstashModule        (template — Logstash OSS 7.10.2 compatibility wrapper)
 ├── VideoCollectorModule  (project module — raw approach)
 └── ... (project APPLICATION / INFRASTRUCTURE modules)
 
@@ -549,11 +662,13 @@ Accessory (framework/models/modules/accessory.k)
 ├── RedisModule               (template — OT Redis)
 ├── KeycloakModule            (template — Keycloak)
 ├── OpenSearchClusterModule   (template — OpenSearch)
+├── elastic/v9_4_1/*          (templates — Elastic ECK CRDs)
 ├── VaultStaticSecretModule   (template — Vault VSO)
 ├── QuestDBModule             (template — Helm chart)
 ├── ValkeySpec                (template — Helm chart)
 ├── OpenBaoSpec               (template — Helm chart)
 ├── CephSpec                  (template — Helm chart)
+├── LonghornSpec              (template — Helm chart)
 ├── MinIOTenantSpec / MinIOHelmSpec (template — MinIO)
 └── ... (project CRD / SECRET modules)
 

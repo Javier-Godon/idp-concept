@@ -13,7 +13,7 @@ schema EnvVarSource:
 
     check:
         secretKeyRef or configMapKeyRef, "envVarSource must have either secretKeyRef or configMapKeyRef"
-        not (secretKeyRef and configMapKeyRef), "envVarSource cannot have both secretKeyRef and configMapKeyRef"
+        (secretKeyRef == Undefined) or (configMapKeyRef == Undefined), "envVarSource cannot have both secretKeyRef and configMapKeyRef"
 
 schema EnvVar:
     """Kubernetes environment variable specification."""
@@ -22,5 +22,5 @@ schema EnvVar:
     valueFrom?: EnvVarSource
 
     check:
-        value is not Undefined or valueFrom is not Undefined, "env var must have either value or valueFrom"
-        not (value is not Undefined and valueFrom is not Undefined), "env var cannot have both value and valueFrom"
+        value != Undefined or valueFrom != Undefined, "env var must have either value or valueFrom"
+        value == Undefined or valueFrom == Undefined, "env var cannot have both value and valueFrom"

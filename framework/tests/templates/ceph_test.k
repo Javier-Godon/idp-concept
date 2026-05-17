@@ -74,14 +74,41 @@ test_build_ceph_cluster = lambda {
     assert _result.spec.dashboard.enabled == True
 }
 
-# === Test: build_ceph_resources emits operator + cluster ===
+# === Test: CephBlockPool resource generation ===
+test_build_ceph_block_pool = lambda {
+    _result = ceph.build_ceph_block_pool(ceph.CephSpec {
+        name = "rook-ceph"
+        namespace = "storage"
+    })
+    assert _result.apiVersion == "ceph.rook.io/v1"
+    assert _result.kind == "CephBlockPool"
+    assert _result.metadata.name == "replicapool"
+    assert _result.spec.replicated.size == 3
+}
+
+# === Test: Ceph StorageClass resource generation ===
+test_build_ceph_storage_class = lambda {
+    _result = ceph.build_ceph_storage_class(ceph.CephSpec {
+        name = "rook-ceph"
+        namespace = "storage"
+    })
+    assert _result.apiVersion == "storage.k8s.io/v1"
+    assert _result.kind == "StorageClass"
+    assert _result.metadata.name == "rook-ceph-block"
+    assert _result.provisioner == "rook-ceph.rbd.csi.ceph.com"
+    assert _result.parameters.pool == "replicapool"
+}
+
+# === Test: build_ceph_resources emits operator + cluster + storage primitives ===
 test_build_ceph_resources = lambda {
     _result = ceph.build_ceph_resources(ceph.CephSpec {
         name = "rook-ceph"
         namespace = "storage"
     })
-    assert len(_result) == 2
+    assert len(_result) == 4
     assert _result[0].kind == "HelmRelease"
     assert _result[1].kind == "CephCluster"
+    assert _result[2].kind == "CephBlockPool"
+    assert _result[3].kind == "StorageClass"
 }
 
