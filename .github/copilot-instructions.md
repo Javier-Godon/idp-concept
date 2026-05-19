@@ -165,6 +165,16 @@ Later values override earlier ones.
 - Use `framework.assembly.helpers` for namespace creation in stacks
 - Extend `framework.models.configurations.BaseConfigurations` for project configs
 
+## When Working on Acceptance Tests
+
+- Use `.github/skills/acceptance-testing/SKILL.md` and `.github/instructions/acceptance-testing.instructions.md` before modifying `framework/tests/acceptance/`, `scripts/acceptance_kind.sh`, or acceptance docs.
+- Every template acceptance fixture must render through `RenderStack` and `procedures.kcl_to_yaml.yaml_stream_stack` using helpers from `framework/tests/acceptance/cases/_helpers.k`.
+- Keep real kind apply coverage limited to lightweight built-in Kubernetes rollouts unless the fixture installs and waits for real operators/controllers.
+- Use dry-run-only scenario fixtures for dependency relationships such as Data Prepper + OpenSearch, Keycloak + PostgreSQL, and persistence workloads with Longhorn/Ceph StorageClasses.
+- Put true runtime deployment checks in `scripts/acceptance_runtime.sh`; it must use real `kubectl apply` plus rollout/Ready waits and must not rely on dry-run CRD stubs.
+- Run grouped acceptance selections one fixture at a time and clean successful case resources before the next fixture; never deploy the entire template catalog at once on local hardware.
+- Document runtime requirements in `docs/ACCEPTANCE_DEPENDENCIES.md` when adding or changing dependency scenarios.
+
 ## When Working with the CLI
 
 - `koncept render argocd` — generates plain YAML via `kcl_to_yaml`

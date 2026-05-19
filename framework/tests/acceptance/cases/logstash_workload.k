@@ -5,22 +5,19 @@ This validates Deployment/Service/ConfigMap/PDB rendering with server-side
 dry-run. It is not applied by default because it pulls a large runtime image.
 """
 
-import manifests
+import ._helpers as h
 import templates.logstash as logstash
-
-_namespace = {
-    apiVersion = "v1"
-    kind = "Namespace"
-    metadata = {name = "idp-acceptance-logstash"}
-}
 
 _pipeline = "input { beats { port => 5044 } }\noutput { stdout { codec => rubydebug } }\n"
 
-_resources = logstash.build_logstash_resources(logstash.LogstashSpec {
+_module = logstash.LogstashModule {
     name = "logstash"
     namespace = "idp-acceptance-logstash"
+    configurations = {}
+    asset = {version = "7.10.2"}
+    dependsOn = []
     replicas = 1
     pipelineConfig = _pipeline
-})
+}.instance
 
-manifests.yaml_stream([_namespace] + _resources)
+h.render_component("idp-acceptance-logstash", _module)

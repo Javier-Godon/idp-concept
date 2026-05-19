@@ -5,30 +5,63 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 CLUSTER_NAME="idp-concept-acceptance"
 KIND_IMAGE="kindest/node:v1.33.0"
 KEEP_CLUSTER="false"
+KEEP_CASE_RESOURCES="false"
 SKIP_CREATE="false"
 PREFLIGHT_ONLY="false"
 CASES=("basic")
 CASES_SELECTED="false"
-ALL_CASES=("basic" "webapp" "database" "dataprepper" "opensearch-dashboards" "elasticsearch" "kibana" "logstash")
-SEARCH_CASES=("opensearch-dashboards" "elasticsearch" "kibana" "logstash")
+APPLY_CASES=("basic" "webapp" "database")
+SEARCH_CASES=("opensearch" "opensearch-dashboards" "elasticsearch" "kibana" "logstash" "elasticsearch-v9" "kibana-v9" "logstash-v9")
+DATA_CASES=("database" "postgresql" "mongodb" "rabbitmq" "redis" "redis-cluster" "kafka" "minio-tenant" "minio-helm" "questdb" "valkey")
+PLATFORM_CASES=("backstage" "observability" "opentelemetry" "vault" "keycloak" "ceph" "longhorn" "openbao")
+INTEGRATION_CASES=("dataprepper-opensearch" "keycloak-postgresql" "persistence-longhorn" "persistence-ceph")
+ROLLOUT_CASES=("dataprepper-rollout" "opensearch-dashboards-rollout" "elasticsearch-rollout" "kibana-rollout" "logstash-rollout")
+TEMPLATE_CASES=("webapp" "database" "dataprepper" "opensearch" "opensearch-dashboards" "elasticsearch" "kibana" "logstash" "elasticsearch-v9" "kibana-v9" "logstash-v9" "kafka" "postgresql" "mongodb" "rabbitmq" "redis" "redis-cluster" "keycloak" "backstage" "questdb" "minio-tenant" "minio-helm" "observability" "opentelemetry" "vault" "ceph" "longhorn" "valkey" "openbao")
+ALL_CASES=("basic" "${TEMPLATE_CASES[@]}" "${INTEGRATION_CASES[@]}" "${ROLLOUT_CASES[@]}")
 
 usage() {
-  cat <<'EOF'
+  cat <<'EOF_USAGE'
 Usage: ./scripts/acceptance_kind.sh [options]
 
 Options:
-  --case <name>        Run one case/group. Supported: basic, webapp, database,
-                       dataprepper, opensearch-dashboards, elasticsearch,
-                       kibana, logstash, search, all. Can be repeated.
+  --case <name>        Run one case/group. Supported groups: basic, search,
+                       data, platform, templates, integrations, rollouts, all.
+                       Individual cases can be any fixture name such as webapp,
+                       kafka, postgresql, minio-helm, opentelemetry,
+                       elasticsearch-v9, dataprepper-opensearch,
+                       dataprepper-rollout, or persistence-longhorn.
+                       Can be repeated.
   --cluster-name <n>   Kind cluster name (default: idp-concept-acceptance)
   --kind-image <img>   Kind node image (default: kindest/node:v1.33.0)
   --keep-cluster       Do not delete the kind cluster on exit
+  --keep-case-resources
+                       Do not delete each case's resources after it passes
   --skip-create        Reuse an existing cluster/context
   --preflight-only     Check local tools and exit without creating a cluster
   -h, --help           Show this help
 
-Default runs only the lightweight `basic` workload. Heavier cases are opt-in.
-EOF
+Default runs only the lightweight `basic` workload. Heavier template cases are opt-in.
+When a group is selected, cases are executed one by one and successful case
+resources are deleted before the next case unless --keep-case-resources is set.
+EOF_USAGE
+}
+
+contains_case() {
+  local needle="$1"; shift
+  local case_name
+  for case_name in "$@"; do
+    [[ "$case_name" == "$needle" ]] && return 0
+  done
+  return 1
+}
+
+add_case() {
+  local selected="$1"
+  if ! contains_case "$selected" "${ALL_CASES[@]}"; then
+    echo "Unsupported case: $selected" >&2
+    exit 2
+  fi
+  CASES+=("$selected")
 }
 
 set_cases() {
@@ -38,50 +71,46 @@ set_cases() {
     CASES_SELECTED="true"
   fi
   case "$selected" in
-    basic|webapp|database|dataprepper|opensearch-dashboards|elasticsearch|kibana|logstash) CASES+=("$selected") ;;
     search) CASES+=("${SEARCH_CASES[@]}") ;;
+    data) CASES+=("${DATA_CASES[@]}") ;;
+    platform) CASES+=("${PLATFORM_CASES[@]}") ;;
+    templates) CASES+=("${TEMPLATE_CASES[@]}") ;;
+    integrations) CASES+=("${INTEGRATION_CASES[@]}") ;;
+    rollouts) CASES+=("${ROLLOUT_CASES[@]}") ;;
     all) CASES+=("${ALL_CASES[@]}") ;;
-    *) echo "Unsupported case: $selected" >&2; exit 2 ;;
+    *) add_case "$selected" ;;
   esac
 }
 
 case_file_for() {
   local case_name="$1"
-  case "$case_name" in
-    basic) echo "tests/acceptance/cases/basic_workload.k" ;;
-    webapp) echo "tests/acceptance/cases/webapp_workload.k" ;;
-    database) echo "tests/acceptance/cases/database_workload.k" ;;
-    dataprepper) echo "tests/acceptance/cases/dataprepper_workload.k" ;;
-    opensearch-dashboards) echo "tests/acceptance/cases/opensearch_dashboards_workload.k" ;;
-    elasticsearch) echo "tests/acceptance/cases/elasticsearch_workload.k" ;;
-    kibana) echo "tests/acceptance/cases/kibana_workload.k" ;;
-    logstash) echo "tests/acceptance/cases/logstash_workload.k" ;;
-    *) echo "Unsupported case: $case_name" >&2; exit 2 ;;
-  esac
+  local slug="${case_name//-/_}"
+  local case_file="tests/acceptance/cases/${slug}_workload.k"
+  if [[ ! -f "$ROOT_DIR/framework/$case_file" ]]; then
+    echo "Unsupported case: $case_name" >&2
+    exit 2
+  fi
+  echo "$case_file"
 }
 
 namespace_for() {
   local case_name="$1"
-  case "$case_name" in
-    basic) echo "idp-acceptance-basic" ;;
-    webapp) echo "idp-acceptance-webapp" ;;
-    database) echo "idp-acceptance-database" ;;
-    dataprepper) echo "idp-acceptance-dataprepper" ;;
-    opensearch-dashboards) echo "idp-acceptance-opensearch-dashboards" ;;
-    elasticsearch) echo "idp-acceptance-elasticsearch" ;;
-    kibana) echo "idp-acceptance-kibana" ;;
-    logstash) echo "idp-acceptance-logstash" ;;
-    *) echo "Unsupported case: $case_name" >&2; exit 2 ;;
-  esac
+  echo "idp-acceptance-${case_name}"
 }
 
 is_apply_case() {
   local case_name="$1"
-  case "$case_name" in
-    basic|webapp|database|dataprepper) return 0 ;;
-    opensearch-dashboards|elasticsearch|kibana|logstash) return 1 ;;
-    *) echo "Unsupported case: $case_name" >&2; exit 2 ;;
-  esac
+  contains_case "$case_name" "${APPLY_CASES[@]}"
+}
+
+has_dry_run_only_cases() {
+  local case_name
+  for case_name in "${CASES[@]}"; do
+    if ! is_apply_case "$case_name"; then
+      return 0
+    fi
+  done
+  return 1
 }
 
 while [[ $# -gt 0 ]]; do
@@ -90,6 +119,7 @@ while [[ $# -gt 0 ]]; do
     --cluster-name) shift; CLUSTER_NAME="${1:?missing cluster name}" ;;
     --kind-image) shift; KIND_IMAGE="${1:?missing kind image}" ;;
     --keep-cluster) KEEP_CLUSTER="true" ;;
+    --keep-case-resources) KEEP_CASE_RESOURCES="true" ;;
     --skip-create) SKIP_CREATE="true" ;;
     --preflight-only) PREFLIGHT_ONLY="true" ;;
     -h|--help) usage; exit 0 ;;
@@ -142,6 +172,12 @@ ensure_case_namespace() {
   kubectl create namespace "$namespace" --dry-run=client -o yaml | kubectl apply -f -
 }
 
+install_dry_run_crds() {
+  echo "==> Installing lightweight acceptance CRD stubs for server-side dry-run"
+  kubectl apply -f "$ROOT_DIR/framework/tests/acceptance/crds/dry_run_crds.yaml"
+  kubectl wait --for=condition=Established --timeout=120s -f "$ROOT_DIR/framework/tests/acceptance/crds/dry_run_crds.yaml"
+}
+
 apply_case() {
   local case_name="$1"
   local manifest_file="$2"
@@ -160,11 +196,21 @@ apply_case() {
       kubectl -n idp-acceptance-database get deploy,svc,pvc
       kubectl get pv acceptance-db-pv
       ;;
-    dataprepper)
-      kubectl -n idp-acceptance-dataprepper rollout status deploy/data-prepper --timeout=300s
-      kubectl -n idp-acceptance-dataprepper get deploy,svc,cm
-      ;;
   esac
+}
+
+cleanup_case_resources() {
+  local case_name="$1"
+  local manifest_file="$2"
+  local namespace
+
+  [[ "$KEEP_CASE_RESOURCES" == "true" ]] && return 0
+
+  namespace="$(namespace_for "$case_name")"
+  echo "==> Cleaning acceptance resources for case: $case_name"
+  kubectl delete -f "$manifest_file" --ignore-not-found --wait=false >/dev/null 2>&1 || true
+  kubectl delete namespace "$namespace" --ignore-not-found --wait=true --timeout=120s >/dev/null 2>&1 || \
+    kubectl delete namespace "$namespace" --ignore-not-found --wait=false >/dev/null 2>&1 || true
 }
 
 preflight
@@ -185,6 +231,10 @@ fi
 TMP_DIR="$(mktemp -d)"
 trap 'rm -rf "$TMP_DIR"; cleanup' EXIT
 
+if has_dry_run_only_cases; then
+  install_dry_run_crds
+fi
+
 for case_name in "${CASES[@]}"; do
   echo "==> Rendering acceptance case: $case_name"
   manifest_file="$TMP_DIR/${case_name}.yaml"
@@ -200,8 +250,8 @@ for case_name in "${CASES[@]}"; do
   else
     echo "==> Skipping apply for dry-run-only case: $case_name"
   fi
+
+  cleanup_case_resources "$case_name" "$manifest_file"
 done
 
 echo "==> Acceptance checks complete"
-
-

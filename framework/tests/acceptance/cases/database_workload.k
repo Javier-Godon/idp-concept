@@ -5,14 +5,8 @@ Uses the backward-compatible root template import, a local hostPath PV, and a
 small pause image so the PVC-backed Deployment can roll out in kind.
 """
 
-import manifests
+import ._helpers as h
 import templates.database as database
-
-_namespace = {
-    apiVersion = "v1"
-    kind = "Namespace"
-    metadata = {name = "idp-acceptance-database"}
-}
 
 _db = database.SingleDatabaseModule {
     name = "acceptance-db"
@@ -31,4 +25,4 @@ _db = database.SingleDatabaseModule {
     storageHostPath = "/tmp/idp-acceptance"
 }.instance
 
-manifests.yaml_stream([_namespace] + _db.manifests)
+h.render_accessory("idp-acceptance-database", _db)

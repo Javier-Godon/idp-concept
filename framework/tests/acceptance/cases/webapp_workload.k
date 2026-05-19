@@ -5,14 +5,8 @@ Uses the backward-compatible root template import and a small pause image so the
 case can roll out quickly in a local kind cluster.
 """
 
-import manifests
+import ._helpers as h
 import templates.webapp as webapp
-
-_namespace = {
-    apiVersion = "v1"
-    kind = "Namespace"
-    metadata = {name = "idp-acceptance-webapp"}
-}
 
 _app = webapp.WebAppModule {
     name = "acceptance-webapp"
@@ -28,4 +22,4 @@ _app = webapp.WebAppModule {
     configData = {"application.yaml" = "message: webapp acceptance\n"}
 }.instance
 
-manifests.yaml_stream([_namespace] + _app.manifests)
+h.render_component("idp-acceptance-webapp", _app)

@@ -1,24 +1,21 @@
 """
 Acceptance fixture: Data Prepper standalone workload.
 
-This is heavier than the default basic workload because it pulls a real Data
-Prepper image. Run it explicitly with the kind acceptance script when needed.
+Uses the DataPrepperModule render path. The kind runner keeps this case
+dry-run-only because its probes require the real Data Prepper runtime.
 """
 
-import manifests
+import ._helpers as h
 import templates.dataprepper as dp
-
-_namespace = {
-    apiVersion = "v1"
-    kind = "Namespace"
-    metadata = {name = "idp-acceptance-dataprepper"}
-}
 
 _pipeline = "entry-pipeline:\n  source:\n    http:\n      path: /log/ingest\n  sink:\n    - stdout:\n"
 
-_resources = dp.build_dataprepper_resources(dp.DataPrepperSpec {
+_module = dp.DataPrepperModule {
     name = "data-prepper"
     namespace = "idp-acceptance-dataprepper"
+    configurations = {}
+    asset = {version = "2.10.2"}
+    dependsOn = []
     replicas = 1
     pipelineConfig = _pipeline
     resources = dp.DataPrepperResources {
@@ -27,7 +24,7 @@ _resources = dp.build_dataprepper_resources(dp.DataPrepperSpec {
         memoryRequest = "512Mi"
         memoryLimit = "1Gi"
     }
-})
+}.instance
 
-manifests.yaml_stream([_namespace] + _resources)
+h.render_component("idp-acceptance-dataprepper", _module)
 

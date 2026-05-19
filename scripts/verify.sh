@@ -14,6 +14,18 @@ printf "==> Running scoped KCL lint\n"
   done < <(find templates -type d -name 'v*' | sort)
   kcl lint custom/*.k
   kcl lint custom/helm/*.k
+  for fixture in tests/acceptance/cases/*.k; do
+    kcl lint "$fixture"
+  done
+)
+
+printf "==> Rendering acceptance template fixtures\n"
+(
+  cd "$ROOT_DIR/framework"
+  for fixture in tests/acceptance/cases/*_workload.k; do
+    printf "   - %s\n" "$fixture"
+    kcl run "$fixture" >/tmp/idp-concept-acceptance-"$(basename "$fixture" .k)".yaml
+  done
 )
 
 printf "==> Running framework tests\n"

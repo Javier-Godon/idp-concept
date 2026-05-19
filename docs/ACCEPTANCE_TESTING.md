@@ -2,6 +2,13 @@
 
 This project keeps fast KCL tests as the default verification path and adds optional Kubernetes acceptance tests for changes that affect generated manifest runtime behavior.
 
+There are two cluster-oriented layers:
+
+- `./scripts/acceptance_kind.sh` — render + server-side dry-run matrix, with real apply only for lightweight built-in Kubernetes cases.
+- `./scripts/acceptance_runtime.sh` — opt-in real deployment layer that applies manifests without CRD stubs and waits for rollouts or operator Ready conditions.
+
+Use `docs/ACCEPTANCE_RUNTIME.md` for the real deployment layer.
+
 ## Design borrowed from similar platform projects
 
 Common patterns used by Kubernetes operators, Helm chart projects, Crossplane packages, and platform frameworks:
@@ -28,7 +35,9 @@ Default behavior:
 - waits for rollout
 - deletes the cluster on exit
 
-The default case is intentionally small and deploys a generated `Namespace`, `ConfigMap`, `Deployment`, and `Service` using framework builders.
+The default case is intentionally small and deploys a generated `Namespace`, `ConfigMap`, `Deployment`, and `Service` using framework builders. Template cases render through `procedures.kcl_to_yaml.yaml_stream_stack`, so they exercise the same IDP stack-to-manifest path used by project factories.
+
+When a group is selected, the runner processes cases one by one. It renders and validates one fixture, applies only the lightweight apply-capable cases, then deletes that case's resources before moving to the next fixture. This keeps `templates`, `integrations`, and `all` from deploying the whole catalog at once.
 
 ## Prerequisites
 
@@ -55,22 +64,42 @@ Check prerequisites without creating a cluster:
 ./scripts/acceptance_kind.sh --case dataprepper
 ```
 
-Run all currently defined cases:
+Run every template acceptance case (all template families, mostly server-side dry-run):
+
+```bash
+./scripts/acceptance_kind.sh --case templates
+```
+
+Run dependency-oriented scenario cases such as Data Prepper + OpenSearch,
+Keycloak + PostgreSQL, and persistence workloads against Longhorn/Ceph storage
+classes:
+
+```bash
+./scripts/acceptance_kind.sh --case integrations
+```
+
+Run the rollout fixture shapes through render + server-side dry-run:
+
+```bash
+./scripts/acceptance_kind.sh --case rollouts
+```
+
+Run all cases, including the basic builder smoke and every template case:
 
 ```bash
 ./scripts/acceptance_kind.sh --case all
-```
-
-Run only the search-family dry-run cases:
-
-```bash
-./scripts/acceptance_kind.sh --case search
 ```
 
 Keep the cluster for debugging:
 
 ```bash
 ./scripts/acceptance_kind.sh --case basic --keep-cluster
+```
+
+Keep case resources for debugging instead of deleting them after each successful case:
+
+```bash
+./scripts/acceptance_kind.sh --case webapp --keep-cluster --keep-case-resources
 ```
 
 Reuse an existing cluster/context:
@@ -81,20 +110,31 @@ Reuse an existing cluster/context:
 
 ## Current cases
 
-| Case | Fixture | What it proves | Applies resources? | Default? |
-|---|---|---|---|---|
-| `basic` | `framework/tests/acceptance/cases/basic_workload.k` | Framework-generated core Kubernetes resources can be created and a Deployment rolls out | Yes | Yes |
-| `webapp` | `framework/tests/acceptance/cases/webapp_workload.k` | `WebAppModule` root import renders Deployment, Service, and ConfigMap and rolls out with a tiny image | Yes | No |
-| `database` | `framework/tests/acceptance/cases/database_workload.k` | `SingleDatabaseModule` root import renders Deployment, Service, PV, and PVC and rolls out with a local PV | Yes | No |
-| `dataprepper` | `framework/tests/acceptance/cases/dataprepper_workload.k` | Data Prepper standalone generated resources can be applied and rolled out | Yes | No |
-| `opensearch-dashboards` | `framework/tests/acceptance/cases/opensearch_dashboards_workload.k` | OpenSearch Dashboards standalone manifests pass server-side dry-run | Dry-run only | No |
-| `elasticsearch` | `framework/tests/acceptance/cases/elasticsearch_workload.k` | Elasticsearch OSS StatefulSet/Service/ConfigMap/PDB manifests pass server-side dry-run | Dry-run only | No |
-| `kibana` | `framework/tests/acceptance/cases/kibana_workload.k` | Kibana OSS Deployment/Service/ConfigMap/PDB manifests pass server-side dry-run | Dry-run only | No |
-| `logstash` | `framework/tests/acceptance/cases/logstash_workload.k` | Logstash OSS Deployment/Service/ConfigMap/PDB manifests pass server-side dry-run | Dry-run only | No |
+`./scripts/verify.sh` renders every `framework/tests/acceptance/cases/*_workload.k` fixture as a fast compile/render gate. `./scripts/acceptance_kind.sh` adds Kubernetes server-side dry-run for selected cases and applies only the lightweight cases that can roll out without extra operators/controllers.
 
-Dry-run-only cases still render the KCL fixture, create the namespace, and run
-`kubectl apply --dry-run=server`; they skip the final apply because those images
-are heavier or expect backing services.
+| Group / Case | Scope | Applies resources? | Notes |
+|---|---|---|---|
+| `basic` | Builder-generated Namespace/ConfigMap/Deployment/Service | Yes | Default smoke case |
+| `webapp` | `WebAppModule` | Yes | Tiny pause image rollout |
+| `database` | `SingleDatabaseModule` | Yes | Local PV/PVC + tiny pause image rollout |
+| `dataprepper` | `DataPrepperModule` | Dry-run only | Probes require the real Data Prepper runtime; run full runtime tests with backing dependencies separately |
+| `search` | `opensearch`, `opensearch-dashboards`, Elastic v7 `elasticsearch`/`kibana`/`logstash`, Elastic v9 ECK CRs | Dry-run only | Uses CRD stubs for operator-backed v9/OpenSearch CRs |
+| `data` | `database`, `postgresql`, `mongodb`, `rabbitmq`, `redis`, `redis-cluster`, `kafka`, `minio-tenant`, `minio-helm`, `questdb`, `valkey` | Mixed | `database` applies; operator/Helm-backed cases dry-run only |
+| `platform` | `backstage`, `observability`, `opentelemetry`, `vault`, `keycloak`, `ceph`, `longhorn`, `openbao` | Dry-run only | Requires Helm/Flux, CRDs, or operators for real reconciliation |
+| `templates` | Every template acceptance fixture | Mixed | Full template coverage through the IDP render path |
+| `integrations` | `dataprepper-opensearch`, `keycloak-postgresql`, `persistence-longhorn`, `persistence-ceph` | Dry-run only | Dependency scenarios that include related modules in one `RenderStack` |
+| `rollouts` | `dataprepper-rollout`, `opensearch-dashboards-rollout`, `elasticsearch-rollout`, `kibana-rollout`, `logstash-rollout` | Dry-run only in this runner | Runtime-rollout fixtures for native Kubernetes controllers; use `./scripts/acceptance_runtime.sh --case runtime-rollouts` for real rollout checks |
+| `all` | `basic` + `templates` + `integrations` + `rollouts` | Mixed | Complete local acceptance matrix |
+
+Individual cases can also be selected with repeated `--case`, for example:
+
+```bash
+./scripts/acceptance_kind.sh --case kafka --case postgresql --case opentelemetry
+```
+
+Dry-run-only cases install lightweight acceptance CRD stubs from `framework/tests/acceptance/crds/dry_run_crds.yaml` so `kubectl apply --dry-run=server` can validate generated custom resources without requiring the real operators. These stubs are only for acceptance validation; they are not production CRDs and do not reconcile workloads.
+
+See `docs/ACCEPTANCE_DEPENDENCIES.md` for the dependency matrix behind these cases, including when Data Prepper needs OpenSearch, when Keycloak needs PostgreSQL, and when persistent templates require Longhorn, Ceph, or another StorageClass provider.
 
 ## Suggested future acceptance groups
 
@@ -103,8 +143,8 @@ These are intentionally not default because they require CRDs, operators, more m
 | Group | Prerequisites | Suggested checks |
 |---|---|---|
 | `opensearch-operator` | OpenSearch operator installed | Apply `OpenSearchCluster`, wait for health/Ready condition |
-| `dataprepper-opensearch` | OpenSearch operator + OpenSearch cluster | Apply Data Prepper pipeline pointing at OpenSearch, send sample event, query index |
-| `postgres-keycloak` | CloudNativePG + Keycloak operators | Deploy PostgreSQL + Keycloak, wait for both Ready |
+| `dataprepper-opensearch-runtime` | OpenSearch operator + OpenSearch cluster | Apply Data Prepper pipeline pointing at OpenSearch, send sample event, query index |
+| `postgres-keycloak-runtime` | CloudNativePG + Keycloak operators | Deploy PostgreSQL + Keycloak, wait for both Ready |
 | `elastic-eck-v9` | ECK installed and license accepted | Apply Elasticsearch/Kibana/Logstash v9.4.1 CRs, wait for Ready |
 | `helm-storage` | Flux/Helm provider or Helm CLI, storage class | Deploy a Helm-backed storage/cache template and validate PVC binding |
 
@@ -121,5 +161,9 @@ The recommended approach is:
 
 - run `./scripts/verify.sh` on every PR
 - run `./scripts/acceptance_kind.sh --case basic` for manifest-runtime changes
+- run `./scripts/acceptance_runtime.sh --case runtime-basic` when you need to prove real lightweight deployments still roll out
+- run `./scripts/acceptance_runtime.sh --case runtime-rollouts --timeout 300s` when changing native Deployment/StatefulSet templates such as Data Prepper, OpenSearch Dashboards, Elasticsearch v7, Kibana v7, or Logstash v7
 - run heavier cases in nightly CI or before releases
+
+For true operator-backed deployment verification, use `./scripts/acceptance_runtime.sh --case <runtime-group>` against a cluster with real operators/controllers installed, or pass `--install-dependencies` for disposable kind/nightly runs where the runner should install known pinned dependencies.
 
