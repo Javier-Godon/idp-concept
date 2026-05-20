@@ -187,6 +187,10 @@ install_dry_run_crds() {
 apply_case() {
   local case_name="$1"
   local manifest_file="$2"
+  # First pass: creates any Namespace objects (which render last in IDP YAML).
+  # Namespaced resources that precede the Namespace doc may fail here; that is expected.
+  kubectl apply -f "$manifest_file" 2>/dev/null || true
+  # Second pass: all namespaces now exist.
   kubectl apply -f "$manifest_file"
   case "$case_name" in
     basic)
@@ -203,19 +207,19 @@ apply_case() {
       kubectl get pv acceptance-db-pv
       ;;
     webapp-service-account-rollout)
-      kubectl -n idp-acceptance-webapp-sa-rollout rollout status deploy/acceptance-webapp-sa --timeout=180s
-      kubectl -n idp-acceptance-webapp-sa-rollout get deploy,svc,sa
+      kubectl -n idp-acceptance-webapp-service-account-rollout rollout status deploy/acceptance-webapp-sa --timeout=180s
+      kubectl -n idp-acceptance-webapp-service-account-rollout get deploy,svc,sa
       ;;
     webapp-database-stack-rollout)
-      kubectl -n idp-acceptance-stack-rollout rollout status deploy/acceptance-stack-webapp --timeout=240s
-      kubectl -n idp-acceptance-stack-rollout rollout status deploy/acceptance-stack-db --timeout=240s
-      kubectl -n idp-acceptance-stack-rollout get deploy,svc,pvc,cm
+      kubectl -n idp-acceptance-webapp-database-stack-rollout rollout status deploy/acceptance-stack-webapp --timeout=240s
+      kubectl -n idp-acceptance-webapp-database-stack-rollout rollout status deploy/acceptance-stack-db --timeout=240s
+      kubectl -n idp-acceptance-webapp-database-stack-rollout get deploy,svc,pvc,cm
       kubectl get pv acceptance-stack-db-pv
       ;;
     elasticsearch-kibana-stack-rollout)
-      kubectl -n idp-acceptance-elasticsearch-kibana-rollout rollout status statefulset/acceptance-elk-elasticsearch --timeout=240s
-      kubectl -n idp-acceptance-elasticsearch-kibana-rollout rollout status deploy/acceptance-elk-kibana --timeout=240s
-      kubectl -n idp-acceptance-elasticsearch-kibana-rollout get statefulset,deploy,svc,cm
+      kubectl -n idp-acceptance-elasticsearch-kibana-stack-rollout rollout status statefulset/acceptance-elk-elasticsearch --timeout=240s
+      kubectl -n idp-acceptance-elasticsearch-kibana-stack-rollout rollout status deploy/acceptance-elk-kibana --timeout=240s
+      kubectl -n idp-acceptance-elasticsearch-kibana-stack-rollout get statefulset,deploy,svc,cm
       ;;
     elk-stack-rollout)
       kubectl -n idp-acceptance-elk-stack-rollout rollout status statefulset/acceptance-elk-es --timeout=240s
@@ -224,9 +228,9 @@ apply_case() {
       kubectl -n idp-acceptance-elk-stack-rollout get statefulset,deploy,svc,cm
       ;;
     webapp-dataprepper-stack-rollout)
-      kubectl -n idp-acceptance-webapp-dp-rollout rollout status deploy/acceptance-webapp-dp --timeout=180s
-      kubectl -n idp-acceptance-webapp-dp-rollout rollout status deploy/acceptance-dp --timeout=180s
-      kubectl -n idp-acceptance-webapp-dp-rollout get deploy,svc,cm
+      kubectl -n idp-acceptance-webapp-dataprepper-stack-rollout rollout status deploy/acceptance-webapp-dp --timeout=180s
+      kubectl -n idp-acceptance-webapp-dataprepper-stack-rollout rollout status deploy/acceptance-dp --timeout=180s
+      kubectl -n idp-acceptance-webapp-dataprepper-stack-rollout get deploy,svc,cm
       ;;
   esac
 }

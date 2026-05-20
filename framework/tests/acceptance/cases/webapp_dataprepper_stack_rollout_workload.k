@@ -20,7 +20,7 @@ import ._helpers as h
 import templates.webapp as webapp
 import templates.dataprepper as dp
 
-_namespace = "idp-acceptance-webapp-dp-rollout"
+_namespace = "idp-acceptance-webapp-dataprepper-stack-rollout"
 _runtime_image = "python:3.12.3-alpine3.20"
 _dp_server = "import http.server,socketserver\nclass H(http.server.BaseHTTPRequestHandler):\n    def do_GET(self):\n        self.send_response(200)\n        self.end_headers()\n        self.wfile.write(b'ok')\n    def log_message(self,*args):\n        pass\nsocketserver.TCPServer(('', 4900), H).serve_forever()\n"
 

@@ -20,7 +20,7 @@ import ._helpers as h
 import templates.elasticsearch as elasticsearch
 import templates.kibana as kibana
 
-_namespace = "idp-acceptance-elasticsearch-kibana-rollout"
+_namespace = "idp-acceptance-elasticsearch-kibana-stack-rollout"
 _runtime_image = "python:3.12.3-alpine3.20"
 
 # Elasticsearch: HTTP on 9200, TCP transport on 9300

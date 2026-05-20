@@ -15,7 +15,7 @@ patching pattern for acceptance environments.
 import ._helpers as h
 import templates.webapp as webapp
 
-_namespace = "idp-acceptance-webapp-sa-rollout"
+_namespace = "idp-acceptance-webapp-service-account-rollout"
 
 _base = webapp.WebAppModule {
     name = "acceptance-webapp-sa"

@@ -20,7 +20,7 @@ import ._helpers as h
 import templates.webapp as webapp
 import templates.database as database
 
-_namespace = "idp-acceptance-stack-rollout"
+_namespace = "idp-acceptance-webapp-database-stack-rollout"
 
 _app = webapp.WebAppModule {
     name = "acceptance-stack-webapp"

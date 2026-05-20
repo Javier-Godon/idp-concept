@@ -393,6 +393,10 @@ apply_case_manifest() {
   local manifest_file="$2"
   echo "==> Applying runtime manifest: $case_name"
   ensure_case_namespace "$case_name"
+  # First pass: creates any Namespace objects (which render last in IDP YAML).
+  # Namespaced resources that precede the Namespace doc may fail here; that is expected.
+  kubectl apply -f "$manifest_file" 2>/dev/null || true
+  # Second pass: all namespaces now exist, remaining resources apply successfully.
   kubectl apply -f "$manifest_file"
 }
 
