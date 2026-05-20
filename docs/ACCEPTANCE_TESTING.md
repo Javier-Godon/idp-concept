@@ -123,7 +123,7 @@ Reuse an existing cluster/context:
 | `platform` | `backstage`, `observability`, `opentelemetry`, `vault`, `keycloak`, `ceph`, `longhorn`, `openbao` | Dry-run only | Requires Helm/Flux, CRDs, or operators for real reconciliation |
 | `templates` | Every template acceptance fixture | Mixed | Full template coverage through the IDP render path |
 | `integrations` | `dataprepper-opensearch`, `keycloak-postgresql`, `persistence-longhorn`, `persistence-ceph` | Dry-run only | Dependency scenarios that include related modules in one `RenderStack` |
-| `rollouts` | `dataprepper-rollout`, `opensearch-dashboards-rollout`, `elasticsearch-rollout`, `kibana-rollout`, `logstash-rollout` | Dry-run only in this runner | Runtime-rollout fixtures for native Kubernetes controllers; use `./scripts/acceptance_runtime.sh --case runtime-rollouts` for real rollout checks |
+| `rollouts` | `dataprepper-rollout`, `opensearch-dashboards-rollout`, `elasticsearch-rollout`, `kibana-rollout`, `logstash-rollout`, `webapp-probes-rollout`, `webapp-service-account-rollout`, `webapp-database-stack-rollout`, `elasticsearch-kibana-stack-rollout`, `elk-stack-rollout`, `webapp-dataprepper-stack-rollout` | Mixed (`webapp-service-account-rollout`, `webapp-database-stack-rollout`, `elasticsearch-kibana-stack-rollout`, `elk-stack-rollout`, `webapp-dataprepper-stack-rollout` apply; others dry-run) | Native Kubernetes controller rollout fixtures including single-template and multi-template mixture stacks; use `./scripts/acceptance_runtime.sh --case runtime-rollouts` for real rollout checks on all cases |
 | `all` | `basic` + `templates` + `integrations` + `rollouts` | Mixed | Complete local acceptance matrix |
 
 Individual cases can also be selected with repeated `--case`, for example:
@@ -162,7 +162,7 @@ The recommended approach is:
 - run `./scripts/verify.sh` on every PR
 - run `./scripts/acceptance_kind.sh --case basic` for manifest-runtime changes
 - run `./scripts/acceptance_runtime.sh --case runtime-basic` when you need to prove real lightweight deployments still roll out
-- run `./scripts/acceptance_runtime.sh --case runtime-rollouts --timeout 300s` when changing native Deployment/StatefulSet templates such as Data Prepper, OpenSearch Dashboards, Elasticsearch v7, Kibana v7, or Logstash v7
+- run `./scripts/acceptance_runtime.sh --case runtime-rollouts --timeout 300s` when changing native Deployment/StatefulSet templates such as Data Prepper, OpenSearch Dashboards, Elasticsearch v7, Kibana v7, Logstash v7, WebApp with probes, WebApp with ServiceAccount, or any mixture stack rollout fixture (`webapp-database-stack-rollout`, `elasticsearch-kibana-stack-rollout`, `elk-stack-rollout`, `webapp-dataprepper-stack-rollout`)
 - run heavier cases in nightly CI or before releases
 
 For true operator-backed deployment verification, use `./scripts/acceptance_runtime.sh --case <runtime-group>` against a cluster with real operators/controllers installed, or pass `--install-dependencies` for disposable kind/nightly runs where the runner should install known pinned dependencies.

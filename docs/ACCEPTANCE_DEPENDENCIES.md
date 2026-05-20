@@ -99,6 +99,9 @@ full backing product stack.
 | `elasticsearch-rollout` | Elastic v7 `ElasticsearchModule` `StatefulSet` | Full Elasticsearch cluster runtime while still testing StatefulSet/PVC rollout shape. |
 | `kibana-rollout` | Elastic v7 `KibanaModule` `Deployment` | Backing Elasticsearch endpoint. |
 | `logstash-rollout` | Elastic v7 `LogstashModule` `Deployment` | Full Logstash JVM startup and upstream/downstream services. |
+| `webapp-probes-rollout` | `WebAppModule` `Deployment` with HTTP liveness, readiness, and startup probes | Real application runtime. Uses a Python HTTP server to satisfy all three generated probe paths on port 8080. Proves that probe configuration fields (`livenessProbe`, `readinessProbe`, `startupProbe`) render into valid Kubernetes probe specs and that the generated container can pass them. |
+| `webapp-service-account-rollout` | `WebAppModule` `Deployment` + `ServiceAccount` generated via `imagePullSecretName` | A real registry and pull secret. `imagePullSecrets` is patched to an empty list so the rollout proceeds with the `pause` image while keeping the `serviceAccountName` binding. Proves: ServiceAccount generation, SA-to-Deployment wiring, and imagePullSecrets patching pattern. |
+| `webapp-database-stack-rollout` | **Mixture**: `WebAppModule` `Deployment` + `SingleDatabaseModule` `Deployment` + `PVC` in one `RenderStack` | External storage provisioner. Uses a local hostPath `PersistentVolume` so the PVC binds without Longhorn or Ceph. Proves: multi-module IDP stack rendering via `render_stack`, two co-deployed Deployments rolling out simultaneously, and PVC binding alongside a webapp in the same namespace. |
 
 Run the real rollout group with:
 

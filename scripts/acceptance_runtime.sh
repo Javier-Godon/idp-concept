@@ -37,7 +37,7 @@ RUNTIME_KAFKA_CASES=("kafka")
 RUNTIME_MONGODB_CASES=("mongodb")
 RUNTIME_RABBITMQ_CASES=("rabbitmq")
 RUNTIME_REDIS_CASES=("redis" "redis-cluster")
-RUNTIME_ROLLOUT_CASES=("dataprepper-rollout" "opensearch-dashboards-rollout" "elasticsearch-rollout" "kibana-rollout" "logstash-rollout")
+RUNTIME_ROLLOUT_CASES=("dataprepper-rollout" "opensearch-dashboards-rollout" "elasticsearch-rollout" "kibana-rollout" "logstash-rollout" "webapp-probes-rollout" "webapp-service-account-rollout" "webapp-database-stack-rollout" "elasticsearch-kibana-stack-rollout" "elk-stack-rollout" "webapp-dataprepper-stack-rollout")
 RUNTIME_SEARCH_CASES=("opensearch" "opensearch-dashboards" "dataprepper-opensearch" "elasticsearch" "kibana" "logstash" "elasticsearch-v9" "kibana-v9" "logstash-v9")
 RUNTIME_DATA_CASES=("database" "postgresql" "mongodb" "rabbitmq" "redis" "redis-cluster" "kafka" "minio-tenant" "minio-helm" "questdb" "valkey")
 RUNTIME_PLATFORM_CASES=("backstage" "observability" "opentelemetry" "vault" "keycloak" "keycloak-postgresql" "openbao")
@@ -58,7 +58,13 @@ Options:
                            runtime-rollouts, runtime-search, runtime-data,
                            runtime-platform, runtime-storage,
                            runtime-integrations, runtime-all.
-                           Individual fixture names are also supported.
+                           Individual fixture names are also supported
+                           (e.g. webapp-probes-rollout,
+                           webapp-service-account-rollout,
+                           webapp-database-stack-rollout,
+                           elasticsearch-kibana-stack-rollout,
+                           elk-stack-rollout,
+                           webapp-dataprepper-stack-rollout).
                            Can be repeated.
   --install-dependencies   Install known pinned operators/controllers before apply.
                            Intended for disposable clusters.
@@ -412,9 +418,33 @@ wait_case() {
     dataprepper)
       kubectl -n idp-acceptance-dataprepper rollout status deploy/data-prepper --timeout="$TIMEOUT"
       ;;
-    dataprepper-rollout|opensearch-dashboards-rollout|elasticsearch-rollout|kibana-rollout|logstash-rollout)
+    dataprepper-rollout|opensearch-dashboards-rollout|elasticsearch-rollout|kibana-rollout|logstash-rollout|webapp-probes-rollout|webapp-service-account-rollout|elasticsearch-kibana-stack-rollout|elk-stack-rollout|webapp-dataprepper-stack-rollout)
       wait_all_rollouts "$namespace"
       wait_all_pvcs_bound "$namespace"
+      ;;
+    webapp-database-stack-rollout)
+      kubectl -n "$namespace" rollout status deploy/acceptance-stack-webapp --timeout="$TIMEOUT"
+      kubectl -n "$namespace" rollout status deploy/acceptance-stack-db --timeout="$TIMEOUT"
+      wait_all_pvcs_bound "$namespace"
+      kubectl -n "$namespace" get deploy,svc,pvc,cm
+      ;;
+    elasticsearch-kibana-stack-rollout)
+      kubectl -n "$namespace" rollout status statefulset/acceptance-elk-elasticsearch --timeout="$TIMEOUT"
+      kubectl -n "$namespace" rollout status deploy/acceptance-elk-kibana --timeout="$TIMEOUT"
+      wait_all_rollouts "$namespace"
+      kubectl -n "$namespace" get statefulset,deploy,svc,cm
+      ;;
+    elk-stack-rollout)
+      kubectl -n "$namespace" rollout status statefulset/acceptance-elk-es --timeout="$TIMEOUT"
+      kubectl -n "$namespace" rollout status deploy/acceptance-elk-kibana --timeout="$TIMEOUT"
+      kubectl -n "$namespace" rollout status deploy/acceptance-elk-logstash --timeout="$TIMEOUT"
+      wait_all_rollouts "$namespace"
+      kubectl -n "$namespace" get statefulset,deploy,svc,cm
+      ;;
+    webapp-dataprepper-stack-rollout)
+      kubectl -n "$namespace" rollout status deploy/acceptance-webapp-dp --timeout="$TIMEOUT"
+      kubectl -n "$namespace" rollout status deploy/acceptance-dp --timeout="$TIMEOUT"
+      kubectl -n "$namespace" get deploy,svc,cm
       ;;
     dataprepper-opensearch)
       wait_condition "$namespace" opensearchcluster.opensearch.org/acceptance-opensearch Ready

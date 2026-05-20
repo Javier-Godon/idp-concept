@@ -51,7 +51,7 @@ kcl test ./tests/templates/...
 ./scripts/acceptance_kind.sh --case basic
 
 # Run additional lightweight template rollout checks
-./scripts/acceptance_kind.sh --case webapp --case database
+./scripts/acceptance_kind.sh --case webapp --case database --case webapp-service-account-rollout --case webapp-database-stack-rollout --case elasticsearch-kibana-stack-rollout --case elk-stack-rollout --case webapp-dataprepper-stack-rollout
 
 # Render/dry-run every template acceptance case
 ./scripts/acceptance_kind.sh --case templates
@@ -71,6 +71,9 @@ kcl test ./tests/templates/...
 ./scripts/acceptance_runtime.sh --case runtime-basic
 
 # Run real rollout checks for native Deployment/StatefulSet template fixtures
+# Includes single-template rollouts (webapp-probes, webapp-sa, dataprepper, opensearch-dashboards,
+# elasticsearch, kibana, logstash) and mixture stack rollouts (webapp+database, elasticsearch+kibana,
+# full ELK, webapp+dataprepper)
 ./scripts/acceptance_runtime.sh --case runtime-rollouts --timeout 300s
 
 # Run opt-in/nightly real deployment checks with pinned dependency installers

@@ -46,12 +46,14 @@ Avoid direct `manifests.yaml_stream([...])` in template acceptance fixtures.
 | `platform` | Backstage, Observability, OpenTelemetry, Vault, Keycloak, Ceph, Longhorn, OpenBao. |
 | `templates` | Every individual template fixture. |
 | `integrations` | Multi-module dependency scenarios. |
-| `rollouts` | Dry-run validation for runtime rollout fixtures. |
+| `rollouts` | Dry-run + selective apply for runtime rollout fixtures. Includes `dataprepper-rollout`, `opensearch-dashboards-rollout`, `elasticsearch-rollout`, `kibana-rollout`, `logstash-rollout`, `webapp-probes-rollout`, `webapp-service-account-rollout`, `webapp-database-stack-rollout`, `elasticsearch-kibana-stack-rollout`, `elk-stack-rollout`, `webapp-dataprepper-stack-rollout`. |
 | `all` | Basic + templates + integrations + rollouts. |
 
-Only `basic`, `webapp`, and `database` are apply cases. Keep operator/Helm/storage-heavy scenarios dry-run-only unless real controller installation and readiness checks are implemented.
+Apply-capable cases (`APPLY_CASES`): `basic`, `webapp`, `database`, `webapp-service-account-rollout`, `webapp-database-stack-rollout`, `elasticsearch-kibana-stack-rollout`, `elk-stack-rollout`, `webapp-dataprepper-stack-rollout`. Keep operator/Helm/storage-heavy scenarios dry-run-only unless real controller installation and readiness checks are implemented.
 
 Runtime groups live in `scripts/acceptance_runtime.sh` and use names like `runtime-basic`, `runtime-rollouts`, `runtime-cnpg`, `runtime-keycloak-postgresql`, `runtime-opensearch`, `runtime-dataprepper-opensearch`, `runtime-kafka`, `runtime-mongodb`, `runtime-rabbitmq`, `runtime-redis`, `runtime-search`, `runtime-data`, `runtime-platform`, `runtime-storage`, `runtime-integrations`, and `runtime-all`.
+
+`runtime-rollouts` covers: `dataprepper-rollout`, `opensearch-dashboards-rollout`, `elasticsearch-rollout`, `kibana-rollout`, `logstash-rollout`, `webapp-probes-rollout`, `webapp-service-account-rollout`, `webapp-database-stack-rollout`, `elasticsearch-kibana-stack-rollout`, `elk-stack-rollout`, `webapp-dataprepper-stack-rollout`.
 
 Both dry-run groups and runtime groups must execute selected fixtures one by one and clean successful case resources before continuing. Do not deploy the full template catalog at once; use `--keep-case-resources` only for targeted debugging.
 
@@ -63,6 +65,48 @@ Both dry-run groups and runtime groups must execute selected fixtures one by one
 - Realistic pipelines usually need OpenSearch or another sink.
 - Probes require the real Data Prepper runtime, so `pause` images are not valid rollout substitutes.
 - Use `dataprepper-opensearch` for IDP-level dependency rendering and future runtime promotion.
+
+### WebApp probe rollout (`webapp-probes-rollout`)
+
+- `WebAppModule` supports `livenessProbe`, `readinessProbe`, and `startupProbe` fields of type `ProbeSpec`.
+- For kind-based rollouts set `probeType = "http"` and use a Python `BaseHTTPRequestHandler` that serves all probe paths; patch the generated Deployment container via `_patch` + `wrap_component`.
+- Adjust `initialDelaySeconds`/`periodSeconds` downward in the patch so the lightweight server is probed quickly.
+- **Do not** rely on the `pause` image for probe-based rollouts; `pause` does not start an HTTP or TCP listener.
+
+### WebApp ServiceAccount rollout (`webapp-service-account-rollout`)
+
+- Setting `imagePullSecretName` on `WebAppModule` auto-generates a `ServiceAccount` with an `imagePullSecrets` entry and wires it to the Deployment via `serviceAccountName`.
+- For kind-based acceptance without a real registry secret, patch `imagePullSecrets = []` on both the `ServiceAccount` and the pod spec (`spec.template.spec.imagePullSecrets`).
+- The `serviceAccountName` binding is preserved so the feature is still exercised under rollout.
+- The `pause` image works here because no HTTP probes are configured.
+
+### Multi-module mixture rollout (`webapp-database-stack-rollout`)
+
+- Use `_helpers.render_stack([_namespace], [component_instance], [accessory_instance])` to assemble a multi-module IDP stack into one manifest.
+- The mixture fixture co-deploys `WebAppModule` and `SingleDatabaseModule` in the same namespace.
+- The database uses `createLocalPersistentVolume = True` + `storageHostPath = "/tmp/idp-acceptance"` so the PVC binds in kind without Longhorn or Ceph.
+- `wait_case` for this fixture must wait for **both** Deployments (`acceptance-stack-webapp` and `acceptance-stack-db`) and then `wait_all_pvcs_bound`.
+- The webapp passes `env = [{name = "DB_HOST", value = "<db-service-name>"}]` to document cross-module wiring without creating a real network dependency.
+
+### ELK / search stack mixture rollouts
+
+Multi-template search-stack rollouts use `render_stack` with multiple `ComponentInstance` objects assembled via `wrap_component`. All produce real native Kubernetes manifests without operator dependencies.
+
+| Fixture | Templates | Workload types | Key points |
+|---|---|---|---|
+| `elasticsearch-kibana-stack-rollout` | `ElasticsearchModule` + `KibanaModule` (v7) | `StatefulSet` + `Deployment` in same namespace | Kibana `elasticsearchHosts` wired to ES Service name |
+| `elk-stack-rollout` | `ElasticsearchModule` + `KibanaModule` + `LogstashModule` (v7) | `StatefulSet` + two `Deployment`s + all PDBs | Logstash pipeline points at ES; full ELK trio in one namespace |
+
+Both use Python runtime servers on the template's native ports (ES: 9200 HTTP + 9300 TCP; Kibana: 5601; Logstash: 9600). The `_patch_es` function patches `StatefulSet` containers; `_patch_kibana`/`_patch_logstash` patch `Deployment` containers.
+
+`wait_case`/`wait_all_rollouts` handles mixed workload types by using `kubectl get deploy,statefulset,daemonset` which covers both `StatefulSet` and `Deployment` resources.
+
+### App + collector pipeline mixture rollout (`webapp-dataprepper-stack-rollout`)
+
+- Co-deploys `WebAppModule` + `DataPrepperModule` in one namespace via `render_stack`.
+- The webapp uses the `pause` image (no live probes); Data Prepper is patched to a Python HTTP server.
+- Cross-module wiring: webapp env `LOG_ENDPOINT` points at the Data Prepper Service.
+- Tests the app + sidecar/collector IDP stack pattern — two `Deployment`s, no storage dependencies.
 
 ### Native controller rollout fixtures
 

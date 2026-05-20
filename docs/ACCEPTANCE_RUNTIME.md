@@ -62,7 +62,7 @@ Keep each case's resources for debugging instead of cleaning them after success:
 | Group | Cases | What it proves |
 |---|---|---|
 | `runtime-basic` | `basic`, `webapp`, `database` | Built-in Kubernetes resources apply and roll out in kind. |
-| `runtime-rollouts` | `dataprepper-rollout`, `opensearch-dashboards-rollout`, `elasticsearch-rollout`, `kibana-rollout`, `logstash-rollout` | Template-generated native `Deployment`/`StatefulSet` resources apply and roll out in kind using lightweight runtime containers that satisfy the generated probes. |
+| `runtime-rollouts` | `dataprepper-rollout`, `opensearch-dashboards-rollout`, `elasticsearch-rollout`, `kibana-rollout`, `logstash-rollout`, `webapp-probes-rollout`, `webapp-service-account-rollout`, `webapp-database-stack-rollout`, `elasticsearch-kibana-stack-rollout`, `elk-stack-rollout`, `webapp-dataprepper-stack-rollout` | Template-generated native `Deployment`/`StatefulSet` resources apply and roll out in kind. The search/ingestion fixtures use lightweight runtime containers that satisfy the generated probes. The webapp/mixture fixtures use `pause` or Python images to prove probe configuration, ServiceAccount wiring, and multi-module stack rollout without heavy backing services. Stack rollout fixtures co-deploy multiple native templates in a single `RenderStack` via `render_stack`. |
 | `runtime-cnpg` | `postgresql` | CloudNativePG reconciles the PostgreSQL `Cluster` CR to Ready. |
 | `runtime-keycloak-postgresql` | `keycloak-postgresql` | CloudNativePG and Keycloak Operator reconcile a persistent Keycloak stack. |
 | `runtime-opensearch` | `opensearch` | OpenSearch Operator reconciles `OpenSearchCluster` to Ready. |
@@ -117,8 +117,21 @@ Storage suites are the heaviest cases. Longhorn and Ceph need kernel modules, no
 
 The `*-rollout` fixtures are intentionally not full product runtime tests. They
 render the real template manifests, then patch only the container runtime to a
-pinned lightweight HTTP process so Kubernetes can prove rollout/probe behavior
-without requiring OpenSearch, Kibana, Logstash, or Data Prepper JVM startup.
+pinned lightweight HTTP process or use the `pause` image so Kubernetes can prove
+rollout/probe behavior without requiring OpenSearch, Kibana, Logstash, or Data
+Prepper JVM startup. WebApp-family rollout fixtures (`webapp-probes-rollout`,
+`webapp-service-account-rollout`) test specific WebAppModule features — probe
+configuration and ServiceAccount generation — using the same patch approach.
+
+**Mixture rollout fixtures** co-deploy multiple native templates in a single `RenderStack`:
+
+| Fixture | Templates | What it proves |
+|---|---|---|
+| `webapp-database-stack-rollout` | `WebAppModule` + `SingleDatabaseModule` | Two Deployments + PVC/PV bind in one namespace. Cross-module env wiring (DB_HOST). |
+| `elasticsearch-kibana-stack-rollout` | `ElasticsearchModule` + `KibanaModule` (v7) | StatefulSet + Deployment in same namespace. Kibana's `elasticsearchHosts` wires to the ES Service. |
+| `elk-stack-rollout` | `ElasticsearchModule` + `KibanaModule` + `LogstashModule` (v7) | Full ELK trio: StatefulSet + two Deployments + all PDBs. Logstash pipeline config points at ES. |
+| `webapp-dataprepper-stack-rollout` | `WebAppModule` + `DataPrepperModule` | App + collector pattern: two Deployments sharing a namespace. Webapp env wires LOG_ENDPOINT to Data Prepper Service. |
+
 Use the non-`*-rollout` runtime cases for real product/operator reconciliation.
 
 ## Promotion rule
