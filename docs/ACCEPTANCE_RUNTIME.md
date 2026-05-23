@@ -62,7 +62,7 @@ Keep each case's resources for debugging instead of cleaning them after success:
 | Group | Cases | What it proves |
 |---|---|---|
 | `runtime-basic` | `basic`, `webapp`, `database` | Built-in Kubernetes resources apply and roll out in kind. |
-| `runtime-rollouts` | `dataprepper-rollout`, `opensearch-dashboards-rollout`, `elasticsearch-rollout`, `kibana-rollout`, `logstash-rollout`, `webapp-probes-rollout`, `webapp-service-account-rollout`, `webapp-database-stack-rollout`, `elasticsearch-kibana-stack-rollout`, `elk-stack-rollout`, `webapp-dataprepper-stack-rollout` | Template-generated native `Deployment`/`StatefulSet` resources apply and roll out in kind. The search/ingestion fixtures use lightweight runtime containers that satisfy the generated probes. The webapp/mixture fixtures use `pause` or Python images to prove probe configuration, ServiceAccount wiring, and multi-module stack rollout without heavy backing services. Stack rollout fixtures co-deploy multiple native templates in a single `RenderStack` via `render_stack`. |
+| `runtime-rollouts` | `dataprepper-rollout`, `opensearch-dashboards-rollout`, `elasticsearch-rollout`, `kibana-rollout`, `logstash-rollout`, `webapp-probes-rollout`, `webapp-service-account-rollout`, `webapp-database-stack-rollout`, `elasticsearch-kibana-stack-rollout`, `elk-stack-rollout`, `webapp-dataprepper-stack-rollout`, `webapp-opensearch-dashboards-stack-rollout`, `webapp-elk-stack-rollout`, `dataprepper-elk-stack-rollout`, `webapp-dataprepper-elk-stack-rollout`, `webapp-database-dataprepper-stack-rollout` | Template-generated native `Deployment`/`StatefulSet` resources apply and roll out in kind. The search/ingestion fixtures use lightweight runtime containers that satisfy the generated probes. The webapp/mixture fixtures use `pause` or Python images to prove probe configuration, ServiceAccount wiring, and multi-module stack rollout without heavy backing services. Stack rollout fixtures co-deploy multiple native templates in a single `RenderStack` via `render_stack`. All 16 cases verified on kind (kindest/node:v1.33.0). |
 | `runtime-cnpg` | `postgresql` | CloudNativePG reconciles the PostgreSQL `Cluster` CR to Ready. |
 | `runtime-keycloak-postgresql` | `keycloak-postgresql` | CloudNativePG and Keycloak Operator reconcile a persistent Keycloak stack. |
 | `runtime-opensearch` | `opensearch` | OpenSearch Operator reconciles `OpenSearchCluster` to Ready. |
@@ -127,10 +127,15 @@ configuration and ServiceAccount generation — using the same patch approach.
 
 | Fixture | Templates | What it proves |
 |---|---|---|
-| `webapp-database-stack-rollout` | `WebAppModule` + `SingleDatabaseModule` | Two Deployments + PVC/PV bind in one namespace. Cross-module env wiring (DB_HOST). |
-| `elasticsearch-kibana-stack-rollout` | `ElasticsearchModule` + `KibanaModule` (v7) | StatefulSet + Deployment in same namespace. Kibana's `elasticsearchHosts` wires to the ES Service. |
-| `elk-stack-rollout` | `ElasticsearchModule` + `KibanaModule` + `LogstashModule` (v7) | Full ELK trio: StatefulSet + two Deployments + all PDBs. Logstash pipeline config points at ES. |
-| `webapp-dataprepper-stack-rollout` | `WebAppModule` + `DataPrepperModule` | App + collector pattern: two Deployments sharing a namespace. Webapp env wires LOG_ENDPOINT to Data Prepper Service. |
+| `webapp-database-stack-rollout` | `WebAppModule` + `SingleDatabaseModule` | Two Deployments + PVC/PV bind in one namespace. Cross-module env wiring (DB_HOST). ✓ kind verified |
+| `elasticsearch-kibana-stack-rollout` | `ElasticsearchModule` + `KibanaModule` (v7) | StatefulSet + Deployment in same namespace. Kibana's `elasticsearchHosts` wires to the ES Service. ✓ kind verified |
+| `elk-stack-rollout` | `ElasticsearchModule` + `KibanaModule` + `LogstashModule` (v7) | Full ELK trio: StatefulSet + two Deployments + all PDBs. Logstash pipeline config points at ES. ✓ kind verified |
+| `webapp-dataprepper-stack-rollout` | `WebAppModule` + `DataPrepperModule` | App + collector pattern: two Deployments sharing a namespace. Webapp env wires LOG_ENDPOINT to Data Prepper. ✓ kind verified |
+| `webapp-opensearch-dashboards-stack-rollout` | `WebAppModule` + `OpenSearchDashboardsModule` | App + visualization layer. OpenSearch Dashboards patched to Python server on 5601. ✓ kind verified |
+| `webapp-elk-stack-rollout` | `WebAppModule` + `ElasticsearchModule` + `KibanaModule` (v7) | App + search-backend + visualization. Mixed: 2 Deployments + 1 StatefulSet + 3 PVCs. ✓ kind verified |
+| `dataprepper-elk-stack-rollout` | `DataPrepperModule` + `ElasticsearchModule` + `KibanaModule` (v7) | Log-ingestion pipeline + search + visualization. Mixed: 2 Deployments + 1 StatefulSet. ✓ kind verified |
+| `webapp-dataprepper-elk-stack-rollout` | `WebAppModule` + `DataPrepperModule` + `ElasticsearchModule` + `KibanaModule` (v7) | Full 4-component stack: 3 Deployments + 1 StatefulSet. Largest native mixture. ✓ kind verified |
+| `webapp-database-dataprepper-stack-rollout` | `WebAppModule` + `SingleDatabaseModule` + `DataPrepperModule` | Three-tier app: 3 Deployments + PVC/PV. Cross-module DB_HOST + LOG_ENDPOINT wiring. ✓ kind verified |
 
 Use the non-`*-rollout` runtime cases for real product/operator reconciliation.
 

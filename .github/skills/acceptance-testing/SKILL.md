@@ -46,14 +46,20 @@ Avoid direct `manifests.yaml_stream([...])` in template acceptance fixtures.
 | `platform` | Backstage, Observability, OpenTelemetry, Vault, Keycloak, Ceph, Longhorn, OpenBao. |
 | `templates` | Every individual template fixture. |
 | `integrations` | Multi-module dependency scenarios. |
-| `rollouts` | Dry-run + selective apply for runtime rollout fixtures. Includes `dataprepper-rollout`, `opensearch-dashboards-rollout`, `elasticsearch-rollout`, `kibana-rollout`, `logstash-rollout`, `webapp-probes-rollout`, `webapp-service-account-rollout`, `webapp-database-stack-rollout`, `elasticsearch-kibana-stack-rollout`, `elk-stack-rollout`, `webapp-dataprepper-stack-rollout`. |
+| `rollouts` | Dry-run + selective apply for runtime rollout fixtures. Includes all 16 rollout cases: single-template (`dataprepper-rollout`, `opensearch-dashboards-rollout`, `elasticsearch-rollout`, `kibana-rollout`, `logstash-rollout`, `webapp-probes-rollout`, `webapp-service-account-rollout`) and mixture stacks (`webapp-database-stack-rollout`, `elasticsearch-kibana-stack-rollout`, `elk-stack-rollout`, `webapp-dataprepper-stack-rollout`, `webapp-opensearch-dashboards-stack-rollout`, `webapp-elk-stack-rollout`, `dataprepper-elk-stack-rollout`, `webapp-dataprepper-elk-stack-rollout`, `webapp-database-dataprepper-stack-rollout`). |
 | `all` | Basic + templates + integrations + rollouts. |
 
-Apply-capable cases (`APPLY_CASES`): `basic`, `webapp`, `database`, `webapp-service-account-rollout`, `webapp-database-stack-rollout`, `elasticsearch-kibana-stack-rollout`, `elk-stack-rollout`, `webapp-dataprepper-stack-rollout`. Keep operator/Helm/storage-heavy scenarios dry-run-only unless real controller installation and readiness checks are implemented.
+Apply-capable cases (`APPLY_CASES`): `basic`, `webapp`, `database`, `webapp-service-account-rollout`, `webapp-database-stack-rollout`, `elasticsearch-kibana-stack-rollout`, `elk-stack-rollout`, `webapp-dataprepper-stack-rollout`, `webapp-opensearch-dashboards-stack-rollout`, `webapp-elk-stack-rollout`, `dataprepper-elk-stack-rollout`, `webapp-dataprepper-elk-stack-rollout`, `webapp-database-dataprepper-stack-rollout`. Keep operator/Helm/storage-heavy scenarios dry-run-only unless real controller installation and readiness checks are implemented.
 
-Runtime groups live in `scripts/acceptance_runtime.sh` and use names like `runtime-basic`, `runtime-rollouts`, `runtime-cnpg`, `runtime-keycloak-postgresql`, `runtime-opensearch`, `runtime-dataprepper-opensearch`, `runtime-kafka`, `runtime-mongodb`, `runtime-rabbitmq`, `runtime-redis`, `runtime-search`, `runtime-data`, `runtime-platform`, `runtime-storage`, `runtime-integrations`, and `runtime-all`.
+Runtime groups live in `scripts/acceptance_runtime.sh` and use names like `runtime-basic`, `runtime-rollouts`, `runtime-cnpg`, `runtime-keycloak-postgresql`, `runtime-opensearch`, `runtime-dataprepper-opensearch`, `runtime-kafka`, `runtime-mongodb`, `runtime-rabbitmq`, `runtime-redis`, `runtime-search`, `runtime-data`, `runtime-platform`, `runtime-storage`, `runtime-integrations`, `runtime-webapp-stacks`, and `runtime-all`.
 
-`runtime-rollouts` covers: `dataprepper-rollout`, `opensearch-dashboards-rollout`, `elasticsearch-rollout`, `kibana-rollout`, `logstash-rollout`, `webapp-probes-rollout`, `webapp-service-account-rollout`, `webapp-database-stack-rollout`, `elasticsearch-kibana-stack-rollout`, `elk-stack-rollout`, `webapp-dataprepper-stack-rollout`.
+`runtime-rollouts` covers all 16 rollout cases (all verified on kind kindest/node:v1.33.0):
+- Single-template: `dataprepper-rollout`, `opensearch-dashboards-rollout`, `elasticsearch-rollout`, `kibana-rollout`, `logstash-rollout`, `webapp-probes-rollout`, `webapp-service-account-rollout`
+- 2-template mixtures: `webapp-database-stack-rollout`, `elasticsearch-kibana-stack-rollout`, `webapp-dataprepper-stack-rollout`, `webapp-opensearch-dashboards-stack-rollout`
+- 3-template mixtures: `elk-stack-rollout`, `webapp-elk-stack-rollout`, `dataprepper-elk-stack-rollout`, `webapp-database-dataprepper-stack-rollout`
+- 4-template mixture: `webapp-dataprepper-elk-stack-rollout`
+
+`runtime-integrations` covers webapp-operator stack integration cases: `webapp-postgresql-stack`, `webapp-kafka-stack`, `webapp-rabbitmq-stack`, `webapp-redis-stack`, `webapp-mongodb-stack`.
 
 Both dry-run groups and runtime groups must execute selected fixtures one by one and clean successful case resources before continuing. Do not deploy the full template catalog at once; use `--keep-case-resources` only for targeted debugging.
 
@@ -94,12 +100,15 @@ Multi-template search-stack rollouts use `render_stack` with multiple `Component
 
 | Fixture | Templates | Workload types | Key points |
 |---|---|---|---|
-| `elasticsearch-kibana-stack-rollout` | `ElasticsearchModule` + `KibanaModule` (v7) | `StatefulSet` + `Deployment` in same namespace | Kibana `elasticsearchHosts` wired to ES Service name |
-| `elk-stack-rollout` | `ElasticsearchModule` + `KibanaModule` + `LogstashModule` (v7) | `StatefulSet` + two `Deployment`s + all PDBs | Logstash pipeline points at ES; full ELK trio in one namespace |
+| `elasticsearch-kibana-stack-rollout` | `ElasticsearchModule` + `KibanaModule` (v7) | `StatefulSet` + `Deployment` in same namespace | Kibana `elasticsearchHosts` wired to ES Service name. ✓ kind verified |
+| `elk-stack-rollout` | `ElasticsearchModule` + `KibanaModule` + `LogstashModule` (v7) | `StatefulSet` + two `Deployment`s + all PDBs | Logstash pipeline points at ES; full ELK trio in one namespace. ✓ kind verified |
+| `webapp-elk-stack-rollout` | `WebAppModule` + `ElasticsearchModule` + `KibanaModule` (v7) | `Deployment` + `StatefulSet` + `Deployment` | App + search-backend + visualization. ES PVCs bound via kind default provisioner. ✓ kind verified |
+| `dataprepper-elk-stack-rollout` | `DataPrepperModule` + `ElasticsearchModule` + `KibanaModule` (v7) | `Deployment` + `StatefulSet` + `Deployment` | Log-ingestion + search + visualization pipeline. ✓ kind verified |
+| `webapp-dataprepper-elk-stack-rollout` | `WebAppModule` + `DataPrepperModule` + `ElasticsearchModule` + `KibanaModule` (v7) | 3 `Deployment`s + 1 `StatefulSet` | Largest native mixture: 4 templates, 4 workloads, 3 PVCs. ✓ kind verified |
 
-Both use Python runtime servers on the template's native ports (ES: 9200 HTTP + 9300 TCP; Kibana: 5601; Logstash: 9600). The `_patch_es` function patches `StatefulSet` containers; `_patch_kibana`/`_patch_logstash` patch `Deployment` containers.
-
-`wait_case`/`wait_all_rollouts` handles mixed workload types by using `kubectl get deploy,statefulset,daemonset` which covers both `StatefulSet` and `Deployment` resources.
+Python runtime servers used on native ports: ES 9200 (HTTP) + 9300 (TCP), Kibana 5601, Logstash 9600, DataPrepper 4900.
+`_patch_es` patches `StatefulSet`; `_patch_kibana`/`_patch_logstash`/`_patch_dp` patch `Deployment`s.
+`wait_all_rollouts` handles mixed WorkloadTypes via `kubectl get deploy,statefulset,daemonset`.
 
 ### App + collector pipeline mixture rollout (`webapp-dataprepper-stack-rollout`)
 
@@ -107,6 +116,21 @@ Both use Python runtime servers on the template's native ports (ES: 9200 HTTP + 
 - The webapp uses the `pause` image (no live probes); Data Prepper is patched to a Python HTTP server.
 - Cross-module wiring: webapp env `LOG_ENDPOINT` points at the Data Prepper Service.
 - Tests the app + sidecar/collector IDP stack pattern — two `Deployment`s, no storage dependencies.
+
+### App + visualization stack mixture rollout (`webapp-opensearch-dashboards-stack-rollout`)
+
+- Co-deploys `WebAppModule` + `OpenSearchDashboardsModule` in one namespace via `render_stack`.
+- OpenSearch Dashboards patched to a Python HTTP server on port 5601.
+- No real Dashboards process or backing OpenSearch required for rollout proof.
+- Cross-module wiring: webapp env `SEARCH_UI` points at the Dashboards Service.
+
+### Three-tier app mixture rollout (`webapp-database-dataprepper-stack-rollout`)
+
+- Co-deploys `WebAppModule` + `SingleDatabaseModule` + `DataPrepperModule` in one namespace.
+- Database uses `createLocalPersistentVolume = True` + `storageHostPath = "/tmp/idp-acceptance"` for PVC binding.
+- Data Prepper patched to Python HTTP server on port 4900.
+- Cross-module env: `DB_HOST` (app → DB service), `LOG_ENDPOINT` (app → DataPrepper service).
+- `wait_case` must wait for all three Deployments plus `wait_all_pvcs_bound`.
 
 ### Native controller rollout fixtures
 

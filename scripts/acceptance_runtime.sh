@@ -37,12 +37,13 @@ RUNTIME_KAFKA_CASES=("kafka")
 RUNTIME_MONGODB_CASES=("mongodb")
 RUNTIME_RABBITMQ_CASES=("rabbitmq")
 RUNTIME_REDIS_CASES=("redis" "redis-cluster")
-RUNTIME_ROLLOUT_CASES=("dataprepper-rollout" "opensearch-dashboards-rollout" "elasticsearch-rollout" "kibana-rollout" "logstash-rollout" "webapp-probes-rollout" "webapp-service-account-rollout" "webapp-database-stack-rollout" "elasticsearch-kibana-stack-rollout" "elk-stack-rollout" "webapp-dataprepper-stack-rollout")
+RUNTIME_ROLLOUT_CASES=("dataprepper-rollout" "opensearch-dashboards-rollout" "elasticsearch-rollout" "kibana-rollout" "logstash-rollout" "webapp-probes-rollout" "webapp-service-account-rollout" "webapp-database-stack-rollout" "elasticsearch-kibana-stack-rollout" "elk-stack-rollout" "webapp-dataprepper-stack-rollout" "webapp-opensearch-dashboards-stack-rollout" "webapp-elk-stack-rollout" "dataprepper-elk-stack-rollout" "webapp-dataprepper-elk-stack-rollout" "webapp-database-dataprepper-stack-rollout")
 RUNTIME_SEARCH_CASES=("opensearch" "opensearch-dashboards" "dataprepper-opensearch" "elasticsearch" "kibana" "logstash" "elasticsearch-v9" "kibana-v9" "logstash-v9")
 RUNTIME_DATA_CASES=("database" "postgresql" "mongodb" "rabbitmq" "redis" "redis-cluster" "kafka" "minio-tenant" "minio-helm" "questdb" "valkey")
 RUNTIME_PLATFORM_CASES=("backstage" "observability" "opentelemetry" "vault" "keycloak" "keycloak-postgresql" "openbao")
 RUNTIME_STORAGE_CASES=("longhorn" "ceph" "persistence-longhorn" "persistence-ceph")
-RUNTIME_INTEGRATION_CASES=("dataprepper-opensearch" "keycloak-postgresql" "persistence-longhorn" "persistence-ceph")
+RUNTIME_INTEGRATION_CASES=("dataprepper-opensearch" "keycloak-postgresql" "persistence-longhorn" "persistence-ceph" "webapp-postgresql-stack" "webapp-kafka-stack" "webapp-rabbitmq-stack" "webapp-redis-stack" "webapp-mongodb-stack")
+RUNTIME_WEBAPP_STACKS_CASES=("webapp-postgresql-stack" "webapp-kafka-stack" "webapp-rabbitmq-stack" "webapp-redis-stack" "webapp-mongodb-stack")
 RUNTIME_ALL_CASES=("${RUNTIME_BASIC_CASES[@]}" "${RUNTIME_ROLLOUT_CASES[@]}" "${RUNTIME_SEARCH_CASES[@]}" "${RUNTIME_DATA_CASES[@]}" "${RUNTIME_PLATFORM_CASES[@]}" "${RUNTIME_STORAGE_CASES[@]}" "${RUNTIME_INTEGRATION_CASES[@]}")
 
 usage() {
@@ -55,7 +56,8 @@ Options:
                            runtime-keycloak-postgresql, runtime-opensearch,
                            runtime-dataprepper-opensearch, runtime-kafka,
                            runtime-mongodb, runtime-rabbitmq, runtime-redis,
-                           runtime-rollouts, runtime-search, runtime-data,
+                           runtime-rollouts, runtime-webapp-stacks,
+                           runtime-search, runtime-data,
                            runtime-platform, runtime-storage,
                            runtime-integrations, runtime-all.
                            Individual fixture names are also supported
@@ -64,7 +66,17 @@ Options:
                            webapp-database-stack-rollout,
                            elasticsearch-kibana-stack-rollout,
                            elk-stack-rollout,
-                           webapp-dataprepper-stack-rollout).
+                           webapp-dataprepper-stack-rollout,
+                           webapp-opensearch-dashboards-stack-rollout,
+                           webapp-elk-stack-rollout,
+                           dataprepper-elk-stack-rollout,
+                           webapp-dataprepper-elk-stack-rollout,
+                           webapp-database-dataprepper-stack-rollout,
+                           webapp-postgresql-stack,
+                           webapp-kafka-stack,
+                           webapp-rabbitmq-stack,
+                           webapp-redis-stack,
+                           webapp-mongodb-stack).
                            Can be repeated.
   --install-dependencies   Install known pinned operators/controllers before apply.
                            Intended for disposable clusters.
@@ -131,6 +143,7 @@ set_cases() {
     runtime-rabbitmq) CASES+=("${RUNTIME_RABBITMQ_CASES[@]}") ;;
     runtime-redis) CASES+=("${RUNTIME_REDIS_CASES[@]}") ;;
     runtime-rollouts) CASES+=("${RUNTIME_ROLLOUT_CASES[@]}") ;;
+    runtime-webapp-stacks) CASES+=("${RUNTIME_WEBAPP_STACKS_CASES[@]}") ;;
     runtime-search) CASES+=("${RUNTIME_SEARCH_CASES[@]}") ;;
     runtime-data) CASES+=("${RUNTIME_DATA_CASES[@]}") ;;
     runtime-platform) CASES+=("${RUNTIME_PLATFORM_CASES[@]}") ;;
@@ -370,6 +383,11 @@ install_dependencies_for_case() {
     longhorn|persistence-longhorn) install_once flux install_flux; install_once longhorn install_longhorn ;;
     ceph|persistence-ceph) install_once flux install_flux ;;
     backstage|observability|minio-helm|questdb|valkey|openbao) install_once flux install_flux ;;
+    webapp-postgresql-stack) install_once cnpg install_cnpg ;;
+    webapp-kafka-stack) install_once strimzi install_strimzi ;;
+    webapp-rabbitmq-stack) install_once rabbitmq install_rabbitmq_operator ;;
+    webapp-redis-stack) install_once redis install_redis_operator ;;
+    webapp-mongodb-stack) install_once mongodb install_mongodb_operator ;;
     *) ;;
   esac
 }
@@ -422,13 +440,20 @@ wait_case() {
     dataprepper)
       kubectl -n idp-acceptance-dataprepper rollout status deploy/data-prepper --timeout="$TIMEOUT"
       ;;
-    dataprepper-rollout|opensearch-dashboards-rollout|elasticsearch-rollout|kibana-rollout|logstash-rollout|webapp-probes-rollout|webapp-service-account-rollout|elasticsearch-kibana-stack-rollout|elk-stack-rollout|webapp-dataprepper-stack-rollout)
+    dataprepper-rollout|opensearch-dashboards-rollout|elasticsearch-rollout|kibana-rollout|logstash-rollout|webapp-probes-rollout|webapp-service-account-rollout|elasticsearch-kibana-stack-rollout|elk-stack-rollout|webapp-dataprepper-stack-rollout|webapp-opensearch-dashboards-stack-rollout|webapp-elk-stack-rollout|dataprepper-elk-stack-rollout|webapp-dataprepper-elk-stack-rollout)
       wait_all_rollouts "$namespace"
       wait_all_pvcs_bound "$namespace"
       ;;
     webapp-database-stack-rollout)
       kubectl -n "$namespace" rollout status deploy/acceptance-stack-webapp --timeout="$TIMEOUT"
       kubectl -n "$namespace" rollout status deploy/acceptance-stack-db --timeout="$TIMEOUT"
+      wait_all_pvcs_bound "$namespace"
+      kubectl -n "$namespace" get deploy,svc,pvc,cm
+      ;;
+    webapp-database-dataprepper-stack-rollout)
+      kubectl -n "$namespace" rollout status deploy/acceptance-app-3tier --timeout="$TIMEOUT"
+      kubectl -n "$namespace" rollout status deploy/acceptance-db-3tier --timeout="$TIMEOUT"
+      kubectl -n "$namespace" rollout status deploy/acceptance-dp-3tier --timeout="$TIMEOUT"
       wait_all_pvcs_bound "$namespace"
       kubectl -n "$namespace" get deploy,svc,pvc,cm
       ;;
@@ -493,6 +518,26 @@ wait_case() {
       ;;
     redis-cluster)
       wait_condition "$namespace" rediscluster.redis.redis.opstreelabs.in/acceptance-redis-cluster Ready
+      ;;
+    webapp-postgresql-stack)
+      kubectl -n "$namespace" rollout status deploy/acceptance-webapp-pg --timeout="$TIMEOUT"
+      wait_condition "$namespace" cluster.postgresql.cnpg.io/acceptance-postgresql-stack Ready
+      ;;
+    webapp-kafka-stack)
+      kubectl -n "$namespace" rollout status deploy/acceptance-webapp-kafka --timeout="$TIMEOUT"
+      wait_condition "$namespace" kafka.kafka.strimzi.io/acceptance-kafka-stack Ready
+      ;;
+    webapp-rabbitmq-stack)
+      kubectl -n "$namespace" rollout status deploy/acceptance-webapp-rmq --timeout="$TIMEOUT"
+      wait_condition "$namespace" rabbitmqcluster.rabbitmq.com/acceptance-rabbitmq-stack AllReplicasReady
+      ;;
+    webapp-redis-stack)
+      kubectl -n "$namespace" rollout status deploy/acceptance-webapp-redis --timeout="$TIMEOUT"
+      wait_condition "$namespace" redis.redis.redis.opstreelabs.in/acceptance-redis-stack Ready
+      ;;
+    webapp-mongodb-stack)
+      kubectl -n "$namespace" rollout status deploy/acceptance-webapp-mongo --timeout="$TIMEOUT"
+      wait_condition "$namespace" mongodbcommunity.mongodbcommunity.mongodb.com/acceptance-mongodb-stack Ready
       ;;
     minio-tenant)
       wait_condition "$namespace" tenant.minio.min.io/acceptance-minio Ready

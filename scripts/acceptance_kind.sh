@@ -10,12 +10,12 @@ SKIP_CREATE="false"
 PREFLIGHT_ONLY="false"
 CASES=("basic")
 CASES_SELECTED="false"
-APPLY_CASES=("basic" "webapp" "database" "webapp-service-account-rollout" "webapp-database-stack-rollout" "elasticsearch-kibana-stack-rollout" "elk-stack-rollout" "webapp-dataprepper-stack-rollout")
+APPLY_CASES=("basic" "webapp" "database" "webapp-service-account-rollout" "webapp-database-stack-rollout" "elasticsearch-kibana-stack-rollout" "elk-stack-rollout" "webapp-dataprepper-stack-rollout" "webapp-opensearch-dashboards-stack-rollout" "webapp-elk-stack-rollout" "dataprepper-elk-stack-rollout" "webapp-dataprepper-elk-stack-rollout" "webapp-database-dataprepper-stack-rollout")
 SEARCH_CASES=("opensearch" "opensearch-dashboards" "elasticsearch" "kibana" "logstash" "elasticsearch-v9" "kibana-v9" "logstash-v9")
 DATA_CASES=("database" "postgresql" "mongodb" "rabbitmq" "redis" "redis-cluster" "kafka" "minio-tenant" "minio-helm" "questdb" "valkey")
 PLATFORM_CASES=("backstage" "observability" "opentelemetry" "vault" "keycloak" "ceph" "longhorn" "openbao")
-INTEGRATION_CASES=("dataprepper-opensearch" "keycloak-postgresql" "persistence-longhorn" "persistence-ceph")
-ROLLOUT_CASES=("dataprepper-rollout" "opensearch-dashboards-rollout" "elasticsearch-rollout" "kibana-rollout" "logstash-rollout" "webapp-probes-rollout" "webapp-service-account-rollout" "webapp-database-stack-rollout" "elasticsearch-kibana-stack-rollout" "elk-stack-rollout" "webapp-dataprepper-stack-rollout")
+INTEGRATION_CASES=("dataprepper-opensearch" "keycloak-postgresql" "persistence-longhorn" "persistence-ceph" "webapp-postgresql-stack" "webapp-kafka-stack" "webapp-rabbitmq-stack" "webapp-redis-stack" "webapp-mongodb-stack")
+ROLLOUT_CASES=("dataprepper-rollout" "opensearch-dashboards-rollout" "elasticsearch-rollout" "kibana-rollout" "logstash-rollout" "webapp-probes-rollout" "webapp-service-account-rollout" "webapp-database-stack-rollout" "elasticsearch-kibana-stack-rollout" "elk-stack-rollout" "webapp-dataprepper-stack-rollout" "webapp-opensearch-dashboards-stack-rollout" "webapp-elk-stack-rollout" "dataprepper-elk-stack-rollout" "webapp-dataprepper-elk-stack-rollout" "webapp-database-dataprepper-stack-rollout")
 TEMPLATE_CASES=("webapp" "database" "dataprepper" "opensearch" "opensearch-dashboards" "elasticsearch" "kibana" "logstash" "elasticsearch-v9" "kibana-v9" "logstash-v9" "kafka" "postgresql" "mongodb" "rabbitmq" "redis" "redis-cluster" "keycloak" "backstage" "questdb" "minio-tenant" "minio-helm" "observability" "opentelemetry" "vault" "ceph" "longhorn" "valkey" "openbao")
 ALL_CASES=("basic" "${TEMPLATE_CASES[@]}" "${INTEGRATION_CASES[@]}" "${ROLLOUT_CASES[@]}")
 
@@ -35,6 +35,16 @@ Options:
                         elasticsearch-kibana-stack-rollout,
                         elk-stack-rollout,
                         webapp-dataprepper-stack-rollout,
+                        webapp-opensearch-dashboards-stack-rollout,
+                        webapp-elk-stack-rollout,
+                        dataprepper-elk-stack-rollout,
+                        webapp-dataprepper-elk-stack-rollout,
+                        webapp-database-dataprepper-stack-rollout,
+                        webapp-postgresql-stack,
+                        webapp-kafka-stack,
+                        webapp-rabbitmq-stack,
+                        webapp-redis-stack,
+                        webapp-mongodb-stack,
                         or persistence-longhorn.
                        Can be repeated.
   --cluster-name <n>   Kind cluster name (default: idp-concept-acceptance)
@@ -231,6 +241,37 @@ apply_case() {
       kubectl -n idp-acceptance-webapp-dataprepper-stack-rollout rollout status deploy/acceptance-webapp-dp --timeout=180s
       kubectl -n idp-acceptance-webapp-dataprepper-stack-rollout rollout status deploy/acceptance-dp --timeout=180s
       kubectl -n idp-acceptance-webapp-dataprepper-stack-rollout get deploy,svc,cm
+      ;;
+    webapp-opensearch-dashboards-stack-rollout)
+      kubectl -n idp-acceptance-webapp-opensearch-dashboards-stack-rollout rollout status deploy/acceptance-webapp-osd --timeout=180s
+      kubectl -n idp-acceptance-webapp-opensearch-dashboards-stack-rollout rollout status deploy/acceptance-osd --timeout=180s
+      kubectl -n idp-acceptance-webapp-opensearch-dashboards-stack-rollout get deploy,svc,cm
+      ;;
+    webapp-elk-stack-rollout)
+      kubectl -n idp-acceptance-webapp-elk-stack-rollout rollout status deploy/acceptance-webapp-elk --timeout=180s
+      kubectl -n idp-acceptance-webapp-elk-stack-rollout rollout status statefulset/acceptance-elk-es --timeout=240s
+      kubectl -n idp-acceptance-webapp-elk-stack-rollout rollout status deploy/acceptance-elk-kibana --timeout=240s
+      kubectl -n idp-acceptance-webapp-elk-stack-rollout get statefulset,deploy,svc,cm
+      ;;
+    dataprepper-elk-stack-rollout)
+      kubectl -n idp-acceptance-dataprepper-elk-stack-rollout rollout status deploy/acceptance-dp-elk --timeout=180s
+      kubectl -n idp-acceptance-dataprepper-elk-stack-rollout rollout status statefulset/acceptance-elk-dp-es --timeout=240s
+      kubectl -n idp-acceptance-dataprepper-elk-stack-rollout rollout status deploy/acceptance-elk-dp-kibana --timeout=240s
+      kubectl -n idp-acceptance-dataprepper-elk-stack-rollout get statefulset,deploy,svc,cm
+      ;;
+    webapp-dataprepper-elk-stack-rollout)
+      kubectl -n idp-acceptance-webapp-dataprepper-elk-stack-rollout rollout status deploy/acceptance-webapp-full --timeout=180s
+      kubectl -n idp-acceptance-webapp-dataprepper-elk-stack-rollout rollout status deploy/acceptance-dp-full --timeout=180s
+      kubectl -n idp-acceptance-webapp-dataprepper-elk-stack-rollout rollout status statefulset/acceptance-es-full --timeout=240s
+      kubectl -n idp-acceptance-webapp-dataprepper-elk-stack-rollout rollout status deploy/acceptance-kibana-full --timeout=240s
+      kubectl -n idp-acceptance-webapp-dataprepper-elk-stack-rollout get statefulset,deploy,svc,cm
+      ;;
+    webapp-database-dataprepper-stack-rollout)
+      kubectl -n idp-acceptance-webapp-database-dataprepper-stack-rollout rollout status deploy/acceptance-app-3tier --timeout=180s
+      kubectl -n idp-acceptance-webapp-database-dataprepper-stack-rollout rollout status deploy/acceptance-db-3tier --timeout=180s
+      kubectl -n idp-acceptance-webapp-database-dataprepper-stack-rollout rollout status deploy/acceptance-dp-3tier --timeout=180s
+      kubectl -n idp-acceptance-webapp-database-dataprepper-stack-rollout get deploy,svc,pvc,cm
+      kubectl get pv acceptance-db-3tier-pv
       ;;
   esac
 }

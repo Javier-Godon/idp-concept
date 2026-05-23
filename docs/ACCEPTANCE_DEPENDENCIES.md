@@ -83,6 +83,11 @@ Persistent templates need a Kubernetes storage provisioner when they create PVCs
 | `keycloak-postgresql` | `KeycloakModule` + `PostgreSQLClusterModule` | Keycloak Operator, CloudNativePG, DB credentials Secret, working StorageClass. |
 | `persistence-longhorn` | Longhorn + representative PVC-producing templates | Flux/Helm controller or Helm install, Longhorn CSI/provisioner, Longhorn StorageClass ready. |
 | `persistence-ceph` | Rook Ceph + representative PVC-producing templates | Flux/Helm controller or Helm install, Rook/Ceph ready, CephBlockPool/CSI secrets/StorageClass ready. |
+| `webapp-postgresql-stack` | `WebAppModule` + `PostgreSQLClusterModule` | CloudNativePG operator plus working StorageClass. Dry-run-only without operator. |
+| `webapp-kafka-stack` | `WebAppModule` + `KafkaClusterModule` | Strimzi Kafka operator plus working StorageClass. Dry-run-only without operator. |
+| `webapp-rabbitmq-stack` | `WebAppModule` + `RabbitMQClusterModule` | RabbitMQ Cluster operator plus working StorageClass. Dry-run-only without operator. |
+| `webapp-redis-stack` | `WebAppModule` + `RedisModule` | OT Redis operator plus working StorageClass. Dry-run-only without operator. |
+| `webapp-mongodb-stack` | `WebAppModule` + `MongoDBCommunityModule` | MongoDB Community operator plus working StorageClass. Dry-run-only without operator. |
 
 ## Runtime rollout fixtures
 
@@ -101,12 +106,20 @@ full backing product stack.
 | `logstash-rollout` | Elastic v7 `LogstashModule` `Deployment` | Full Logstash JVM startup and upstream/downstream services. |
 | `webapp-probes-rollout` | `WebAppModule` `Deployment` with HTTP liveness, readiness, and startup probes | Real application runtime. Uses a Python HTTP server to satisfy all three generated probe paths on port 8080. Proves that probe configuration fields (`livenessProbe`, `readinessProbe`, `startupProbe`) render into valid Kubernetes probe specs and that the generated container can pass them. |
 | `webapp-service-account-rollout` | `WebAppModule` `Deployment` + `ServiceAccount` generated via `imagePullSecretName` | A real registry and pull secret. `imagePullSecrets` is patched to an empty list so the rollout proceeds with the `pause` image while keeping the `serviceAccountName` binding. Proves: ServiceAccount generation, SA-to-Deployment wiring, and imagePullSecrets patching pattern. |
-| `webapp-database-stack-rollout` | **Mixture**: `WebAppModule` `Deployment` + `SingleDatabaseModule` `Deployment` + `PVC` in one `RenderStack` | External storage provisioner. Uses a local hostPath `PersistentVolume` so the PVC binds without Longhorn or Ceph. Proves: multi-module IDP stack rendering via `render_stack`, two co-deployed Deployments rolling out simultaneously, and PVC binding alongside a webapp in the same namespace. |
+| `webapp-database-stack-rollout` | **Mixture**: `WebAppModule` `Deployment` + `SingleDatabaseModule` `Deployment` + `PVC` in one `RenderStack` | External storage provisioner. Uses a local hostPath `PersistentVolume` so the PVC binds without Longhorn or Ceph. Proves: multi-module IDP stack rendering via `render_stack`, two co-deployed Deployments rolling out simultaneously, and PVC binding alongside a webapp in the same namespace. ✓ kind verified |
+| `elasticsearch-kibana-stack-rollout` | **Mixture**: `ElasticsearchModule` `StatefulSet` + `KibanaModule` `Deployment` (v7) | External storage provisioner for ES PVCs — kind default provisioner works. Proves: mixed workload-type stack (StatefulSet+Deployment) in one namespace. ✓ kind verified |
+| `elk-stack-rollout` | **Mixture**: `ElasticsearchModule` + `KibanaModule` + `LogstashModule` (v7) | Same as above, plus Logstash Deployment. Proves 3-component search stack. ✓ kind verified |
+| `webapp-dataprepper-stack-rollout` | **Mixture**: `WebAppModule` + `DataPrepperModule` | No operator needed. Proves app + collector stack pattern. ✓ kind verified |
+| `webapp-opensearch-dashboards-stack-rollout` | **Mixture**: `WebAppModule` + `OpenSearchDashboardsModule` | No operator needed. Proves app + visualization layer stack without backing OpenSearch. ✓ kind verified |
+| `webapp-elk-stack-rollout` | **Mixture**: `WebAppModule` + `ElasticsearchModule` + `KibanaModule` (v7) | ES PVCs — kind default provisioner works. 3-component: app + backend + visualization. ✓ kind verified |
+| `dataprepper-elk-stack-rollout` | **Mixture**: `DataPrepperModule` + `ElasticsearchModule` + `KibanaModule` (v7) | ES PVCs — kind default provisioner works. Log-ingestion + search + visualization pipeline. ✓ kind verified |
+| `webapp-dataprepper-elk-stack-rollout` | **Mixture**: `WebAppModule` + `DataPrepperModule` + `ElasticsearchModule` + `KibanaModule` (v7) | ES PVCs — kind default provisioner works. Largest native mixture: 4 components, 3 Deployments + 1 StatefulSet. ✓ kind verified |
+| `webapp-database-dataprepper-stack-rollout` | **Mixture**: `WebAppModule` + `SingleDatabaseModule` + `DataPrepperModule` | Local hostPath PV for DB PVC. Three-tier app: persistence + log-collection. ✓ kind verified |
 
 Run the real rollout group with:
 
 ```bash
-./scripts/acceptance_runtime.sh --case runtime-rollouts --timeout 300s
+./scripts/acceptance_runtime.sh --case runtime-rollouts --timeout 600s
 ```
 
 These fixtures do not replace full product integration tests. Use non-rollout
