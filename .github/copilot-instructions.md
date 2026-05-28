@@ -188,6 +188,7 @@ Later values override earlier ones.
 - `koncept render kusion` — generates Kusion spec YAML
 - Must be run from within a pre_release or release directory
 - Uses `factory/` relative path by default, configurable with `--factory`
+- Helmfile rendering must honor `custom.helmfile.helmfile.HelmfileRenderOptions` on `Stack.helmfile` / `RenderStack.helmfile`; do not hardcode a minimal Helmfile shape when repositories, environments, helmDefaults, release defaults, per-release overrides, extra releases, hooks, values, or secrets are needed.
 
 ## When Working with Crossplane
 

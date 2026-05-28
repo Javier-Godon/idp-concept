@@ -681,6 +681,36 @@ schema ThirdPartyHelmSpec:
 
 Lambda: `build_thirdparty_helm` → HelmRelease manifest.
 
+### HelmfileRenderOptions
+
+**File**: `framework/custom/helmfile/helmfile.k`
+
+`HelmfileRenderOptions` makes the generated `helmfile.yaml` configurable from KCL instead of hardcoding a minimal Helmfile shape.
+
+Attach it to `Stack.helmfile` or `RenderStack.helmfile`:
+
+```kcl
+import framework.custom.helmfile.helmfile as hf
+
+helmfile = hf.HelmfileRenderOptions {
+    chartBasePath = "./dist/charts"
+    repositories = [hf.Repository {name = "bitnami", url = "https://charts.bitnami.com/bitnami"}]
+    environments = {dev = hf.Environment {values = ["environments/dev.yaml"]}}
+    helmDefaults = hf.HelmDefaults {wait = True, timeout = 600, atomic = True}
+    releaseDefaults = hf.ReleasePatch {wait = True, timeout = 300}
+    releaseOverrides = {
+        api = hf.ReleasePatch {
+            chart = "oci://registry.example.com/charts/api"
+            version = "1.2.3"
+            values = ["values/api.yaml"]
+        }
+    }
+    extraReleases = [hf.Release {name = "metrics-server", namespace = "kube-system", chart = "bitnami/metrics-server", version = "7.2.0"}]
+}
+```
+
+Supported configuration groups include top-level `bases`, `repositories`, `environments`, nested `helmfiles`, `defaults`, `helmDefaults`, global `values`/`secrets`, selectors, labels/commonLabels, hooks, API versions, lock file settings, generated release defaults, per-release overrides, and extra hand-authored releases. Use `includeGeneratedReleases = False` when the Helmfile should contain only `extraReleases`/nested `helmfiles`.
+
 ---
 
 ## 7. Schema Inheritance Hierarchy

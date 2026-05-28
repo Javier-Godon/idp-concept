@@ -274,7 +274,7 @@ Lambdas that transform stack data into target output formats. Used by `render.k`
 | `kcl_to_yaml` | Plain K8s YAML | `yaml_stream_stack` |
 | `kcl_to_argocd` | ArgoCD Application CRDs | `generate_applications_from_stack`, `generate_app_project` |
 | `kcl_to_helm` | Chart.yaml + values.yaml | `generate_charts_from_stack` |
-| `kcl_to_helmfile` | helmfile.yaml | `generate_helmfile` |
+| `kcl_to_helmfile` | helmfile.yaml | `generate_helmfile_from_stack`, `generate_helmfile_with_options`, `generate_helmfile` |
 | `kcl_to_kustomize` | kustomization.yaml | `generate_kustomization_from_stack`, `generate_overlay_patch` |
 | `kcl_to_kusion` | Kusion spec YAML | `generate_kusion_resources` |
 | `kcl_to_timoni` | Timoni CUE module | `generate_timoni_module_from_stack`, `generate_timoni_metadata`, `generate_timoni_values`, `generate_timoni_resources` |
@@ -284,6 +284,15 @@ Lambdas that transform stack data into target output formats. Used by `render.k`
 Generates a Timoni module structure (Option A: raw YAML wrapped in CUE structure).
 Output dict contains: `metadata` (timoni.sh/v1alpha1 Module), `values` (component/accessory/namespace config), `resources` (flat K8s manifest list), `resourceCount`.
 The CLI (`koncept render timoni`) writes these into a directory: `timoni.cue`, `values.cue`, `templates/config.cue`, `README.md`.
+
+### Helmfile Procedure (`kcl_to_helmfile.k`)
+Helmfile output must be configurable from KCL, not mostly hardcoded. Attach `custom.helmfile.helmfile.HelmfileRenderOptions` to `Stack.helmfile` or `RenderStack.helmfile` to configure:
+- top-level `bases`, `repositories`, `environments`, `helmfiles`, `helmDefaults`, `values`, `secrets`, `selectors`, `commonLabels`, hooks, API versions, lock file, and missing-file behavior.
+- generated release defaults via `releaseDefaults`.
+- per-module generated release overrides via `releaseOverrides = {"module-name" = ReleasePatch {...}}`.
+- hand-authored `extraReleases` and `includeGeneratedReleases = False` for Helmfile-as-source-like scenarios.
+
+Keep `generate_helmfile(components, accessories, chartBasePath)` as the simple compatibility entrypoint, but prefer `generate_helmfile_from_stack(stack, "./charts")` in factories so stack-level Helmfile settings are honored.
 
 ### Crossplane Procedure (`kcl_to_crossplane.k`)
 Generates static Crossplane resources from stack data: XRD (CompositeResourceDefinition), Composition (Pipeline mode with patch-and-transform → function-sequencer → auto-ready), XR (claim instance), and prerequisites (provider + function installs).

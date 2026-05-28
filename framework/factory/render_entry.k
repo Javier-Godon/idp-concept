@@ -24,7 +24,7 @@ render_from_seed = lambda stack: any, project_name: str, git_repo_url: str, mani
         manifests.yaml_stream(_argocd_apps)
 
     if output == "helmfile":
-        _helmfile = helmfile_proc.generate_helmfile(stack.components, stack.accessories, "./charts")
+        _helmfile = helmfile_proc.generate_helmfile_from_stack(stack, "./charts")
         manifests.yaml_stream([_helmfile])
 
     if output == "helm":

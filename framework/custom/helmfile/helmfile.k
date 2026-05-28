@@ -1,18 +1,25 @@
 schema Helmfile:
+    bases?: [str]
     repositories?: [Repository]
     releases?: [Release]
     environments?: {str:Environment}
     helmfiles?: [HelmfilePath]
     defaults?: ReleaseDefaults
+    helmDefaults?: HelmDefaults
     baseChartPath?: str
     kubeContext?: str
     namespace?: str
     selectors?: [Selector]
     labels?: {str:str}
+    commonLabels?: {str:str}
     values?: [any]
     secrets?: [str]
-    templates?: {str:str}
+    templates?: {str:any}
     hooks?: Hooks
+    apiVersions?: [str]
+    missingFileHandler?: str
+    lockFilePath?: str
+    suppressOutputLineRegex?: [str]
     # For KCL conditional expressions if needed
     _kcl_annotation?: str
 
@@ -55,6 +62,14 @@ schema Release:
     chartDeps?: bool
     installedTemplate?: str
     skipDeps?: bool
+    recreatePods?: bool
+    devel?: bool
+    historyMax?: int
+    inherit?: [str]
+    inheritTemplate?: str
+    disableValidation?: bool
+    disableValidationOnInstall?: bool
+    disableOpenAPIValidation?: bool
 
 schema SetValue:
     name: str
@@ -82,6 +97,26 @@ schema ReleaseDefaults:
     force?: bool
     atomic?: bool
     cleanupOnFail?: bool
+    createNamespace?: bool
+    verify?: bool
+    recreatePods?: bool
+    skipDeps?: bool
+    chartDeps?: bool
+
+schema HelmDefaults:
+    kubeContext?: str
+    cleanupOnFail?: bool
+    verify?: bool
+    wait?: bool
+    waitForJobs?: bool
+    timeout?: int
+    recreatePods?: bool
+    force?: bool
+    atomic?: bool
+    skipDeps?: bool
+    createNamespace?: bool
+    historyMax?: int
+    args?: [str]
 
 schema Selector:
     name: str
@@ -99,4 +134,67 @@ schema Hook:
     command: str
     args?: [str]
     showOutput?: bool
+
+schema ReleasePatch:
+    name?: str
+    namespace?: str
+    chart?: str
+    version?: str
+    condition?: str
+    installed?: bool
+    disabled?: bool
+    createNamespace?: bool
+    kubeContext?: str
+    labels?: {str:str}
+    values?: [any]
+    secrets?: [str]
+    needs?: [str]
+    hooks?: Hooks
+    set?: [SetValue]
+    setString?: [SetValue]
+    setFile?: [SetValue]
+    missingFileHandler?: str
+    verify?: bool
+    wait?: bool
+    timeout?: int
+    force?: bool
+    atomic?: bool
+    cleanupOnFail?: bool
+    chartDeps?: bool
+    installedTemplate?: str
+    skipDeps?: bool
+    recreatePods?: bool
+    devel?: bool
+    historyMax?: int
+    inherit?: [str]
+    inheritTemplate?: str
+    disableValidation?: bool
+    disableValidationOnInstall?: bool
+    disableOpenAPIValidation?: bool
+
+schema HelmfileRenderOptions:
+    chartBasePath?: str = "./charts"
+    bases?: [str]
+    repositories?: [Repository]
+    environments?: {str:Environment}
+    helmfiles?: [HelmfilePath]
+    defaults?: ReleaseDefaults
+    helmDefaults?: HelmDefaults
+    kubeContext?: str
+    namespace?: str
+    selectors?: [Selector]
+    labels?: {str:str}
+    commonLabels?: {str:str}
+    values?: [any]
+    secrets?: [str]
+    templates?: {str:any}
+    hooks?: Hooks
+    apiVersions?: [str]
+    missingFileHandler?: str
+    lockFilePath?: str
+    suppressOutputLineRegex?: [str]
+    releaseDefaults?: ReleasePatch
+    releaseOverrides?: {str:ReleasePatch}
+    extraReleases?: [Release]
+    includeGeneratedReleases?: bool = True
 

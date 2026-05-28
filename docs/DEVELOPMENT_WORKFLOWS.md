@@ -98,8 +98,39 @@ output/
 factory/factory_seed.k → Release context setup
 factory/chart_builder.k → Chart metadata (imports helm.Chart schema)
 factory/templates_builder.k → K8s manifests (calls kcl_to_helm)
-factory/helmfile_builder.k → Helmfile config (imports helmfile.Helmfile schema)
+factory/render.k → kcl_to_helmfile.generate_helmfile_from_stack(stack, "./charts")
 ```
+
+### Configuring the generated Helmfile
+
+Helmfile output is configurable from the KCL stack via `custom.helmfile.helmfile.HelmfileRenderOptions`. This keeps KCL as the source of truth while exposing Helmfile-native settings.
+
+```kcl
+import framework.custom.helmfile.helmfile as hf
+
+_stack = renderstack.RenderStack {
+    instanceConfigurations = instanceConfigurations
+    components = [_api]
+    accessories = [_postgres]
+    helmfile = hf.HelmfileRenderOptions {
+        chartBasePath = "./charts"
+        repositories = [hf.Repository {name = "bitnami", url = "https://charts.bitnami.com/bitnami"}]
+        environments = {dev = hf.Environment {values = ["environments/dev.yaml"]}}
+        helmDefaults = hf.HelmDefaults {wait = True, timeout = 600, atomic = True}
+        releaseDefaults = hf.ReleasePatch {createNamespace = True, wait = True}
+        releaseOverrides = {
+            api = hf.ReleasePatch {
+                namespace = "apps"
+                values = ["values/api.yaml", {replicaCount = 2}]
+                needs = ["data/postgres"]
+            }
+        }
+        extraReleases = [hf.Release {name = "metrics-server", namespace = "kube-system", chart = "bitnami/metrics-server", version = "7.2.0"}]
+    }
+}
+```
+
+Use `releaseOverrides` to customize generated module releases and `extraReleases` for releases that are part of the Helmfile but not generated from a KCL module. Use `includeGeneratedReleases = False` for a Helmfile that is entirely hand-authored in KCL.
 
 ---
 

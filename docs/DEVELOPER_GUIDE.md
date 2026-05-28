@@ -1046,6 +1046,25 @@ releases/
    - Calls the appropriate procedure
    - Outputs the result
 
+**Helmfile output configuration:** The Helmfile renderer reads `custom.helmfile.helmfile.HelmfileRenderOptions` from `Stack.helmfile` / `RenderStack.helmfile`, so the final `helmfile.yaml` can be configured as if Helmfile were the deployment surface:
+
+```kcl
+import framework.custom.helmfile.helmfile as hf
+
+helmfile = hf.HelmfileRenderOptions {
+    repositories = [hf.Repository {name = "bitnami", url = "https://charts.bitnami.com/bitnami"}]
+    environments = {prod = hf.Environment {values = ["environments/prod.yaml"]}}
+    helmDefaults = hf.HelmDefaults {wait = True, atomic = True, timeout = 900}
+    releaseDefaults = hf.ReleasePatch {createNamespace = True, wait = True}
+    releaseOverrides = {
+        api = hf.ReleasePatch {values = ["values/api.yaml"], needs = ["data/postgres"]}
+    }
+    extraReleases = [hf.Release {name = "external-dns", namespace = "platform", chart = "external-dns/external-dns", version = "1.15.0"}]
+}
+```
+
+Use this instead of hardcoding a minimal fixed Helmfile structure in builders. The simple renderer still auto-generates releases for KCL modules, but `releaseDefaults`, `releaseOverrides`, top-level Helmfile fields, and `extraReleases` let KCL describe the same operational intent a hand-written Helmfile would contain.
+
 **`factory_seed.k` pattern:**
 ```kcl
 import video_streaming.kernel.project_def
