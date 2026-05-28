@@ -88,7 +88,7 @@ schema MyAppModule(component.Component):
 
 ```kcl
 # AFTER (template pattern — ~50 lines):
-import framework.templates.webapp as webapp
+import framework.templates.webapp.v1_0_0.webapp as webapp
 import framework.builders.deployment as deploy
 
 schema MyAppModule(webapp.WebAppModule):

@@ -3,7 +3,7 @@ Acceptance fixture: RabbitMQClusterModule through the IDP render path.
 """
 
 import ._helpers as h
-import templates.rabbitmq as rmq
+import templates.rabbitmq.v1_0_0.rabbitmq as rmq
 
 _module = rmq.RabbitMQClusterModule {
     name = "acceptance-rabbitmq"

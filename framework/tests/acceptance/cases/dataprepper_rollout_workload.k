@@ -7,7 +7,7 @@ without requiring the full Data Prepper JVM process or OpenSearch.
 """
 
 import ._helpers as h
-import templates.dataprepper as dp
+import templates.opensearch.dataprepper.v2_10_2.dataprepper as dp
 
 _namespace = "idp-acceptance-dataprepper-rollout"
 _runtime_image = "python:3.12.3-alpine3.20"

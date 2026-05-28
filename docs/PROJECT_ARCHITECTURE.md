@@ -415,7 +415,7 @@ See the [Developer Guide](./DEVELOPER_GUIDE.md) for detailed instructions. Summa
 ### Using a template (recommended)
 
 ```kcl
-import framework.templates.webapp as webapp
+import framework.templates.webapp.v1_0_0.webapp as webapp
 
 schema MyApi(webapp.WebAppModule):
     port = 8080

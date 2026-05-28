@@ -1,12 +1,12 @@
 """
 Acceptance fixture: SingleDatabaseModule workload.
 
-Uses the backward-compatible root template import, a local hostPath PV, and a
-small pause image so the PVC-backed Deployment can roll out in kind.
+Uses the explicit versioned database template import, a local hostPath PV, and
+a small pause image so the PVC-backed Deployment can roll out in kind.
 """
 
 import ._helpers as h
-import templates.database as database
+import templates.database.v1_0_0.database as database
 
 _db = database.SingleDatabaseModule {
     name = "acceptance-db"

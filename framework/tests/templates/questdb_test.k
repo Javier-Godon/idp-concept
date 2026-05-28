@@ -4,7 +4,7 @@ QuestDB Template Tests.
 Tests the QuestDB template which wraps ThirdPartyHelmSpec
 for the QuestDB time-series database (deployed via official Helm chart).
 """
-import templates.questdb as qdb
+import templates.questdb.v1_0_0.questdb as qdb
 
 # === Test: build_questdb_release with defaults ===
 test_build_questdb_default = lambda {

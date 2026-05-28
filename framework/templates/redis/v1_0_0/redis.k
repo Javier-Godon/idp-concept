@@ -6,7 +6,7 @@ CRD API: redis.redis.opstreelabs.in/v1beta2
 Operator: OT-CONTAINER-KIT Redis Operator (https://github.com/OT-CONTAINER-KIT/redis-operator)
 
 Usage:
-    import framework.templates.redis as rd
+    import framework.templates.redis.v1_0_0.redis as rd
 
     # Standalone Redis
     schema MyRedis(rd.RedisModule):

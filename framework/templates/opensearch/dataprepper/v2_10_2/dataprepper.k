@@ -12,6 +12,7 @@ import builders.leader as leader
 import builders.pdb as pdb
 import builders.service as svc
 import models.modules.component as component
+import templates.observability.v1_0_0.telemetry_config as telemetry
 
 _DEFAULT_IMAGE = "opensearchproject/data-prepper"
 _DEFAULT_VERSION = "2.10.2"
@@ -31,7 +32,8 @@ schema DataPrepperSpec:
     port?: int = 2021
     metricsPort?: int = 4900
     serviceType?: str = "ClusterIP"
-    pipelineConfig: str
+    pipelineConfig?: str
+    pipeline?: telemetry.LogPipelineSpec
     dataPrepperConfig?: str = "ssl: false\nmetricRegistries: [Prometheus]\n"
     log4j2Properties?: str = "status = error\nname = DataPrepperPropertiesConfig\n"
     env?: [any]
@@ -47,7 +49,12 @@ schema DataPrepperSpec:
         1 <= port <= 65535, "Data Prepper port must be between 1 and 65535"
         1 <= metricsPort <= 65535, "Data Prepper metricsPort must be between 1 and 65535"
         serviceType in ["ClusterIP", "NodePort", "LoadBalancer"], "serviceType must be ClusterIP, NodePort, or LoadBalancer"
-        len(pipelineConfig) > 0, "Data Prepper pipelineConfig must not be empty"
+        pipelineConfig is not Undefined or pipeline is not Undefined, "Data Prepper requires either pipelineConfig or pipeline"
+        len(pipelineConfig) > 0 if pipelineConfig is not Undefined, "Data Prepper pipelineConfig must not be empty"
+
+_pipeline_config = lambda spec: DataPrepperSpec -> str {
+    spec.pipelineConfig if spec.pipelineConfig is not Undefined else telemetry.build_dataprepper_pipeline_config(spec.pipeline)
+}
 
 _resource_requirements = lambda spec: DataPrepperResources -> any {
     {
@@ -67,7 +74,7 @@ build_dataprepper_configmap = lambda spec: DataPrepperSpec -> any {
         name = "${spec.name}-config"
         namespace = spec.namespace
         data = {
-            "pipelines.yaml" = spec.pipelineConfig
+            "pipelines.yaml" = _pipeline_config(spec)
             "data-prepper-config.yaml" = spec.dataPrepperConfig
             "log4j2.properties" = spec.log4j2Properties
         }
@@ -171,7 +178,8 @@ schema DataPrepperModule(component.Component):
     """Component wrapper for deploying Data Prepper in a stack."""
     kind = "INFRASTRUCTURE"
 
-    pipelineConfig: str
+    pipelineConfig?: str
+    pipeline?: telemetry.LogPipelineSpec
     dataPrepperConfig?: str = "ssl: false\nmetricRegistries: [Prometheus]\n"
     log4j2Properties?: str = "status = error\nname = DataPrepperPropertiesConfig\n"
     replicas?: int = 2
@@ -193,6 +201,7 @@ schema DataPrepperModule(component.Component):
         metricsPort = metricsPort
         serviceType = serviceType
         pipelineConfig = pipelineConfig
+        pipeline = pipeline
         dataPrepperConfig = dataPrepperConfig
         log4j2Properties = log4j2Properties
         env = env

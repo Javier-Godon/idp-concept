@@ -2,7 +2,7 @@
 Acceptance fixture: ValkeyModule through the IDP render path.
 """
 import ._helpers as h
-import templates.valkey as valkey
+import templates.valkey.v1_0_0.valkey as valkey
 _module = valkey.ValkeyModule {
     name = "acceptance-valkey"
     namespace = "idp-acceptance-valkey"

@@ -6,7 +6,7 @@ Production-friendly defaults:
 - define a Longhorn StorageClass for dynamic PVC provisioning
 
 Usage:
-    import templates.longhorn as longhorn
+    import templates.longhorn.v1_0_0.longhorn as longhorn
 
     _spec = longhorn.LonghornSpec {
         name = "longhorn"

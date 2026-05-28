@@ -4,7 +4,7 @@ Redis Cluster Template Tests.
 Tests the build_redis and build_redis_cluster lambdas for the
 OT-CONTAINER-KIT Redis Operator (redis.redis.opstreelabs.in).
 """
-import templates.redis as rd
+import templates.redis.v1_0_0.redis as rd
 import runtime
 
 # === Test: build_redis generates standalone Redis CRD ===

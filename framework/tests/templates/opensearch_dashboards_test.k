@@ -1,5 +1,5 @@
 import runtime
-import templates.opensearch_dashboards as osd
+import templates.opensearch.v2_17_0.opensearch_dashboards as osd
 
 test_opensearch_dashboards_resources = lambda {
     _resources = osd.build_opensearch_dashboards_resources(osd.OpenSearchDashboardsSpec {

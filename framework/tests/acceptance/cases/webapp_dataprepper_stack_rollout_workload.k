@@ -17,8 +17,8 @@ Covers:
 """
 
 import ._helpers as h
-import templates.webapp as webapp
-import templates.dataprepper as dp
+import templates.webapp.v1_0_0.webapp as webapp
+import templates.opensearch.dataprepper.v2_10_2.dataprepper as dp
 
 _namespace = "idp-acceptance-webapp-dataprepper-stack-rollout"
 _runtime_image = "python:3.12.3-alpine3.20"

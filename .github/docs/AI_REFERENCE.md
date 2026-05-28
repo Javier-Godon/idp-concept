@@ -44,7 +44,7 @@ framework/
 ### Creating a New Web Application Module (recommended approach)
 
 ```kcl
-import framework.templates.webapp as webapp
+import framework.templates.webapp.v1_0_0.webapp as webapp
 import framework.builders.deployment as deploy
 
 schema MyAppModule(webapp.WebAppModule):
@@ -70,7 +70,7 @@ schema MyAppModule(webapp.WebAppModule):
 ### Creating a New Database Module (recommended approach)
 
 ```kcl
-import framework.templates.database as database
+import framework.templates.database.v1_0_0.database as database
 import framework.builders.deployment as deploy
 
 schema MyDbModule(database.SingleDatabaseModule):
@@ -87,7 +87,7 @@ schema MyDbModule(database.SingleDatabaseModule):
 ### Creating a New Kafka Module (recommended approach)
 
 ```kcl
-import framework.templates.kafka as kafka
+import framework.templates.kafka.v1_0_0.kafka as kafka
 
 schema MyKafkaModule(kafka.KafkaClusterModule):
     clusterName = "my-cluster"

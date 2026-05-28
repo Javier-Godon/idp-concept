@@ -6,7 +6,7 @@ CRD API: postgresql.cnpg.io/v1
 Operator: CloudNativePG (https://cloudnative-pg.io)
 
 Usage:
-    import framework.templates.postgresql as pg
+    import framework.templates.postgresql.v1_0_0.postgresql as pg
 
     schema MyPostgres(pg.PostgreSQLClusterModule):
         clusterName = "my-pg"

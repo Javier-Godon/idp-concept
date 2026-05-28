@@ -153,7 +153,7 @@ projects/<project>/modules/appops/order_api/
 
 2. **Create module definition** (`order_api_module_def.k`):
 ```kcl
-import framework.templates.webapp as webapp
+import framework.templates.webapp.v1_0_0.webapp as webapp
 import framework.builders.deployment as deploy
 
 schema OrderApiModule(webapp.WebAppModule):
@@ -223,7 +223,7 @@ projects/<project>/modules/infrastructure/postgres/
 
 2. **Create module definition** (`postgres_module_def.k`):
 ```kcl
-import framework.templates.postgresql as pg
+import framework.templates.postgresql.v1_0_0.postgresql as pg
 
 schema ProjectPostgresModule(pg.PostgreSQLClusterModule):
     instances = 3

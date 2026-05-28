@@ -6,7 +6,7 @@ dry-run-only because its probes require the real Data Prepper runtime.
 """
 
 import ._helpers as h
-import templates.dataprepper as dp
+import templates.opensearch.dataprepper.v2_10_2.dataprepper as dp
 
 _pipeline = "entry-pipeline:\n  source:\n    http:\n      path: /log/ingest\n  sink:\n    - stdout:\n"
 

@@ -8,13 +8,13 @@ StorageClass to become ready before dependent PVCs can bind.
 """
 
 import ._helpers as h
-import templates.ceph as ceph
-import templates.database as database
-import templates.mongodb as mongo
-import templates.postgresql as pg
-import templates.rabbitmq as rmq
-import templates.redis as redis
-import templates.valkey as valkey
+import templates.ceph.v1_0_0.ceph as ceph
+import templates.database.v1_0_0.database as database
+import templates.mongodb.v1_0_0.mongodb as mongo
+import templates.postgresql.v1_0_0.postgresql as pg
+import templates.rabbitmq.v1_0_0.rabbitmq as rmq
+import templates.redis.v1_0_0.redis as redis
+import templates.valkey.v1_0_0.valkey as valkey
 
 _namespace = "idp-acceptance-persistence-ceph"
 _storage_class = "acceptance-ceph-block"

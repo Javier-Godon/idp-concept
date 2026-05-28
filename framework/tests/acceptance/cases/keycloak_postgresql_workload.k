@@ -8,8 +8,8 @@ Keycloak CR. The real runtime also requires CloudNativePG and Keycloak operators
 """
 
 import ._helpers as h
-import templates.keycloak as kc
-import templates.postgresql as pg
+import templates.keycloak.v1_0_0.keycloak as kc
+import templates.postgresql.v1_0_0.postgresql as pg
 
 _namespace = "idp-acceptance-keycloak-postgresql"
 

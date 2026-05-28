@@ -2,7 +2,7 @@
 Acceptance fixture: CephModule through the IDP render path.
 """
 import ._helpers as h
-import templates.ceph as ceph
+import templates.ceph.v1_0_0.ceph as ceph
 _module = ceph.CephModule {
     name = "acceptance-ceph"
     namespace = "idp-acceptance-ceph"

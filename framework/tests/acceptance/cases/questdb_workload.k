@@ -3,7 +3,7 @@ Acceptance fixture: QuestDB HelmRelease through the IDP render path.
 """
 
 import ._helpers as h
-import templates.questdb as qdb
+import templates.questdb.v1_0_0.questdb as qdb
 
 _namespace = "idp-acceptance-questdb"
 _resource = qdb.build_questdb_release(qdb.QuestDBSpec {

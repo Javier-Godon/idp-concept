@@ -2,7 +2,7 @@
 Acceptance fixture: LonghornModule through the IDP render path.
 """
 import ._helpers as h
-import templates.longhorn as longhorn
+import templates.longhorn.v1_0_0.longhorn as longhorn
 _module = longhorn.LonghornModule {
     name = "acceptance-longhorn"
     namespace = "idp-acceptance-longhorn"

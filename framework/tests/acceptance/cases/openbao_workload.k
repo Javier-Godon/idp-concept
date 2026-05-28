@@ -2,7 +2,7 @@
 Acceptance fixture: OpenBaoModule through the IDP render path.
 """
 import ._helpers as h
-import templates.openbao as openbao
+import templates.openbao.v1_0_0.openbao as openbao
 _module = openbao.OpenBaoModule {
     name = "acceptance-openbao"
     namespace = "idp-acceptance-openbao"

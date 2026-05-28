@@ -62,7 +62,7 @@ Keep each case's resources for debugging instead of cleaning them after success:
 | Group | Cases | What it proves |
 |---|---|---|
 | `runtime-basic` | `basic`, `webapp`, `database` | Built-in Kubernetes resources apply and roll out in kind. |
-| `runtime-rollouts` | `dataprepper-rollout`, `opensearch-dashboards-rollout`, `elasticsearch-rollout`, `kibana-rollout`, `logstash-rollout`, `webapp-probes-rollout`, `webapp-service-account-rollout`, `webapp-database-stack-rollout`, `elasticsearch-kibana-stack-rollout`, `elk-stack-rollout`, `webapp-dataprepper-stack-rollout`, `webapp-opensearch-dashboards-stack-rollout`, `webapp-elk-stack-rollout`, `dataprepper-elk-stack-rollout`, `webapp-dataprepper-elk-stack-rollout`, `webapp-database-dataprepper-stack-rollout` | Template-generated native `Deployment`/`StatefulSet` resources apply and roll out in kind. The search/ingestion fixtures use lightweight runtime containers that satisfy the generated probes. The webapp/mixture fixtures use `pause` or Python images to prove probe configuration, ServiceAccount wiring, and multi-module stack rollout without heavy backing services. Stack rollout fixtures co-deploy multiple native templates in a single `RenderStack` via `render_stack`. All 16 cases verified on kind (kindest/node:v1.33.0). |
+| `runtime-rollouts` | `dataprepper-rollout`, `opensearch-dashboards-rollout`, `elasticsearch-rollout`, `kibana-rollout`, `logstash-rollout`, `fluentbit-native-rollout`, `webapp-probes-rollout`, `webapp-service-account-rollout`, `webapp-database-stack-rollout`, `elasticsearch-kibana-stack-rollout`, `elk-stack-rollout`, `webapp-dataprepper-stack-rollout`, `webapp-opensearch-dashboards-stack-rollout`, `webapp-elk-stack-rollout`, `dataprepper-elk-stack-rollout`, `webapp-dataprepper-elk-stack-rollout`, `webapp-database-dataprepper-stack-rollout` | Template-generated native `Deployment`/`StatefulSet` resources apply and roll out in kind. The search/ingestion/Fluent Bit fixtures use lightweight runtime containers or native images that satisfy generated probes. The webapp/mixture fixtures use `pause` or Python images to prove probe configuration, ServiceAccount wiring, and multi-module stack rollout without heavy backing services. Stack rollout fixtures co-deploy multiple native templates in a single `RenderStack` via `render_stack`. Existing 16 cases verified on kind (kindest/node:v1.33.0); run `fluentbit-native-rollout` to validate the new Fluent Bit native path. |
 | `runtime-cnpg` | `postgresql` | CloudNativePG reconciles the PostgreSQL `Cluster` CR to Ready. |
 | `runtime-keycloak-postgresql` | `keycloak-postgresql` | CloudNativePG and Keycloak Operator reconcile a persistent Keycloak stack. |
 | `runtime-opensearch` | `opensearch` | OpenSearch Operator reconciles `OpenSearchCluster` to Ready. |
@@ -106,6 +106,7 @@ The installer hooks are intentionally explicit and pinned. Do not replace them w
 | ECK | `elasticsearch-v9`, `kibana-v9`, `logstash-v9` | Applies pinned ECK CRDs/operator and waits for operator rollout. |
 | Flux controllers | HelmRelease-backed templates | Installs pinned Flux controller manifests. |
 | OpenTelemetry Operator | `opentelemetry` | Installs pinned OpenTelemetry operator chart. |
+| Fluent Operator | `fluentbit-operator` | Installs pinned Fluent Operator chart. |
 | Longhorn | `longhorn`, `persistence-longhorn` | Installs pinned Longhorn chart in disposable clusters. |
 | Rook/Ceph | `ceph`, `persistence-ceph` | Requires a real Rook/Ceph-capable environment; local single-node kind can be insufficient. |
 
@@ -122,6 +123,8 @@ rollout/probe behavior without requiring OpenSearch, Kibana, Logstash, or Data
 Prepper JVM startup. WebApp-family rollout fixtures (`webapp-probes-rollout`,
 `webapp-service-account-rollout`) test specific WebAppModule features — probe
 configuration and ServiceAccount generation — using the same patch approach.
+
+`fluentbit-native-rollout` uses the pinned Fluent Bit image with a generated stdout pipeline to prove the native ConfigMap/Service/Deployment path without a Helm controller or Fluent Operator.
 
 **Mixture rollout fixtures** co-deploy multiple native templates in a single `RenderStack`:
 

@@ -8,13 +8,13 @@ StorageClass to become ready before dependent PVCs can bind.
 """
 
 import ._helpers as h
-import templates.database as database
-import templates.longhorn as longhorn
-import templates.mongodb as mongo
-import templates.postgresql as pg
-import templates.rabbitmq as rmq
-import templates.redis as redis
-import templates.valkey as valkey
+import templates.database.v1_0_0.database as database
+import templates.longhorn.v1_0_0.longhorn as longhorn
+import templates.mongodb.v1_0_0.mongodb as mongo
+import templates.postgresql.v1_0_0.postgresql as pg
+import templates.rabbitmq.v1_0_0.rabbitmq as rmq
+import templates.redis.v1_0_0.redis as redis
+import templates.valkey.v1_0_0.valkey as valkey
 
 _namespace = "idp-acceptance-persistence-longhorn"
 _storage_class = "acceptance-longhorn"

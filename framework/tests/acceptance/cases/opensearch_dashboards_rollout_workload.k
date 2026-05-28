@@ -7,7 +7,7 @@ the container runtime to a tiny HTTP server that satisfies the template probes.
 """
 
 import ._helpers as h
-import templates.opensearch_dashboards as dashboards
+import templates.opensearch.v2_17_0.opensearch_dashboards as dashboards
 
 _namespace = "idp-acceptance-opensearch-dashboards-rollout"
 _runtime_image = "python:3.12.3-alpine3.20"

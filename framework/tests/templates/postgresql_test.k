@@ -8,7 +8,7 @@ lambdas. See webapp_test.k for full explanation.
 Workaround: Test the build_* lambdas and schema fields indirectly.
 Template integration is validated via `kcl run` in the CI pipeline.
 """
-import templates.postgresql as pg
+import templates.postgresql.v1_0_0.postgresql as pg
 import runtime
 
 # === Test: build_cnpg_cluster generates correct Cluster CRD ===

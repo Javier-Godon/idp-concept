@@ -1,5 +1,5 @@
 import runtime
-import templates.logstash as logstash
+import templates.elastic.v7_10_2.logstash as logstash
 
 _pipeline = "input { beats { port => 5044 } }\noutput { stdout { codec => rubydebug } }\n"
 

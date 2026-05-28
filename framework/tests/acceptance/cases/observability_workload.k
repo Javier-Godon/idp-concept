@@ -2,7 +2,7 @@
 Acceptance fixture: observability HelmRelease + ServiceMonitor resources through the IDP render path.
 """
 import ._helpers as h
-import templates.observability as obs
+import templates.observability.v1_0_0.observability as obs
 _namespace = "idp-acceptance-observability"
 _resources = [
     obs.build_prometheus(obs.PrometheusSpec {

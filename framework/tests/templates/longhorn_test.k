@@ -3,7 +3,7 @@ Longhorn Template Tests.
 
 Tests HelmRelease and StorageClass generation for Longhorn template defaults and overrides.
 """
-import templates.longhorn as longhorn
+import templates.longhorn.v1_0_0.longhorn as longhorn
 import runtime
 
 # === Test: default Longhorn release ===

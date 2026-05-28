@@ -1,5 +1,5 @@
 import runtime
-import templates.kibana as kibana
+import templates.elastic.v7_10_2.kibana as kibana
 
 test_kibana_resources = lambda {
     _resources = kibana.build_kibana_resources(kibana.KibanaSpec {

@@ -546,50 +546,53 @@ Examples:
 - `framework/templates/opensearch/v2_17_0/opensearch.k`
 - `framework/templates/postgresql/v1_0_0/postgresql.k`
 
-Root files (for example `framework/templates/postgresql.k` or `framework/templates/opensearch.k`) are kept for backward compatibility while projects migrate to explicit versioned imports.
+Root-level template compatibility files have been removed. Import templates by their explicit ecosystem/version path, for example `framework.templates.postgresql.v1_0_0.postgresql` or `framework.templates.opensearch.v2_17_0.opensearch`.
 
 ### Application Templates
 
 | Template | File | Parent | Purpose |
 |---|---|---|---|
-| `WebAppModule` | `webapp.k` | `Component` | Web applications (Deployment + Service + optional ConfigMap) |
-| `DataPrepperModule` | `dataprepper.k` | `Component` | OpenSearch Data Prepper ingestion (ConfigMap + Deployment + Service + PDB) |
-| `OpenSearchDashboardsModule` | `opensearch_dashboards.k` | `Component` | Standalone OpenSearch Dashboards (ConfigMap + Deployment + Service + PDB) |
+| `WebAppModule` | `webapp/v1_0_0/webapp.k` | `Component` | Web applications (Deployment + Service + optional ConfigMap) |
+| `DataPrepperModule` | `opensearch/dataprepper/v2_10_2/dataprepper.k` | `Component` | OpenSearch Data Prepper ingestion (ConfigMap + Deployment + Service + PDB) |
+| `OpenSearchDashboardsModule` | `opensearch/dashboards/v2_17_0/opensearch_dashboards.k` | `Component` | Standalone OpenSearch Dashboards (ConfigMap + Deployment + Service + PDB) |
 | `ElasticsearchModule` | `elastic/v7_10_2/elasticsearch.k` | `Component` | Elasticsearch OSS 7.10.2 StatefulSet (no ECK) |
 | `KibanaModule` | `elastic/v7_10_2/kibana.k` | `Component` | Kibana OSS 7.10.2 Deployment (no ECK) |
 | `LogstashModule` | `elastic/v7_10_2/logstash.k` | `Component` | Logstash OSS 7.10.2 Deployment (no ECK) |
-| `SingleDatabaseModule` | `database.k` | `Accessory` | Simple database (Deployment + Service + PVC; optional local PV) |
-| `KafkaClusterModule` | `kafka.k` | `Accessory` | Strimzi Kafka cluster (`kafka.strimzi.io/v1beta2`) |
+| `FluentBitSingleInstanceModule` | `fluentbit/v3_2_10/native/fluentbit.k` | `Component` | Fluent Bit 3.2.10 native Deployment + Service + ConfigMap |
+| `FluentBitDaemonSetModule` | `fluentbit/v3_2_10/native/fluentbit.k` | `Component` | Fluent Bit 3.2.10 native DaemonSet + Service + ConfigMap |
+| `SingleDatabaseModule` | `database/v1_0_0/database.k` | `Accessory` | Simple database (Deployment + Service + PVC; optional local PV) |
+| `KafkaClusterModule` | `kafka/v1_0_0/kafka.k` | `Accessory` | Strimzi Kafka cluster (`kafka.strimzi.io/v1beta2`) |
 
 ### Operator Templates (Phase 6)
 
 | Template | File | Operator | CRD API |
 |---|---|---|---|
-| `PostgreSQLClusterModule` | `postgresql.k` | CloudNativePG | `postgresql.cnpg.io/v1 Cluster` |
-| `MongoDBCommunityModule` | `mongodb.k` | MongoDB Community | `mongodbcommunity.mongodb.com/v1 MongoDBCommunity` |
-| `RabbitMQClusterModule` | `rabbitmq.k` | RabbitMQ Cluster Operator | `rabbitmq.com/v1beta1 RabbitmqCluster` |
-| `RedisModule` | `redis.k` | OT Redis Operator | `redis.redis.opstreelabs.in/v1beta2 Redis/RedisCluster` |
-| `KeycloakModule` | `keycloak.k` | Keycloak Operator (CNCF) | `k8s.keycloak.org/v2alpha1 Keycloak` |
-| `OpenSearchClusterModule` | `opensearch.k` | OpenSearch k8s-operator | `opensearch.org/v1 OpenSearchCluster` |
+| `PostgreSQLClusterModule` | `postgresql/v1_0_0/postgresql.k` | CloudNativePG | `postgresql.cnpg.io/v1 Cluster` |
+| `MongoDBCommunityModule` | `mongodb/v1_0_0/mongodb.k` | MongoDB Community | `mongodbcommunity.mongodb.com/v1 MongoDBCommunity` |
+| `RabbitMQClusterModule` | `rabbitmq/v1_0_0/rabbitmq.k` | RabbitMQ Cluster Operator | `rabbitmq.com/v1beta1 RabbitmqCluster` |
+| `RedisModule` | `redis/v1_0_0/redis.k` | OT Redis Operator | `redis.redis.opstreelabs.in/v1beta2 Redis/RedisCluster` |
+| `KeycloakModule` | `keycloak/v1_0_0/keycloak.k` | Keycloak Operator (CNCF) | `k8s.keycloak.org/v2alpha1 Keycloak` |
+| `OpenSearchClusterModule` | `opensearch/v2_17_0/opensearch.k` | OpenSearch k8s-operator | `opensearch.org/v1 OpenSearchCluster` |
 | `ElasticsearchModule` | `elastic/v9_4_1/elasticsearch.k` | Elastic ECK | `elasticsearch.k8s.elastic.co/v1 Elasticsearch` ⚠️ Elastic license |
 | `KibanaModule` | `elastic/v9_4_1/kibana.k` | Elastic ECK | `kibana.k8s.elastic.co/v1 Kibana` ⚠️ Elastic license |
 | `LogstashModule` | `elastic/v9_4_1/logstash.k` | Elastic ECK | `logstash.k8s.elastic.co/v1alpha1 Logstash` ⚠️ Elastic license |
-| `VaultStaticSecretModule` | `vault.k` | Vault Secrets Operator | `secrets.hashicorp.com/v1beta1` ⚠️ BUSL-1.1 |
-| `QuestDBModule` | `questdb.k` | Helm chart (no operator) | ThirdPartyHelmSpec wrapper |
-| `ValkeySpec` | `valkey.k` | Bitnami Helm chart | ThirdPartyHelmSpec wrapper |
-| `OpenBaoSpec` | `openbao.k` | OpenBao Helm chart | ThirdPartyHelmSpec wrapper |
-| `CephSpec` | `ceph.k` | Rook Ceph Helm chart | ThirdPartyHelmSpec wrapper |
-| `LonghornSpec` | `longhorn.k` | Longhorn Helm chart | ThirdPartyHelmSpec wrapper + optional StorageClass |
-| `MinIOTenantSpec` | `minio.k` | MinIO Operator (archived) | `minio.min.io/v2 Tenant` ⚠️ Archived |
-| `MinIOHelmSpec` | `minio.k` | Bitnami Helm chart | ThirdPartyHelmSpec wrapper (recommended) |
+| `VaultStaticSecretModule` | `vault/v1_0_0/vault.k` | Vault Secrets Operator | `secrets.hashicorp.com/v1beta1` ⚠️ BUSL-1.1 |
+| `QuestDBModule` | `questdb/v1_0_0/questdb.k` | Helm chart (no operator) | ThirdPartyHelmSpec wrapper |
+| `ValkeySpec` | `valkey/v1_0_0/valkey.k` | Bitnami Helm chart | ThirdPartyHelmSpec wrapper |
+| `OpenBaoSpec` | `openbao/v1_0_0/openbao.k` | OpenBao Helm chart | ThirdPartyHelmSpec wrapper |
+| `CephSpec` | `ceph/v1_0_0/ceph.k` | Rook Ceph Helm chart | ThirdPartyHelmSpec wrapper |
+| `LonghornSpec` | `longhorn/v1_0_0/longhorn.k` | Longhorn Helm chart | ThirdPartyHelmSpec wrapper + optional StorageClass |
+| `MinIOTenantSpec` | `minio/v1_0_0/minio.k` | MinIO Operator (archived) | `minio.min.io/v2 Tenant` ⚠️ Archived |
+| `MinIOHelmSpec` | `minio/v1_0_0/minio.k` | Bitnami Helm chart | ThirdPartyHelmSpec wrapper (recommended) |
+| `FluentBitHelmSpec` | `fluentbit/v3_2_10/helm/fluentbit.k` | Fluent Bit Helm chart | ThirdPartyHelmSpec wrapper |
+| `FluentBitOperatorModule` | `fluentbit/v3_2_10/operator/fluentbit.k` | Fluent Operator | `fluentbit.fluent.io/v1alpha2` CRs |
 
 ### Search and Logging Template Licensing Notes
 
 - `OpenSearchClusterModule` is operator-backed by the OpenSearch Kubernetes Operator (`opensearch.org/v1`). Use its built-in `DashboardsSpec` when Dashboards should be lifecycle-managed with the cluster.
 - `OpenSearchDashboardsModule` is standalone and Kubernetes-native for cases where Dashboards must be managed separately from the OpenSearch cluster.
 - `DataPrepperModule` is Kubernetes-native because there is no widely adopted dedicated OSS Data Prepper operator.
-- Flat imports (`templates.elasticsearch`, `templates.kibana`, `templates.logstash`) are backward-compatible wrappers for `elastic/v7_10_2/*`.
-- New code should prefer explicit versioned imports: `templates.elastic.v7_10_2.*` or `templates.elastic.v9_4_1.*`.
+- Use explicit versioned imports: `templates.elastic.v7_10_2.*`, `templates.elastic.v9_4_1.*`, and `templates.fluentbit.v3_2_10.*`.
 - `elastic/v7_10_2/*` templates intentionally avoid Elastic ECK and pin the last Apache-2.0 OSS artifact line (`7.10.2`).
 - `elastic/v9_4_1/*` templates use Elastic ECK CRDs and are suitable only when your intended internal usage is compatible with Elastic's license terms. See `docs/SEARCH_STACK_DECISION.md`.
 
@@ -647,9 +650,10 @@ Component (framework/models/modules/component.k)
 ├── WebAppModule          (template — web applications)
 ├── DataPrepperModule     (template — OpenSearch ingestion)
 ├── OpenSearchDashboardsModule (template — OpenSearch Dashboards)
-├── ElasticsearchModule   (template — Elastic OSS 7.10.2 compatibility wrapper)
-├── KibanaModule          (template — Kibana OSS 7.10.2 compatibility wrapper)
-├── LogstashModule        (template — Logstash OSS 7.10.2 compatibility wrapper)
+├── ElasticsearchModule   (template — Elastic OSS 7.10.2 native StatefulSet)
+├── KibanaModule          (template — Kibana OSS 7.10.2 native Deployment)
+├── LogstashModule        (template — Logstash OSS 7.10.2 native Deployment)
+├── FluentBitSingleInstanceModule / FluentBitDaemonSetModule (template — Fluent Bit native collectors)
 ├── VideoCollectorModule  (project module — raw approach)
 └── ... (project APPLICATION / INFRASTRUCTURE modules)
 
@@ -670,6 +674,7 @@ Accessory (framework/models/modules/accessory.k)
 ├── CephSpec                  (template — Helm chart)
 ├── LonghornSpec              (template — Helm chart)
 ├── MinIOTenantSpec / MinIOHelmSpec (template — MinIO)
+├── FluentBitHelmSpec / FluentBitOperatorModule (templates — Fluent Bit Helm/operator modes)
 └── ... (project CRD / SECRET modules)
 
 Stack (framework/models/stack.k)
@@ -702,7 +707,7 @@ schema MyModule(component.Component):
 
 ### Creating a Module (Template Approach — Recommended)
 ```kcl
-import framework.templates.webapp as webapp
+import framework.templates.webapp.v1_0_0.webapp as webapp
 
 schema MyApp(webapp.WebAppModule):
     port = 8080

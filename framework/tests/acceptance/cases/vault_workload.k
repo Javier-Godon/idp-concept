@@ -2,7 +2,7 @@
 Acceptance fixture: Vault Secrets Operator CRs through the IDP render path.
 """
 import ._helpers as h
-import templates.vault as vault
+import templates.vault.v1_0_0.vault as vault
 _namespace = "idp-acceptance-vault"
 _resources = [
     vault.build_vault_connection(vault.VaultConnectionSpec {

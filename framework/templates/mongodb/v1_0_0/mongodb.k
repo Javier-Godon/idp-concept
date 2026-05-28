@@ -7,7 +7,7 @@ Operator: MongoDB Community Kubernetes Operator (https://github.com/mongodb/mong
 Migration: For MCK (mongodb-kubernetes) operator, see IDP_EVOLUTION_PLAN Phase 6.
 
 Usage:
-    import framework.templates.mongodb as mongo
+    import framework.templates.mongodb.v1_0_0.mongodb as mongo
 
     schema MyMongo(mongo.MongoDBCommunityModule):
         clusterName = "my-mongo"

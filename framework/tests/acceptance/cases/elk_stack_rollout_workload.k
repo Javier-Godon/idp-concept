@@ -17,9 +17,9 @@ Covers:
 """
 
 import ._helpers as h
-import templates.elasticsearch as elasticsearch
-import templates.kibana as kibana
-import templates.logstash as logstash
+import templates.elastic.v7_10_2.elasticsearch as elasticsearch
+import templates.elastic.v7_10_2.kibana as kibana
+import templates.elastic.v7_10_2.logstash as logstash
 
 _namespace = "idp-acceptance-elk-stack-rollout"
 _runtime_image = "python:3.12.3-alpine3.20"

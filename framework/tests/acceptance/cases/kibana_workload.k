@@ -6,7 +6,7 @@ dry-run. It is not applied by default because it expects Elasticsearch.
 """
 
 import ._helpers as h
-import templates.kibana as kibana
+import templates.elastic.v7_10_2.kibana as kibana
 
 _module = kibana.KibanaModule {
     name = "kibana"

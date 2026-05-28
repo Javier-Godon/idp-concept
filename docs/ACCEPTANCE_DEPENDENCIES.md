@@ -28,6 +28,13 @@ See `docs/ACCEPTANCE_RUNTIME.md` for the real deployment runner and runtime grou
 - Real L3/L4 validation requires the OpenSearch Kubernetes Operator to reconcile `OpenSearchCluster`, the cluster to become healthy, and Data Prepper probes to pass against the real Data Prepper runtime.
 - Because the Data Prepper template has real HTTP probes on its metrics port, replacing the image with `pause` is not a reliable rollout test. Keep Data Prepper dry-run-only unless the actual runtime is used.
 
+### Fluent Bit deployment modes
+
+- `FluentBitSingleInstanceModule` and `FluentBitDaemonSetModule` generate native Kubernetes `ConfigMap`, `Service`, and `Deployment`/`DaemonSet` resources. They do not require Helm or an operator for L2 rollout.
+- `FluentBitHelmSpec` emits a Flux `HelmRelease` for the official Fluent Bit chart and needs Flux/Helm reconciliation for real runtime testing.
+- `FluentBitOperatorModule` emits a Flux `HelmRelease` for Fluent Operator plus Fluent Operator CRs (`FluentBit`, `ClusterFluentBitConfig`, `ClusterInput`, `ClusterOutput`). Runtime testing needs Flux and the Fluent Operator CRDs/controller.
+- `fluentbit-native-rollout` validates the native single-instance path with the pinned Fluent Bit image and a stdout pipeline; it avoids Helm/operator dependencies.
+
 ### Keycloak and PostgreSQL
 
 - `KeycloakModule` generates Keycloak Operator CRs (`Keycloak`, and optionally `KeycloakRealmImport`). The module can render without database fields, but persistent production-style deployments should use an external database.
@@ -88,6 +95,9 @@ Persistent templates need a Kubernetes storage provisioner when they create PVCs
 | `webapp-rabbitmq-stack` | `WebAppModule` + `RabbitMQClusterModule` | RabbitMQ Cluster operator plus working StorageClass. Dry-run-only without operator. |
 | `webapp-redis-stack` | `WebAppModule` + `RedisModule` | OT Redis operator plus working StorageClass. Dry-run-only without operator. |
 | `webapp-mongodb-stack` | `WebAppModule` + `MongoDBCommunityModule` | MongoDB Community operator plus working StorageClass. Dry-run-only without operator. |
+| `fluentbit-native` | `FluentBitSingleInstanceModule` native resources | None beyond built-in Kubernetes resources; use `fluentbit-native-rollout` for L2 rollout. |
+| `fluentbit-helm` | `FluentBitHelmSpec` HelmRelease | Flux/Helm controller. |
+| `fluentbit-operator` | `FluentBitOperatorModule` + Fluent Operator CRs | Flux/Helm controller plus Fluent Operator CRDs/controller. |
 
 ## Runtime rollout fixtures
 
@@ -104,6 +114,7 @@ full backing product stack.
 | `elasticsearch-rollout` | Elastic v7 `ElasticsearchModule` `StatefulSet` | Full Elasticsearch cluster runtime while still testing StatefulSet/PVC rollout shape. |
 | `kibana-rollout` | Elastic v7 `KibanaModule` `Deployment` | Backing Elasticsearch endpoint. |
 | `logstash-rollout` | Elastic v7 `LogstashModule` `Deployment` | Full Logstash JVM startup and upstream/downstream services. |
+| `fluentbit-native-rollout` | Fluent Bit native `FluentBitSingleInstanceModule` `Deployment` | Helm controller and Fluent Operator; uses generated stdout pipeline with the pinned Fluent Bit runtime. |
 | `webapp-probes-rollout` | `WebAppModule` `Deployment` with HTTP liveness, readiness, and startup probes | Real application runtime. Uses a Python HTTP server to satisfy all three generated probe paths on port 8080. Proves that probe configuration fields (`livenessProbe`, `readinessProbe`, `startupProbe`) render into valid Kubernetes probe specs and that the generated container can pass them. |
 | `webapp-service-account-rollout` | `WebAppModule` `Deployment` + `ServiceAccount` generated via `imagePullSecretName` | A real registry and pull secret. `imagePullSecrets` is patched to an empty list so the rollout proceeds with the `pause` image while keeping the `serviceAccountName` binding. Proves: ServiceAccount generation, SA-to-Deployment wiring, and imagePullSecrets patching pattern. |
 | `webapp-database-stack-rollout` | **Mixture**: `WebAppModule` `Deployment` + `SingleDatabaseModule` `Deployment` + `PVC` in one `RenderStack` | External storage provisioner. Uses a local hostPath `PersistentVolume` so the PVC binds without Longhorn or Ceph. Proves: multi-module IDP stack rendering via `render_stack`, two co-deployed Deployments rolling out simultaneously, and PVC binding alongside a webapp in the same namespace. ✓ kind verified |

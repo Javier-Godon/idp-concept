@@ -18,8 +18,8 @@ Covers:
 """
 
 import ._helpers as h
-import templates.webapp as webapp
-import templates.opensearch_dashboards as dashboards
+import templates.webapp.v1_0_0.webapp as webapp
+import templates.opensearch.v2_17_0.opensearch_dashboards as dashboards
 
 _namespace = "idp-acceptance-webapp-opensearch-dashboards-stack-rollout"
 _runtime_image = "python:3.12.3-alpine3.20"

@@ -25,6 +25,7 @@ ECK_VERSION="3.0.0"
 FLUX_VERSION="2.4.0"
 OTEL_OPERATOR_CHART_VERSION="0.75.0"
 LONGHORN_CHART_VERSION="1.7.2"
+FLUENT_OPERATOR_CHART_VERSION="3.1.0"
 
 declare -A INSTALLED_DEPENDENCIES=()
 
@@ -37,10 +38,10 @@ RUNTIME_KAFKA_CASES=("kafka")
 RUNTIME_MONGODB_CASES=("mongodb")
 RUNTIME_RABBITMQ_CASES=("rabbitmq")
 RUNTIME_REDIS_CASES=("redis" "redis-cluster")
-RUNTIME_ROLLOUT_CASES=("dataprepper-rollout" "opensearch-dashboards-rollout" "elasticsearch-rollout" "kibana-rollout" "logstash-rollout" "webapp-probes-rollout" "webapp-service-account-rollout" "webapp-database-stack-rollout" "elasticsearch-kibana-stack-rollout" "elk-stack-rollout" "webapp-dataprepper-stack-rollout" "webapp-opensearch-dashboards-stack-rollout" "webapp-elk-stack-rollout" "dataprepper-elk-stack-rollout" "webapp-dataprepper-elk-stack-rollout" "webapp-database-dataprepper-stack-rollout")
+RUNTIME_ROLLOUT_CASES=("dataprepper-rollout" "opensearch-dashboards-rollout" "elasticsearch-rollout" "kibana-rollout" "logstash-rollout" "webapp-probes-rollout" "webapp-service-account-rollout" "webapp-database-stack-rollout" "elasticsearch-kibana-stack-rollout" "elk-stack-rollout" "webapp-dataprepper-stack-rollout" "webapp-opensearch-dashboards-stack-rollout" "webapp-elk-stack-rollout" "dataprepper-elk-stack-rollout" "webapp-dataprepper-elk-stack-rollout" "webapp-database-dataprepper-stack-rollout" "fluentbit-native-rollout")
 RUNTIME_SEARCH_CASES=("opensearch" "opensearch-dashboards" "dataprepper-opensearch" "elasticsearch" "kibana" "logstash" "elasticsearch-v9" "kibana-v9" "logstash-v9")
 RUNTIME_DATA_CASES=("database" "postgresql" "mongodb" "rabbitmq" "redis" "redis-cluster" "kafka" "minio-tenant" "minio-helm" "questdb" "valkey")
-RUNTIME_PLATFORM_CASES=("backstage" "observability" "opentelemetry" "vault" "keycloak" "keycloak-postgresql" "openbao")
+RUNTIME_PLATFORM_CASES=("backstage" "observability" "opentelemetry" "fluentbit-native" "fluentbit-helm" "fluentbit-operator" "vault" "keycloak" "keycloak-postgresql" "openbao")
 RUNTIME_STORAGE_CASES=("longhorn" "ceph" "persistence-longhorn" "persistence-ceph")
 RUNTIME_INTEGRATION_CASES=("dataprepper-opensearch" "keycloak-postgresql" "persistence-longhorn" "persistence-ceph" "webapp-postgresql-stack" "webapp-kafka-stack" "webapp-rabbitmq-stack" "webapp-redis-stack" "webapp-mongodb-stack")
 RUNTIME_WEBAPP_STACKS_CASES=("webapp-postgresql-stack" "webapp-kafka-stack" "webapp-rabbitmq-stack" "webapp-redis-stack" "webapp-mongodb-stack")
@@ -70,6 +71,7 @@ Options:
                            webapp-opensearch-dashboards-stack-rollout,
                            webapp-elk-stack-rollout,
                            dataprepper-elk-stack-rollout,
+                            fluentbit-native-rollout,
                            webapp-dataprepper-elk-stack-rollout,
                            webapp-database-dataprepper-stack-rollout,
                            webapp-postgresql-stack,
@@ -365,6 +367,15 @@ install_longhorn() {
   wait_any_deployment_in_namespace longhorn-system
 }
 
+install_fluent_operator() {
+  echo "==> Installing Fluent Operator chart ${FLUENT_OPERATOR_CHART_VERSION}"
+  helm_repo_add_update fluent https://fluent.github.io/helm-charts
+  helm upgrade --install fluent-operator fluent/fluent-operator \
+    --namespace fluent-operator --create-namespace \
+    --version "$FLUENT_OPERATOR_CHART_VERSION" --wait --timeout "$TIMEOUT"
+  wait_any_deployment_in_namespace fluent-operator
+}
+
 install_dependencies_for_case() {
   local case_name="$1"
   [[ "$INSTALL_DEPENDENCIES" == "true" ]] || return 0
@@ -382,7 +393,8 @@ install_dependencies_for_case() {
     opentelemetry) install_once flux install_flux; install_once opentelemetry install_otel_operator ;;
     longhorn|persistence-longhorn) install_once flux install_flux; install_once longhorn install_longhorn ;;
     ceph|persistence-ceph) install_once flux install_flux ;;
-    backstage|observability|minio-helm|questdb|valkey|openbao) install_once flux install_flux ;;
+    backstage|observability|minio-helm|questdb|valkey|openbao|fluentbit-helm) install_once flux install_flux ;;
+    fluentbit-operator) install_once flux install_flux; install_once fluent-operator install_fluent_operator ;;
     webapp-postgresql-stack) install_once cnpg install_cnpg ;;
     webapp-kafka-stack) install_once strimzi install_strimzi ;;
     webapp-rabbitmq-stack) install_once rabbitmq install_rabbitmq_operator ;;
@@ -440,7 +452,7 @@ wait_case() {
     dataprepper)
       kubectl -n idp-acceptance-dataprepper rollout status deploy/data-prepper --timeout="$TIMEOUT"
       ;;
-    dataprepper-rollout|opensearch-dashboards-rollout|elasticsearch-rollout|kibana-rollout|logstash-rollout|webapp-probes-rollout|webapp-service-account-rollout|elasticsearch-kibana-stack-rollout|elk-stack-rollout|webapp-dataprepper-stack-rollout|webapp-opensearch-dashboards-stack-rollout|webapp-elk-stack-rollout|dataprepper-elk-stack-rollout|webapp-dataprepper-elk-stack-rollout)
+    dataprepper-rollout|opensearch-dashboards-rollout|elasticsearch-rollout|kibana-rollout|logstash-rollout|webapp-probes-rollout|webapp-service-account-rollout|elasticsearch-kibana-stack-rollout|elk-stack-rollout|webapp-dataprepper-stack-rollout|webapp-opensearch-dashboards-stack-rollout|webapp-elk-stack-rollout|dataprepper-elk-stack-rollout|webapp-dataprepper-elk-stack-rollout|fluentbit-native-rollout)
       wait_all_rollouts "$namespace"
       wait_all_pvcs_bound "$namespace"
       ;;
@@ -556,6 +568,18 @@ wait_case() {
       wait_condition "$namespace" helmrelease.helm.toolkit.fluxcd.io/acceptance-otel-operator Ready
       wait_condition "$namespace" opentelemetrycollector.opentelemetry.io/acceptance-otel-collector Ready
       wait_exists "$namespace" instrumentation.opentelemetry.io/acceptance-instrumentation
+      ;;
+    fluentbit-native)
+      wait_all_rollouts "$namespace"
+      kubectl -n "$namespace" get deploy,svc,cm
+      ;;
+    fluentbit-helm)
+      wait_condition "$namespace" helmrelease.helm.toolkit.fluxcd.io/acceptance-fluentbit Ready
+      wait_all_rollouts "$namespace"
+      ;;
+    fluentbit-operator)
+      wait_condition "$namespace" helmrelease.helm.toolkit.fluxcd.io/fluent-operator Ready
+      wait_exists "$namespace" fluentbit.fluentbit.fluent.io/acceptance-fluentbit
       ;;
     vault)
       wait_condition "$namespace" vaultconnection.secrets.hashicorp.com/acceptance-vault-connection Ready

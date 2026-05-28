@@ -6,7 +6,7 @@ Tests the build functions for Vault Secrets Operator CRDs:
 - VaultAuth (secrets.hashicorp.com/v1beta1)
 - VaultStaticSecret (secrets.hashicorp.com/v1beta1)
 """
-import templates.vault as vault
+import templates.vault.v1_0_0.vault as vault
 import runtime
 
 # === Test: build_vault_connection basic ===

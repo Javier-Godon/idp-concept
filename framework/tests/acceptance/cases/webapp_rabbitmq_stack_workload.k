@@ -19,8 +19,8 @@ Covers:
 """
 
 import ._helpers as h
-import templates.webapp as webapp
-import templates.rabbitmq as rmq
+import templates.webapp.v1_0_0.webapp as webapp
+import templates.rabbitmq.v1_0_0.rabbitmq as rmq
 
 _namespace = "idp-acceptance-webapp-rabbitmq-stack"
 

@@ -3,7 +3,7 @@ Valkey Template Tests.
 
 Tests HelmRelease generation for Valkey template defaults and overrides.
 """
-import templates.valkey as valkey
+import templates.valkey.v1_0_0.valkey as valkey
 import runtime
 
 # === Test: default Valkey release ===

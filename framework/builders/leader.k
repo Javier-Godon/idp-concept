@@ -1,9 +1,8 @@
 """
 Leader Builder — helpers to create Leader instances.
 
-Provides a unified `build_leader` plus backward-compatible aliases
-`build_component_leader` (defaults to Deployment/apps-v1) and
-`build_accessory_leader` (requires explicit kind/apiVersion).
+Provides a unified `build_leader` plus typed helpers for component and
+accessory leader instances.
 """
 
 import models.modules.leader as base_leader
@@ -19,7 +18,7 @@ build_leader = lambda name: str, namespace: str, kind: str = "Deployment", apiVe
     }
 }
 
-# Backward-compatible aliases — prefer build_leader for new code
+# Typed helper for ComponentLeader instances.
 build_component_leader = lambda name: str, namespace: str, kind: str = "Deployment", apiVersion: str = "apps/v1" -> component.ComponentLeader {
     component.ComponentLeader {
         name = name

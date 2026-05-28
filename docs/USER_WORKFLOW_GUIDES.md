@@ -103,7 +103,7 @@ cp -r projects/erp_back projects/my_new_project
 
 ```kcl
 # For a web application:
-import framework.templates.webapp as webapp
+import framework.templates.webapp.v1_0_0.webapp as webapp
 import framework.builders.deployment as deploy
 
 schema MyApiService(webapp.WebAppModule):
@@ -142,7 +142,7 @@ my_api_service = MyApiService {
 
 ```kcl
 # Use CloudNativePG operator template
-import framework.templates.postgresql as pg
+import framework.templates.postgresql.v1_0_0.postgresql as pg
 
 schema MyDatabase(pg.PostgreSQLClusterModule):
     instances = 3

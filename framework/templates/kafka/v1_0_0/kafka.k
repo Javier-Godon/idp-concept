@@ -3,7 +3,7 @@ Kafka Cluster Module Template — pre-built Strimzi Kafka cluster pattern.
 Generates: Kafka CRD + KafkaTopic CRDs.
 
 Usage:
-    import framework.templates.kafka as kafka
+    import framework.templates.kafka.v1_0_0.kafka as kafka
 
     schema MyKafka(kafka.KafkaClusterModule):
         clusterName = "my-cluster"

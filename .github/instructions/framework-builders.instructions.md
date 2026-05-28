@@ -109,7 +109,7 @@ leader.build_accessory_leader(name, namespace, "Kafka", "kafka.strimzi.io/v1beta
 High-level modules that auto-generate all manifests from a few fields.
 
 Template files are organized by ecosystem and version under `framework/templates/<ecosystem>/<version>/...`.
-Prefer explicit versioned imports in new code. Root template files are maintained for backward compatibility.
+Use explicit versioned imports in new code (for example `templates.webapp.v1_0_0.webapp`, `templates.elastic.v7_10_2.elasticsearch`, or `templates.fluentbit.v3_2_10.native.fluentbit`). Root-level template shortcut files have been removed.
 
 ### WebAppModule (webapp.k) — extends Component
 Set: `port`, `serviceType`, `replicas`, `configData`, `env`, `resources`, `livenessProbe`, `readinessProbe`, `startupProbe`, `imagePullSecretName`
@@ -155,6 +155,13 @@ OpenSearch Data Prepper ingestion pipeline. Kubernetes-native because there is n
 Build lambdas: `build_dataprepper_configmap`, `build_dataprepper_deployment`, `build_dataprepper_service`, `build_dataprepper_pdb`, `build_dataprepper_resources`
 Set: `pipelineConfig`, `dataPrepperConfig`, `log4j2Properties`, `replicas`, `port`, `metricsPort`, `env`, `resources`
 
+### Fluent Bit (`templates.fluentbit.v3_2_10.*`) — logs collection
+Use explicit deployment mode imports:
+- `templates.fluentbit.v3_2_10.native.fluentbit`: `FluentBitSingleInstanceModule`, `FluentBitDaemonSetModule`, `build_fluentbit_resources`.
+- `templates.fluentbit.v3_2_10.helm.fluentbit`: `FluentBitHelmSpec`, `build_fluentbit_helm_release`.
+- `templates.fluentbit.v3_2_10.operator.fluentbit`: `FluentBitOperatorModule`, `build_fluentbit_operator_resources`.
+Set a shared `templates.observability.v1_0_0.telemetry_config.LogPipelineSpec` for `input`, `output`, `endpoint`, and index/path settings. Fluent Bit images and chart versions must be pinned; never use `latest`.
+
 ### OpenSearchDashboardsModule (opensearch_dashboards.k) — extends Component
 Standalone OpenSearch Dashboards deployment. Prefer `OpenSearchClusterModule.dashboards` when Dashboards should be managed by the OpenSearch operator with the cluster.
 Build lambdas: `build_opensearch_dashboards_config`, `build_opensearch_dashboards_configmap`, `build_opensearch_dashboards_deployment`, `build_opensearch_dashboards_service`, `build_opensearch_dashboards_pdb`, `build_opensearch_dashboards_resources`
@@ -165,7 +172,7 @@ Prefer explicit versioned imports:
 - `templates.elastic.v7_10_2.*`: last Apache-2.0 OSS artifact line (`7.10.2`), Kubernetes-native resources, no ECK.
 - `templates.elastic.v9_4_1.*`: Elastic 9.4.1 via ECK CRDs, only for usages compatible with Elastic's license terms.
 
-Flat imports (`templates.elasticsearch`, `templates.kibana`, `templates.logstash`) remain backward-compatible wrappers for `v7_10_2`.
+Flat imports (`templates.elasticsearch`, `templates.kibana`, `templates.logstash`) are removed; use explicit versioned imports.
 
 `v7_10_2` resources:
 - `ElasticsearchModule`: StatefulSet + headless Service + client Service + ConfigMap + PDB. Set `replicas`, `storageSize`, `storageClassName`, `javaOpts`, `extraConfig`, `resources`.

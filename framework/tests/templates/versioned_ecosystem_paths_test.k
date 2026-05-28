@@ -1,8 +1,8 @@
 """
 Versioned ecosystem path smoke test.
 
-Ensures the new template folder convention exists and imports resolve, while
-keeping backward-compatible root templates available.
+Ensures the template folder convention exists and imports resolve. Templates
+must be imported by explicit ecosystem/version/deployment-mode paths.
 """
 
 import templates.backstage.v1_0_0.backstage as backstage_v1_paths
@@ -26,15 +26,14 @@ import templates.redis.v1_0_0.redis as redis_v1_paths
 import templates.valkey.v1_0_0.valkey as valkey_v1_paths
 import templates.vault.v1_0_0.vault as vault_v1_paths
 import templates.webapp.v1_0_0.webapp as webapp_v1_paths
+import templates.fluentbit.v3_2_10.native.fluentbit as fluentbit_native_v3_paths
+import templates.fluentbit.v3_2_10.helm.fluentbit as fluentbit_helm_v3_paths
+import templates.fluentbit.v3_2_10.operator.fluentbit as fluentbit_operator_v3_paths
 
 # Existing versioned elastic folders remain supported
 import templates.elastic.v7_10_2.elasticsearch as elasticsearch_v7_paths
 import templates.elastic.v9_4_1.elasticsearch as elasticsearch_v9_paths
 
-# Root wrappers remain available for compatibility
-import templates.elasticsearch as elasticsearch_wrapper_paths
-import templates.kibana as kibana_wrapper_paths
-import templates.logstash as logstash_wrapper_paths
 
 test_versioned_ecosystem_imports_resolve = lambda {
     # If imports above fail, this test file does not compile.

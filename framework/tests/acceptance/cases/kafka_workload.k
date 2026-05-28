@@ -3,7 +3,7 @@ Acceptance fixture: KafkaClusterModule through the IDP render path.
 """
 
 import ._helpers as h
-import templates.kafka as kafka
+import templates.kafka.v1_0_0.kafka as kafka
 
 _module = kafka.KafkaClusterModule {
     name = "acceptance-kafka"

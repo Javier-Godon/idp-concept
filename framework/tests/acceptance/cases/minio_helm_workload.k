@@ -2,7 +2,7 @@
 Acceptance fixture: MinIO HelmRelease through the IDP render path.
 """
 import ._helpers as h
-import templates.minio as minio
+import templates.minio.v1_0_0.minio as minio
 _namespace = "idp-acceptance-minio-helm"
 _resource = minio.build_minio_helm(minio.MinIOHelmSpec {
     name = "acceptance-minio-helm"

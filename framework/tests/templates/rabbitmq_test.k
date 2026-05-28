@@ -3,7 +3,7 @@ RabbitMQ Cluster Template Tests.
 
 Tests the build_rabbitmq_cluster lambda and CNPGScheduledBackupSpec validations.
 """
-import templates.rabbitmq as rmq
+import templates.rabbitmq.v1_0_0.rabbitmq as rmq
 import runtime
 
 # === Test: build_rabbitmq_cluster generates correct CRD ===

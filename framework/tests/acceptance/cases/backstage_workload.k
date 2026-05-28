@@ -3,7 +3,7 @@ Acceptance fixture: Backstage HelmRelease through the IDP render path.
 """
 
 import ._helpers as h
-import templates.backstage as backstage
+import templates.backstage.v1_0_0.backstage as backstage
 
 _namespace = "idp-acceptance-backstage"
 _resource = backstage.build_backstage_release(backstage.BackstageHelmSpec {

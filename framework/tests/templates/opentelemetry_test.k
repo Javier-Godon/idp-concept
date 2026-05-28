@@ -6,7 +6,7 @@ Tests the OpenTelemetry template which provides:
 - OpenTelemetryCollector CRD generation
 - Instrumentation CRD generation for auto-instrumentation
 """
-import templates.opentelemetry as otel
+import templates.opentelemetry.v1_0_0.opentelemetry as otel
 import runtime
 
 # === OTel Operator Helm Chart Tests ===

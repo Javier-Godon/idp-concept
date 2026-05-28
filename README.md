@@ -134,7 +134,7 @@ Templates auto-generate Kubernetes manifests — Deployment, Service, ConfigMap,
 Inherit from a framework template — 80-90% less boilerplate:
 
 ```kcl
-import framework.templates.webapp as webapp
+import framework.templates.webapp.v1_0_0.webapp as webapp
 
 schema MyApp(webapp.WebAppModule):
     port = 8080

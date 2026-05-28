@@ -3,7 +3,7 @@ Ceph Template Tests.
 
 Tests HelmRelease generation for Rook Ceph template defaults and overrides.
 """
-import templates.ceph as ceph
+import templates.ceph.v1_0_0.ceph as ceph
 import runtime
 
 # === Test: default Ceph release ===

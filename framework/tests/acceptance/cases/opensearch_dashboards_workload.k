@@ -7,7 +7,7 @@ OpenSearch endpoint.
 """
 
 import ._helpers as h
-import templates.opensearch_dashboards as dashboards
+import templates.opensearch.v2_17_0.opensearch_dashboards as dashboards
 
 _module = dashboards.OpenSearchDashboardsModule {
     name = "opensearch-dashboards"

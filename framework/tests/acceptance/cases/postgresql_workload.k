@@ -3,7 +3,7 @@ Acceptance fixture: PostgreSQLClusterModule through the IDP render path.
 """
 
 import ._helpers as h
-import templates.postgresql as pg
+import templates.postgresql.v1_0_0.postgresql as pg
 
 _module = pg.PostgreSQLClusterModule {
     name = "acceptance-postgresql"

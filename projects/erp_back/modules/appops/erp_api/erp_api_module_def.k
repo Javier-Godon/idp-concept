@@ -2,7 +2,7 @@
 ERP API Module — Spring Boot Java application.
 Uses the WebAppModule template from framework, reducing ~190 lines to ~30.
 """
-import framework.templates.webapp as webapp
+import framework.templates.webapp.v1_0_0.webapp as webapp
 import framework.builders.deployment as deploy
 
 schema ErpApiModule(webapp.WebAppModule):

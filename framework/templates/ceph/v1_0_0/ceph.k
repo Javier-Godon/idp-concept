@@ -7,7 +7,7 @@ Production pattern:
 - create CephBlockPool + StorageClass (rook-ceph-block) for PVC provisioning
 
 Usage:
-    import templates.ceph as ceph
+    import templates.ceph.v1_0_0.ceph as ceph
 
     _spec = ceph.CephSpec {
         name = "rook-ceph"

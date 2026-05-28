@@ -341,6 +341,86 @@ spec:
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
+  name: fluentbits.fluentbit.fluent.io
+spec:
+  group: fluentbit.fluent.io
+  names:
+    kind: FluentBit
+    plural: fluentbits
+    singular: fluentbit
+  scope: Namespaced
+  versions:
+  - name: v1alpha2
+    served: true
+    storage: true
+    schema:
+      openAPIV3Schema:
+        type: object
+        x-kubernetes-preserve-unknown-fields: true
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: clusterfluentbitconfigs.fluentbit.fluent.io
+spec:
+  group: fluentbit.fluent.io
+  names:
+    kind: ClusterFluentBitConfig
+    plural: clusterfluentbitconfigs
+    singular: clusterfluentbitconfig
+  scope: Cluster
+  versions:
+  - name: v1alpha2
+    served: true
+    storage: true
+    schema:
+      openAPIV3Schema:
+        type: object
+        x-kubernetes-preserve-unknown-fields: true
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: clusterinputs.fluentbit.fluent.io
+spec:
+  group: fluentbit.fluent.io
+  names:
+    kind: ClusterInput
+    plural: clusterinputs
+    singular: clusterinput
+  scope: Cluster
+  versions:
+  - name: v1alpha2
+    served: true
+    storage: true
+    schema:
+      openAPIV3Schema:
+        type: object
+        x-kubernetes-preserve-unknown-fields: true
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: clusteroutputs.fluentbit.fluent.io
+spec:
+  group: fluentbit.fluent.io
+  names:
+    kind: ClusterOutput
+    plural: clusteroutputs
+    singular: clusteroutput
+  scope: Cluster
+  versions:
+  - name: v1alpha2
+    served: true
+    storage: true
+    schema:
+      openAPIV3Schema:
+        type: object
+        x-kubernetes-preserve-unknown-fields: true
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
   name: vaultconnections.secrets.hashicorp.com
 spec:
   group: secrets.hashicorp.com

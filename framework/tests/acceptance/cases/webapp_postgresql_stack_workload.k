@@ -19,8 +19,8 @@ Covers:
 """
 
 import ._helpers as h
-import templates.webapp as webapp
-import templates.postgresql as pg
+import templates.webapp.v1_0_0.webapp as webapp
+import templates.postgresql.v1_0_0.postgresql as pg
 
 _namespace = "idp-acceptance-webapp-postgresql-stack"
 

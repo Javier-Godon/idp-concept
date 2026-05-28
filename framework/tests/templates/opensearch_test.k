@@ -4,7 +4,7 @@ OpenSearch Cluster Template Tests.
 Tests the build_opensearch_cluster lambda for the
 OpenSearch Kubernetes Operator (opensearch.org/v1).
 """
-import templates.opensearch as os
+import templates.opensearch.v2_17_0.opensearch as os
 import runtime
 
 # === Test: build_opensearch_cluster generates correct CRD ===

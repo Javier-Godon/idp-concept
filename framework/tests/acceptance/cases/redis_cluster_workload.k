@@ -3,7 +3,7 @@ Acceptance fixture: RedisClusterModule through the IDP render path.
 """
 
 import ._helpers as h
-import templates.redis as redis
+import templates.redis.v1_0_0.redis as redis
 
 _module = redis.RedisClusterModule {
     name = "acceptance-redis-cluster"

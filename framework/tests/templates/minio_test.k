@@ -1,4 +1,4 @@
-import templates.minio as mn
+import templates.minio.v1_0_0.minio as mn
 import models.modules.thirdparty_helm as th
 
 test_minio_default = lambda {

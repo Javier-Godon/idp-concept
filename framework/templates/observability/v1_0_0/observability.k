@@ -9,7 +9,7 @@ Charts:
 - grafana (Bitnami): Dashboards + alerting UI
 
 Usage:
-    import templates.observability as obs
+    import templates.observability.v1_0_0.observability as obs
 
     _prometheus = obs.build_prometheus(obs.PrometheusSpec {
         name = "prometheus"

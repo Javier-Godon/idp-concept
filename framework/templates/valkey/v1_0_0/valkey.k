@@ -3,7 +3,7 @@ Valkey Template — deploys Valkey via HelmRelease using ThirdPartyHelmSpec.
 Production defaults prefer replication mode and persistent storage.
 
 Usage:
-    import templates.valkey as valkey
+    import templates.valkey.v1_0_0.valkey as valkey
 
     _spec = valkey.ValkeySpec {
         name = "cache"

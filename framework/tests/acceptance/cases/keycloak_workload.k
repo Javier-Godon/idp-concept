@@ -3,7 +3,7 @@ Acceptance fixture: KeycloakModule through the IDP render path.
 """
 
 import ._helpers as h
-import templates.keycloak as kc
+import templates.keycloak.v1_0_0.keycloak as kc
 
 _module = kc.KeycloakModule {
     name = "acceptance-keycloak"

@@ -7,7 +7,7 @@ Operator: Vault Secrets Operator (https://github.com/hashicorp/vault-secrets-ope
 License: BUSL-1.1 — NOT fully open-source. For Apache-2.0 alternative, use ExternalSecrets operator.
 
 Usage:
-    import framework.templates.vault as vault
+    import framework.templates.vault.v1_0_0.vault as vault
 
     _conn = vault.build_vault_connection(vault.VaultConnectionSpec {
         name = "vault-conn"

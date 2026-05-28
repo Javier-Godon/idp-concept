@@ -17,8 +17,8 @@ Covers:
 """
 
 import ._helpers as h
-import templates.webapp as webapp
-import templates.database as database
+import templates.webapp.v1_0_0.webapp as webapp
+import templates.database.v1_0_0.database as database
 
 _namespace = "idp-acceptance-webapp-database-stack-rollout"
 

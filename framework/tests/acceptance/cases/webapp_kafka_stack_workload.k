@@ -19,8 +19,8 @@ Covers:
 """
 
 import ._helpers as h
-import templates.webapp as webapp
-import templates.kafka as kafka
+import templates.webapp.v1_0_0.webapp as webapp
+import templates.kafka.v1_0_0.kafka as kafka
 
 _namespace = "idp-acceptance-webapp-kafka-stack"
 

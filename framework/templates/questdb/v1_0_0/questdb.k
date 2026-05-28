@@ -9,7 +9,7 @@ Official Helm chart: https://questdb.io/docs/deployment/kubernetes/
 Chart repo: https://questdb.github.io/questdb-helm (chart: questdb/questdb)
 
 Usage:
-    import templates.questdb as qdb
+    import templates.questdb.v1_0_0.questdb as qdb
 
     _spec = qdb.QuestDBSpec {
         name = "my-questdb"

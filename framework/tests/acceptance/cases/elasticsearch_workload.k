@@ -7,7 +7,7 @@ too heavy for the default kind acceptance path.
 """
 
 import ._helpers as h
-import templates.elasticsearch as elasticsearch
+import templates.elastic.v7_10_2.elasticsearch as elasticsearch
 
 _module = elasticsearch.ElasticsearchModule {
     name = "elasticsearch"

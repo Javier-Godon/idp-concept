@@ -4,7 +4,7 @@ MongoDB Community Template Tests.
 Tests the build_mongodb_community lambda for the
 MongoDB Community Kubernetes Operator (mongodbcommunity.mongodb.com/v1).
 """
-import templates.mongodb as mongo
+import templates.mongodb.v1_0_0.mongodb as mongo
 import runtime
 
 # === Test: build_mongodb_community generates correct CRD ===

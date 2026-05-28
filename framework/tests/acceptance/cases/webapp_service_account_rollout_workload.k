@@ -13,7 +13,7 @@ patching pattern for acceptance environments.
 """
 
 import ._helpers as h
-import templates.webapp as webapp
+import templates.webapp.v1_0_0.webapp as webapp
 
 _namespace = "idp-acceptance-webapp-service-account-rollout"
 

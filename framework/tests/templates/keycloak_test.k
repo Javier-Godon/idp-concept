@@ -4,7 +4,7 @@ Keycloak Template Tests.
 Tests the build_keycloak and build_keycloak_realm_import lambdas
 for the Keycloak Operator (k8s.keycloak.org/v2alpha1).
 """
-import templates.keycloak as kc
+import templates.keycloak.v1_0_0.keycloak as kc
 import runtime
 
 # === Test: build_keycloak generates correct Keycloak CRD ===

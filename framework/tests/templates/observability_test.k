@@ -1,4 +1,4 @@
-import templates.observability as obs
+import templates.observability.v1_0_0.observability as obs
 
 # --- Prometheus Tests ---
 

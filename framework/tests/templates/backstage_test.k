@@ -1,4 +1,4 @@
-import templates.backstage as bs
+import templates.backstage.v1_0_0.backstage as bs
 
 # --- Tests ---
 

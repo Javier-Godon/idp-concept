@@ -1,12 +1,12 @@
 """
 Acceptance fixture: WebAppModule workload.
 
-Uses the backward-compatible root template import and a small pause image so the
-case can roll out quickly in a local kind cluster.
+Uses the explicit versioned WebApp template import and a small pause image so
+the case can roll out quickly in a local kind cluster.
 """
 
 import ._helpers as h
-import templates.webapp as webapp
+import templates.webapp.v1_0_0.webapp as webapp
 
 _app = webapp.WebAppModule {
     name = "acceptance-webapp"

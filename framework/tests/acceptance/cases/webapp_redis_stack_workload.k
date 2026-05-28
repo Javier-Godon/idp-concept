@@ -18,8 +18,8 @@ Covers:
 """
 
 import ._helpers as h
-import templates.webapp as webapp
-import templates.redis as redis
+import templates.webapp.v1_0_0.webapp as webapp
+import templates.redis.v1_0_0.redis as redis
 
 _namespace = "idp-acceptance-webapp-redis-stack"
 

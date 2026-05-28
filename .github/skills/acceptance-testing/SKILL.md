@@ -43,18 +43,18 @@ Avoid direct `manifests.yaml_stream([...])` in template acceptance fixtures.
 | `basic` | Tiny builder smoke, applies by default. |
 | `search` | OpenSearch, OpenSearch Dashboards, Elastic v7, Elastic v9 ECK dry-run cases. |
 | `data` | Kafka, PostgreSQL, MongoDB, RabbitMQ, Redis, MinIO, QuestDB, Valkey, plus `database`. |
-| `platform` | Backstage, Observability, OpenTelemetry, Vault, Keycloak, Ceph, Longhorn, OpenBao. |
+| `platform` | Backstage, Observability, OpenTelemetry, Fluent Bit, Vault, Keycloak, Ceph, Longhorn, OpenBao. |
 | `templates` | Every individual template fixture. |
 | `integrations` | Multi-module dependency scenarios. |
-| `rollouts` | Dry-run + selective apply for runtime rollout fixtures. Includes all 16 rollout cases: single-template (`dataprepper-rollout`, `opensearch-dashboards-rollout`, `elasticsearch-rollout`, `kibana-rollout`, `logstash-rollout`, `webapp-probes-rollout`, `webapp-service-account-rollout`) and mixture stacks (`webapp-database-stack-rollout`, `elasticsearch-kibana-stack-rollout`, `elk-stack-rollout`, `webapp-dataprepper-stack-rollout`, `webapp-opensearch-dashboards-stack-rollout`, `webapp-elk-stack-rollout`, `dataprepper-elk-stack-rollout`, `webapp-dataprepper-elk-stack-rollout`, `webapp-database-dataprepper-stack-rollout`). |
+| `rollouts` | Dry-run + selective apply for runtime rollout fixtures. Includes 17 rollout cases: single-template (`dataprepper-rollout`, `opensearch-dashboards-rollout`, `elasticsearch-rollout`, `kibana-rollout`, `logstash-rollout`, `fluentbit-native-rollout`, `webapp-probes-rollout`, `webapp-service-account-rollout`) and mixture stacks (`webapp-database-stack-rollout`, `elasticsearch-kibana-stack-rollout`, `elk-stack-rollout`, `webapp-dataprepper-stack-rollout`, `webapp-opensearch-dashboards-stack-rollout`, `webapp-elk-stack-rollout`, `dataprepper-elk-stack-rollout`, `webapp-dataprepper-elk-stack-rollout`, `webapp-database-dataprepper-stack-rollout`). |
 | `all` | Basic + templates + integrations + rollouts. |
 
-Apply-capable cases (`APPLY_CASES`): `basic`, `webapp`, `database`, `webapp-service-account-rollout`, `webapp-database-stack-rollout`, `elasticsearch-kibana-stack-rollout`, `elk-stack-rollout`, `webapp-dataprepper-stack-rollout`, `webapp-opensearch-dashboards-stack-rollout`, `webapp-elk-stack-rollout`, `dataprepper-elk-stack-rollout`, `webapp-dataprepper-elk-stack-rollout`, `webapp-database-dataprepper-stack-rollout`. Keep operator/Helm/storage-heavy scenarios dry-run-only unless real controller installation and readiness checks are implemented.
+Apply-capable cases (`APPLY_CASES`): `basic`, `webapp`, `database`, `webapp-service-account-rollout`, `webapp-database-stack-rollout`, `elasticsearch-kibana-stack-rollout`, `elk-stack-rollout`, `webapp-dataprepper-stack-rollout`, `webapp-opensearch-dashboards-stack-rollout`, `webapp-elk-stack-rollout`, `dataprepper-elk-stack-rollout`, `webapp-dataprepper-elk-stack-rollout`, `webapp-database-dataprepper-stack-rollout`, `fluentbit-native-rollout`. Keep operator/Helm/storage-heavy scenarios dry-run-only unless real controller installation and readiness checks are implemented.
 
 Runtime groups live in `scripts/acceptance_runtime.sh` and use names like `runtime-basic`, `runtime-rollouts`, `runtime-cnpg`, `runtime-keycloak-postgresql`, `runtime-opensearch`, `runtime-dataprepper-opensearch`, `runtime-kafka`, `runtime-mongodb`, `runtime-rabbitmq`, `runtime-redis`, `runtime-search`, `runtime-data`, `runtime-platform`, `runtime-storage`, `runtime-integrations`, `runtime-webapp-stacks`, and `runtime-all`.
 
-`runtime-rollouts` covers all 16 rollout cases (all verified on kind kindest/node:v1.33.0):
-- Single-template: `dataprepper-rollout`, `opensearch-dashboards-rollout`, `elasticsearch-rollout`, `kibana-rollout`, `logstash-rollout`, `webapp-probes-rollout`, `webapp-service-account-rollout`
+`runtime-rollouts` covers 17 rollout cases (existing 16 verified on kind kindest/node:v1.33.0; run `fluentbit-native-rollout` for the new Fluent Bit path):
+- Single-template: `dataprepper-rollout`, `opensearch-dashboards-rollout`, `elasticsearch-rollout`, `kibana-rollout`, `logstash-rollout`, `fluentbit-native-rollout`, `webapp-probes-rollout`, `webapp-service-account-rollout`
 - 2-template mixtures: `webapp-database-stack-rollout`, `elasticsearch-kibana-stack-rollout`, `webapp-dataprepper-stack-rollout`, `webapp-opensearch-dashboards-stack-rollout`
 - 3-template mixtures: `elk-stack-rollout`, `webapp-elk-stack-rollout`, `dataprepper-elk-stack-rollout`, `webapp-database-dataprepper-stack-rollout`
 - 4-template mixture: `webapp-dataprepper-elk-stack-rollout`
@@ -71,6 +71,13 @@ Both dry-run groups and runtime groups must execute selected fixtures one by one
 - Realistic pipelines usually need OpenSearch or another sink.
 - Probes require the real Data Prepper runtime, so `pause` images are not valid rollout substitutes.
 - Use `dataprepper-opensearch` for IDP-level dependency rendering and future runtime promotion.
+
+### Fluent Bit
+
+- Native mode (`fluentbit-native`, `fluentbit-native-rollout`) renders built-in Kubernetes resources only and can be promoted to lightweight apply without Helm or operator dependencies.
+- Helm mode (`fluentbit-helm`) requires Flux/Helm reconciliation for runtime tests.
+- Operator mode (`fluentbit-operator`) requires Flux plus Fluent Operator CRDs/controller.
+- Use `templates.observability.v1_0_0.telemetry_config.LogPipelineSpec` to keep pipeline shape consistent across Fluent Bit, Data Prepper, and OpenTelemetry fixtures.
 
 ### WebApp probe rollout (`webapp-probes-rollout`)
 

@@ -3,7 +3,7 @@ Acceptance fixture: OpenSearchClusterModule through the IDP render path.
 """
 
 import ._helpers as h
-import templates.opensearch as os
+import templates.opensearch.v2_17_0.opensearch as os
 
 _module = os.OpenSearchClusterModule {
     name = "acceptance-opensearch"

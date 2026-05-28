@@ -9,7 +9,7 @@ Chart repo: https://backstage.github.io/charts (chart: backstage/backstage)
 PostgreSQL: Uses CloudNativePG from framework/templates/postgresql.k
 
 Usage:
-    import templates.backstage as bs
+    import templates.backstage.v1_0_0.backstage as bs
 
     _spec = bs.BackstageHelmSpec {
         name = "backstage"
@@ -20,7 +20,7 @@ Usage:
     _manifest = bs.build_backstage_release(_spec)
 
     # With PostgreSQL via CloudNativePG:
-    import templates.postgresql as pg
+    import templates.postgresql.v1_0_0.postgresql as pg
 
     _pg_spec = pg.CNPGClusterSpec {
         name = "backstage-db"

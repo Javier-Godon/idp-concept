@@ -6,7 +6,7 @@ with a real rollout while avoiding the full Logstash JVM runtime for this smoke.
 """
 
 import ._helpers as h
-import templates.logstash as logstash
+import templates.elastic.v7_10_2.logstash as logstash
 
 _namespace = "idp-acceptance-logstash-rollout"
 _runtime_image = "python:3.12.3-alpine3.20"

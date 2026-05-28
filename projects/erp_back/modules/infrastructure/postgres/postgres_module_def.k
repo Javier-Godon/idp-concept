@@ -2,7 +2,7 @@
 PostgreSQL Module — CloudNativePG operator-based PostgreSQL cluster.
 Uses framework PostgreSQLClusterModule for production-ready primitives.
 """
-import framework.templates.postgresql as postgresql
+import framework.templates.postgresql.v1_0_0.postgresql as postgresql
 
 schema PostgresModule(postgresql.PostgreSQLClusterModule):
     clusterName = name

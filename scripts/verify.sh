@@ -6,14 +6,13 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 printf "==> Running scoped KCL lint\n"
 (
   cd "$ROOT_DIR/framework"
-  kcl lint builders/*.k models/*.k models/modules/*.k procedures/*.k templates/*.k assembly/*.k factory/seed.k factory/render_entry.k factory/conventions.k
-  while IFS= read -r version_dir; do
-    if compgen -G "$version_dir/*.k" > /dev/null; then
-      kcl lint "$version_dir"/*.k
-    fi
-  done < <(find templates -type d -name 'v*' | sort)
-  kcl lint custom/*.k
-  kcl lint custom/helm/*.k
+  shopt -s nullglob
+  for source_file in builders/*.k models/*.k models/modules/*.k procedures/*.k templates/*.k assembly/*.k factory/seed.k factory/render_entry.k factory/conventions.k custom/*.k custom/helm/*.k; do
+    kcl lint "$source_file"
+  done
+  while IFS= read -r source_file; do
+    kcl lint "$source_file"
+  done < <(find templates -type f -name '*.k' | sort)
   for fixture in tests/acceptance/cases/*.k; do
     kcl lint "$fixture"
   done

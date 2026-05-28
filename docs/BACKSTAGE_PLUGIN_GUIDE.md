@@ -16,11 +16,11 @@
 
 ## 1. Prerequisites
 
-Before installing plugins, ensure the Backstage instance is running. Use the `framework/templates/backstage.k` template:
+Before installing plugins, ensure the Backstage instance is running. Use the versioned `framework/templates/backstage/v1_0_0/backstage.k` template:
 
 ```kcl
-import framework.templates.backstage as bs
-import framework.templates.postgresql as pg
+import framework.templates.backstage.v1_0_0.backstage as bs
+import framework.templates.postgresql.v1_0_0.postgresql as pg
 
 # PostgreSQL for Backstage (via CloudNativePG)
 _pg_spec = pg.CNPGClusterSpec {
@@ -242,10 +242,10 @@ import { EntityCatalogGraphCard } from '@backstage/plugin-catalog-graph';
 
 ### 3.1 Keycloak Instance
 
-Use the existing Keycloak template from `framework/templates/keycloak.k`:
+Use the existing Keycloak template from `framework/templates/keycloak/v1_0_0/keycloak.k`:
 
 ```kcl
-import framework.templates.keycloak as kc
+import framework.templates.keycloak.v1_0_0.keycloak as kc
 
 _kc_spec = kc.KeycloakSpec {
     name = "backstage-keycloak"

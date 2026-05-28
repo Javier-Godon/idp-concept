@@ -24,7 +24,7 @@ The helper is designed for `WebAppModule`, which already accepts:
 ## WebAppModule example
 
 ```kcl
-import framework.templates.webapp as webapp
+import framework.templates.webapp.v1_0_0.webapp as webapp
 import framework.custom.application_configurations as appcfg
 
 _config = appcfg.build_config_bundle(appcfg.ApplicationConfigSpec {

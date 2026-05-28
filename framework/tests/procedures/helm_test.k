@@ -130,8 +130,8 @@ test_generate_charts_empty_accessories = lambda {
     assert _result[0].chart.name == "api"
 }
 
-# === Test: existing get_helm_components still works (backward compat) ===
-test_get_helm_components_backward_compat = lambda {
+# === Test: get_helm_components returns component manifest lists ===
+test_get_helm_components = lambda {
     _result = helm_proc.get_helm_components([_test_component])
     assert len(_result) == 1
     # Each element is the manifests list

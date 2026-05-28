@@ -18,9 +18,9 @@ Covers:
 """
 
 import ._helpers as h
-import templates.webapp as webapp
-import templates.elasticsearch as elasticsearch
-import templates.kibana as kibana
+import templates.webapp.v1_0_0.webapp as webapp
+import templates.elastic.v7_10_2.elasticsearch as elasticsearch
+import templates.elastic.v7_10_2.kibana as kibana
 
 _namespace = "idp-acceptance-webapp-elk-stack-rollout"
 _runtime_image = "python:3.12.3-alpine3.20"

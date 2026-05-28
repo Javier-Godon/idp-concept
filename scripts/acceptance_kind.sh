@@ -10,13 +10,13 @@ SKIP_CREATE="false"
 PREFLIGHT_ONLY="false"
 CASES=("basic")
 CASES_SELECTED="false"
-APPLY_CASES=("basic" "webapp" "database" "webapp-service-account-rollout" "webapp-database-stack-rollout" "elasticsearch-kibana-stack-rollout" "elk-stack-rollout" "webapp-dataprepper-stack-rollout" "webapp-opensearch-dashboards-stack-rollout" "webapp-elk-stack-rollout" "dataprepper-elk-stack-rollout" "webapp-dataprepper-elk-stack-rollout" "webapp-database-dataprepper-stack-rollout")
+APPLY_CASES=("basic" "webapp" "database" "webapp-service-account-rollout" "webapp-database-stack-rollout" "elasticsearch-kibana-stack-rollout" "elk-stack-rollout" "webapp-dataprepper-stack-rollout" "webapp-opensearch-dashboards-stack-rollout" "webapp-elk-stack-rollout" "dataprepper-elk-stack-rollout" "webapp-dataprepper-elk-stack-rollout" "webapp-database-dataprepper-stack-rollout" "fluentbit-native-rollout")
 SEARCH_CASES=("opensearch" "opensearch-dashboards" "elasticsearch" "kibana" "logstash" "elasticsearch-v9" "kibana-v9" "logstash-v9")
 DATA_CASES=("database" "postgresql" "mongodb" "rabbitmq" "redis" "redis-cluster" "kafka" "minio-tenant" "minio-helm" "questdb" "valkey")
-PLATFORM_CASES=("backstage" "observability" "opentelemetry" "vault" "keycloak" "ceph" "longhorn" "openbao")
+PLATFORM_CASES=("backstage" "observability" "opentelemetry" "fluentbit-native" "fluentbit-helm" "fluentbit-operator" "vault" "keycloak" "ceph" "longhorn" "openbao")
 INTEGRATION_CASES=("dataprepper-opensearch" "keycloak-postgresql" "persistence-longhorn" "persistence-ceph" "webapp-postgresql-stack" "webapp-kafka-stack" "webapp-rabbitmq-stack" "webapp-redis-stack" "webapp-mongodb-stack")
-ROLLOUT_CASES=("dataprepper-rollout" "opensearch-dashboards-rollout" "elasticsearch-rollout" "kibana-rollout" "logstash-rollout" "webapp-probes-rollout" "webapp-service-account-rollout" "webapp-database-stack-rollout" "elasticsearch-kibana-stack-rollout" "elk-stack-rollout" "webapp-dataprepper-stack-rollout" "webapp-opensearch-dashboards-stack-rollout" "webapp-elk-stack-rollout" "dataprepper-elk-stack-rollout" "webapp-dataprepper-elk-stack-rollout" "webapp-database-dataprepper-stack-rollout")
-TEMPLATE_CASES=("webapp" "database" "dataprepper" "opensearch" "opensearch-dashboards" "elasticsearch" "kibana" "logstash" "elasticsearch-v9" "kibana-v9" "logstash-v9" "kafka" "postgresql" "mongodb" "rabbitmq" "redis" "redis-cluster" "keycloak" "backstage" "questdb" "minio-tenant" "minio-helm" "observability" "opentelemetry" "vault" "ceph" "longhorn" "valkey" "openbao")
+ROLLOUT_CASES=("dataprepper-rollout" "opensearch-dashboards-rollout" "elasticsearch-rollout" "kibana-rollout" "logstash-rollout" "webapp-probes-rollout" "webapp-service-account-rollout" "webapp-database-stack-rollout" "elasticsearch-kibana-stack-rollout" "elk-stack-rollout" "webapp-dataprepper-stack-rollout" "webapp-opensearch-dashboards-stack-rollout" "webapp-elk-stack-rollout" "dataprepper-elk-stack-rollout" "webapp-dataprepper-elk-stack-rollout" "webapp-database-dataprepper-stack-rollout" "fluentbit-native-rollout")
+TEMPLATE_CASES=("webapp" "database" "dataprepper" "fluentbit-native" "fluentbit-helm" "fluentbit-operator" "opensearch" "opensearch-dashboards" "elasticsearch" "kibana" "logstash" "elasticsearch-v9" "kibana-v9" "logstash-v9" "kafka" "postgresql" "mongodb" "rabbitmq" "redis" "redis-cluster" "keycloak" "backstage" "questdb" "minio-tenant" "minio-helm" "observability" "opentelemetry" "vault" "ceph" "longhorn" "valkey" "openbao")
 ALL_CASES=("basic" "${TEMPLATE_CASES[@]}" "${INTEGRATION_CASES[@]}" "${ROLLOUT_CASES[@]}")
 
 usage() {
@@ -28,6 +28,7 @@ Options:
                        data, platform, templates, integrations, rollouts, all.
                        Individual cases can be any fixture name such as webapp,
                        kafka, postgresql, minio-helm, opentelemetry,
+                       fluentbit-native, fluentbit-helm, fluentbit-operator,
                        elasticsearch-v9, dataprepper-opensearch,
                         dataprepper-rollout, webapp-probes-rollout,
                         webapp-service-account-rollout,
@@ -38,6 +39,7 @@ Options:
                         webapp-opensearch-dashboards-stack-rollout,
                         webapp-elk-stack-rollout,
                         dataprepper-elk-stack-rollout,
+                         fluentbit-native-rollout,
                         webapp-dataprepper-elk-stack-rollout,
                         webapp-database-dataprepper-stack-rollout,
                         webapp-postgresql-stack,
@@ -272,6 +274,10 @@ apply_case() {
       kubectl -n idp-acceptance-webapp-database-dataprepper-stack-rollout rollout status deploy/acceptance-dp-3tier --timeout=180s
       kubectl -n idp-acceptance-webapp-database-dataprepper-stack-rollout get deploy,svc,pvc,cm
       kubectl get pv acceptance-db-3tier-pv
+      ;;
+    fluentbit-native-rollout)
+      kubectl -n idp-acceptance-fluentbit-native-rollout rollout status deploy/acceptance-fluentbit --timeout=180s
+      kubectl -n idp-acceptance-fluentbit-native-rollout get deploy,svc,cm
       ;;
   esac
 }

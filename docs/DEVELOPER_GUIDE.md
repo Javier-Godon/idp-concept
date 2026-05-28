@@ -444,7 +444,7 @@ This replaces ~80 lines of manual Deployment YAML with a typed, validated call.
 
 **Example — Web application in ~15 lines instead of ~190:**
 ```kcl
-import framework.templates.webapp as webapp
+import framework.templates.webapp.v1_0_0.webapp as webapp
 import framework.builders.deployment as deploy
 
 schema MyApiModule(webapp.WebAppModule):
@@ -474,7 +474,7 @@ The template generates Deployment, Service, ConfigMap, and ServiceAccount automa
 
 **Example — Database module in ~10 lines:**
 ```kcl
-import framework.templates.database as database
+import framework.templates.database.v1_0_0.database as database
 
 schema MyPostgresModule(database.SingleDatabaseModule):
     port = 5432
@@ -488,7 +488,7 @@ schema MyPostgresModule(database.SingleDatabaseModule):
 
 **Example — Kafka cluster in ~8 lines:**
 ```kcl
-import framework.templates.kafka as kafka
+import framework.templates.kafka.v1_0_0.kafka as kafka
 
 schema MyKafkaModule(kafka.KafkaClusterModule):
     clusterName = "events-cluster"
@@ -1303,7 +1303,7 @@ The `erp_back` project demonstrates the **recommended approach** for new project
 The ERP API module uses `WebAppModule` with Spring Boot probes and environment variables:
 
 ```kcl
-import framework.templates.webapp as webapp
+import framework.templates.webapp.v1_0_0.webapp as webapp
 import framework.builders.deployment as deploy
 
 schema ErpApiModule(webapp.WebAppModule):
@@ -1337,7 +1337,7 @@ Compared to the video_streaming approach (which writes raw `apps.Deployment`, `c
 ### Module Definition — `postgres_module_def.k`
 
 ```kcl
-import framework.templates.database as database
+import framework.templates.database.v1_0_0.database as database
 import framework.builders.deployment as deploy
 
 schema PostgresModule(database.SingleDatabaseModule):

@@ -6,7 +6,7 @@ CRD API: opensearch.org/v1
 Operator: opensearch-k8s-operator (https://github.com/opensearch-project/opensearch-k8s-operator)
 
 Usage:
-    import framework.templates.opensearch as os
+    import framework.templates.opensearch.v2_17_0.opensearch as os
 
     schema MyOpenSearch(os.OpenSearchClusterModule):
         clusterName = "my-os"

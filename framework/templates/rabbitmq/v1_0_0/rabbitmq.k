@@ -6,7 +6,7 @@ CRD API: rabbitmq.com/v1beta1
 Operator: RabbitMQ Cluster Operator (https://www.rabbitmq.com/kubernetes/operator/operator-overview)
 
 Usage:
-    import framework.templates.rabbitmq as rmq
+    import framework.templates.rabbitmq.v1_0_0.rabbitmq as rmq
 
     schema MyRabbitMQ(rmq.RabbitMQClusterModule):
         clusterName = "my-rmq"

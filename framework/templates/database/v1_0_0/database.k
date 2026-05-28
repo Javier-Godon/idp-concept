@@ -3,7 +3,7 @@ Database Module Template — pre-built single-instance database pattern.
 Generates: Deployment + Service + PVC (and optional local PV for development).
 
 Usage:
-    import framework.templates.database as database
+    import framework.templates.database.v1_0_0.database as database
 
     schema MyDB(database.SingleDatabaseModule):
         port = 27017

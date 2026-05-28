@@ -6,7 +6,7 @@ CRD API: k8s.keycloak.org/v2alpha1
 Operator: Keycloak Operator (https://www.keycloak.org/operator/installation)
 
 Usage:
-    import framework.templates.keycloak as kc
+    import framework.templates.keycloak.v1_0_0.keycloak as kc
 
     schema MyKeycloak(kc.KeycloakModule):
         keycloakName = "my-kc"

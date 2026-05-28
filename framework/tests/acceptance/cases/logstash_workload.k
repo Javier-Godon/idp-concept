@@ -6,7 +6,7 @@ dry-run. It is not applied by default because it pulls a large runtime image.
 """
 
 import ._helpers as h
-import templates.logstash as logstash
+import templates.elastic.v7_10_2.logstash as logstash
 
 _pipeline = "input { beats { port => 5044 } }\noutput { stdout { codec => rubydebug } }\n"
 

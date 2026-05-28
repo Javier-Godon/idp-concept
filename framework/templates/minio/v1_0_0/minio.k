@@ -10,7 +10,7 @@ Operator: https://github.com/minio/operator (archived, AGPL-3.0)
 Helm: https://github.com/bitnami/charts/tree/main/bitnami/minio (Apache-2.0)
 
 Usage with Operator CRD:
-    import templates.minio as mn
+    import templates.minio.v1_0_0.minio as mn
 
     _spec = mn.MinIOTenantSpec {
         name = "my-minio"
@@ -22,7 +22,7 @@ Usage with Operator CRD:
     _manifest = mn.build_minio_tenant(_spec)
 
 Usage with Helm chart (recommended for new deployments):
-    import templates.minio as mn
+    import templates.minio.v1_0_0.minio as mn
 
     _spec = mn.MinIOHelmSpec {
         name = "my-minio"

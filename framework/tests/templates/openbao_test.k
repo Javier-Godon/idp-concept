@@ -3,7 +3,7 @@ OpenBao Template Tests.
 
 Tests HelmRelease generation for OpenBao template defaults and HA mode.
 """
-import templates.openbao as openbao
+import templates.openbao.v1_0_0.openbao as openbao
 import runtime
 
 # === Test: default OpenBao release ===

@@ -10,7 +10,7 @@ Covers: configData, env vars, explicit ResourceSpec, and all three probe types.
 """
 
 import ._helpers as h
-import templates.webapp as webapp
+import templates.webapp.v1_0_0.webapp as webapp
 import builders.deployment as deploy
 
 _namespace = "idp-acceptance-webapp-probes-rollout"

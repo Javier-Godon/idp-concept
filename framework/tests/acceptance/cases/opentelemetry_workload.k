@@ -2,7 +2,7 @@
 Acceptance fixture: OpenTelemetry operator HelmRelease and CRs through the IDP render path.
 """
 import ._helpers as h
-import templates.opentelemetry as otel
+import templates.opentelemetry.v1_0_0.opentelemetry as otel
 _namespace = "idp-acceptance-opentelemetry"
 _resources = [
     otel.build_otel_operator(otel.OtelOperatorSpec {

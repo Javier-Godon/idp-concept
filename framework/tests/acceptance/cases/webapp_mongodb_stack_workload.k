@@ -19,8 +19,8 @@ Covers:
 """
 
 import ._helpers as h
-import templates.webapp as webapp
-import templates.mongodb as mongo
+import templates.webapp.v1_0_0.webapp as webapp
+import templates.mongodb.v1_0_0.mongodb as mongo
 
 _namespace = "idp-acceptance-webapp-mongodb-stack"
 

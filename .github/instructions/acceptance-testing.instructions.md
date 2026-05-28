@@ -59,6 +59,7 @@ Use `*-rollout` fixtures for native Kubernetes templates that emit Deployments o
 | `elasticsearch-rollout` | Elastic v7 `ElasticsearchModule` | StatefulSet + TCP/HTTP probes roll out without a real cluster. |
 | `kibana-rollout` | Elastic v7 `KibanaModule` | Deployment + probes roll out without a backing Elasticsearch. |
 | `logstash-rollout` | Elastic v7 `LogstashModule` | Deployment + probes roll out without real Logstash JVM. |
+| `fluentbit-native-rollout` | Fluent Bit native `FluentBitSingleInstanceModule` | Native ConfigMap + Service + Deployment render and roll out with a pinned Fluent Bit stdout pipeline. Also in APPLY_CASES. |
 | `webapp-probes-rollout` | `WebAppModule` with all three probe types | HTTP probe specs (`livenessProbe`, `readinessProbe`, `startupProbe`) render correctly and pass against a Python server. ROLLOUT_CASES only (uses python image). |
 | `webapp-service-account-rollout` | `WebAppModule` with `imagePullSecretName` | ServiceAccount generation + `serviceAccountName` wiring. `imagePullSecrets` patched empty for kind. Also in APPLY_CASES. |
 | `webapp-database-stack-rollout` | **Mixture**: `WebAppModule` + `SingleDatabaseModule` via `render_stack` | Multi-module stack: two Deployments + PVC+PV roll out simultaneously. Proves `render_stack` in real rollout. Also in APPLY_CASES. ✓ kind verified |

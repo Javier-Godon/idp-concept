@@ -3,7 +3,7 @@ WebApp Module Template — pre-built web application pattern.
 Generates: Deployment + Service + ConfigMap (optional) + ServiceAccount (optional).
 
 Usage:
-    import framework.templates.webapp as webapp
+    import framework.templates.webapp.v1_0_0.webapp as webapp
 
     schema MyApp(webapp.WebAppModule):
         port = 8080

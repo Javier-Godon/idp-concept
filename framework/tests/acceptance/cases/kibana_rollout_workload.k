@@ -6,7 +6,7 @@ while avoiding a heavyweight Elasticsearch dependency for this specific smoke.
 """
 
 import ._helpers as h
-import templates.kibana as kibana
+import templates.elastic.v7_10_2.kibana as kibana
 
 _namespace = "idp-acceptance-kibana-rollout"
 _runtime_image = "python:3.12.3-alpine3.20"

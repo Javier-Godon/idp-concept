@@ -1,6 +1,6 @@
 # Framework Generalization Plan — Reducing Project Complexity
 
-> **Status:** ✅ **IMPLEMENTED** — All 5 phases have been completed and validated. See the implementation in `framework/builders/`, `framework/templates/`, `framework/assembly/`, `framework/factory/`, and `framework/models/configurations.k`. The `erp_back` project demonstrates the new approach. The `video_streaming` project remains backward-compatible with no changes needed.
+> **Status:** ✅ **IMPLEMENTED** — All 5 phases have been completed and validated. See the implementation in `framework/builders/`, explicit versioned `framework/templates/`, `framework/assembly/`, `framework/factory/`, and `framework/models/configurations.k`. The `erp_back` project demonstrates the high-level template approach, while older project code can continue using raw framework builders directly.
 
 > **Problem:** Creating a concrete project like `video_streaming` requires deep KCL expertise — you must manually write full Deployment specs, probe configurations, volume mounts, leader patterns, and repetitive boilerplate. Most of this follows predictable patterns that can be extracted into the framework.
 >
@@ -314,7 +314,7 @@ Pre-built module schemas for common patterns that projects can inherit and custo
 The most common pattern: Deployment + Service + ConfigMap + optional ServiceAccount.
 
 ```kcl
-# framework/templates/webapp.k
+# framework/templates/webapp/v1_0_0/webapp.k
 
 schema WebAppModule(component.Component):
     """Pre-built web application module.
@@ -422,7 +422,7 @@ The VideoCollector definition becomes trivial:
 # BEFORE: 190 lines defining raw Deployment, Service, ConfigMap, ServiceAccount
 # AFTER: 20 lines of high-level intent
 
-import framework.templates.webapp
+import framework.templates.webapp.v1_0_0.webapp
 
 schema VideoCollectorMongodbPythonModule(webapp.WebAppModule):
     port = 8002

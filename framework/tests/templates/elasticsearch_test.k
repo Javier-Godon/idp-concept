@@ -1,5 +1,5 @@
 import runtime
-import templates.elasticsearch as es
+import templates.elastic.v7_10_2.elasticsearch as es
 
 test_elasticsearch_resources = lambda {
     _resources = es.build_elasticsearch_resources(es.ElasticsearchSpec {

@@ -8,8 +8,8 @@ OpenSearchCluster CR.
 """
 
 import ._helpers as h
-import templates.dataprepper as dp
-import templates.opensearch as os
+import templates.opensearch.dataprepper.v2_10_2.dataprepper as dp
+import templates.opensearch.v2_17_0.opensearch as os
 
 _namespace = "idp-acceptance-dataprepper-opensearch"
 

@@ -3,7 +3,7 @@ Acceptance fixture: MinIO Tenant CR through the IDP render path.
 """
 
 import ._helpers as h
-import templates.minio as minio
+import templates.minio.v1_0_0.minio as minio
 
 _namespace = "idp-acceptance-minio-tenant"
 _resource = minio.build_minio_tenant(minio.MinIOTenantSpec {

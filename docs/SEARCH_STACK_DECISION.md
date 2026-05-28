@@ -59,17 +59,15 @@ framework/templates/elastic/
     logstash.k        # Elastic 9.4.1 via ECK Logstash CRD
 ```
 
-Backward-compatible imports remain:
+Use explicit versioned imports:
 
 ```kcl
-import templates.elasticsearch as es
-import templates.kibana as kibana
-import templates.logstash as logstash
+import templates.elastic.v7_10_2.elasticsearch as es
+import templates.elastic.v7_10_2.kibana as kibana
+import templates.elastic.v7_10_2.logstash as logstash
 ```
 
-Those flat imports point to `v7_10_2` to preserve the prior OSS behavior.
-
-For new infrastructure definitions, prefer explicit imports:
+Select a version namespace intentionally when comparing OSS 7.x native resources with Elastic 9.x ECK CRDs:
 
 ```kcl
 import templates.elastic.v7_10_2.elasticsearch as es7

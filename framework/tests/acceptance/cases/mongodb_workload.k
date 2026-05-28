@@ -3,7 +3,7 @@ Acceptance fixture: MongoDBCommunityModule through the IDP render path.
 """
 
 import ._helpers as h
-import templates.mongodb as mongo
+import templates.mongodb.v1_0_0.mongodb as mongo
 
 _module = mongo.MongoDBCommunityModule {
     name = "acceptance-mongodb"

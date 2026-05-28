@@ -14,7 +14,7 @@ Read these for patterns:
 - #file:framework/models/modules/accessory.k
 
 ### Template approach (RECOMMENDED for new modules):
-- #file:framework/templates/webapp.k
+- #file:framework/templates/webapp/v1_0_0/webapp.k
 - #file:framework/templates/database.k
 - #file:framework/templates/kafka.k
 - #file:projects/erp_back/modules/appops/erp_api/erp_api_module_def.k
@@ -35,7 +35,7 @@ For standard patterns, use framework templates:
 | Kafka cluster (CRDs) | `kafka.KafkaClusterModule` | kafka |
 
 ```kcl
-import framework.templates.webapp as webapp
+import framework.templates.webapp.v1_0_0.webapp as webapp
 import framework.builders.deployment as deploy
 
 schema MyModule(webapp.WebAppModule):
