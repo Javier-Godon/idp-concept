@@ -100,6 +100,8 @@ Later values override earlier ones.
 | `framework/models/configurations.k` | BaseConfigurations schema + generic merge_configurations lambda |
 | `framework/builders/` | Manifest builder lambdas: deployment, service, configmap, storage, service_account, leader, network_policy, pdb |
 | `framework/templates/` | Module templates: WebAppModule, SingleDatabaseModule, KafkaClusterModule, PostgreSQLClusterModule, MongoDBCommunityModule, RabbitMQClusterModule, RedisModule, KeycloakModule, OpenSearchClusterModule, VaultStaticSecretModule, QuestDBModule, MinIOTenantSpec/MinIOHelmSpec |
+| `framework/templates/footprints/` | Deployment footprint helpers (`local`, `development`, `staging`, `production`) for right-sizing infrastructure per environment |
+| `framework/templates/admin/` | Optional admin UI companions: pgAdmin, mongo-express, RedisInsight for Redis/Valkey-compatible visual management |
 | `framework/assembly/` | Stack utilities: create_namespace helpers |
 | `framework/factory/` | Factory scaffolding: FactorySeed schema |
 | `framework/procedures/` | Conversion functions: `kcl_to_yaml`, `kcl_to_helm`, `kcl_to_kusion`, `kcl_to_argocd` |
@@ -147,6 +149,9 @@ Later values override earlier ones.
 - For Vault secrets: `schema MyVault(vault.VaultStaticSecretModule):` — set mount, path
 - For QuestDB: `schema MyQdb(questdb.QuestDBModule):` — set storageSize, httpPort
 - For MinIO: `minio.MinIOTenantSpec` (Operator CRD) or `minio.MinIOHelmSpec` (Bitnami Helm) — set servers, storageSize
+- For observability pipelines: use `templates.observability.v1_0_0.telemetry_config.TelemetryPipelineSpec` with `ReceiverSpec`, `TransformerSpec`, and `ProducerSpec` when a simple `LogPipelineSpec` is not enough.
+- For environment sizing: set `footprint = "local" | "development" | "staging" | "production"` on supported infrastructure templates. Default to `production`; use `local` for kind/minikube/laptop-friendly manifests.
+- For optional admin clients: set `pgAdmin`, `mongoExpress`, `redisInsight`, or `adminUi` only when requested, and use Secret references for credentials.
 - Templates auto-generate leaders, manifests, Deployment, Service, ConfigMap, etc.
 - See `projects/erp_back/` for a complete example using templates
 
@@ -164,6 +169,7 @@ Later values override earlier ones.
 - Use `${var}` for string interpolation in manifest values
 - Use `framework.assembly.helpers` for namespace creation in stacks
 - Extend `framework.models.configurations.BaseConfigurations` for project configs
+- Attach `models.release_notes.ReleaseNotes` to `RenderStack.releaseNotes` when a rendered version needs release notes; YAML output includes a `ConfigMap` containing `RELEASE_NOTES.md`.
 
 ## When Working on Acceptance Tests
 

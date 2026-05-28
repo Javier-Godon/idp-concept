@@ -8,6 +8,7 @@ import procedures.kcl_to_yaml as yaml_proc
 import models.modules.component as component
 import models.modules.accessory as accessory
 import models.modules.k8snamespace as k8snamespace
+import models.release_notes as rn
 
 # === Test: get_components extracts manifests ===
 test_get_components = lambda {
@@ -90,4 +91,15 @@ test_get_components_multiple = lambda {
     _components = [_mk_component("api"), _mk_component("web")]
     _result = yaml_proc.get_components(_components)
     assert len(_result) == 2
+}
+
+test_get_release_notes = lambda {
+    _result = yaml_proc.get_release_notes(rn.ReleaseNotes {
+        name = "my-release"
+        version = "1.0.0"
+        namespace = "apps"
+    })
+    assert len(_result) == 1
+    assert _result[0].kind == "ConfigMap"
+    assert _result[0].metadata.name == "my-release-release-notes"
 }

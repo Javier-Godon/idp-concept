@@ -42,12 +42,16 @@ Avoid direct `manifests.yaml_stream([...])` in template acceptance fixtures.
 |---|---|
 | `basic` | Tiny builder smoke, applies by default. |
 | `search` | OpenSearch, OpenSearch Dashboards, Elastic v7, Elastic v9 ECK dry-run cases. |
-| `data` | Kafka, PostgreSQL, MongoDB, RabbitMQ, Redis, MinIO, QuestDB, Valkey, plus `database`. |
+| `data` | Kafka, PostgreSQL, MongoDB, RabbitMQ, Redis, MinIO, QuestDB, Valkey, data admin UIs, plus `database`. |
 | `platform` | Backstage, Observability, OpenTelemetry, Fluent Bit, Vault, Keycloak, Ceph, Longhorn, OpenBao. |
 | `templates` | Every individual template fixture. |
 | `integrations` | Multi-module dependency scenarios. |
 | `rollouts` | Dry-run + selective apply for runtime rollout fixtures. Includes 17 rollout cases: single-template (`dataprepper-rollout`, `opensearch-dashboards-rollout`, `elasticsearch-rollout`, `kibana-rollout`, `logstash-rollout`, `fluentbit-native-rollout`, `webapp-probes-rollout`, `webapp-service-account-rollout`) and mixture stacks (`webapp-database-stack-rollout`, `elasticsearch-kibana-stack-rollout`, `elk-stack-rollout`, `webapp-dataprepper-stack-rollout`, `webapp-opensearch-dashboards-stack-rollout`, `webapp-elk-stack-rollout`, `dataprepper-elk-stack-rollout`, `webapp-dataprepper-elk-stack-rollout`, `webapp-database-dataprepper-stack-rollout`). |
 | `all` | Basic + templates + integrations + rollouts. |
+
+New dry-run fixtures:
+- `data-admin`: pgAdmin, mongo-express, and RedisInsight native Deployment/Service companions rendered through `wrap_component`.
+- `release-notes`: `RenderStack.releaseNotes` rendered as a release-notes ConfigMap.
 
 Apply-capable cases (`APPLY_CASES`): `basic`, `webapp`, `database`, `webapp-service-account-rollout`, `webapp-database-stack-rollout`, `elasticsearch-kibana-stack-rollout`, `elk-stack-rollout`, `webapp-dataprepper-stack-rollout`, `webapp-opensearch-dashboards-stack-rollout`, `webapp-elk-stack-rollout`, `dataprepper-elk-stack-rollout`, `webapp-dataprepper-elk-stack-rollout`, `webapp-database-dataprepper-stack-rollout`, `fluentbit-native-rollout`. Keep operator/Helm/storage-heavy scenarios dry-run-only unless real controller installation and readiness checks are implemented.
 
@@ -78,6 +82,23 @@ Both dry-run groups and runtime groups must execute selected fixtures one by one
 - Helm mode (`fluentbit-helm`) requires Flux/Helm reconciliation for runtime tests.
 - Operator mode (`fluentbit-operator`) requires Flux plus Fluent Operator CRDs/controller.
 - Use `templates.observability.v1_0_0.telemetry_config.LogPipelineSpec` to keep pipeline shape consistent across Fluent Bit, Data Prepper, and OpenTelemetry fixtures.
+- Use `TelemetryPipelineSpec` with `ReceiverSpec`, `TransformerSpec`, and `ProducerSpec` when fixtures need explicit receiver/processor/exporter graph coverage.
+
+### Footprints and local profiles
+
+- Supported footprint names are `local`, `development`, `staging`, and `production`.
+- `local` and `development` should keep manifests laptop/kind-friendly: low replicas, low storage, no Ceph storage class unless a fixture is intentionally testing Ceph/Longhorn wiring.
+- Keep production defaults in templates unless the fixture explicitly selects a lighter footprint.
+- For Windows/company laptop validation, prefer `local` footprints and dry-run Ceph cases unless a real Linux cluster/storage provider is available.
+
+### Admin UI companions
+
+- `data-admin` is dry-run-only by default. It validates generated pgAdmin, mongo-express, and RedisInsight shapes without requiring backing databases.
+- Do not hardcode UI credentials in fixtures. Use Secret references or disable basic auth only for explicitly local dry-run fixtures.
+
+### Release notes
+
+- `release-notes` verifies `RenderStack.releaseNotes` flows through `procedures.kcl_to_yaml.yaml_stream_stack` as a ConfigMap containing `RELEASE_NOTES.md`.
 
 ### WebApp probe rollout (`webapp-probes-rollout`)
 

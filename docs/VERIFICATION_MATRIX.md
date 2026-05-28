@@ -56,6 +56,9 @@ kcl test ./tests/templates/...
 # Render/dry-run every template acceptance case
 ./scripts/acceptance_kind.sh --case templates
 
+# Target new low-cost template fixtures
+./scripts/acceptance_kind.sh --case data-admin --case release-notes
+
 # Run grouped opt-in acceptance checks
 ./scripts/acceptance_kind.sh --case data
 ./scripts/acceptance_kind.sh --case search

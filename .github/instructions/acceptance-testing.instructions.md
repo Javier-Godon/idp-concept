@@ -40,6 +40,12 @@ Create scenario fixtures when modules are commonly deployed together or need eac
 
 Scenario fixtures should render all related modules in one `RenderStack` with `_helpers.render_stack` and should be registered in the `INTEGRATION_CASES` array in `scripts/acceptance_kind.sh`.
 
+Use `footprint = "local"` or `"development"` for laptop/kind-friendly fixtures unless the fixture is explicitly validating production storage classes or HA settings. Keep Ceph/Longhorn-specific storage class checks in dedicated persistence fixtures.
+
+Admin UI companion fixtures (pgAdmin, mongo-express, RedisInsight) should be dry-run-only unless the backing database/cache and required Secrets are deployed and waited for in `scripts/acceptance_runtime.sh`.
+
+Release-notes fixtures should attach `models.release_notes.ReleaseNotes` to `RenderStack.releaseNotes` and validate that `procedures.kcl_to_yaml.yaml_stream_stack` emits the release-notes ConfigMap.
+
 ## Runtime Rollout Fixtures
 
 Use `*-rollout` fixtures for native Kubernetes templates that emit Deployments or StatefulSets but need heavyweight runtimes or backing services for real product startup. These fixtures should:

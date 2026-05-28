@@ -20,6 +20,8 @@
 > **Currently installed on this machine** (Ubuntu 24.04): KCL, kubeconform, Helm.
 > **Missing**: Nushell, go-task, helmfile.
 
+For Windows/company laptops, prefer WSL2 + Docker Desktop + kind and see `docs/WINDOWS_LOCAL_SETUP.md` for local footprint and Ceph guidance.
+
 ---
 
 ## TL;DR — Quick Install (Ubuntu 24.04)

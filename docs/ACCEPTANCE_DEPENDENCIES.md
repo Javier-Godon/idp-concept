@@ -34,6 +34,14 @@ See `docs/ACCEPTANCE_RUNTIME.md` for the real deployment runner and runtime grou
 - `FluentBitHelmSpec` emits a Flux `HelmRelease` for the official Fluent Bit chart and needs Flux/Helm reconciliation for real runtime testing.
 - `FluentBitOperatorModule` emits a Flux `HelmRelease` for Fluent Operator plus Fluent Operator CRs (`FluentBit`, `ClusterFluentBitConfig`, `ClusterInput`, `ClusterOutput`). Runtime testing needs Flux and the Fluent Operator CRDs/controller.
 - `fluentbit-native-rollout` validates the native single-instance path with the pinned Fluent Bit image and a stdout pipeline; it avoids Helm/operator dependencies.
+- `TelemetryPipelineSpec` fixtures can validate receiver/transformer/producer graphs while still rendering to Fluent Bit, Data Prepper, or OpenTelemetry Collector tool-specific config.
+
+### Footprints for local/development/staging/production
+
+- Supported footprints: `local`, `development`, `staging`, `production`.
+- `production` remains the default for infrastructure templates.
+- `local` is intended for kind/minikube/company laptops: fewer replicas, smaller storage, and no Ceph storage class unless a scenario explicitly tests Ceph wiring.
+- Use footprints in acceptance fixtures instead of duplicating local-only overrides in many templates.
 
 ### Keycloak and PostgreSQL
 
@@ -81,6 +89,7 @@ Persistent templates need a Kubernetes storage provisioner when they create PVCs
   - a healthy `CephCluster`, monitor/mgr pods, CSI sidecars, and required secrets,
   - a ready `CephBlockPool` and generated StorageClass before dependent PVCs bind.
 - The `persistence-ceph` fixture renders Ceph plus representative persistent workloads using the Ceph StorageClass. It is dry-run-only because a real Ceph cluster is too heavy for default local acceptance.
+- On Windows/WSL2 company laptops, keep Ceph cases dry-run-only and use `footprint = "local"` with kind's default local-path provisioner for functional local persistence. See `docs/WINDOWS_LOCAL_SETUP.md`.
 
 ## Scenario fixtures
 
@@ -98,6 +107,8 @@ Persistent templates need a Kubernetes storage provisioner when they create PVCs
 | `fluentbit-native` | `FluentBitSingleInstanceModule` native resources | None beyond built-in Kubernetes resources; use `fluentbit-native-rollout` for L2 rollout. |
 | `fluentbit-helm` | `FluentBitHelmSpec` HelmRelease | Flux/Helm controller. |
 | `fluentbit-operator` | `FluentBitOperatorModule` + Fluent Operator CRs | Flux/Helm controller plus Fluent Operator CRDs/controller. |
+| `data-admin` | pgAdmin + mongo-express + RedisInsight Deployment/Service companions | Backing databases are not required for dry-run shape validation; real UI runtime needs reachable data services and Secrets. |
+| `release-notes` | `RenderStack.releaseNotes` ConfigMap | Built-in Kubernetes only. |
 
 ## Runtime rollout fixtures
 

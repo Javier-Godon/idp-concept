@@ -24,13 +24,16 @@ Usage:
 """
 import models.modules.accessory as accessory
 import builders.leader as leader
+import templates.footprints.v1_0_0.footprint as fp
+import templates.admin.v1_0_0.data_admin as admin
 
 schema CNPGClusterSpec:
     """Specification for a CloudNativePG Cluster resource."""
     name: str
     namespace: str
-    instances: int = 3
-    storageSize: str
+    footprint?: str = "production"
+    instances?: int
+    storageSize?: str
     storageClass?: str
     walStorageSize?: str
     walStorageClass?: str
@@ -47,8 +50,9 @@ schema CNPGClusterSpec:
     resources?: any
 
     check:
-        instances >= 1, "instances must be >= 1"
-        len(storageSize) > 0, "storageSize must not be empty"
+        instances >= 1 if instances is not Undefined, "instances must be >= 1"
+        footprint in ["local", "development", "staging", "production"], "footprint must be local, development, staging, or production"
+        len(storageSize) > 0 if storageSize is not Undefined, "storageSize must not be empty"
 
 schema CNPGScheduledBackupSpec:
     """Specification for a CloudNativePG ScheduledBackup resource."""
@@ -72,6 +76,8 @@ schema CNPGPoolerSpec:
     parameters?: {str:str}
 
 build_cnpg_cluster = lambda spec: CNPGClusterSpec -> any {
+    _storage_size = spec.storageSize if spec.storageSize is not Undefined else fp.storage_size(spec.footprint, "1Gi", "2Gi", "10Gi", "50Gi")
+    _instances = spec.instances if spec.instances is not Undefined else fp.replicas(spec.footprint, 1, 1, 2, 3)
     _bootstrap = {if spec.databaseName or spec.databaseOwner: bootstrap = {initdb = {
         if spec.databaseName: database = spec.databaseName
         if spec.databaseOwner: owner = spec.databaseOwner
@@ -88,7 +94,7 @@ build_cnpg_cluster = lambda spec: CNPGClusterSpec -> any {
     _log_level = {if spec.logLevel: logLevel = spec.logLevel}
     _primary_update_strategy = {if spec.primaryUpdateStrategy: primaryUpdateStrategy = spec.primaryUpdateStrategy}
     _storage = {
-        size = spec.storageSize
+        size = _storage_size
         if spec.storageClass: storageClass = spec.storageClass
     }
     {
@@ -99,7 +105,7 @@ build_cnpg_cluster = lambda spec: CNPGClusterSpec -> any {
             namespace = spec.namespace
         }
         spec = {
-            instances = spec.instances
+            instances = _instances
             enableSuperuserAccess = spec.enableSuperuserAccess
             enablePDB = spec.enablePDB
             storage = _storage
@@ -155,9 +161,10 @@ schema PostgreSQLClusterModule(accessory.Accessory):
     kind = "CRD"
 
     # User-configurable
+    footprint?: str = "production"
     clusterName: str
-    instances?: int = 3
-    storageSize: str
+    instances?: int
+    storageSize?: str
     storageClass?: str
     walStorageSize?: str
     walStorageClass?: str
@@ -174,6 +181,7 @@ schema PostgreSQLClusterModule(accessory.Accessory):
     resources?: any
     scheduledBackup?: CNPGScheduledBackupSpec
     pooler?: CNPGPoolerSpec
+    pgAdmin?: admin.PgAdminSpec
 
     # Auto-computed
     leaders = [leader.build_accessory_leader(clusterName, namespace, "Cluster", "postgresql.cnpg.io/v1")]
@@ -181,6 +189,7 @@ schema PostgreSQLClusterModule(accessory.Accessory):
     _cluster_manifest = build_cnpg_cluster(CNPGClusterSpec {
         name = clusterName
         namespace = namespace
+        footprint = footprint
         instances = instances
         storageSize = storageSize
         storageClass = storageClass
@@ -201,5 +210,6 @@ schema PostgreSQLClusterModule(accessory.Accessory):
 
     _backup_manifests = [build_scheduled_backup(scheduledBackup)] if scheduledBackup else []
     _pooler_manifests = [build_pooler(pooler)] if pooler else []
+    _pgadmin_manifests = admin.build_pgadmin_resources(pgAdmin) if pgAdmin else []
 
-    manifests = [_cluster_manifest] + _backup_manifests + _pooler_manifests
+    manifests = [_cluster_manifest] + _backup_manifests + _pooler_manifests + _pgadmin_manifests

@@ -12,6 +12,7 @@ import builders.pdb as pdb
 import builders.service as svc
 import models.modules.component as component
 import templates.observability.v1_0_0.telemetry_config as telemetry
+import templates.footprints.v1_0_0.footprint as fp
 
 _DEFAULT_IMAGE = "cr.fluentbit.io/fluent/fluent-bit"
 _DEFAULT_VERSION = "3.2.10"
@@ -30,9 +31,11 @@ schema FluentBitNativeSpec:
     version?: str = _DEFAULT_VERSION
     mode?: str = "deployment"
     replicas?: int = 1
+    footprint?: str = "development"
     metricsPort?: int = _DEFAULT_HTTP_PORT
     serviceType?: str = "ClusterIP"
     pipeline?: telemetry.LogPipelineSpec = telemetry.LogPipelineSpec {}
+    pipelineSpec?: telemetry.TelemetryPipelineSpec
     configData?: {str:str}
     env?: [any]
     resources?: FluentBitResources = FluentBitResources {}
@@ -45,6 +48,7 @@ schema FluentBitNativeSpec:
         len(version) > 0, "Fluent Bit image version must be pinned"
         "latest" not in version, "Fluent Bit image version must not be latest"
         mode in ["deployment", "daemonset"], "mode must be deployment or daemonset"
+        footprint in ["local", "development", "staging", "production"], "footprint must be local, development, staging, or production"
         replicas >= 1 if mode == "deployment", "replicas must be at least 1 for deployment mode"
         1 <= metricsPort <= 65535, "metricsPort must be between 1 and 65535"
         serviceType in ["ClusterIP", "NodePort", "LoadBalancer"], "serviceType must be ClusterIP, NodePort, or LoadBalancer"
@@ -57,7 +61,7 @@ _resource_requirements = lambda spec: FluentBitResources -> any {
 }
 
 _config_data = lambda spec: FluentBitNativeSpec -> {str:str} {
-    spec.configData or telemetry.build_fluentbit_classic_config(spec.pipeline)
+    spec.configData or telemetry.build_fluentbit_classic_config_from_pipeline(spec.pipelineSpec) if spec.pipelineSpec is not Undefined else telemetry.build_fluentbit_classic_config(spec.pipeline)
 }
 
 build_fluentbit_configmap = lambda spec: FluentBitNativeSpec -> any {
@@ -95,9 +99,10 @@ _pod_spec = lambda spec: FluentBitNativeSpec -> any {
     {
         securityContext = {
             runAsNonRoot = True
-            runAsUser = 1000
-            runAsGroup = 1000
-            fsGroup = 1000
+            if spec.footprint != "local":
+                runAsUser = 1000
+                runAsGroup = 1000
+                fsGroup = 1000
             seccompProfile = {$type = "RuntimeDefault"}
         }
         containers = [_container(spec)]
@@ -174,9 +179,11 @@ schema FluentBitSingleInstanceModule(component.Component):
     kind = "INFRASTRUCTURE"
 
     replicas?: int = 1
+    footprint?: str = "development"
     metricsPort?: int = _DEFAULT_HTTP_PORT
     serviceType?: str = "ClusterIP"
     pipeline?: telemetry.LogPipelineSpec = telemetry.LogPipelineSpec {}
+    pipelineSpec?: telemetry.TelemetryPipelineSpec
     configData?: {str:str}
     env?: [any]
     resources?: FluentBitResources = FluentBitResources {}
@@ -189,10 +196,12 @@ schema FluentBitSingleInstanceModule(component.Component):
         image = asset.image if asset.image != Undefined else _DEFAULT_IMAGE
         version = asset.version
         mode = "deployment"
-        replicas = replicas
+        replicas = replicas if replicas is not Undefined else fp.replicas(footprint, 1, 1, 2, 3)
+        footprint = footprint
         metricsPort = metricsPort
         serviceType = serviceType
         pipeline = pipeline
+        pipelineSpec = pipelineSpec
         configData = configData
         env = env
         resources = resources
@@ -202,10 +211,12 @@ schema FluentBitDaemonSetModule(component.Component):
     kind = "INFRASTRUCTURE"
 
     metricsPort?: int = _DEFAULT_HTTP_PORT
+    footprint?: str = "development"
     serviceType?: str = "ClusterIP"
     pipeline?: telemetry.LogPipelineSpec = telemetry.LogPipelineSpec {
         input = "tail"
     }
+    pipelineSpec?: telemetry.TelemetryPipelineSpec
     configData?: {str:str}
     env?: [any]
     resources?: FluentBitResources = FluentBitResources {}
@@ -219,9 +230,11 @@ schema FluentBitDaemonSetModule(component.Component):
         image = asset.image if asset.image != Undefined else _DEFAULT_IMAGE
         version = asset.version
         mode = "daemonset"
+        footprint = footprint
         metricsPort = metricsPort
         serviceType = serviceType
         pipeline = pipeline
+        pipelineSpec = pipelineSpec
         configData = configData
         env = env
         resources = resources

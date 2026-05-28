@@ -12,6 +12,7 @@ nav:
       - Migration Guide: docs/MIGRATION_GUIDE.md
       - Development Workflows: docs/DEVELOPMENT_WORKFLOWS.md
       - Tooling Setup: docs/TOOLING_SETUP.md
+      - Windows Local Setup: docs/WINDOWS_LOCAL_SETUP.md
   - Security: docs/SECURITY.md
   - Testing: docs/TESTING_STRATEGY.md
   - Backstage:

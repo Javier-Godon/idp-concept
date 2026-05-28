@@ -33,6 +33,10 @@ Usage:
     })
 """
 
+import builders.leader as leader
+import models.modules.accessory as accessory
+import templates.footprints.v1_0_0.footprint as fp
+
 # --- Prometheus (kube-prometheus-stack via Bitnami) ---
 
 _PROMETHEUS_CHART = "oci://registry-1.docker.io/bitnamicharts/kube-prometheus"
@@ -42,22 +46,28 @@ schema PrometheusSpec:
     """Specification for Prometheus deployment via Bitnami kube-prometheus chart."""
     name: str
     namespace: str
+    footprint?: str = "production"
     chartVersion?: str = _PROMETHEUS_VERSION
-    storageSize?: str = "50Gi"
-    retentionDays?: int = 15
+    storageSize?: str
+    retentionDays?: int
     alertmanagerEnabled?: bool = False
     alertmanagerReplicas?: int = 1
     nodeExporterEnabled?: bool = True
+    extraValues?: {str:str}
 
     check:
-        retentionDays >= 1, "retentionDays must be at least 1"
+        footprint in ["local", "development", "staging", "production"], "footprint must be local, development, staging, or production"
+        retentionDays >= 1 if retentionDays is not Undefined, "retentionDays must be at least 1"
         alertmanagerReplicas >= 1 if alertmanagerEnabled, "alertmanagerReplicas must be at least 1"
 
 build_prometheus = lambda spec: PrometheusSpec -> any {
+    _storage_size = spec.storageSize if spec.storageSize is not Undefined else fp.storage_size(spec.footprint, "1Gi", "2Gi", "10Gi", "50Gi")
+    _retention_days = spec.retentionDays if spec.retentionDays is not Undefined else fp.retention_days(spec.footprint, 1, 3, 7, 15)
     _values: {str:str} = {
-        "prometheus.persistence.size" = spec.storageSize
-        "prometheus.retention" = "${spec.retentionDays}d"
-        "nodeExporter.enabled" = "true" if spec.nodeExporterEnabled else "false"
+        "prometheus.persistence.enabled" = "false" if spec.footprint == "local" else "true"
+        "prometheus.persistence.size" = _storage_size
+        "prometheus.retention" = "${_retention_days}d"
+        "nodeExporter.enabled" = "false" if spec.footprint == "local" else "true" if spec.nodeExporterEnabled else "false"
     }
     _alert_values: {str:str} = {
         "alertmanager.enabled" = "true"
@@ -81,7 +91,7 @@ build_prometheus = lambda spec: PrometheusSpec -> any {
             createNamespace = True
             wait = True
             timeout = "15m"
-            values = _values | _alert_values
+            values = _values | _alert_values | (spec.extraValues or {})
         }
     }
 }
@@ -95,23 +105,28 @@ schema GrafanaSpec:
     """Specification for Grafana deployment via Bitnami Helm chart."""
     name: str
     namespace: str
+    footprint?: str = "production"
     chartVersion?: str = _GRAFANA_VERSION
     adminPasswordSecret?: str
-    persistence?: bool = False
-    storageSize?: str = "10Gi"
+    persistence?: bool
+    storageSize?: str
     ingressEnabled?: bool = False
     ingressHost?: str
+    extraValues?: {str:str}
 
     check:
+        footprint in ["local", "development", "staging", "production"], "footprint must be local, development, staging, or production"
         ingressHost if ingressEnabled, "ingressHost is required when ingressEnabled is True"
 
 build_grafana = lambda spec: GrafanaSpec -> any {
+    _persistence_enabled = spec.persistence if spec.persistence is not Undefined else fp.persistence_enabled(spec.footprint, True)
+    _storage_size = spec.storageSize if spec.storageSize is not Undefined else fp.storage_size(spec.footprint, "512Mi", "1Gi", "5Gi", "10Gi")
     _base_values: {str:str} = {}
     _secret_values: {str:str} = {"admin.existingSecret" = spec.adminPasswordSecret} if spec.adminPasswordSecret else {}
     _persistence_values: {str:str} = {
         "persistence.enabled" = "true"
-        "persistence.size" = spec.storageSize
-    } if spec.persistence else {}
+        "persistence.size" = _storage_size
+    } if _persistence_enabled else {"persistence.enabled" = "false"}
     _ingress_values: {str:str} = {
         "ingress.enabled" = "true"
         "ingress.hostname" = spec.ingressHost
@@ -134,10 +149,38 @@ build_grafana = lambda spec: GrafanaSpec -> any {
             createNamespace = True
             wait = True
             timeout = "10m"
-            values = _base_values | _secret_values | _persistence_values | _ingress_values
+            values = _base_values | _secret_values | _persistence_values | _ingress_values | (spec.extraValues or {})
         }
     }
 }
+
+schema PrometheusModule(accessory.Accessory):
+    kind = "CRD"
+    prometheusName: str
+    footprint?: str = "production"
+    chartVersion?: str = _PROMETHEUS_VERSION
+    storageSize?: str
+    retentionDays?: int
+    alertmanagerEnabled?: bool = False
+    alertmanagerReplicas?: int = 1
+    nodeExporterEnabled?: bool = True
+    extraValues?: {str:str}
+    leaders = [leader.build_accessory_leader(prometheusName, namespace, "HelmRelease", "helm.toolkit.fluxcd.io/v2beta1")]
+    manifests = [build_prometheus(PrometheusSpec {name = prometheusName, namespace = namespace, footprint = footprint, chartVersion = chartVersion, storageSize = storageSize, retentionDays = retentionDays, alertmanagerEnabled = alertmanagerEnabled, alertmanagerReplicas = alertmanagerReplicas, nodeExporterEnabled = nodeExporterEnabled, extraValues = extraValues})]
+
+schema GrafanaModule(accessory.Accessory):
+    kind = "CRD"
+    grafanaName: str
+    footprint?: str = "production"
+    chartVersion?: str = _GRAFANA_VERSION
+    adminPasswordSecret?: str
+    persistence?: bool
+    storageSize?: str
+    ingressEnabled?: bool = False
+    ingressHost?: str
+    extraValues?: {str:str}
+    leaders = [leader.build_accessory_leader(grafanaName, namespace, "HelmRelease", "helm.toolkit.fluxcd.io/v2beta1")]
+    manifests = [build_grafana(GrafanaSpec {name = grafanaName, namespace = namespace, footprint = footprint, chartVersion = chartVersion, adminPasswordSecret = adminPasswordSecret, persistence = persistence, storageSize = storageSize, ingressEnabled = ingressEnabled, ingressHost = ingressHost, extraValues = extraValues})]
 
 # --- ServiceMonitor (Prometheus Operator CRD) ---
 

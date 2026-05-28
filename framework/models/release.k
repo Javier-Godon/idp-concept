@@ -8,11 +8,13 @@ import models.tenant
 import models.site
 import models.stack
 import models.metadata as meta
+import models.release_notes as rn
 
 schema Release:
     name: str
     version: str
     metadata?: meta.Metadata
+    releaseNotes?: rn.ReleaseNotes
     project: project.ProjectInstance
     tenant: tenant.TenantInstance
     profile: profile.ProfileInstance

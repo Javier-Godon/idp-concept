@@ -38,6 +38,53 @@ schema LogPipelineSpec:
         output in ["stdout", "opensearch", "http", "otlp"], "output must be stdout, opensearch, http, or otlp"
         endpoint is not Undefined if output in ["opensearch", "http", "otlp"], "endpoint is required for remote outputs"
 
+schema ReceiverSpec:
+    name: str
+    kind: str
+    path?: str
+    port?: int
+    protocol?: str = "http"
+    options?: {str:str}
+
+    check:
+        len(name) > 0, "receiver name must not be empty"
+        kind in ["dummy", "tail", "filelog", "http", "forward", "otlp"], "receiver kind must be dummy, tail, filelog, http, forward, or otlp"
+        1 <= port <= 65535 if port is not Undefined, "receiver port must be between 1 and 65535"
+
+schema TransformerSpec:
+    name: str
+    kind: str
+    options?: {str:any}
+
+    check:
+        len(name) > 0, "transformer name must not be empty"
+        kind in ["batch", "memory_limiter", "attributes", "resource", "filter", "transform", "parse_json"], "unsupported transformer kind"
+
+schema ProducerSpec:
+    name: str
+    kind: str
+    endpoint?: TelemetryEndpoint
+    index?: str = "logs-%Y.%m.%d"
+    options?: {str:str}
+
+    check:
+        len(name) > 0, "producer name must not be empty"
+        kind in ["stdout", "debug", "opensearch", "http", "otlp"], "producer kind must be stdout, debug, opensearch, http, or otlp"
+        endpoint is not Undefined if kind in ["opensearch", "http", "otlp"], "producer endpoint is required for remote producers"
+
+schema TelemetryPipelineSpec:
+    name?: str = "logs"
+    signal?: str = "logs"
+    receivers?: [ReceiverSpec] = [ReceiverSpec {name = "dummy", kind = "dummy"}]
+    transformers?: [TransformerSpec] = [TransformerSpec {name = "batch", kind = "batch"}]
+    producers?: [ProducerSpec] = [ProducerSpec {name = "stdout", kind = "stdout"}]
+
+    check:
+        len(name) > 0, "pipeline name must not be empty"
+        signal in ["logs", "metrics", "traces"], "pipeline signal must be logs, metrics, or traces"
+        len(receivers) > 0, "pipeline requires at least one receiver"
+        len(producers) > 0, "pipeline requires at least one producer"
+
 endpoint_hostport = lambda endpoint: TelemetryEndpoint -> str {
     "${endpoint.host}:${endpoint.port}"
 }
@@ -46,6 +93,30 @@ endpoint_url = lambda endpoint: TelemetryEndpoint -> str {
     _scheme = "https" if endpoint.tls and endpoint.scheme == "http" else endpoint.scheme
     _path = endpoint.path if endpoint.path else ""
     "${_scheme}://${endpoint.host}:${endpoint.port}${_path}" if _scheme in ["http", "https"] else "${endpoint.host}:${endpoint.port}"
+}
+
+_receiver_to_log_input = lambda receiver: ReceiverSpec -> str {
+    "tail" if receiver.kind == "filelog" else receiver.kind
+}
+
+_producer_to_log_output = lambda producer: ProducerSpec -> str {
+    "stdout" if producer.kind == "debug" else producer.kind
+}
+
+to_log_pipeline = lambda spec: TelemetryPipelineSpec -> LogPipelineSpec {
+    _receiver = spec.receivers[0]
+    _producer = spec.producers[0]
+    LogPipelineSpec {
+        name = spec.name
+        input = _receiver_to_log_input(_receiver)
+        inputPath = _receiver.path if _receiver.path else "/var/log/containers/*.log"
+        output = _producer_to_log_output(_producer)
+        endpoint = _producer.endpoint
+        index = _producer.index
+        extraInput = _receiver.options
+        extraOutput = _producer.options
+        processors = [t.name for t in spec.transformers]
+    }
 }
 
 _classic_section = lambda section: str, options: {str:str} -> str {
@@ -129,6 +200,10 @@ build_fluentbit_classic_config = lambda spec: LogPipelineSpec -> {str:str} {
     }
 }
 
+build_fluentbit_classic_config_from_pipeline = lambda spec: TelemetryPipelineSpec -> {str:str} {
+    build_fluentbit_classic_config(to_log_pipeline(spec))
+}
+
 _dataprepper_source = lambda spec: LogPipelineSpec -> str {
     _path = spec.inputPath if spec.input == "http" and spec.inputPath else "/log/ingest"
     "    http:\n      path: ${_path}\n"
@@ -142,35 +217,84 @@ build_dataprepper_pipeline_config = lambda spec: LogPipelineSpec -> str {
     "${spec.name}:\n  source:\n${_dataprepper_source(spec)}  sink:\n${_dataprepper_sink(spec)}"
 }
 
-build_otel_collector_config = lambda spec: LogPipelineSpec -> any {
-    _receiver_name = "otlp" if spec.input in ["otlp", "http", "forward"] else "filelog"
-    _receivers = {
-        if _receiver_name == "otlp":
-            otlp = {protocols = {grpc = {endpoint = "0.0.0.0:4317"}, http = {endpoint = "0.0.0.0:4318"}}}
-        if _receiver_name == "filelog":
-            filelog = {include = [spec.inputPath], start_at = "end"}
-    }
-    _exporter_name = "debug" if spec.output == "stdout" else spec.output
-    _exporters = {
-        if spec.output == "stdout":
-            debug = {}
-        if spec.output == "opensearch":
-            opensearch = {http = {endpoint = endpoint_url(spec.endpoint)}}
-        if spec.output == "http":
-            http = {endpoint = endpoint_url(spec.endpoint)}
-        if spec.output == "otlp":
-            otlp = {endpoint = endpoint_hostport(spec.endpoint), tls = {insecure = not spec.endpoint.tls}}
-    }
+build_dataprepper_pipeline_config_from_pipeline = lambda spec: TelemetryPipelineSpec -> str {
+    build_dataprepper_pipeline_config(to_log_pipeline(spec))
+}
+
+_otel_receiver_config = lambda receiver: ReceiverSpec -> any {
     {
-        receivers = _receivers
-        processors = {batch = {}}
-        exporters = _exporters
+        if receiver.kind == "otlp":
+            protocols = {grpc = {endpoint = "0.0.0.0:${receiver.port or 4317}"}, http = {endpoint = "0.0.0.0:4318"}}
+        if receiver.kind in ["tail", "filelog"]:
+            include = [receiver.path or "/var/log/containers/*.log"]
+            start_at = "end"
+        if receiver.kind == "http":
+            endpoint = "0.0.0.0:${receiver.port or 9880}"
+        if receiver.kind == "forward":
+            endpoint = "0.0.0.0:${receiver.port or 24224}"
+        if receiver.kind == "dummy":
+            interval = "1s"
+    } | (receiver.options or {})
+}
+
+_otel_processor_config = lambda transformer: TransformerSpec -> any {
+    {
+        if transformer.kind == "memory_limiter":
+            check_interval = "1s"
+            limit_percentage = 75
+            spike_limit_percentage = 15
+        if transformer.kind == "parse_json":
+            operators = [{type = "json_parser"}]
+    } | (transformer.options or {})
+}
+
+_otel_exporter_config = lambda producer: ProducerSpec -> any {
+    {
+        if producer.kind in ["stdout", "debug"]:
+            verbosity = "normal"
+        if producer.kind == "opensearch":
+            http = {endpoint = endpoint_url(producer.endpoint)}
+        if producer.kind == "http":
+            endpoint = endpoint_url(producer.endpoint)
+        if producer.kind == "otlp":
+            endpoint = endpoint_hostport(producer.endpoint)
+            tls = {insecure = not producer.endpoint.tls}
+    } | (producer.options or {})
+}
+
+_otel_receiver_name = lambda receiver: ReceiverSpec -> str {
+    "filelog" if receiver.kind in ["tail", "filelog"] else "debug" if receiver.kind == "dummy" else receiver.name
+}
+
+_otel_exporter_name = lambda producer: ProducerSpec -> str {
+    "debug" if producer.kind in ["stdout", "debug"] else producer.name
+}
+
+build_otel_collector_pipeline_config = lambda spec: TelemetryPipelineSpec -> any {
+    {
+        receivers = {_otel_receiver_name(r): _otel_receiver_config(r) for r in spec.receivers}
+        processors = {t.name: _otel_processor_config(t) for t in spec.transformers}
+        exporters = {_otel_exporter_name(p): _otel_exporter_config(p) for p in spec.producers}
         pipelines = {
-            logs = {
-                receivers = [_receiver_name]
-                processors = spec.processors
-                exporters = [_exporter_name]
+            "${spec.signal}" = {
+                receivers = [_otel_receiver_name(r) for r in spec.receivers]
+                processors = [t.name for t in spec.transformers]
+                exporters = [_otel_exporter_name(p) for p in spec.producers]
             }
         }
     }
+}
+
+pipeline_from_log_pipeline = lambda spec: LogPipelineSpec -> TelemetryPipelineSpec {
+    TelemetryPipelineSpec {
+        name = spec.name
+        signal = "logs"
+        receivers = [ReceiverSpec {name = spec.input, kind = "filelog" if spec.input == "tail" else spec.input, path = spec.inputPath, options = spec.extraInput}]
+        transformers = [TransformerSpec {name = p, kind = p if p in ["batch", "memory_limiter"] else "transform"} for p in spec.processors]
+        producers = [ProducerSpec {name = "debug" if spec.output == "stdout" else spec.output, kind = "debug" if spec.output == "stdout" else spec.output, endpoint = spec.endpoint, index = spec.index, options = spec.extraOutput}]
+    }
+}
+
+build_otel_collector_config = lambda spec: LogPipelineSpec -> any {
+    build_otel_collector_pipeline_config(pipeline_from_log_pipeline(spec))
 }

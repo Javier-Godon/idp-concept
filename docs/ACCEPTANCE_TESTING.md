@@ -119,9 +119,9 @@ Reuse an existing cluster/context:
 | `database` | `SingleDatabaseModule` | Yes | Local PV/PVC + tiny pause image rollout |
 | `dataprepper` | `DataPrepperModule` | Dry-run only | Probes require the real Data Prepper runtime; run full runtime tests with backing dependencies separately |
 | `search` | `opensearch`, `opensearch-dashboards`, Elastic v7 `elasticsearch`/`kibana`/`logstash`, Elastic v9 ECK CRs | Dry-run only | Uses CRD stubs for operator-backed v9/OpenSearch CRs |
-| `data` | `database`, `postgresql`, `mongodb`, `rabbitmq`, `redis`, `redis-cluster`, `kafka`, `minio-tenant`, `minio-helm`, `questdb`, `valkey` | Mixed | `database` applies; operator/Helm-backed cases dry-run only |
+| `data` | `database`, `postgresql`, `mongodb`, `rabbitmq`, `redis`, `redis-cluster`, `kafka`, `minio-tenant`, `minio-helm`, `questdb`, `valkey`, `data-admin` | Mixed | `database` applies; operator/Helm-backed and admin UI companion cases dry-run only |
 | `platform` | `backstage`, `observability`, `opentelemetry`, `fluentbit-native`, `fluentbit-helm`, `fluentbit-operator`, `vault`, `keycloak`, `ceph`, `longhorn`, `openbao` | Dry-run only | Requires Helm/Flux, CRDs, or operators for real reconciliation; `fluentbit-native` is apply-capable through its dedicated rollout fixture |
-| `templates` | Every template acceptance fixture | Mixed | Full template coverage through the IDP render path |
+| `templates` | Every template acceptance fixture, including `release-notes` | Mixed | Full template coverage through the IDP render path |
 | `integrations` | `dataprepper-opensearch`, `keycloak-postgresql`, `persistence-longhorn`, `persistence-ceph`, `webapp-postgresql-stack`, `webapp-kafka-stack`, `webapp-rabbitmq-stack`, `webapp-redis-stack`, `webapp-mongodb-stack` | Dry-run only | Dependency scenarios that include related modules in one `RenderStack`. Operator-backed mixtures (kafka, postgresql, rabbitmq, redis, mongodb) dry-run only — use `runtime-integrations` for real reconciliation. |
 | `rollouts` | `dataprepper-rollout`, `opensearch-dashboards-rollout`, `elasticsearch-rollout`, `kibana-rollout`, `logstash-rollout`, `fluentbit-native-rollout`, `webapp-probes-rollout`, `webapp-service-account-rollout`, `webapp-database-stack-rollout`, `elasticsearch-kibana-stack-rollout`, `elk-stack-rollout`, `webapp-dataprepper-stack-rollout`, `webapp-opensearch-dashboards-stack-rollout`, `webapp-elk-stack-rollout`, `dataprepper-elk-stack-rollout`, `webapp-dataprepper-elk-stack-rollout`, `webapp-database-dataprepper-stack-rollout` | Mixed (most apply; single-image ones dry-run) | Native Kubernetes controller rollout fixtures including single-template and multi-template mixture stacks (up to 4 templates). Use `./scripts/acceptance_runtime.sh --case runtime-rollouts` for real rollout checks on all 17 cases. Existing 16 cases verified on kind (kindest/node:v1.33.0); run `fluentbit-native-rollout` for the native Fluent Bit Deployment path. |
 | `all` | `basic` + `templates` + `integrations` + `rollouts` | Mixed | Complete local acceptance matrix |
@@ -133,6 +133,10 @@ Individual cases can also be selected with repeated `--case`, for example:
 ```
 
 Dry-run-only cases install lightweight acceptance CRD stubs from `framework/tests/acceptance/crds/dry_run_crds.yaml` so `kubectl apply --dry-run=server` can validate generated custom resources without requiring the real operators. These stubs are only for acceptance validation; they are not production CRDs and do not reconcile workloads.
+
+`data-admin` validates pgAdmin, mongo-express, and RedisInsight Deployment/Service companions without requiring backing databases. `release-notes` validates that `RenderStack.releaseNotes` renders a ConfigMap containing `RELEASE_NOTES.md`.
+
+When adding local/dev variants, prefer the `footprint = "local"` or `"development"` setting in fixtures instead of hardcoding production storage classes or replica counts. Keep Ceph/Longhorn-specific coverage in the dedicated persistence scenarios.
 
 See `docs/ACCEPTANCE_DEPENDENCIES.md` for the dependency matrix behind these cases, including when Data Prepper needs OpenSearch, when Keycloak needs PostgreSQL, and when persistent templates require Longhorn, Ceph, or another StorageClass provider.
 

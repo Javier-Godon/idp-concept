@@ -554,12 +554,15 @@ Root-level template compatibility files have been removed. Import templates by t
 |---|---|---|---|
 | `WebAppModule` | `webapp/v1_0_0/webapp.k` | `Component` | Web applications (Deployment + Service + optional ConfigMap) |
 | `DataPrepperModule` | `opensearch/dataprepper/v2_10_2/dataprepper.k` | `Component` | OpenSearch Data Prepper ingestion (ConfigMap + Deployment + Service + PDB) |
-| `OpenSearchDashboardsModule` | `opensearch/dashboards/v2_17_0/opensearch_dashboards.k` | `Component` | Standalone OpenSearch Dashboards (ConfigMap + Deployment + Service + PDB) |
+| `OpenSearchDashboardsModule` | `opensearch/v2_17_0/opensearch_dashboards.k` | `Component` | Standalone OpenSearch Dashboards (ConfigMap + Deployment + Service + PDB) |
 | `ElasticsearchModule` | `elastic/v7_10_2/elasticsearch.k` | `Component` | Elasticsearch OSS 7.10.2 StatefulSet (no ECK) |
 | `KibanaModule` | `elastic/v7_10_2/kibana.k` | `Component` | Kibana OSS 7.10.2 Deployment (no ECK) |
 | `LogstashModule` | `elastic/v7_10_2/logstash.k` | `Component` | Logstash OSS 7.10.2 Deployment (no ECK) |
 | `FluentBitSingleInstanceModule` | `fluentbit/v3_2_10/native/fluentbit.k` | `Component` | Fluent Bit 3.2.10 native Deployment + Service + ConfigMap |
 | `FluentBitDaemonSetModule` | `fluentbit/v3_2_10/native/fluentbit.k` | `Component` | Fluent Bit 3.2.10 native DaemonSet + Service + ConfigMap |
+| `PgAdminModule` | `admin/v1_0_0/data_admin.k` | `Component` | Optional pgAdmin UI Deployment + Service |
+| `MongoExpressModule` | `admin/v1_0_0/data_admin.k` | `Component` | Optional mongo-express UI Deployment + Service |
+| `RedisInsightModule` | `admin/v1_0_0/data_admin.k` | `Component` | Optional RedisInsight UI for Redis/Valkey-compatible stores |
 | `SingleDatabaseModule` | `database/v1_0_0/database.k` | `Accessory` | Simple database (Deployment + Service + PVC; optional local PV) |
 | `KafkaClusterModule` | `kafka/v1_0_0/kafka.k` | `Accessory` | Strimzi Kafka cluster (`kafka.strimzi.io/v1beta2`) |
 
@@ -586,6 +589,48 @@ Root-level template compatibility files have been removed. Import templates by t
 | `MinIOHelmSpec` | `minio/v1_0_0/minio.k` | Bitnami Helm chart | ThirdPartyHelmSpec wrapper (recommended) |
 | `FluentBitHelmSpec` | `fluentbit/v3_2_10/helm/fluentbit.k` | Fluent Bit Helm chart | ThirdPartyHelmSpec wrapper |
 | `FluentBitOperatorModule` | `fluentbit/v3_2_10/operator/fluentbit.k` | Fluent Operator | `fluentbit.fluent.io/v1alpha2` CRs |
+
+### Deployment Footprints
+
+**File**: `framework/templates/footprints/v1_0_0/footprint.k`
+
+Footprints right-size infrastructure templates per environment:
+
+| Footprint | Intent | Typical defaults |
+|---|---|---|
+| `local` | kind/minikube/company laptop | 1 replica, small storage, no Ceph storage class, persistence disabled where safe |
+| `development` | low-cost shared dev | 1 replica, small persistent storage |
+| `staging` | production-like validation | 2 replicas where supported, moderate storage |
+| `production` | default production posture | HA/resource-conscious defaults |
+
+Supported templates expose `footprint?: str = "production"` while preserving explicit overrides such as `instances`, `storageSize`, and `storageClassName`.
+
+### Observability Pipeline Primitives
+
+**File**: `framework/templates/observability/v1_0_0/telemetry_config.k`
+
+- `TelemetryEndpoint`: reusable remote endpoint definition.
+- `LogPipelineSpec`: simple single-input/single-output logging path.
+- `TelemetryPipelineSpec`: explicit `receivers`, `transformers`, and `producers` graph.
+- Render helpers target Fluent Bit classic config, Data Prepper pipeline YAML, and OpenTelemetry Collector config.
+
+Use `TelemetryPipelineSpec` for non-trivial flows; use `LogPipelineSpec` for simple fixtures.
+
+### Optional Data Admin UIs
+
+**File**: `framework/templates/admin/v1_0_0/data_admin.k`
+
+| UI | Template/spec | Notes |
+|---|---|---|
+| pgAdmin | `PgAdminSpec` / `PgAdminModule` | Requires `passwordSecretName`; no hardcoded admin password |
+| mongo-express | `MongoExpressSpec` / `MongoExpressModule` | Production footprint requires MongoDB credential Secret references |
+| RedisInsight | `RedisInsightSpec` / `RedisInsightModule` | Works as a visual client for Redis and Valkey-compatible deployments |
+
+### Release Notes
+
+**File**: `framework/models/release_notes.k`
+
+`ReleaseNotes` supports Keep-a-Changelog-style categories (`added`, `changed`, `deprecated`, `removed`, `fixed`, `security`, `known-issue`). Attach it to `RenderStack.releaseNotes`; YAML rendering emits a `ConfigMap` named `<release-name>-release-notes` containing `RELEASE_NOTES.md`.
 
 ### Search and Logging Template Licensing Notes
 

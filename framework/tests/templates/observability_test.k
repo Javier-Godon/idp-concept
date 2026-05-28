@@ -41,6 +41,17 @@ test_prometheus_alertmanager = lambda {
     assert _result.spec.values["alertmanager.replicaCount"] == "3"
 }
 
+test_prometheus_local_footprint = lambda {
+    _result = obs.build_prometheus(obs.PrometheusSpec {
+        name = "prometheus"
+        namespace = "monitoring"
+        footprint = "local"
+    })
+    assert _result.spec.values["prometheus.persistence.enabled"] == "false"
+    assert _result.spec.values["prometheus.retention"] == "1d"
+    assert _result.spec.values["nodeExporter.enabled"] == "false"
+}
+
 # --- Grafana Tests ---
 
 test_grafana_default = lambda {
@@ -79,6 +90,15 @@ test_grafana_ingress = lambda {
     _result = obs.build_grafana(_spec)
     assert _result.spec.values["ingress.enabled"] == "true"
     assert _result.spec.values["ingress.hostname"] == "grafana.example.com"
+}
+
+test_grafana_local_footprint = lambda {
+    _result = obs.build_grafana(obs.GrafanaSpec {
+        name = "grafana"
+        namespace = "monitoring"
+        footprint = "local"
+    })
+    assert _result.spec.values["persistence.enabled"] == "false"
 }
 
 # --- ServiceMonitor Tests ---

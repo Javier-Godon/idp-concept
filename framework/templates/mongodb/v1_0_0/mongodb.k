@@ -23,6 +23,8 @@ Usage:
 """
 import models.modules.accessory as accessory
 import builders.leader as leader
+import templates.footprints.v1_0_0.footprint as fp
+import templates.admin.v1_0_0.data_admin as admin
 
 schema MongoDBRoleSpec:
     """MongoDB user role specification."""
@@ -45,19 +47,23 @@ schema MongoDBCommunitySpec:
     """Specification for a MongoDBCommunity resource."""
     name: str
     namespace: str
-    members: int = 3
+    footprint?: str = "production"
+    members?: int
     mongodbVersion: str
-    storageSize: str
+    storageSize?: str
     storageClassName?: str
     users?: [MongoDBUserSpec]
     resources?: any
 
     check:
-        members >= 1, "members must be >= 1"
+        footprint in ["local", "development", "staging", "production"], "footprint must be local, development, staging, or production"
+        members >= 1 if members is not Undefined, "members must be >= 1"
         len(mongodbVersion) > 0, "mongodbVersion must not be empty"
-        len(storageSize) > 0, "storageSize must not be empty"
+        len(storageSize) > 0 if storageSize is not Undefined, "storageSize must not be empty"
 
 build_mongodb_community = lambda spec: MongoDBCommunitySpec -> any {
+    _members = spec.members if spec.members is not Undefined else fp.replicas(spec.footprint, 1, 1, 3, 3)
+    _storage_size = spec.storageSize if spec.storageSize is not Undefined else fp.storage_size(spec.footprint, "1Gi", "2Gi", "8Gi", "10Gi")
     _storage_class = {if spec.storageClassName: storageClassName = spec.storageClassName}
     _users = {
         if spec.users:
@@ -86,7 +92,7 @@ build_mongodb_community = lambda spec: MongoDBCommunitySpec -> any {
                 volumeClaimTemplates = [{
                     metadata = { name = "data-volume" }
                     spec = {
-                        resources = { requests = { storage = spec.storageSize } }
+                        resources = { requests = { storage = _storage_size } }
                     } | _storage_class
                 }]
             } | _resources_container
@@ -100,7 +106,7 @@ build_mongodb_community = lambda spec: MongoDBCommunitySpec -> any {
             namespace = spec.namespace
         }
         spec = {
-            members = spec.members
+            members = _members
             $type = "ReplicaSet"
             version = spec.mongodbVersion
             security = {
@@ -120,13 +126,15 @@ schema MongoDBCommunityModule(accessory.Accessory):
     kind = "CRD"
 
     # User-configurable
+    footprint?: str = "production"
     clusterName: str
-    members?: int = 3
+    members?: int
     mongodbVersion: str
-    storageSize: str
+    storageSize?: str
     storageClassName?: str
     users?: [MongoDBUserSpec]
     resources?: any
+    mongoExpress?: admin.MongoExpressSpec
 
     # Auto-computed
     leaders = [leader.build_accessory_leader(clusterName, namespace, "MongoDBCommunity", "mongodbcommunity.mongodb.com/v1")]
@@ -134,6 +142,7 @@ schema MongoDBCommunityModule(accessory.Accessory):
     _cluster_manifest = build_mongodb_community(MongoDBCommunitySpec {
         name = clusterName
         namespace = namespace
+        footprint = footprint
         members = members
         mongodbVersion = mongodbVersion
         storageSize = storageSize
@@ -142,4 +151,6 @@ schema MongoDBCommunityModule(accessory.Accessory):
         resources = resources
     })
 
-    manifests = [_cluster_manifest]
+    _mongo_express_manifests = admin.build_mongo_express_resources(mongoExpress) if mongoExpress else []
+
+    manifests = [_cluster_manifest] + _mongo_express_manifests

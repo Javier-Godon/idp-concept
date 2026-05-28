@@ -21,6 +21,8 @@ Usage:
 """
 import models.modules.accessory as accessory
 import builders.leader as leader
+import templates.footprints.v1_0_0.footprint as fp
+import templates.admin.v1_0_0.data_admin as admin
 
 _API_VERSION = "redis.redis.opstreelabs.in/v1beta2"
 _DEFAULT_IMAGE = "quay.io/opstree/redis:v7.0.12"
@@ -29,27 +31,31 @@ schema RedisSpec:
     """Specification for a standalone Redis resource."""
     name: str
     namespace: str
-    storageSize: str
+    footprint?: str = "production"
+    storageSize?: str
     storageClassName?: str
     image?: str = _DEFAULT_IMAGE
     resources?: any
 
     check:
-        len(storageSize) > 0, "storageSize must not be empty"
+        footprint in ["local", "development", "staging", "production"], "footprint must be local, development, staging, or production"
+        len(storageSize) > 0 if storageSize is not Undefined, "storageSize must not be empty"
 
 schema RedisClusterSpec:
     """Specification for a RedisCluster resource."""
     name: str
     namespace: str
-    clusterSize: int = 3
-    storageSize: str
+    footprint?: str = "production"
+    clusterSize?: int
+    storageSize?: str
     storageClassName?: str
     image?: str = _DEFAULT_IMAGE
     resources?: any
 
     check:
-        clusterSize >= 3, "clusterSize must be >= 3"
-        len(storageSize) > 0, "storageSize must not be empty"
+        footprint in ["local", "development", "staging", "production"], "footprint must be local, development, staging, or production"
+        clusterSize >= 3 if clusterSize is not Undefined, "clusterSize must be >= 3"
+        len(storageSize) > 0 if storageSize is not Undefined, "storageSize must not be empty"
 
 _build_storage = lambda storageSize: str, storageClassName: str = None -> any {
     _sc = {if storageClassName: storageClassName = storageClassName}
@@ -65,6 +71,7 @@ _build_storage = lambda storageSize: str, storageClassName: str = None -> any {
 
 build_redis = lambda spec: RedisSpec -> any {
     _resources = {if spec.resources: resources = spec.resources}
+    _storage_size = spec.storageSize if spec.storageSize is not Undefined else fp.storage_size(spec.footprint, "512Mi", "1Gi", "4Gi", "8Gi")
     {
         apiVersion = _API_VERSION
         kind = "Redis"
@@ -76,13 +83,15 @@ build_redis = lambda spec: RedisSpec -> any {
             kubernetesConfig = {
                 image = spec.image
             } | _resources
-            storage = _build_storage(spec.storageSize, spec.storageClassName)
+            storage = _build_storage(_storage_size, spec.storageClassName)
         }
     }
 }
 
 build_redis_cluster = lambda spec: RedisClusterSpec -> any {
     _resources = {if spec.resources: resources = spec.resources}
+    _cluster_size = spec.clusterSize if spec.clusterSize is not Undefined else fp.replicas(spec.footprint, 3, 3, 3, 3)
+    _storage_size = spec.storageSize if spec.storageSize is not Undefined else fp.storage_size(spec.footprint, "512Mi", "1Gi", "4Gi", "10Gi")
     {
         apiVersion = _API_VERSION
         kind = "RedisCluster"
@@ -91,11 +100,11 @@ build_redis_cluster = lambda spec: RedisClusterSpec -> any {
             namespace = spec.namespace
         }
         spec = {
-            clusterSize = spec.clusterSize
+            clusterSize = _cluster_size
             kubernetesConfig = {
                 image = spec.image
             } | _resources
-            storage = _build_storage(spec.storageSize, spec.storageClassName)
+            storage = _build_storage(_storage_size, spec.storageClassName)
         }
     }
 }
@@ -105,40 +114,48 @@ schema RedisModule(accessory.Accessory):
     kind = "CRD"
 
     redisName: str
-    storageSize: str
+    footprint?: str = "production"
+    storageSize?: str
     storageClassName?: str
     image?: str = _DEFAULT_IMAGE
     resources?: any
+    redisInsight?: admin.RedisInsightSpec
 
     leaders = [leader.build_accessory_leader(redisName, namespace, "Redis", _API_VERSION)]
 
     _redis_manifest = build_redis(RedisSpec {
         name = redisName
         namespace = namespace
+        footprint = footprint
         storageSize = storageSize
         storageClassName = storageClassName
         image = image
         resources = resources
     })
 
-    manifests = [_redis_manifest]
+    _redis_insight_manifests = admin.build_redis_insight_resources(redisInsight) if redisInsight else []
+
+    manifests = [_redis_manifest] + _redis_insight_manifests
 
 schema RedisClusterModule(accessory.Accessory):
     """Template for Redis Cluster instances via the Redis Operator."""
     kind = "CRD"
 
     clusterName: str
-    clusterSize?: int = 3
-    storageSize: str
+    footprint?: str = "production"
+    clusterSize?: int
+    storageSize?: str
     storageClassName?: str
     image?: str = _DEFAULT_IMAGE
     resources?: any
+    redisInsight?: admin.RedisInsightSpec
 
     leaders = [leader.build_accessory_leader(clusterName, namespace, "RedisCluster", _API_VERSION)]
 
     _cluster_manifest = build_redis_cluster(RedisClusterSpec {
         name = clusterName
         namespace = namespace
+        footprint = footprint
         clusterSize = clusterSize
         storageSize = storageSize
         storageClassName = storageClassName
@@ -146,4 +163,6 @@ schema RedisClusterModule(accessory.Accessory):
         resources = resources
     })
 
-    manifests = [_cluster_manifest]
+    _redis_insight_manifests = admin.build_redis_insight_resources(redisInsight) if redisInsight else []
+
+    manifests = [_cluster_manifest] + _redis_insight_manifests

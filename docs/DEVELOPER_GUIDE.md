@@ -441,6 +441,9 @@ This replaces ~80 lines of manual Deployment YAML with a typed, validated call.
 | `webapp.k` → `WebAppModule` | Component | Deployment + Service + ConfigMap + ServiceAccount |
 | `database.k` → `SingleDatabaseModule` | Accessory | Deployment + Service + PV + PVC |
 | `kafka.k` → `KafkaClusterModule` | Accessory | Kafka CRD + KafkaTopic CRDs |
+| `observability/telemetry_config.k` | Helper schemas | Receivers + transformers + producers for Fluent Bit, Data Prepper, OTel Collector |
+| `footprints/footprint.k` | Helper schemas | `local` / `development` / `staging` / `production` sizing defaults |
+| `admin/data_admin.k` | Component | Optional pgAdmin, mongo-express, RedisInsight clients |
 
 **Example — Web application in ~15 lines instead of ~190:**
 ```kcl
@@ -503,6 +506,79 @@ schema MyKafkaModule(kafka.KafkaClusterModule):
 - Use **templates** when your module fits a known pattern (web app, database, Kafka). This is the recommended approach for new projects.
 - Use **raw builders** when you need full control over the manifest structure (custom sidecar containers, init containers, complex volume setups).
 - Use **neither** (raw manifests) when dealing with unusual resource types not covered by builders (video_streaming's existing modules use this approach).
+
+### 4.6.1 Infrastructure Footprints
+
+Infrastructure templates default to production-oriented settings, but supported templates can be right-sized with `footprint`:
+
+```kcl
+import framework.templates.postgresql.v1_0_0.postgresql as pg
+
+schema DevPostgres(pg.PostgreSQLClusterModule):
+    footprint = "local"       # also: development, staging, production
+    clusterName = "dev-pg"
+    databaseName = "app"
+```
+
+Use `local` for kind/minikube/company laptops, `development` for low-cost shared environments, `staging` for production-like validation, and `production` for the default HA posture. Explicit fields such as `instances`, `storageSize`, and `storageClassName` still override footprint-derived defaults.
+
+### 4.6.2 Observability Pipelines
+
+Use `TelemetryPipelineSpec` when a pipeline needs explicit receivers, transformers, and producers:
+
+```kcl
+import framework.templates.observability.v1_0_0.telemetry_config as telemetry
+import framework.templates.fluentbit.v3_2_10.native.fluentbit as fb
+
+_pipeline = telemetry.TelemetryPipelineSpec {
+    name = "app-logs"
+    receivers = [telemetry.ReceiverSpec {name = "containers", kind = "filelog", path = "/var/log/containers/*.log"}]
+    transformers = [telemetry.TransformerSpec {name = "batch", kind = "batch"}]
+    producers = [telemetry.ProducerSpec {name = "stdout", kind = "stdout"}]
+}
+
+schema LocalFluentBit(fb.FluentBitSingleInstanceModule):
+    footprint = "local"
+    pipelineSpec = _pipeline
+```
+
+The same pipeline graph can render to Fluent Bit classic config, Data Prepper pipeline YAML, or OpenTelemetry Collector config.
+
+### 4.6.3 Optional Admin UIs
+
+Admin clients are opt-in companions and must use Secret references for credentials:
+
+```kcl
+import framework.templates.postgresql.v1_0_0.postgresql as pg
+import framework.templates.admin.v1_0_0.data_admin as admin
+
+schema DevPostgresWithPgAdmin(pg.PostgreSQLClusterModule):
+    footprint = "local"
+    clusterName = "dev-pg"
+    pgAdmin = admin.PgAdminSpec {
+        name = "dev-pgadmin"
+        namespace = namespace
+        footprint = "local"
+        passwordSecretName = "pgadmin-admin-password"
+    }
+```
+
+Available companions: `PgAdminSpec`, `MongoExpressSpec`, and `RedisInsightSpec`.
+
+### 4.6.4 Release Notes in Rendered Output
+
+Attach `models.release_notes.ReleaseNotes` to a `RenderStack` to include a `RELEASE_NOTES.md` ConfigMap in YAML output:
+
+```kcl
+import models.release_notes as rn
+
+releaseNotes = rn.ReleaseNotes {
+    name = "erp-back"
+    version = "1.2.3"
+    namespace = "apps"
+    entries = [rn.ReleaseNoteEntry {category = "added", text = "Enabled pgAdmin for dev."}]
+}
+```
 
 ### 4.7 Assembly Helpers (Stack Utilities)
 

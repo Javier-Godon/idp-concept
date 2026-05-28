@@ -10,7 +10,7 @@ Helm chart: open-telemetry/opentelemetry-operator (0.109.0)
 CRDs: OpenTelemetryCollector (opentelemetry.io/v1beta1), Instrumentation (opentelemetry.io/v1alpha1)
 
 Usage:
-    import templates.opentelemetry.v1_0_0.opentelemetry as otel
+    import templates.opentelemetry as otel
 
     # Deploy the operator via Helm
     _operator = otel.build_otel_operator(otel.OtelOperatorSpec {
@@ -97,6 +97,7 @@ schema OtelCollectorSpec:
     exporters?: {str:any}
     pipelines?: {str:any}
     pipeline?: telemetry.LogPipelineSpec
+    pipelineSpec?: telemetry.TelemetryPipelineSpec
     targetAllocatorEnabled?: bool = False
     targetAllocatorPrometheusCR?: bool = False
     resources?: {str:any}
@@ -106,7 +107,7 @@ schema OtelCollectorSpec:
         replicas >= 1 if replicas is not Undefined, "replicas must be at least 1"
 
 build_otel_collector = lambda spec: OtelCollectorSpec -> any {
-    _pipeline_config = telemetry.build_otel_collector_config(spec.pipeline) if spec.pipeline is not Undefined else {}
+    _pipeline_config = telemetry.build_otel_collector_pipeline_config(spec.pipelineSpec) if spec.pipelineSpec is not Undefined else telemetry.build_otel_collector_config(spec.pipeline) if spec.pipeline is not Undefined else {}
     _default_receivers = {
         otlp = {
             protocols = {
@@ -125,9 +126,10 @@ build_otel_collector = lambda spec: OtelCollectorSpec -> any {
     }
     _default_exporters = { debug = {} }
 
-    _receivers = spec.receivers or (_pipeline_config.receivers if spec.pipeline is not Undefined else _default_receivers)
-    _processors = spec.processors or (_pipeline_config.processors if spec.pipeline is not Undefined else _default_processors)
-    _exporters = spec.exporters or (_pipeline_config.exporters if spec.pipeline is not Undefined else _default_exporters)
+    _has_pipeline_config = spec.pipeline is not Undefined or spec.pipelineSpec is not Undefined
+    _receivers = spec.receivers or (_pipeline_config.receivers if _has_pipeline_config else _default_receivers)
+    _processors = spec.processors or (_pipeline_config.processors if _has_pipeline_config else _default_processors)
+    _exporters = spec.exporters or (_pipeline_config.exporters if _has_pipeline_config else _default_exporters)
 
     _default_pipelines = {
         traces = {
@@ -147,7 +149,7 @@ build_otel_collector = lambda spec: OtelCollectorSpec -> any {
         }
     }
 
-    _pipelines = spec.pipelines or (_pipeline_config.pipelines if spec.pipeline is not Undefined else _default_pipelines)
+    _pipelines = spec.pipelines or (_pipeline_config.pipelines if _has_pipeline_config else _default_pipelines)
 
     _base = {
         apiVersion = "opentelemetry.io/v1beta1"

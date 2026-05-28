@@ -111,6 +111,15 @@ High-level modules that auto-generate all manifests from a few fields.
 Template files are organized by ecosystem and version under `framework/templates/<ecosystem>/<version>/...`.
 Use explicit versioned imports in new code (for example `templates.webapp.v1_0_0.webapp`, `templates.elastic.v7_10_2.elasticsearch`, or `templates.fluentbit.v3_2_10.native.fluentbit`). Root-level template shortcut files have been removed.
 
+### Deployment Footprints (`templates.footprints.v1_0_0.footprint`)
+Use `footprint` to select the infrastructure size/profile:
+- `local`: smallest functional shape for kind/minikube/laptop use, avoids Ceph storage classes and disables unnecessary persistence where possible.
+- `development`: low-cost shared dev defaults.
+- `staging`: production-like but smaller.
+- `production`: HA/resource-conscious defaults.
+
+Prefer adding a `footprint?: str = "production"` field to infrastructure templates. Existing helpers include `replicas`, `storage_size`, `storage_class`, `retention_days`, `persistence_enabled`, and `resource_values`.
+
 ### WebAppModule (webapp.k) — extends Component
 Set: `port`, `serviceType`, `replicas`, `configData`, `env`, `resources`, `livenessProbe`, `readinessProbe`, `startupProbe`, `imagePullSecretName`
 
@@ -123,12 +132,12 @@ Set: `clusterName`, `kafkaVersion`, `kafkaReplicas`, `zookeeperReplicas`, `stora
 ### PostgreSQLClusterModule (postgresql.k) — extends Accessory
 Wraps CloudNativePG operator (`postgresql.cnpg.io/v1`).
 Build lambdas: `build_cnpg_cluster`, `build_pooler`, `build_scheduled_backup`
-Set: `instances`, `storageSize`, `pgVersion`, `monitoring`, `backup` (BackupSpec), `pooler` (PoolerSpec), `walStorage`, `pgParams`, `imageName`
+Set: `footprint`, `instances`, `storageSize`, `pgVersion`, `monitoring`, `backup` (BackupSpec), `pooler` (PoolerSpec), `walStorage`, `pgParams`, `imageName`, optional `pgAdmin` companion.
 
 ### MongoDBCommunityModule (mongodb.k) — extends Accessory
 Wraps MongoDB Community Operator (`mongodbcommunity.mongodb.com/v1`).
 Build lambda: `build_mongodb_community`
-Set: `members`, `mongodbVersion`, `storageSize`, `storageClassName`, `users` (list of MongoDBUserSpec), `resources`
+Set: `footprint`, `members`, `mongodbVersion`, `storageSize`, `storageClassName`, `users` (list of MongoDBUserSpec), `resources`, optional `mongoExpress` companion.
 
 ### RabbitMQClusterModule (rabbitmq.k) — extends Accessory
 Wraps RabbitMQ Cluster Operator (`rabbitmq.com/v1beta1`).
@@ -138,7 +147,7 @@ Set: `replicas`, `storageSize`, `storageClassName`, `image`, `plugins`, `additio
 ### RedisModule (redis.k) — extends Accessory
 Wraps OT Redis Operator (`redis.redis.opstreelabs.in/v1beta2`).
 Build lambda: `build_redis`
-Set: `mode` ("standalone"|"cluster"), `clusterSize`, `storageSize`, `storageClassName`, `image`, `resources`
+Set: `footprint`, `mode` ("standalone"|"cluster"), `clusterSize`, `storageSize`, `storageClassName`, `image`, `resources`, optional `redisInsight` companion.
 
 ### KeycloakModule (keycloak.k) — extends Accessory
 Wraps Keycloak Operator (`k8s.keycloak.org/v2alpha1`).
@@ -160,7 +169,23 @@ Use explicit deployment mode imports:
 - `templates.fluentbit.v3_2_10.native.fluentbit`: `FluentBitSingleInstanceModule`, `FluentBitDaemonSetModule`, `build_fluentbit_resources`.
 - `templates.fluentbit.v3_2_10.helm.fluentbit`: `FluentBitHelmSpec`, `build_fluentbit_helm_release`.
 - `templates.fluentbit.v3_2_10.operator.fluentbit`: `FluentBitOperatorModule`, `build_fluentbit_operator_resources`.
-Set a shared `templates.observability.v1_0_0.telemetry_config.LogPipelineSpec` for `input`, `output`, `endpoint`, and index/path settings. Fluent Bit images and chart versions must be pinned; never use `latest`.
+Set `footprint` plus either simple `LogPipelineSpec` or richer `TelemetryPipelineSpec` (`ReceiverSpec` → `TransformerSpec` → `ProducerSpec`) from `templates.observability.v1_0_0.telemetry_config`. Fluent Bit images and chart versions must be pinned; never use `latest`.
+
+### Observability Pipeline Primitives (`telemetry_config.k`)
+Use:
+- `TelemetryEndpoint` for remote sinks/sources.
+- `LogPipelineSpec` for simple single-input/single-output logging.
+- `TelemetryPipelineSpec` for explicit `receivers`, `transformers`, and `producers` compatible with Fluent Bit, Data Prepper, and OpenTelemetry Collector renderers.
+
+Render helpers: `build_fluentbit_classic_config_from_pipeline`, `build_dataprepper_pipeline_config_from_pipeline`, and `build_otel_collector_pipeline_config`.
+
+### Admin UI Companions (`templates.admin.v1_0_0.data_admin`)
+Optional admin clients are opt-in and use pinned images plus Secret references for sensitive values:
+- `PgAdminSpec` / `PgAdminModule` for PostgreSQL.
+- `MongoExpressSpec` / `MongoExpressModule` for MongoDB.
+- `RedisInsightSpec` / `RedisInsightModule` for Redis/Valkey visual management.
+
+Do not hardcode admin passwords. Use `passwordSecretName` and related Secret key references.
 
 ### OpenSearchDashboardsModule (opensearch_dashboards.k) — extends Component
 Standalone OpenSearch Dashboards deployment. Prefer `OpenSearchClusterModule.dashboards` when Dashboards should be managed by the OpenSearch operator with the cluster.
@@ -198,8 +223,11 @@ Set: `storageSize`, `chartVersion`, `storageClassName`, `cpuRequest/Limit`, `mem
 Operator deployed via Helm (`open-telemetry/opentelemetry-operator`), collector + instrumentation via CRDs.
 Build lambdas: `build_otel_operator`, `build_otel_collector`, `build_instrumentation`
 - `OtelOperatorSpec`: `certManagerEnabled`, `autoGenerateCert`, `createRbacPermissions`, `collectorImage`
-- `OtelCollectorSpec`: `mode` (deployment/daemonset/statefulset/sidecar), `replicas`, `receivers`, `processors`, `exporters`, `pipelines`, `targetAllocatorEnabled`, `targetAllocatorPrometheusCR`
+- `OtelCollectorSpec`: `mode` (deployment/daemonset/statefulset/sidecar), `replicas`, `receivers`, `processors`, `exporters`, `pipelines`, simple `pipeline`, richer `pipelineSpec`, `targetAllocatorEnabled`, `targetAllocatorPrometheusCR`
 - `InstrumentationSpec`: `exporterEndpoint`, `propagators`, `samplerType`, `samplerArgument`, `javaImage`, `pythonImage`, `nodejsImage`, `dotnetImage`, `goImage`
+
+### Release Notes (`models.release_notes`)
+Use `ReleaseNotes` with `ReleaseNoteEntry` categories (`added`, `changed`, `deprecated`, `removed`, `fixed`, `security`, `known-issue`). Attach notes to `RenderStack.releaseNotes`; `procedures.kcl_to_yaml.yaml_stream_stack` includes them as a `ConfigMap` with `RELEASE_NOTES.md` when `includeInRender=True`.
 
 ## Assembly Helpers (`framework/assembly/helpers.k`)
 

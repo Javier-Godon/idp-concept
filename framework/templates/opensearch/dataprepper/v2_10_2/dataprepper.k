@@ -34,6 +34,7 @@ schema DataPrepperSpec:
     serviceType?: str = "ClusterIP"
     pipelineConfig?: str
     pipeline?: telemetry.LogPipelineSpec
+    pipelineSpec?: telemetry.TelemetryPipelineSpec
     dataPrepperConfig?: str = "ssl: false\nmetricRegistries: [Prometheus]\n"
     log4j2Properties?: str = "status = error\nname = DataPrepperPropertiesConfig\n"
     env?: [any]
@@ -49,11 +50,11 @@ schema DataPrepperSpec:
         1 <= port <= 65535, "Data Prepper port must be between 1 and 65535"
         1 <= metricsPort <= 65535, "Data Prepper metricsPort must be between 1 and 65535"
         serviceType in ["ClusterIP", "NodePort", "LoadBalancer"], "serviceType must be ClusterIP, NodePort, or LoadBalancer"
-        pipelineConfig is not Undefined or pipeline is not Undefined, "Data Prepper requires either pipelineConfig or pipeline"
+        pipelineConfig is not Undefined or pipeline is not Undefined or pipelineSpec is not Undefined, "Data Prepper requires pipelineConfig, pipeline, or pipelineSpec"
         len(pipelineConfig) > 0 if pipelineConfig is not Undefined, "Data Prepper pipelineConfig must not be empty"
 
 _pipeline_config = lambda spec: DataPrepperSpec -> str {
-    spec.pipelineConfig if spec.pipelineConfig is not Undefined else telemetry.build_dataprepper_pipeline_config(spec.pipeline)
+    spec.pipelineConfig if spec.pipelineConfig is not Undefined else telemetry.build_dataprepper_pipeline_config_from_pipeline(spec.pipelineSpec) if spec.pipelineSpec is not Undefined else telemetry.build_dataprepper_pipeline_config(spec.pipeline)
 }
 
 _resource_requirements = lambda spec: DataPrepperResources -> any {
@@ -180,6 +181,7 @@ schema DataPrepperModule(component.Component):
 
     pipelineConfig?: str
     pipeline?: telemetry.LogPipelineSpec
+    pipelineSpec?: telemetry.TelemetryPipelineSpec
     dataPrepperConfig?: str = "ssl: false\nmetricRegistries: [Prometheus]\n"
     log4j2Properties?: str = "status = error\nname = DataPrepperPropertiesConfig\n"
     replicas?: int = 2
@@ -202,6 +204,7 @@ schema DataPrepperModule(component.Component):
         serviceType = serviceType
         pipelineConfig = pipelineConfig
         pipeline = pipeline
+        pipelineSpec = pipelineSpec
         dataPrepperConfig = dataPrepperConfig
         log4j2Properties = log4j2Properties
         env = env

@@ -10,6 +10,7 @@ import builders.leader as leader
 import models.modules.accessory as accessory
 import models.modules.thirdparty_helm as th
 import templates.observability.v1_0_0.telemetry_config as telemetry
+import templates.footprints.v1_0_0.footprint as fp
 
 _API_VERSION = "fluentbit.fluent.io/v1alpha2"
 _DEFAULT_IMAGE = "cr.fluentbit.io/fluent/fluent-bit"
@@ -26,7 +27,9 @@ schema FluentBitOperatorSpec:
     repository?: str = _DEFAULT_REPOSITORY
     image?: str = _DEFAULT_IMAGE
     version?: str = _DEFAULT_VERSION
+    footprint?: str = "development"
     pipeline?: telemetry.LogPipelineSpec = telemetry.LogPipelineSpec {input = "tail"}
+    pipelineSpec?: telemetry.TelemetryPipelineSpec
     fluentBitConfigName?: str = "fluent-bit-config"
     extraOperatorValues?: {str:str}
 
@@ -37,6 +40,7 @@ schema FluentBitOperatorSpec:
         "latest" not in operatorChartVersion, "Fluent Operator chart version must not be latest"
         len(version) > 0, "Fluent Bit image version must be pinned"
         "latest" not in version, "Fluent Bit image version must not be latest"
+        footprint in ["local", "development", "staging", "production"], "footprint must be local, development, staging, or production"
 
 build_fluent_operator_release = lambda spec: FluentBitOperatorSpec -> any {
     th.build_thirdparty_helm(th.ThirdPartyHelmSpec {
@@ -63,6 +67,7 @@ build_fluentbit_cr = lambda spec: FluentBitOperatorSpec -> any {
         spec = {
             image = "${spec.image}:${spec.version}"
             fluentBitConfigName = spec.fluentBitConfigName
+            replicas = fp.replicas(spec.footprint, 1, 1, 2, 3)
             positionDB = {hostPath = {path = "/var/lib/fluent-bit/"}}
             resources = {
                 requests = {cpu = "100m", memory = "128Mi"}
@@ -73,6 +78,7 @@ build_fluentbit_cr = lambda spec: FluentBitOperatorSpec -> any {
 }
 
 build_cluster_fluentbit_config = lambda spec: FluentBitOperatorSpec -> any {
+    _log_pipeline = telemetry.to_log_pipeline(spec.pipelineSpec) if spec.pipelineSpec is not Undefined else spec.pipeline
     {
         apiVersion = _API_VERSION
         kind = "ClusterFluentBitConfig"
@@ -87,33 +93,35 @@ build_cluster_fluentbit_config = lambda spec: FluentBitOperatorSpec -> any {
                 httpListen = "0.0.0.0"
                 httpPort = 2020
             }
-            inputSelector = {matchLabels = {"idp-concept/pipeline" = spec.pipeline.name}}
-            outputSelector = {matchLabels = {"idp-concept/pipeline" = spec.pipeline.name}}
+            inputSelector = {matchLabels = {"idp-concept/pipeline" = _log_pipeline.name}}
+            outputSelector = {matchLabels = {"idp-concept/pipeline" = _log_pipeline.name}}
         }
     }
 }
 
 build_cluster_input = lambda spec: FluentBitOperatorSpec -> any {
+    _log_pipeline = telemetry.to_log_pipeline(spec.pipelineSpec) if spec.pipelineSpec is not Undefined else spec.pipeline
     {
         apiVersion = _API_VERSION
         kind = "ClusterInput"
         metadata = {
-            name = "${spec.name}-${spec.pipeline.input}-input"
-            labels = {"idp-concept/pipeline" = spec.pipeline.name}
+            name = "${spec.name}-${_log_pipeline.input}-input"
+            labels = {"idp-concept/pipeline" = _log_pipeline.name}
         }
-        spec = telemetry.fluentbit_input_options(spec.pipeline)
+        spec = telemetry.fluentbit_input_options(_log_pipeline)
     }
 }
 
 build_cluster_output = lambda spec: FluentBitOperatorSpec -> any {
+    _log_pipeline = telemetry.to_log_pipeline(spec.pipelineSpec) if spec.pipelineSpec is not Undefined else spec.pipeline
     {
         apiVersion = _API_VERSION
         kind = "ClusterOutput"
         metadata = {
-            name = "${spec.name}-${spec.pipeline.output}-output"
-            labels = {"idp-concept/pipeline" = spec.pipeline.name}
+            name = "${spec.name}-${_log_pipeline.output}-output"
+            labels = {"idp-concept/pipeline" = _log_pipeline.name}
         }
-        spec = telemetry.fluentbit_output_options(spec.pipeline)
+        spec = telemetry.fluentbit_output_options(_log_pipeline)
     }
 }
 
@@ -132,7 +140,9 @@ schema FluentBitOperatorModule(accessory.Accessory):
 
     operatorReleaseName?: str = "fluent-operator"
     operatorChartVersion?: str = _DEFAULT_OPERATOR_CHART_VERSION
+    footprint?: str = "development"
     pipeline?: telemetry.LogPipelineSpec = telemetry.LogPipelineSpec {input = "tail"}
+    pipelineSpec?: telemetry.TelemetryPipelineSpec
     fluentBitConfigName?: str = "fluent-bit-config"
     extraOperatorValues?: {str:str}
 
@@ -143,9 +153,11 @@ schema FluentBitOperatorModule(accessory.Accessory):
         namespace = namespace
         image = asset.image if asset.image != Undefined else _DEFAULT_IMAGE
         version = asset.version
+        footprint = footprint
         operatorReleaseName = operatorReleaseName
         operatorChartVersion = operatorChartVersion
         pipeline = pipeline
+        pipelineSpec = pipelineSpec
         fluentBitConfigName = fluentBitConfigName
         extraOperatorValues = extraOperatorValues
     })
