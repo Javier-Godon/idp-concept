@@ -10,6 +10,7 @@ import procedures.kcl_to_yaml as yaml_proc
 import procedures.kcl_to_argocd as argocd_proc
 import procedures.kcl_to_helm as helm_proc
 import procedures.kcl_to_helmfile as helmfile_proc
+import procedures.kcl_to_kusion as kusion_proc
 import procedures.kcl_to_kustomize as kustomize_proc
 import procedures.kcl_to_timoni as timoni_proc
 import procedures.kcl_to_crossplane as crossplane_proc
@@ -30,6 +31,10 @@ render_from_seed = lambda stack: any, project_name: str, git_repo_url: str, mani
     if output == "helm":
         _charts = helm_proc.generate_charts_from_stack(stack)
         manifests.yaml_stream(_charts)
+
+    if output == "kusion":
+        _kusion_resources = kusion_proc.kusion_spec_stream_stack(stack)
+        manifests.yaml_stream(_kusion_resources)
 
     if output == "kustomize":
         _kustomization = kustomize_proc.generate_kustomization_from_stack(stack.components, stack.accessories, stack.k8snamespaces, project_name, "1.0.0")

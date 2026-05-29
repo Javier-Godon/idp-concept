@@ -67,7 +67,7 @@ func resolveOutputDir(cfg *config.ProjectConfig) string {
 	return "output"
 }
 
-func renderYAML(_ *config.ProjectConfig, format string) error {
+func renderYAML(cfg *config.ProjectConfig, format string) error {
 	// For argocd, use "yaml" format to get plain K8s YAML
 	kclFormat := format
 	if format == "argocd" {
@@ -81,7 +81,7 @@ func renderYAML(_ *config.ProjectConfig, format string) error {
 		return err
 	}
 
-	outDir := resolveOutputDir(nil)
+	outDir := resolveOutputDir(cfg)
 	outFile := filepath.Join(outDir, "kubernetes_manifests.yaml")
 	if err := output.WriteYAML(result, outFile); err != nil {
 		return err
@@ -140,7 +140,7 @@ func renderHelm(cfg *config.ProjectConfig) error {
 
 func renderKusion(cfg *config.ProjectConfig) error {
 	fmt.Println("[Kusion] Generating Kusion spec...")
-	result, err := factory.Render(factoryDir, "yaml")
+	result, err := factory.Render(factoryDir, "kusion")
 	if err != nil {
 		return err
 	}

@@ -4,27 +4,32 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
+	"strings"
 
 	kcl "kcl-lang.io/kcl-go"
 )
 
+var localDependencyRE = regexp.MustCompile(`^([A-Za-z_][A-Za-z0-9_-]*)\s*=\s*\{[^}]*path\s*=\s*["']([^"']+)["']`)
+var registryDependencyRE = regexp.MustCompile(`^([A-Za-z_][A-Za-z0-9_-]*)\s*=\s*["']([^"']+)["']`)
+
 // Render executes a KCL render with the given output format.
 func Render(factoryDir string, outputFormat string) (string, error) {
-	renderFile := filepath.Join(factoryDir, "render.k")
-	if _, err := os.Stat(renderFile); os.IsNotExist(err) {
-		return "", fmt.Errorf("render.k not found in %s", factoryDir)
-	}
-
-	absDir, err := filepath.Abs(factoryDir)
+	moduleRoot, renderFile, err := resolveKCLFile(factoryDir, "render.k")
 	if err != nil {
-		return "", fmt.Errorf("cannot resolve factory dir: %w", err)
+		return "", err
 	}
 
-	result, err := kcl.RunFiles([]string{renderFile},
-		kcl.WithWorkDir(absDir),
+	options := []kcl.Option{
+		kcl.WithWorkDir(moduleRoot),
 		kcl.WithOptions(append([]string{"output=" + outputFormat}, ConventionOptions(factoryDir)...)...),
 		kcl.WithSortKeys(true),
-	)
+	}
+	if externalPkgs := LocalDependencyOptions(moduleRoot); len(externalPkgs) > 0 {
+		options = append(options, kcl.WithExternalPkgs(externalPkgs...))
+	}
+
+	result, err := kcl.RunFiles([]string{renderFile}, options...)
 	if err != nil {
 		return "", fmt.Errorf("KCL render failed: %w", err)
 	}
@@ -33,21 +38,143 @@ func Render(factoryDir string, outputFormat string) (string, error) {
 
 // Validate compiles factory_seed.k without rendering to check for errors.
 func Validate(factoryDir string, seedFile string) error {
-	seedPath := filepath.Join(factoryDir, seedFile)
-	if _, err := os.Stat(seedPath); os.IsNotExist(err) {
-		return fmt.Errorf("%s not found in %s", seedFile, factoryDir)
-	}
-
-	absDir, err := filepath.Abs(factoryDir)
+	moduleRoot, seedPath, err := resolveKCLFile(factoryDir, seedFile)
 	if err != nil {
-		return fmt.Errorf("cannot resolve factory dir: %w", err)
+		return err
 	}
 
-	_, err = kcl.RunFiles([]string{seedPath},
-		kcl.WithWorkDir(absDir),
+	options := []kcl.Option{
+		kcl.WithWorkDir(moduleRoot),
 		kcl.WithOptions(ConventionOptions(factoryDir)...),
-	)
+	}
+	if externalPkgs := LocalDependencyOptions(moduleRoot); len(externalPkgs) > 0 {
+		options = append(options, kcl.WithExternalPkgs(externalPkgs...))
+	}
+
+	_, err = kcl.RunFiles([]string{seedPath}, options...)
 	return err
+}
+
+// FindModuleRoot returns the nearest ancestor directory containing kcl.mod.
+func FindModuleRoot(startDir string) (string, error) {
+	absDir, err := filepath.Abs(startDir)
+	if err != nil {
+		return "", fmt.Errorf("cannot resolve directory %s: %w", startDir, err)
+	}
+
+	info, err := os.Stat(absDir)
+	if err != nil {
+		return "", fmt.Errorf("cannot stat %s: %w", absDir, err)
+	}
+	if !info.IsDir() {
+		absDir = filepath.Dir(absDir)
+	}
+
+	for {
+		if _, err := os.Stat(filepath.Join(absDir, "kcl.mod")); err == nil {
+			return absDir, nil
+		}
+		parent := filepath.Dir(absDir)
+		if parent == absDir {
+			return "", fmt.Errorf("kcl.mod not found at or above %s", startDir)
+		}
+		absDir = parent
+	}
+}
+
+func resolveKCLFile(factoryDir string, fileName string) (string, string, error) {
+	absFactory, err := filepath.Abs(factoryDir)
+	if err != nil {
+		return "", "", fmt.Errorf("cannot resolve factory dir: %w", err)
+	}
+
+	absFile := filepath.Join(absFactory, fileName)
+	if _, err := os.Stat(absFile); os.IsNotExist(err) {
+		return "", "", fmt.Errorf("%s not found in %s", fileName, absFactory)
+	} else if err != nil {
+		return "", "", fmt.Errorf("cannot stat %s: %w", absFile, err)
+	}
+
+	moduleRoot, err := FindModuleRoot(absFactory)
+	if err != nil {
+		return "", "", err
+	}
+
+	relFile, err := filepath.Rel(moduleRoot, absFile)
+	if err != nil {
+		return "", "", fmt.Errorf("cannot make %s relative to %s: %w", absFile, moduleRoot, err)
+	}
+	return moduleRoot, filepath.ToSlash(relFile), nil
+}
+
+// LocalDependencyOptions returns KCL -E option strings for local path dependencies,
+// including transitive local dependencies. The KCL Go SDK is stricter than the CLI
+// for nested packages, so explicit mappings keep Go CLI rendering aligned with
+// `kcl run` from the package directory.
+func LocalDependencyOptions(moduleRoot string) []string {
+	seen := map[string]bool{}
+	return localDependencyOptions(moduleRoot, seen)
+}
+
+func localDependencyOptions(moduleRoot string, seen map[string]bool) []string {
+	modPath := filepath.Join(moduleRoot, "kcl.mod")
+	data, err := os.ReadFile(modPath)
+	if err != nil {
+		return nil
+	}
+
+	options := []string{}
+	inDependencies := false
+	for _, line := range strings.Split(string(data), "\n") {
+		line = strings.TrimSpace(line)
+		if strings.HasPrefix(line, "[") && strings.HasSuffix(line, "]") {
+			inDependencies = line == "[dependencies]"
+			continue
+		}
+		if !inDependencies || line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+
+		match := localDependencyRE.FindStringSubmatch(line)
+		if len(match) == 3 {
+			name := match[1]
+			depPath, err := filepath.Abs(filepath.Join(moduleRoot, match[2]))
+			if err != nil || seen[name] {
+				continue
+			}
+			seen[name] = true
+			options = append(options, name+"="+depPath)
+			options = append(options, localDependencyOptions(depPath, seen)...)
+			continue
+		}
+
+		match = registryDependencyRE.FindStringSubmatch(line)
+		if len(match) != 3 {
+			continue
+		}
+		name := match[1]
+		version := match[2]
+		if seen[name] {
+			continue
+		}
+		if depPath := cachedRegistryDependencyPath(name, version); depPath != "" {
+			seen[name] = true
+			options = append(options, name+"="+depPath)
+		}
+	}
+	return options
+}
+
+func cachedRegistryDependencyPath(name string, version string) string {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return ""
+	}
+	depPath := filepath.Join(home, ".kcl", "kpm", name+"_"+version)
+	if info, err := os.Stat(depPath); err == nil && info.IsDir() {
+		return depPath
+	}
+	return ""
 }
 
 // RunTest runs KCL tests in the given directory.

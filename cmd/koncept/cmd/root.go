@@ -39,6 +39,7 @@ func init() {
 	rootCmd.AddCommand(depsCmd)
 	rootCmd.AddCommand(publishCmd)
 	rootCmd.AddCommand(goldenCmd)
+	rootCmd.AddCommand(doctorCmd)
 }
 
 func printSuccess(msg string) {

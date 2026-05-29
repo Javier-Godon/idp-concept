@@ -36,7 +36,7 @@ printf "==> Running framework tests\n"
 printf "==> Running render smoke checks (erp_back/dev factory)\n"
 (
   cd "$ROOT_DIR/projects/erp_back/pre_releases/manifests/dev/factory"
-  outputs=(yaml argocd helmfile helm kustomize timoni crossplane backstage)
+  outputs=(yaml argocd helmfile helm kusion kustomize timoni crossplane backstage)
   for output in "${outputs[@]}"; do
     printf "   - %s\n" "$output"
     kcl run render.k -D output="$output" >/tmp/idp-concept-render-"$output".out
