@@ -56,6 +56,26 @@ Teams get locked into specific tools (Helm, Kustomize, etc.). When requirements 
 
 ### 2. Set Up the CLI
 
+The **Go CLI** (`cmd/koncept`) is the preferred, packaged interface. The Nushell
+`platform_cli/koncept` remains available as legacy/developer tooling.
+
+```bash
+# Build the Go CLI (requires Go and kcl)
+cd cmd/koncept
+make build            # produces bin/koncept
+make build-all        # cross-compile Linux/macOS/Windows
+make checksums        # bin/SHA256SUMS for release artifacts
+make docker           # build a pinned CI image (Dockerfile bundles the kcl toolchain)
+
+# Add it to your PATH
+ln -s "$(pwd)/bin/koncept" ~/.local/bin/koncept
+
+# Shell completions
+koncept completion bash > /etc/bash_completion.d/koncept   # or zsh|fish|powershell
+```
+
+Legacy Nushell CLI:
+
 ```bash
 chmod +x platform_cli/koncept
 mkdir -p ~/.local/bin
@@ -77,7 +97,25 @@ koncept render kusion
 koncept render kustomize
 ```
 
-### 4. Run Tests
+### 4. Scaffold, Validate, and Govern
+
+```bash
+# Scaffold a complete, validating webapp project skeleton
+koncept init project "Inventory Service"
+#   → projects/inventory_service/ … renders Tier-1 output out of the box
+
+# Enforce baseline security/ownership policy on rendered manifests
+koncept policy check --factory <factory-dir>
+#   no privileged containers · no latest/untagged images
+#   resource requests+limits on workloads · ownership labels
+
+# Other helpers
+koncept doctor            # dependency, version, path, and factory checks
+koncept golden check      # detect render drift against committed golden files
+koncept deps              # troubleshoot KCL module resolution
+```
+
+### 5. Run Tests
 
 ```bash
 ./scripts/verify.sh

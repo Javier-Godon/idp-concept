@@ -8,6 +8,7 @@ import (
 
 var (
 	version    = "dev"
+	buildTime  = "unknown"
 	factoryDir string
 	outputDir  string
 )
@@ -19,6 +20,11 @@ var rootCmd = &cobra.Command{
 that uses KCL as the single source of truth to generate Kubernetes
 deployment manifests in multiple output formats.`,
 	Version: version,
+}
+
+// SetVersionTemplate wires build metadata into the --version output.
+func init() {
+	rootCmd.SetVersionTemplate("koncept {{.Version}} (built " + buildTime + ")\n")
 }
 
 func Execute() error {
@@ -40,6 +46,8 @@ func init() {
 	rootCmd.AddCommand(publishCmd)
 	rootCmd.AddCommand(goldenCmd)
 	rootCmd.AddCommand(doctorCmd)
+	rootCmd.AddCommand(completionCmd)
+	rootCmd.AddCommand(policyCmd)
 }
 
 func printSuccess(msg string) {

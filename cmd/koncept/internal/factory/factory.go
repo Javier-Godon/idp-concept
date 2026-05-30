@@ -31,7 +31,7 @@ func Render(factoryDir string, outputFormat string) (string, error) {
 
 	result, err := kcl.RunFiles([]string{renderFile}, options...)
 	if err != nil {
-		return "", fmt.Errorf("KCL render failed: %w", err)
+		return "", ExplainKCLError(fmt.Errorf("KCL render failed: %w", err))
 	}
 	return result.GetRawYamlResult(), nil
 }
@@ -52,7 +52,7 @@ func Validate(factoryDir string, seedFile string) error {
 	}
 
 	_, err = kcl.RunFiles([]string{seedPath}, options...)
-	return err
+	return ExplainKCLError(err)
 }
 
 // FindModuleRoot returns the nearest ancestor directory containing kcl.mod.

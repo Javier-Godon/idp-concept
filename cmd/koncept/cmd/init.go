@@ -11,8 +11,25 @@ import (
 
 var initCmd = &cobra.Command{
 	Use:   "init",
-	Short: "Scaffold a new factory directory with render.k + factory_seed.k",
+	Short: "Scaffold factories and full projects",
+	Long: `init scaffolds idp-concept artifacts.
+
+  koncept init factory            scaffold a factory (render.k + factory_seed.k)
+  koncept init project <name>     scaffold a complete, validating webapp project
+
+With no subcommand, 'init' behaves like 'init factory' for backward compatibility.`,
+	RunE: runInit,
+}
+
+var initFactoryCmd = &cobra.Command{
+	Use:   "factory",
+	Short: "Scaffold a factory directory with render.k + factory_seed.k",
 	RunE:  runInit,
+}
+
+func init() {
+	initCmd.AddCommand(initFactoryCmd)
+	initCmd.AddCommand(initProjectCmd)
 }
 
 const factorySeedTemplate = `"""

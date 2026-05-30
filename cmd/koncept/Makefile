@@ -3,7 +3,7 @@ VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev
 BUILD_TIME = $(shell date -u '+%Y-%m-%dT%H:%M:%SZ')
 LDFLAGS = -ldflags "-X github.com/idp-concept/koncept/cmd.version=$(VERSION) -X github.com/idp-concept/koncept/cmd.buildTime=$(BUILD_TIME)"
 
-.PHONY: build build-all clean test fmt lint install
+.PHONY: build build-all clean test fmt lint install docker checksums
 
 build:
 	go build $(LDFLAGS) -o bin/$(BINARY_NAME) .
@@ -14,6 +14,17 @@ build-all:
 	GOOS=darwin  GOARCH=amd64 go build $(LDFLAGS) -o bin/$(BINARY_NAME)-darwin-amd64 .
 	GOOS=darwin  GOARCH=arm64 go build $(LDFLAGS) -o bin/$(BINARY_NAME)-darwin-arm64 .
 	GOOS=windows GOARCH=amd64 go build $(LDFLAGS) -o bin/$(BINARY_NAME)-windows-amd64.exe .
+
+checksums: build-all
+	cd bin && sha256sum $(BINARY_NAME)-* > SHA256SUMS
+
+IMAGE ?= koncept:$(VERSION)
+
+docker:
+	docker build -f Dockerfile \
+	  --build-arg VERSION=$(VERSION) \
+	  --build-arg BUILD_TIME=$(BUILD_TIME) \
+	  -t $(IMAGE) ..
 
 clean:
 	rm -rf bin/

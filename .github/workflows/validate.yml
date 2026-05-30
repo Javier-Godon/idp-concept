@@ -68,6 +68,19 @@ jobs:
           test -s /tmp/koncept-yaml/kubernetes_manifests.yaml
           test -s /tmp/koncept-kusion/kusion_spec.yaml
 
+      - name: Go CLI policy gate
+        working-directory: cmd/koncept
+        run: ./bin/koncept --factory "$GITHUB_WORKSPACE/${{ env.ERP_DEV_FACTORY }}" policy check
+
+      - name: Go CLI scaffold smoke
+        working-directory: cmd/koncept
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/scaffold/projects
+          ln -s "$GITHUB_WORKSPACE/framework" /tmp/scaffold/framework
+          ./bin/koncept init project "Smoke Service" --dest /tmp/scaffold/projects
+          ./bin/koncept policy check --factory /tmp/scaffold/projects/smoke_service/pre_releases/manifests/dev/factory
+
   repository-verify:
     name: Repository verification
     runs-on: ubuntu-latest

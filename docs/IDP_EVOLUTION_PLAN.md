@@ -2,7 +2,9 @@
 
 > Current-state assessment and roadmap for **idp-concept** as a practical Internal Developer Platform for a medium-sized company with several products.
 >
-> Last reviewed: 2026-05-29. Repository verification at review time: `./scripts/verify.sh` passed with `416/416` KCL tests and ERP factory smoke renders for `yaml`, `argocd`, `helmfile`, `helm`, `kustomize`, `timoni`, `crossplane`, and `backstage`. Go CLI package tests also passed.
+> Last reviewed: 2026-05-30. Repository verification at review time: `./scripts/verify.sh` passed with `416/416` KCL tests and ERP factory smoke renders for `yaml`, `argocd`, `helmfile`, `helm`, `kustomize`, `timoni`, `crossplane`, and `backstage`. Go CLI package tests also passed.
+>
+> Update 2026-05-30: added `koncept completion`, `koncept policy check` (baseline security/ownership gate), `koncept init project` (full validating webapp skeleton), concise KCL module-resolution error hints, build metadata wiring, and CI image/build tooling (`Dockerfile`, `make docker`, `make checksums`). Generated projects render Tier-1 output and pass `koncept policy check` out of the box.
 
 ---
 
@@ -300,10 +302,10 @@ The previous roadmap emphasized many future phases. Given the current state, the
 
 - [ ] Declare Tier 1 outputs: `yaml`/`argocd`, `helmfile`, and `backstage`.
 - [ ] Update README and quickstart to make the Go CLI the preferred path once packaged.
-- [ ] Build and publish Go CLI binaries for Linux/macOS/Windows.
-- [ ] Publish a pinned container image for CI usage.
+- [~] Build and publish Go CLI binaries for Linux/macOS/Windows. (`make build-all` cross-compiles and `make checksums` produces SHA256SUMS; release publishing pipeline still pending.)
+- [~] Publish a pinned container image for CI usage. (`cmd/koncept/Dockerfile` + `make docker` build a pinned image with the kcl toolchain; registry publishing still pending.)
 - [ ] Keep Nushell CLI documented as legacy/developer tooling.
-- [ ] Add shell completions and concise error messages for common KCL module-resolution failures.
+- [x] Add shell completions and concise error messages for common KCL module-resolution failures.
 - [x] Verify the Go CLI render paths against the same smoke matrix used by `scripts/verify.sh`.
 - [x] Fix any Go CLI output routing mismatches found during verification, especially ensuring each render command calls the matching KCL output format.
 - [x] Add a `koncept doctor` command for dependency, version, path, and factory checks.
@@ -322,12 +324,12 @@ The previous roadmap emphasized many future phases. Given the current state, the
 
 ### Deliverables
 
-- [ ] `koncept init project <name>` creates a complete, validating project skeleton.
+- [x] `koncept init project <name>` creates a complete, validating project skeleton.
 - [ ] `koncept init module webapp <name>` adds a `WebAppModule` and wires it into a stack.
 - [ ] `koncept init module postgres|redis|kafka|mongodb|rabbitmq <name>` adds common infrastructure templates.
 - [ ] `koncept init env <dev|stg|prod>` creates site/profile/pre-release structure.
 - [ ] `koncept init release <version>` creates immutable release structure.
-- [ ] Generated projects use the recommended minimal transitive `kcl.mod` pattern.
+- [x] Generated projects use the recommended minimal transitive `kcl.mod` pattern.
 - [ ] Backstage scaffolder templates call the same scaffold logic or use the same source templates as the CLI.
 - [ ] Add golden generated fixtures for at least:
   - webapp only,
@@ -355,13 +357,13 @@ The previous roadmap emphasized many future phases. Given the current state, the
   - `git diff --check`,
   - selected CLI smoke checks for the ERP dev factory.
 - [ ] Add golden-output checks for reference projects.
-- [ ] Add policy-as-code checks for rendered YAML:
-  - no privileged containers,
-  - no `latest` tags,
-  - resource requests/limits required for Tier 1 workloads,
-  - required ownership labels/annotations,
-  - secret-looking values must use Secret references,
-  - namespace and network-policy conventions.
+- [x] Add policy-as-code checks for rendered YAML (`koncept policy check`):
+  - [x] no privileged containers,
+  - [x] no `latest` tags,
+  - [x] resource requests/limits required for Tier 1 workloads,
+  - [x] required ownership labels/annotations,
+  - [ ] secret-looking values must use Secret references,
+  - [ ] namespace and network-policy conventions.
 - [ ] Document policy exemptions with owner, reason, and expiry.
 - [ ] Add release notes/changelog generation for framework changes.
 
@@ -383,7 +385,7 @@ The previous roadmap emphasized many future phases. Given the current state, the
 - [ ] Add framework compatibility metadata to stacks/releases.
 - [ ] Publish framework packages as versioned OCI artifacts or a clearly tagged KCL module distribution.
 - [ ] Provide migration docs from local path dependencies to version-pinned dependencies.
-- [ ] Add `koncept deps` output suitable for troubleshooting module resolution.
+- [x] Add `koncept deps` output suitable for troubleshooting module resolution.
 - [ ] Define support windows and deprecation policy for templates and output procedures.
 
 ### Success criteria
