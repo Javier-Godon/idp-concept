@@ -5,6 +5,8 @@
 > Last reviewed: 2026-05-30. Repository verification at review time: `./scripts/verify.sh` passed with `416/416` KCL tests and ERP factory smoke renders for `yaml`, `argocd`, `helmfile`, `helm`, `kustomize`, `timoni`, `crossplane`, and `backstage`. Go CLI package tests also passed.
 >
 > Update 2026-05-30: added `koncept completion`, `koncept policy check` (baseline security/ownership gate), `koncept init project` (full validating webapp skeleton), concise KCL module-resolution error hints, build metadata wiring, and CI image/build tooling (`Dockerfile`, `make docker`, `make checksums`). Generated projects render Tier-1 output and pass `koncept policy check` out of the box.
+>
+> Update 2026-05-30 (later): added `koncept init module <type> <name>` scaffolding for `webapp`, `database`, `postgres`, `redis`, `kafka`, `mongodb`, and `rabbitmq` (generates a module def under `modules/<area>/` and prints paste-ready stack wiring), and extended `koncept policy check` with two new rules — `no-secret-literals` (secret-looking env values must use a Secret reference) and `require-namespace` (Tier-1 workloads must declare an explicit namespace). Generated modules compile, render, and pass policy in a fresh project.
 
 ---
 
@@ -230,6 +232,8 @@ The current Go `init` command scaffolds a factory, not a full project/product. B
 
 **Recommendation:** prioritize `koncept init project`, `koncept init module`, `koncept init env`, and `koncept init release` before adding more output formats.
 
+**Implementation learning (2026-05-30):** `koncept init module` deliberately *generates the module def file and prints a paste-ready stack wiring snippet* rather than programmatically editing the stack `.k` file. Auto-rewriting KCL with regex/AST surgery is brittle and risks corrupting hand-authored stacks; printing a verified snippet keeps the secure path while still removing the boilerplate. Infra modules are emitted as accessories under `modules/infraops/` and webapps as components under `modules/appops/`, matching the framework's component/accessory split. Generated webapp + postgres modules were verified to compile, render, and pass `koncept policy check` in a fresh scaffolded project. A future enhancement can offer an opt-in `--wire` flag that appends to a clearly marked stack region once a stable insertion marker convention exists.
+
 ### 5.5 Documentation drift
 
 Some docs describe desired future capabilities as already complete. This is risky for adoption: teams will trust the platform less if docs and implementation diverge.
@@ -325,8 +329,8 @@ The previous roadmap emphasized many future phases. Given the current state, the
 ### Deliverables
 
 - [x] `koncept init project <name>` creates a complete, validating project skeleton.
-- [ ] `koncept init module webapp <name>` adds a `WebAppModule` and wires it into a stack.
-- [ ] `koncept init module postgres|redis|kafka|mongodb|rabbitmq <name>` adds common infrastructure templates.
+- [x] `koncept init module webapp <name>` adds a `WebAppModule` and prints its stack wiring.
+- [x] `koncept init module postgres|redis|kafka|mongodb|rabbitmq <name>` adds common infrastructure templates.
 - [ ] `koncept init env <dev|stg|prod>` creates site/profile/pre-release structure.
 - [ ] `koncept init release <version>` creates immutable release structure.
 - [x] Generated projects use the recommended minimal transitive `kcl.mod` pattern.
@@ -362,8 +366,8 @@ The previous roadmap emphasized many future phases. Given the current state, the
   - [x] no `latest` tags,
   - [x] resource requests/limits required for Tier 1 workloads,
   - [x] required ownership labels/annotations,
-  - [ ] secret-looking values must use Secret references,
-  - [ ] namespace and network-policy conventions.
+  - [x] secret-looking values must use Secret references,
+  - [~] namespace and network-policy conventions (explicit-namespace rule shipped; network-policy convention still pending).
 - [ ] Document policy exemptions with owner, reason, and expiry.
 - [ ] Add release notes/changelog generation for framework changes.
 

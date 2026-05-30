@@ -2,6 +2,7 @@ package policy
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 
 	"gopkg.in/yaml.v3"
@@ -34,14 +35,25 @@ func (f Finding) String() string {
 
 // Options toggles individual policy rules.
 type Options struct {
-	RequireResources bool
-	RequireOwner     bool
+	RequireResources  bool
+	RequireOwner      bool
+	RequireSecretRefs bool
+	RequireNamespace  bool
 }
 
 // DefaultOptions enables the full baseline policy set.
 func DefaultOptions() Options {
-	return Options{RequireResources: true, RequireOwner: true}
+	return Options{
+		RequireResources:  true,
+		RequireOwner:      true,
+		RequireSecretRefs: true,
+		RequireNamespace:  true,
+	}
 }
+
+// secretNameRE matches environment variable names that look like they carry a
+// credential and therefore must be sourced from a Secret rather than a literal.
+var secretNameRE = regexp.MustCompile(`(?i)(password|passwd|secret|token|api[_-]?key|access[_-]?key|private[_-]?key|credential|client[_-]?secret)`)
 
 // workloadKinds are the Tier-1 workload kinds that must carry resource
 // requests/limits and ownership labels.
@@ -112,6 +124,22 @@ func checkDoc(doc map[string]any, opts Options) []Finding {
 						fmt.Sprintf("container %q is missing resources.requests/limits", cname))
 				}
 			}
+
+			// Rule: secret-looking env values must use a Secret reference.
+			if opts.RequireSecretRefs {
+				for _, name := range secretLiteralEnv(c) {
+					add("no-secret-literals", SeverityError,
+						fmt.Sprintf("container %q env %q sets a literal value (use valueFrom.secretKeyRef)", cname, name))
+				}
+			}
+		}
+	}
+
+	// Rule: workloads should declare an explicit namespace (namespace convention).
+	if opts.RequireNamespace && workloadKinds[kind] {
+		if metadataNamespace(doc) == "" {
+			add("require-namespace", SeverityWarning,
+				"workload does not declare metadata.namespace (set an explicit namespace)")
 		}
 	}
 
@@ -133,6 +161,44 @@ func metadataName(doc map[string]any) string {
 		}
 	}
 	return ""
+}
+
+func metadataNamespace(doc map[string]any) string {
+	if md, ok := doc["metadata"].(map[string]any); ok {
+		if n, ok := md["namespace"].(string); ok {
+			return n
+		}
+	}
+	return ""
+}
+
+// secretLiteralEnv returns the names of env entries whose name looks like a
+// credential but whose value is provided as a literal string rather than a
+// valueFrom reference.
+func secretLiteralEnv(container map[string]any) []string {
+	raw, ok := container["env"].([]any)
+	if !ok {
+		return nil
+	}
+	var out []string
+	for _, item := range raw {
+		entry, ok := item.(map[string]any)
+		if !ok {
+			continue
+		}
+		name, _ := entry["name"].(string)
+		if name == "" || !secretNameRE.MatchString(name) {
+			continue
+		}
+		// A valueFrom reference (secretKeyRef/configMapKeyRef/etc.) is acceptable.
+		if _, hasFrom := entry["valueFrom"]; hasFrom {
+			continue
+		}
+		if v, ok := entry["value"].(string); ok && v != "" {
+			out = append(out, name)
+		}
+	}
+	return out
 }
 
 // podSpecOf returns the pod spec for workload kinds (under spec.template.spec)

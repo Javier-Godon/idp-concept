@@ -104,10 +104,16 @@ koncept render kustomize
 koncept init project "Inventory Service"
 #   → projects/inventory_service/ … renders Tier-1 output out of the box
 
+# Add a module to an existing project and print its stack wiring snippet
+koncept init module webapp orders-api
+koncept init module postgres orders-db    # also: redis, kafka, mongodb, rabbitmq, database
+#   → modules/<area>/<name>/<name>_module_def.k + paste-ready stack wiring
+
 # Enforce baseline security/ownership policy on rendered manifests
 koncept policy check --factory <factory-dir>
 #   no privileged containers · no latest/untagged images
 #   resource requests+limits on workloads · ownership labels
+#   secret-looking env values must use Secret references · explicit namespaces
 
 # Other helpers
 koncept doctor            # dependency, version, path, and factory checks

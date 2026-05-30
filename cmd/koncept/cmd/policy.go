@@ -13,6 +13,8 @@ var (
 	policyWarnAsError  bool
 	policyNoResources  bool
 	policyNoOwnerCheck bool
+	policyNoSecretRefs bool
+	policyNoNamespace  bool
 )
 
 var policyCmd = &cobra.Command{
@@ -25,6 +27,8 @@ var policyCmd = &cobra.Command{
   - Tier-1 workloads (Deployment/StatefulSet/DaemonSet) must declare resource
     requests and limits
   - Tier-1 workloads should carry an ownership label
+  - secret-looking env values must use a Secret reference (no literals)
+  - Tier-1 workloads should declare an explicit namespace
 
 Errors fail the command (exit 1). Warnings are reported but do not fail unless
 --warn-as-error is set.`,
@@ -52,6 +56,8 @@ func runPolicy(cmd *cobra.Command, args []string) error {
 	opts := policy.DefaultOptions()
 	opts.RequireResources = !policyNoResources
 	opts.RequireOwner = !policyNoOwnerCheck
+	opts.RequireSecretRefs = !policyNoSecretRefs
+	opts.RequireNamespace = !policyNoNamespace
 
 	findings, err := policy.Check(rendered, opts)
 	if err != nil {
@@ -87,4 +93,6 @@ func init() {
 	policyCmd.Flags().BoolVar(&policyWarnAsError, "warn-as-error", false, "treat warnings as failures")
 	policyCmd.Flags().BoolVar(&policyNoResources, "no-require-resources", false, "disable the resource requests/limits rule")
 	policyCmd.Flags().BoolVar(&policyNoOwnerCheck, "no-require-owner", false, "disable the ownership label rule")
+	policyCmd.Flags().BoolVar(&policyNoSecretRefs, "no-require-secret-refs", false, "disable the secret-literal env rule")
+	policyCmd.Flags().BoolVar(&policyNoNamespace, "no-require-namespace", false, "disable the explicit namespace rule")
 }
