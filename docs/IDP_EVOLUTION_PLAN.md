@@ -7,6 +7,8 @@
 > Update 2026-05-30: added `koncept completion`, `koncept policy check` (baseline security/ownership gate), `koncept init project` (full validating webapp skeleton), concise KCL module-resolution error hints, build metadata wiring, and CI image/build tooling (`Dockerfile`, `make docker`, `make checksums`). Generated projects render Tier-1 output and pass `koncept policy check` out of the box.
 >
 > Update 2026-05-30 (later): added `koncept init module <type> <name>` scaffolding for `webapp`, `database`, `postgres`, `redis`, `kafka`, `mongodb`, and `rabbitmq` (generates a module def under `modules/<area>/` and prints paste-ready stack wiring), and extended `koncept policy check` with two new rules — `no-secret-literals` (secret-looking env values must use a Secret reference) and `require-namespace` (Tier-1 workloads must declare an explicit namespace). Generated modules compile, render, and pass policy in a fresh project.
+>
+> Update 2026-05-30 (later still): completed the Phase B project-lifecycle scaffolding with `koncept init env <name>` (adds a profile + site + pre-release factory for an environment — `dev|stg|prod` presets plus arbitrary names) and `koncept init release <version>` (adds a versioned stack, a shared production site, and an immutable `releases/<version>_production/factory`). Both generators mirror the proven `erp_back` layout, never overwrite existing files, and were verified to `kcl run` cleanly in a freshly scaffolded project (staging renders the dev image tag, the release pins its own `appVersion`). Extended `koncept policy check` with the `require-network-policy` rule (warns when a namespace runs workloads but has no NetworkPolicy, encouraging a default-deny posture). All Go package tests pass.
 
 ---
 
@@ -234,6 +236,8 @@ The current Go `init` command scaffolds a factory, not a full project/product. B
 
 **Implementation learning (2026-05-30):** `koncept init module` deliberately *generates the module def file and prints a paste-ready stack wiring snippet* rather than programmatically editing the stack `.k` file. Auto-rewriting KCL with regex/AST surgery is brittle and risks corrupting hand-authored stacks; printing a verified snippet keeps the secure path while still removing the boilerplate. Infra modules are emitted as accessories under `modules/infraops/` and webapps as components under `modules/appops/`, matching the framework's component/accessory split. Generated webapp + postgres modules were verified to compile, render, and pass `koncept policy check` in a fresh scaffolded project. A future enhancement can offer an opt-in `--wire` flag that appends to a clearly marked stack region once a stable insertion marker convention exists.
 
+**Implementation learning (2026-05-30, env/release):** `koncept init env` and `koncept init release` reuse the same template engine and "never overwrite, fail loudly" guarantees as `init project`/`init module`. Two design choices proved important: (1) *shared vs. owned files* — a release's production site (`sites/production/default/...`) and `releases/kcl.mod` are shared across versions, so they are skipped-if-present rather than treated as errors, while version-specific stack/factory files must not pre-exist; this lets a project accumulate `v1_0_0`, `v2_0_0`, ... without manual cleanup. (2) *render-friendly defaults* — generated environments default to `storageClassName = "local-path"` and `useLocalPersistentVolumes = True` so a brand-new environment renders and applies on a laptop/kind cluster out of the box; teams harden these for real staging/production. Both new factories were verified to `kcl run` cleanly: staging inherits the shared stack's image tag, while the release stack pins its own `appVersion`. The CLI prints the exact `--factory` path for `validate`/`render`/`policy check`, mirroring the secure no-auto-edit philosophy of `init module`.
+
 ### 5.5 Documentation drift
 
 Some docs describe desired future capabilities as already complete. This is risky for adoption: teams will trust the platform less if docs and implementation diverge.
@@ -331,8 +335,8 @@ The previous roadmap emphasized many future phases. Given the current state, the
 - [x] `koncept init project <name>` creates a complete, validating project skeleton.
 - [x] `koncept init module webapp <name>` adds a `WebAppModule` and prints its stack wiring.
 - [x] `koncept init module postgres|redis|kafka|mongodb|rabbitmq <name>` adds common infrastructure templates.
-- [ ] `koncept init env <dev|stg|prod>` creates site/profile/pre-release structure.
-- [ ] `koncept init release <version>` creates immutable release structure.
+- [x] `koncept init env <dev|stg|prod>` creates site/profile/pre-release structure.
+- [x] `koncept init release <version>` creates immutable release structure.
 - [x] Generated projects use the recommended minimal transitive `kcl.mod` pattern.
 - [ ] Backstage scaffolder templates call the same scaffold logic or use the same source templates as the CLI.
 - [ ] Add golden generated fixtures for at least:
@@ -367,7 +371,7 @@ The previous roadmap emphasized many future phases. Given the current state, the
   - [x] resource requests/limits required for Tier 1 workloads,
   - [x] required ownership labels/annotations,
   - [x] secret-looking values must use Secret references,
-  - [~] namespace and network-policy conventions (explicit-namespace rule shipped; network-policy convention still pending).
+  - [x] namespace and network-policy conventions (explicit-namespace rule and per-namespace default-deny NetworkPolicy convention both shipped as warnings).
 - [ ] Document policy exemptions with owner, reason, and expiry.
 - [ ] Add release notes/changelog generation for framework changes.
 

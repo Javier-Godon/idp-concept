@@ -23,6 +23,17 @@ spec:
           limits:
             cpu: "1"
             memory: 512Mi
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny
+  namespace: apps
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+  - Egress
 `
 
 const badManifest = `
@@ -151,5 +162,90 @@ func TestRequireNamespaceDisabled(t *testing.T) {
 	findings, _ := Check(badManifest, opts)
 	if countRule(findings, "require-namespace") != 0 {
 		t.Error("require-namespace should not fire when disabled")
+	}
+}
+
+func TestRequireNetworkPolicyWarnsOncePerNamespace(t *testing.T) {
+	// Two workloads in the same namespace, no NetworkPolicy -> exactly one warning.
+	manifest := `
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: a
+  namespace: apps
+  labels: {owner: team}
+spec:
+  template:
+    spec:
+      containers:
+      - name: a
+        image: ghcr.io/acme/a:1.0.0
+        resources:
+          requests: {cpu: 100m, memory: 128Mi}
+          limits: {cpu: "1", memory: 256Mi}
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: b
+  namespace: apps
+  labels: {owner: team}
+spec:
+  template:
+    spec:
+      containers:
+      - name: b
+        image: ghcr.io/acme/b:1.0.0
+        resources:
+          requests: {cpu: 100m, memory: 128Mi}
+          limits: {cpu: "1", memory: 256Mi}
+`
+	findings, err := Check(manifest, DefaultOptions())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if got := countRule(findings, "require-network-policy"); got != 1 {
+		t.Fatalf("expected exactly one require-network-policy finding, got %d: %+v", got, findings)
+	}
+	for _, f := range findings {
+		if f.Rule == "require-network-policy" && f.Severity != SeverityWarning {
+			t.Errorf("require-network-policy should be a warning, got %s", f.Severity)
+		}
+	}
+}
+
+func TestRequireNetworkPolicySatisfied(t *testing.T) {
+	findings, err := Check(goodManifest, DefaultOptions())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if countRule(findings, "require-network-policy") != 0 {
+		t.Errorf("require-network-policy should not fire when a NetworkPolicy covers the namespace")
+	}
+}
+
+func TestRequireNetworkPolicyDisabled(t *testing.T) {
+	opts := DefaultOptions()
+	opts.RequireNetworkPolicy = false
+	manifest := `
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: a
+  namespace: apps
+  labels: {owner: team}
+spec:
+  template:
+    spec:
+      containers:
+      - name: a
+        image: ghcr.io/acme/a:1.0.0
+        resources:
+          requests: {cpu: 100m, memory: 128Mi}
+          limits: {cpu: "1", memory: 256Mi}
+`
+	findings, _ := Check(manifest, opts)
+	if countRule(findings, "require-network-policy") != 0 {
+		t.Error("require-network-policy should not fire when disabled")
 	}
 }

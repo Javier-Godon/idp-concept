@@ -35,19 +35,21 @@ func (f Finding) String() string {
 
 // Options toggles individual policy rules.
 type Options struct {
-	RequireResources  bool
-	RequireOwner      bool
-	RequireSecretRefs bool
-	RequireNamespace  bool
+	RequireResources     bool
+	RequireOwner         bool
+	RequireSecretRefs    bool
+	RequireNamespace     bool
+	RequireNetworkPolicy bool
 }
 
 // DefaultOptions enables the full baseline policy set.
 func DefaultOptions() Options {
 	return Options{
-		RequireResources:  true,
-		RequireOwner:      true,
-		RequireSecretRefs: true,
-		RequireNamespace:  true,
+		RequireResources:     true,
+		RequireOwner:         true,
+		RequireSecretRefs:    true,
+		RequireNamespace:     true,
+		RequireNetworkPolicy: true,
 	}
 }
 
@@ -66,6 +68,7 @@ var workloadKinds = map[string]bool{
 // Check parses a multi-document YAML stream and returns policy findings.
 func Check(renderedYAML string, opts Options) ([]Finding, error) {
 	var findings []Finding
+	var docs []map[string]any
 	dec := yaml.NewDecoder(strings.NewReader(renderedYAML))
 	for {
 		var doc map[string]any
@@ -75,9 +78,53 @@ func Check(renderedYAML string, opts Options) ([]Finding, error) {
 		if len(doc) == 0 {
 			continue
 		}
+		docs = append(docs, doc)
 		findings = append(findings, checkDoc(doc, opts)...)
 	}
+	if opts.RequireNetworkPolicy {
+		findings = append(findings, checkNetworkPolicies(docs)...)
+	}
 	return findings, nil
+}
+
+// checkNetworkPolicies warns when a workload runs in a namespace that has no
+// NetworkPolicy in the rendered stream. A default-deny posture per namespace is
+// a baseline network convention; this is a warning, not a hard error, because
+// some clusters enforce network policy at a higher layer (mesh/CNI defaults).
+func checkNetworkPolicies(docs []map[string]any) []Finding {
+	policyNamespaces := map[string]bool{}
+	for _, doc := range docs {
+		if kind, _ := doc["kind"].(string); kind == "NetworkPolicy" {
+			policyNamespaces[metadataNamespace(doc)] = true
+		}
+	}
+
+	var findings []Finding
+	warned := map[string]bool{}
+	for _, doc := range docs {
+		kind, _ := doc["kind"].(string)
+		if !workloadKinds[kind] {
+			continue
+		}
+		ns := metadataNamespace(doc)
+		if ns == "" {
+			// The require-namespace rule already covers missing namespaces.
+			continue
+		}
+		if policyNamespaces[ns] || warned[ns] {
+			continue
+		}
+		warned[ns] = true
+		findings = append(findings, Finding{
+			Rule:     "require-network-policy",
+			Severity: SeverityWarning,
+			Kind:     kind,
+			Name:     metadataName(doc),
+			Message: fmt.Sprintf(
+				"namespace %q has workloads but no NetworkPolicy (add a default-deny NetworkPolicy)", ns),
+		})
+	}
+	return findings
 }
 
 func checkDoc(doc map[string]any, opts Options) []Finding {

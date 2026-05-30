@@ -71,6 +71,46 @@ Developers customize their applications through **site configuration files** (YA
 
 ### 2.1 Creating a New Project
 
+The Go CLI is the preferred, guided path. It scaffolds a complete, validating
+project and lets you grow it environment-by-environment and release-by-release —
+no manual file copying.
+
+```bash
+# 1. Scaffold a complete, validating webapp project (kernel → profile → tenant →
+#    site → dev pre-release factory). Renders Tier-1 output out of the box.
+koncept init project my-new-project
+cd projects/my_new_project
+
+# 2. Add infrastructure or extra apps with templates (prints paste-ready wiring).
+koncept init module postgres my-db
+koncept init module redis my-cache
+
+# 3. Add more environments (profile + site + pre-release factory).
+#    Presets: dev|development, stg|staging, prod|production. Any other name works too.
+koncept init env staging
+koncept init env prod
+
+# 4. Cut an immutable, version-pinned release (versioned stack + production site +
+#    releases/<version>_production/factory). Repeatable for v1_0_0, v2_0_0, ...
+koncept init release 1.0.0
+
+# 5. Validate, render, and policy-check any factory the commands print for you.
+koncept validate  --factory pre_releases/manifests/stg/factory
+koncept render argocd --factory pre_releases/manifests/stg/factory
+koncept policy check --factory pre_releases/manifests/stg/factory
+```
+
+Notes:
+
+- Generators never overwrite existing files; shared release files (production
+  site, `releases/kcl.mod`) are reused across versions.
+- New environments default to `local-path` storage so they render/apply on a
+  laptop or kind cluster immediately; harden storage class and HA for real
+  staging/production.
+
+**Manual fallback (reference):** the `erp_back` project is the canonical hand-authored
+layout if you need full control.
+
 ```bash
 # 1. Start with the template project (erp_back is the reference)
 cp -r projects/erp_back projects/my_new_project

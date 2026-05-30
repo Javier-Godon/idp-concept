@@ -15,6 +15,7 @@ var (
 	policyNoOwnerCheck bool
 	policyNoSecretRefs bool
 	policyNoNamespace  bool
+	policyNoNetPol     bool
 )
 
 var policyCmd = &cobra.Command{
@@ -29,6 +30,7 @@ var policyCmd = &cobra.Command{
   - Tier-1 workloads should carry an ownership label
   - secret-looking env values must use a Secret reference (no literals)
   - Tier-1 workloads should declare an explicit namespace
+  - namespaces running workloads should have a NetworkPolicy (default-deny)
 
 Errors fail the command (exit 1). Warnings are reported but do not fail unless
 --warn-as-error is set.`,
@@ -58,6 +60,7 @@ func runPolicy(cmd *cobra.Command, args []string) error {
 	opts.RequireOwner = !policyNoOwnerCheck
 	opts.RequireSecretRefs = !policyNoSecretRefs
 	opts.RequireNamespace = !policyNoNamespace
+	opts.RequireNetworkPolicy = !policyNoNetPol
 
 	findings, err := policy.Check(rendered, opts)
 	if err != nil {
@@ -95,4 +98,5 @@ func init() {
 	policyCmd.Flags().BoolVar(&policyNoOwnerCheck, "no-require-owner", false, "disable the ownership label rule")
 	policyCmd.Flags().BoolVar(&policyNoSecretRefs, "no-require-secret-refs", false, "disable the secret-literal env rule")
 	policyCmd.Flags().BoolVar(&policyNoNamespace, "no-require-namespace", false, "disable the explicit namespace rule")
+	policyCmd.Flags().BoolVar(&policyNoNetPol, "no-require-network-policy", false, "disable the per-namespace NetworkPolicy rule")
 }
