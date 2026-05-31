@@ -8,7 +8,7 @@ You are adding a new deployment site/environment to a project in idp-concept.
 
 ## Context Files
 - #file:docs/FRAMEWORK_SCHEMAS.md
-- #file:docs/DEVELOPMENT_WORKFLOWS.md
+- #file:docs/WORKFLOWS.md
 - #file:projects/video_streaming/sites/development/dev_cluster/site_def.k
 - #file:projects/video_streaming/sites/development/dev_cluster/configurations.k
 - #file:projects/video_streaming/sites/tenants/production/berlin/site_def.k

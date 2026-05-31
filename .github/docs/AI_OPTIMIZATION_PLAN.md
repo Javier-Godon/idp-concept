@@ -1,5 +1,12 @@
 # AI Assistant Optimization Plan for idp-concept
 
+> **Historical document.** This plan was written while the CLI was prototyped in Nushell.
+> idp-concept has since standardized on a **Go** CLI (`cmd/koncept`); the Nushell `platform_cli/`
+> scripts and `NUSHELL_REFERENCE.md` have been removed. References to Nushell below are retained
+> for historical accuracy only and do **not** reflect the current toolchain. For the current
+> technology stack see [`REFERENCE_RESOURCES.md`](REFERENCE_RESOURCES.md) and the repository
+> [copilot-instructions](../copilot-instructions.md).
+
 ## Objective
 
 Make any AI coding assistant (GitHub Copilot, Claude, etc.) an **expert** in the idp-concept project by providing it with maximum context about the technologies, patterns, and conventions used. This document describes what tools, configurations, and knowledge sources are needed and how to set them up.

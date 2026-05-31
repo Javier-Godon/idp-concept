@@ -403,7 +403,7 @@ nav:
       - Project Architecture: docs/PROJECT_ARCHITECTURE.md
       - Framework Schemas: docs/FRAMEWORK_SCHEMAS.md
   - Operations:
-      - User Workflow Guides: docs/USER_WORKFLOW_GUIDES.md
+      - Workflows: docs/WORKFLOWS.md
       - Migration Guide: docs/MIGRATION_GUIDE.md
       - Tooling Setup: docs/TOOLING_SETUP.md
   - Security: docs/SECURITY.md

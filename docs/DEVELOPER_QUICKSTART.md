@@ -10,7 +10,6 @@
 |---|---|---|---|
 | `koncept` Go CLI | Primary developer interface for scaffold/render/validate/policy workflows | **Yes** | See [TOOLING_SETUP.md](./TOOLING_SETUP.md#koncept-go-cli) |
 | [KCL](https://www.kcl-lang.io/docs/user_docs/getting-started/install) (`kcl`) | Direct KCL troubleshooting and local test runs | Recommended | See [TOOLING_SETUP.md](./TOOLING_SETUP.md#kcl) |
-| [Nushell](https://www.nushell.sh/book/installation.html) (`nu`) | Legacy/developer scripts in `platform_cli/` | Optional | See [TOOLING_SETUP.md](./TOOLING_SETUP.md#nushell-legacydeveloper-tooling) |
 | [kubeconform](https://github.com/yannh/kubeconform) | Validates K8s manifests | Recommended | See [TOOLING_SETUP.md](./TOOLING_SETUP.md#kubeconform) |
 | [Helm](https://helm.sh/docs/intro/install/) | Lints Helm chart output | Optional | See [TOOLING_SETUP.md](./TOOLING_SETUP.md#helm) |
 

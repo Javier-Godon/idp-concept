@@ -86,7 +86,7 @@ A good medium-company operating model would be:
 - **Pinned/versioned template imports** under `framework/templates/<ecosystem>/<version>/...`.
 - **Security-conscious conventions**: no hardcoded credentials in generated examples, use of Secret references, no privileged defaults, pinned images/charts expected.
 - **Backstage assets**: catalog, plugin guide, and scaffolder templates exist, which is important for self-service adoption.
-- **Go CLI exists** under `cmd/koncept/`, reducing long-term dependence on Nushell.
+- **Go CLI is the single interface** under `cmd/koncept/`, distributed as the installable package.
 
 ### 2.3 Good fit for medium-company needs
 
@@ -143,7 +143,7 @@ A platform engineer can create templates, builders, and output procedures, and t
 - render procedures,
 - many output formats,
 - Backstage templates,
-- Go CLI and Nushell CLI coexistence.
+- a single Go CLI surface.
 
 **Assessment:** this is acceptable for a central platform team, but too much for occasional product-team contributors. The platform should provide **golden paths** and discourage casual framework modification.
 
@@ -230,11 +230,11 @@ The 9-output strategy is a differentiator, but it can become a maintenance burde
 | Tier 2 | `helm`, `kustomize`, `crossplane` | Maintained for platform/infrastructure teams. |
 | Tier 3 | `timoni`, `kusion` | Experimental unless adopted by a real product team. |
 
-### 5.2 Two CLI implementations
+### 5.2 Single CLI implementation
 
-Nushell is useful for prototyping, but most companies will prefer a single Go binary. The Go CLI exists, but docs still emphasize the Nushell CLI in several places.
-
-**Recommendation:** make the Go CLI the primary path and keep Nushell as legacy/dev tooling until feature parity and packaging are complete.
+**Resolved.** The project standardized on a single Go binary (`cmd/koncept`). The earlier
+Nushell CLI and its Taskfile wrappers have been removed; there is no longer any CLI
+duplication or coexistence to maintain.
 
 ### 5.3 Factory duplication
 
@@ -274,7 +274,7 @@ KCL is a strong fit for typed configuration, but it is niche. A medium company s
    - Generate a complete `projects/<name>/` with one app, one environment, and passing validation.
 
 2. **Primary Go CLI distribution**
-   - Release binaries, container image for CI, installation docs, shell completions, and migration away from Nushell-first docs.
+   - Release binaries, container image for CI, installation docs, and shell completions.
 
 3. **CI workflow in repository**
    - Run `./scripts/verify.sh`, Go tests, `git diff --check`, and selected acceptance tests on PRs.
@@ -323,10 +323,10 @@ The previous roadmap emphasized many future phases. Given the current state, the
 ### Deliverables
 
 - [x] Declare Tier 1 outputs: `yaml`/`argocd`, `helmfile`, and `backstage`. (README "Output Formats" now groups all outputs into Tier 1/2/3 with support expectations.)
-- [x] Update README and quickstart to make the Go CLI the preferred path once packaged. (Prerequisites lead with Go; Nushell marked legacy.)
+- [x] Update README and quickstart to make the Go CLI the path. (Prerequisites lead with Go; Nushell removed.)
 - [x] Build and publish Go CLI binaries for Linux/macOS/Windows. (`make build-all`/`make checksums` cross-compile + checksum; `.github/workflows/release.yml` publishes them as GitHub Release assets on `v*` tags.)
 - [x] Publish a pinned container image for CI usage. (`cmd/koncept/Dockerfile` + `make docker` build a pinned image; `release.yml` pushes it to GHCR on tags.)
-- [x] Keep Nushell CLI documented as legacy/developer tooling.
+- [x] Remove the Nushell CLI and Taskfile wrappers; the Go CLI is the single interface.
 - [x] Add shell completions and concise error messages for common KCL module-resolution failures.
 - [x] Verify the Go CLI render paths against the same smoke matrix used by `scripts/verify.sh`.
 - [x] Fix any Go CLI output routing mismatches found during verification, especially ensuring each render command calls the matching KCL output format.
@@ -336,7 +336,7 @@ The previous roadmap emphasized many future phases. Given the current state, the
 
 - A new developer can install one binary and render an existing environment in under 10 minutes.
 - CI can run with one maintained container image.
-- Docs no longer require Nushell as the default user path.
+- Docs require only the Go CLI as the user path.
 
 ---
 

@@ -485,7 +485,7 @@ This follows the same pattern as our existing output procedures (`kcl_to_yaml`, 
 
 | Aspect | Current | Evidence |
 |---|---|---|
-| Investment | Dedicated tooling (KCL, Go CLI, legacy Nushell scripts) | framework/, cmd/koncept/, platform_cli/ |
+| Investment | Dedicated tooling (KCL, Go CLI) | framework/, cmd/koncept/ |
 | Adoption | Platform engineers use it, developers need training | CLI requires KCL/factory knowledge |
 | Interfaces | CLI only (`koncept`) | No web UI, no self-service portal |
 | Operations | Manual factory creation, some scaffolding | `koncept init` exists but basic |

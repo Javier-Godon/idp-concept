@@ -10,7 +10,6 @@
 |---|---|
 | [AI_REFERENCE.md](AI_REFERENCE.md) | Concise structured reference for AI code generation tasks |
 | [KCL_REFERENCE.md](KCL_REFERENCE.md) | KCL syntax, patterns, and gotchas specific to this project |
-| [NUSHELL_REFERENCE.md](NUSHELL_REFERENCE.md) | Nushell syntax and patterns used in the CLI |
 | [REFERENCE_RESOURCES.md](REFERENCE_RESOURCES.md) | Curated knowledge base — official repos, docs, and tools |
 
 ## AI Setup & Planning

@@ -140,7 +140,7 @@ The platform has three main layers:
 └────────────────────────────┬─────────────────────────────────────────┘
                              │
 ┌────────────────────────────▼─────────────────────────────────────────┐
-│                       PLATFORM CLI (Nushell)                         │
+│                       PLATFORM CLI (Go — koncept)                   │
 │  koncept render yaml|argocd|helmfile|helm|kusion|kustomize|...       │
 └──────────────────────────────────────────────────────────────────────┘
 ```
@@ -152,7 +152,7 @@ The platform has three main layers:
 | Technology | Role | Documentation |
 |---|---|---|
 | **KCL** | Configuration language — single source of truth | https://www.kcl-lang.io/docs/ |
-| **Nushell** | CLI scripting language (`koncept` tool) | https://www.nushell.sh/book/ |
+| **Go** | Language of the `koncept` CLI (the installable package) | https://go.dev/ |
 | **Kubernetes** 1.31.2 | Target deployment platform (K8s schemas) | https://kubernetes.io/docs/ |
 | **Crossplane** | Kubernetes-native infrastructure provisioning | https://docs.crossplane.io/ |
 | **ArgoCD** | GitOps continuous delivery | https://argo-cd.readthedocs.io/ |
@@ -304,9 +304,9 @@ projects/erp_back/
 
 ## 7. Platform CLI
 
-### 7.1 koncept (Primary CLI)
+### 7.1 koncept (the CLI)
 
-Location: `platform_cli/koncept` (Nushell script)
+Location: `cmd/koncept` (Go binary — the installable package)
 
 ```bash
 # Navigate to a factory directory, then:
@@ -315,14 +315,11 @@ koncept render <format>
 # Formats: yaml, argocd, helmfile, helm, kusion, kustomize, timoni, crossplane, backstage
 ```
 
-The CLI calls `kcl run render.k -D output=<format>` inside the factory directory.
-
-### 7.2 koncepttask (Task Runner Variant)
-
-Location: `platform_cli/koncepttask` (wraps go-task)
-
-Delegates to Taskfile YAML templates in `platform_cli/taskfiles/` for more complex workflows
-(building charts, publishing, validation).
+The CLI invokes the pinned `kcl` toolchain to render the factory and also provides
+scaffolding (`init`), validation (`doctor`, `policy check`, `golden check`), and
+release/changelog workflows. See the
+[distribution & sharing model](decisions/DISTRIBUTION_AND_SHARING_MODEL.md) for how it is
+packaged and how teams share rendered output through Git/GitOps.
 
 ---
 
@@ -454,4 +451,4 @@ components = [_my_api]
 2. Optionally create `framework/custom/<format>/` — format-specific schemas
 3. Add a new `if _output == "<format>":` block to `framework/factory/render.k`
 4. Copy updated `render.k` to all existing factory directories
-5. Add the format to `platform_cli/koncept` CLI
+5. Add the format to the `koncept` Go CLI (`cmd/koncept`)

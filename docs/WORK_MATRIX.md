@@ -45,7 +45,7 @@
 | 2 | Expand `kcl_to_helm.k` with Chart + Values generation | Component schema | Helm Chart generation |
 | 2 | Create Helm value extraction lambdas | Component manifests | `HelmValues` schema |
 | 2 | Create static Helm template files | Builder patterns | `templates/*.tpl` |
-| 2 | Update CLI `koncept render helmfile` flow | Nushell script | Full Helmfile pipeline |
+| 2 | Update CLI `koncept render helmfile` flow | Go CLI | Full Helmfile pipeline |
 | 3 | Create `EnvVar` schema + type safety | `common.k` | Typed env declarations |
 | 3 | Add `check` validation blocks to builders | Builder schemas | Compile-time validation |
 | 3 | Document justified `any` types | Framework models | Clear intent markers |
@@ -65,7 +65,7 @@
 | 7 | Implement `kcl_to_kustomize.k` procedure | Stack schema | Kustomize output |
 | 7 | Implement `kcl_to_timoni.k` procedure | Stack schema | Timoni CUE module output |
 | 7 | Implement KCL plugin integration layer | helm-kcl/kustomize-kcl | Mutation pipeline |
-| 7 | Create OCI artifact publishing pipeline | Nushell CLI | `koncept publish` command |
+| 7 | Create OCI artifact publishing pipeline | Go CLI | `koncept publish` command |
 
 ---
 

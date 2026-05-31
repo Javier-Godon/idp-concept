@@ -2,7 +2,7 @@
 
 ## Project Identity
 
-This is **idp-concept**, an Internal Developer Platform (IDP) that uses **KCL** (Kusion Configuration Language) as the single source of truth to generate Kubernetes deployment manifests in multiple output formats: plain YAML (for ArgoCD/GitOps), Helm charts, Helmfile, Kusion specs, and Crossplane compositions. The CLI is written in **Nushell** (`nu`).
+This is **idp-concept**, an Internal Developer Platform (IDP) that uses **KCL** (Kusion Configuration Language) as the single source of truth to generate Kubernetes deployment manifests in multiple output formats: plain YAML (for ArgoCD/GitOps), Helm charts, Helmfile, Kusion specs, and Crossplane compositions. The CLI is written in **Go** (`cmd/koncept`).
 
 ## Core Technologies — Learn These Deeply
 
@@ -30,17 +30,13 @@ This is **idp-concept**, an Internal Developer Platform (IDP) that uses **KCL** 
 - Paths in `kcl.mod` are relative to the `kcl.mod` file itself, NOT to the source file
 - See `.github/instructions/kcl-module-system.instructions.md` for the full reference
 
-### 2. Nushell (nu)
-- **Official docs**: https://www.nushell.sh/book/
-- The CLI tool `platform_cli/koncept` is a Nushell script (`#!/usr/bin/env nu`)
-- Uses `def main` with typed parameters and flags (`--factory: string`, `--output: string`)
-- String interpolation: `$"text ($variable) more text"`
-- Path manipulation: `path basename`, `path dirname`, `path expand`, `path join`
-- Environment variables: `$env.PWD`, `$env.FILE_PWD`
-- Control flow: `match` expressions with `=>` arms
-- External commands: prefixed with `^` (e.g., `^task`)
-- Directory operations: `mkdir`, `touch`
-- There is also `platform_cli/koncepttask` which delegates to Taskfile YAML (`go-task`)
+### 2. Go (koncept CLI)
+- **Official docs**: https://go.dev/doc/
+- The CLI tool `cmd/koncept` is a Go binary built with Cobra and the KCL Go SDK — it is the single, installable interface for the platform
+- Subcommands live in `cmd/koncept/cmd/` (`render`, `init`, `doctor`, `policy`, `golden`, `changelog`, `validate`, `metrics`, …)
+- Renders configurations by invoking the pinned `kcl` toolchain on a factory directory
+- Distributed as cross-platform binaries + checksums and a pinned container image (`make build-all`, `make checksums`, `make docker`)
+- Some project directories still use `go-task` Taskfile templates for multi-step build flows
 
 ### 3. Crossplane
 - **Official docs**: https://docs.crossplane.io/
@@ -115,7 +111,7 @@ Later values override earlier ones.
 | `projects/video_streaming/pre_releases/` | Development/staging deployments |
 | `projects/video_streaming/releases/` | Production versioned deployments per site |
 | `projects/erp_back/` | ERP Back project — uses new framework templates (recommended pattern) |
-| `platform_cli/` | Nushell CLI tools (`koncept`, `koncepttask`) and Taskfile templates |
+| `cmd/koncept/` | Go CLI (the installable package): `render`, `init`, `doctor`, `policy`, `golden`, etc. |
 | `crossplane_v2/` | Crossplane XRDs, Compositions, Functions, Providers |
 
 ## Module Types
@@ -206,7 +202,7 @@ These rules apply to ALL AI-generated code and tool recommendations:
 3. **No privileged containers** — Never generate `privileged: true`, `hostNetwork: true`, or excessive capabilities in K8s manifests
 4. **Pin dependency versions** — Always pin specific versions in `kcl.mod`, `Chart.yaml`, `helmfile.yaml`. No floating tags like `latest`
 5. **Validate Crossplane RBAC** — Never generate overly permissive ClusterRoles. Follow least-privilege
-6. **Sanitize Nushell scripts** — Never use `rm -rf` without safeguards; never pass raw user input to `^` external commands
+6. **Sanitize CLI/shell scripts** — Never use `rm -rf` without safeguards; never pass raw user input to external commands
 7. **MCP fetch targets** — Only fetch URLs from trusted documentation domains listed in `docs/SECURITY.md`
 8. **NEVER fetch internal/local addresses** — The MCP fetch server can access localhost and private IPs. NEVER fetch `localhost`, `127.0.0.1`, `0.0.0.0`, `169.254.169.254`, or any private IP range (10.x, 172.16-31.x, 192.168.x). This is a **critical SSRF risk**. Only fetch domains from the trusted allowlist in `docs/SECURITY.md`.
 9. **Review before apply** — All generated Crossplane Compositions and K8s manifests must be reviewed before deployment
@@ -215,12 +211,12 @@ See `docs/SECURITY.md` for the complete security policy, approved tools registry
 
 ## Knowledge Reliability Warning
 
-**This project uses niche technologies (KCL, Nushell, Kusion) where AI training data is limited and unreliable.** The project code in `framework/` and `projects/` represents functional working solutions by a practitioner (not a KCL/IDP expert). Always cross-reference with authoritative sources before generating code.
+**This project uses niche technologies (KCL, Kusion, Crossplane) where AI training data is limited and unreliable.** The project code in `framework/` and `projects/` represents functional working solutions by a practitioner (not a KCL/IDP expert). Always cross-reference with authoritative sources before generating code.
 
 **Trust hierarchy:**
-1. Official docs (kcl-lang.io, nushell.sh, docs.crossplane.io) — **authoritative**
+1. Official docs (kcl-lang.io, go.dev, docs.crossplane.io) — **authoritative**
 2. Official repos (kcl-lang/*, crossplane-contrib/function-kcl) — **authoritative**
-3. Expert repos (vfarcic/crossplane-kubernetes: 66% KCL + 30.6% Nushell) — **high trust**
+3. Expert repos (vfarcic/crossplane-kubernetes — KCL + Crossplane compositions) — **high trust**
 4. Local project code — **functional but not authoritative**
 5. AI training data for KCL/Kusion — **unreliable, always verify**
 
@@ -238,9 +234,9 @@ Use the `knowledge-research` skill (`.github/skills/knowledge-research/SKILL.md`
 - **KCL docs**: https://www.kcl-lang.io/docs/
 
 ### Platform Engineering References (Viktor Farcic / Upbound)
-- **vfarcic/crossplane-kubernetes** (50+ stars) — **Closest external match**: 66% KCL + 30.6% Nushell, Crossplane compositions, CLAUDE.md, MCP config
-- **vfarcic/crossplane-app** (11+ stars) — 78.7% Nushell + 20.4% KCL, app-level Crossplane compositions
-- **vfarcic/dot-ai** (308+ stars) — MCP-based DevOps AI toolkit, Nushell + K8s operations
+- **vfarcic/crossplane-kubernetes** (50+ stars) — **Closest external match**: heavy KCL, Crossplane compositions, CLAUDE.md, MCP config
+- **vfarcic/crossplane-app** (11+ stars) — app-level Crossplane compositions with KCL
+- **vfarcic/dot-ai** (308+ stars) — MCP-based DevOps AI toolkit, K8s operations
 - **vfarcic/cncf-demo** (231+ stars) — End-to-end CNCF stack with IDP, Crossplane, ArgoCD chapters
 
 ### Platform Framework Alternatives (monitor for ideas)
@@ -258,7 +254,7 @@ Use the `knowledge-research` skill (`.github/skills/knowledge-research/SKILL.md`
 
 ### Official Documentation
 - KCL: https://www.kcl-lang.io/docs/
-- Nushell: https://www.nushell.sh/book/
+- Go: https://go.dev/doc/
 - Crossplane: https://docs.crossplane.io/
 - ArgoCD: https://argo-cd.readthedocs.io/
 - Helm: https://helm.sh/docs/

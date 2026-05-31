@@ -70,7 +70,7 @@ Before adding **any** external tool (MCP server, extension, CLI utility, depende
 | Tool | Maintained By | Status | Notes |
 |---|---|---|---|
 | `kcl` | KCL/CNCF | **APPROVED** | CNCF Sandbox project |
-| `nu` (Nushell) | Nushell Project | **APPROVED** | Well-maintained open-source shell |
+| `go` (Go toolchain) | Google/Go team | **APPROVED** | Mainstream, well-maintained language; builds the `koncept` CLI |
 | `crossplane` CLI | Upbound/CNCF | **APPROVED** | CNCF Graduated project |
 | `go-task` | Task project | **APPROVED** | Popular task runner, >11K stars |
 | `uv` / `uvx` | Astral (Ruff team) | **APPROVED** | High-performance Python package installer |
@@ -106,7 +106,7 @@ Before adding **any** external tool (MCP server, extension, CLI utility, depende
 | Risk | Severity | Mitigation |
 |---|---|---|
 | **SSRF (Server-Side Request Forgery)** — Can access local/internal IPs | **MEDIUM** (mitigated by Docker) | **Docker isolation provides the primary defense.** With Docker's default bridge network, `localhost`/`127.0.0.1` inside the container resolves to the container itself (not the host), making localhost-based SSRF attacks ineffective. Cloud metadata endpoints (169.254.169.254) timeout from inside the container. The host is only reachable via the Docker bridge IP (172.17.0.1), which is non-trivial to exploit. **Additional software mitigations:** (1) AI must NEVER request localhost/127.0.0.1/0.0.0.0, (2) NEVER request private IP ranges, (3) ONLY fetch from the trusted domain allowlist, (4) Do NOT expose the MCP server to untrusted networks. |
-| **Content from untrusted sites** — AI may follow malicious instructions from fetched content | **LOW** | Only fetch from known, trusted documentation sites (kcl-lang.io, nushell.sh, docs.crossplane.io, etc.). The AI should not blindly execute code from fetched pages. |
+| **Content from untrusted sites** — AI may follow malicious instructions from fetched content | **LOW** | Only fetch from known, trusted documentation sites (kcl-lang.io, go.dev, docs.crossplane.io, etc.). The AI should not blindly execute code from fetched pages. |
 | **Reference implementation** — Explicitly stated as "not production-ready" | **LOW** | This is acceptable for our use case (developer tooling in local environments). We are NOT deploying this in production infrastructure. |
 | **Python supply chain** — Dependency on Python packages | **LOW** | Docker image is built from a locked `uv.lock` file, signed by Docker Inc. with cosign verification. Image is immutable once pulled — no runtime dependency resolution. |
 
@@ -176,8 +176,8 @@ The `.vscode/mcp.json` configuration runs `mcp-server-fetch` in a hardened Docke
 https://www.kcl-lang.io/*
 https://artifacthub.io/packages/search?org=kcl*
 
-# Nushell (open source shell)
-https://www.nushell.sh/*
+# Go (programming language)
+https://go.dev/*
 
 # Crossplane (CNCF Graduated)  
 https://docs.crossplane.io/*
@@ -270,7 +270,7 @@ When an AI assistant generates code for this project:
 2. **Validate all generated KCL schemas** — Run `kcl run` to verify compilation
 3. **Review Crossplane compositions carefully** — AI may generate overly permissive RBAC
 4. **Check Kubernetes manifests** — Verify no `privileged: true`, no `hostNetwork: true`, no excessive capabilities
-5. **Validate Nushell scripts** — Ensure no `rm -rf`, no unchecked `^` external commands on user input
+5. **Validate shell/CLI scripts** — Ensure no `rm -rf`, no unchecked external commands on user input
 6. **Pin dependency versions** — AI may suggest floating versions; always pin to specific versions in `kcl.mod`
 
 ---

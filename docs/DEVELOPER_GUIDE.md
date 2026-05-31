@@ -1672,7 +1672,7 @@ A Profile provides configuration values. A Stack uses those values to instantiat
 1. Create `framework/procedures/kcl_to_<format>.k` with a conversion lambda
 2. (Optional) Create `framework/custom/<format>/` with format-specific schemas
 3. Add a `<format>_builder.k` to the factory
-4. Add a render target to `platform_cli/koncept`
+4. Add a render target to the `koncept` Go CLI (`cmd/koncept`)
 
 ### Q: Why is there a RenderStack AND a Stack?
 
@@ -1705,6 +1705,6 @@ If you get import errors like `cannot find the framework module` when running KC
 
 - Read [PROJECT_ARCHITECTURE.md](PROJECT_ARCHITECTURE.md) for the full technical reference with schema field details
 - Read [FRAMEWORK_SCHEMAS.md](FRAMEWORK_SCHEMAS.md) for complete schema field documentation
-- Read [DEVELOPMENT_WORKFLOWS.md](DEVELOPMENT_WORKFLOWS.md) for step-by-step CLI guides
+- Read [WORKFLOWS.md](WORKFLOWS.md) for step-by-step CLI guides
 - Read [KCL_REFERENCE.md](KCL_REFERENCE.md) for KCL language patterns used in this project
 - Read [AI_REFERENCE.md](AI_REFERENCE.md) for a concise, structured reference optimized for AI coding assistants

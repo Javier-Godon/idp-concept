@@ -66,7 +66,7 @@ _manifest_path = _factory.manifestPath
 
 ### Remaining Improvement Opportunities
 
-1. **Codegen for factory scaffolding**: A Nushell command `koncept scaffold release --project erp_back --stack v1_0_0 --tenant acme --site production` could generate the factory_seed.k + render.k + kcl.mod from templates.
+1. **Codegen for factory scaffolding**: The `koncept init` commands generate the factory_seed.k + render.k + kcl.mod from templates (e.g. `koncept init release v1_0_0`, `koncept init env production`).
 2. **Remove configurations_*.k intermediaries**: The pre-release `configurations_dev.k` / `configurations_stg.k` files are no longer needed since FactorySeed does the merge. They can be removed (though they may be useful for other consumers).
 
 ---
@@ -208,7 +208,7 @@ Most IDP and platform/deployment tools use Go: Crossplane (Go), Kusion (Go but u
           - Constraint validation                  - External service calls
 ```
 
-### Recommendation: Hybrid Approach (Keep KCL + Strengthen Go/Nushell)
+### Recommendation: Hybrid Approach (Keep KCL + Strengthen the Go CLI)
 
 **Do NOT migrate from KCL.** Instead, use KCL for what it excels at and strengthen the tooling layer around it.
 
@@ -225,8 +225,8 @@ Most IDP and platform/deployment tools use Go: Crossplane (Go), Kusion (Go but u
 
 | Layer | Current | Improvement |
 |---|---|---|
-| **CLI** | Nushell (`koncept`) | Consider Go CLI using KCL Go SDK for better distribution and testing |
-| **Scaffolding** | Manual file creation | Go/Nushell command to generate factory dirs from templates |
+| **CLI** | Go (`koncept`, `cmd/koncept`) | Implemented with the KCL Go SDK for single-binary distribution and testing |
+| **Scaffolding** | `koncept init project\|module\|env\|release` | Generates factory dirs from templates |
 | **Validation** | `kcl run` + manual check | Pre-commit hooks or CI that runs `kcl test` + `kubeconform` |
 | **Package distribution** | Local paths in kcl.mod | Publish framework to OCI registry for versioned consumption |
 
@@ -247,7 +247,7 @@ Most IDP and platform/deployment tools use Go: Crossplane (Go), Kusion (Go but u
 ```
 
 A Go CLI using the [KCL Go SDK](https://www.kcl-lang.io/docs/reference/xlang-api/go-api) would:
-- Distribute as a single binary (no `nu` or `kcl` dependency)
+- Distribute as a single binary (bundling the pinned `kcl` toolchain)
 - Call `kcl.RunFiles()` to render KCL configs
 - Handle file I/O (writing output to correct directories)
 - Scaffold new projects/factories/modules

@@ -1,50 +1,104 @@
-# Documentation
+# Documentation Index
 
-> User-facing documentation for **idp-concept** — organized by role.
+> The single entry point to **idp-concept** documentation. It gives one **ordered reading
+> path** and a **complete catalog** grouped by topic, so you can read everything in a sensible
+> order instead of guessing.
 >
-> For AI assistant references, see [`.github/docs/`](../.github/docs/).
+> For AI-assistant references, see [`.github/docs/`](../.github/docs/).
 
-## By User Profile
+---
 
-### Developer (Profile 1)
+## Recommended reading path
 
-Start here if you deploy and configure applications using the `koncept` CLI.
+Follow these in order. Stop wherever you have what you need.
 
-| Document | Description |
-|---|---|
-| [DEVELOPER_QUICKSTART.md](DEVELOPER_QUICKSTART.md) | Get started in 5 minutes — prerequisites, commands, troubleshooting |
-| [DEVELOPMENT_WORKFLOWS.md](DEVELOPMENT_WORKFLOWS.md) | Step-by-step guides for rendering YAML, Helm, Helmfile, Kusion |
-| [APPLICATION_CONFIGURATION_PATTERNS.md](APPLICATION_CONFIGURATION_PATTERNS.md) | Standard config files and env vars for Python, Go, Rust, Kotlin, and frontend apps |
+1. **[Project README](../README.md)** — what the platform is, the KCL single-source-of-truth
+   idea, and the output formats.
+2. **[Distribution & Sharing Model](decisions/DISTRIBUTION_AND_SHARING_MODEL.md)** — the mental
+   model: the `koncept` CLI is the installable package; teams share work through Git + GitOps.
+3. **[Tooling Setup](TOOLING_SETUP.md)** — install the CLI and KCL. (Windows users:
+   [Windows Local Setup](WINDOWS_LOCAL_SETUP.md).)
+4. **[Developer Quickstart](DEVELOPER_QUICKSTART.md)** — render your first manifests.
+5. **[Project Architecture](PROJECT_ARCHITECTURE.md)** — how configuration merges
+   (kernel → profile → tenant → site) and how everything connects.
+6. **[Workflows](WORKFLOWS.md)** — role-based and step-by-step task recipes (rendering, adding
+   modules/tenants/sites/releases, Crossplane, debugging).
+7. **Go deeper for your role** — pick the relevant track in the catalog below.
+8. **[Decisions](#decisions--adrs)** — read the ADRs to understand *why* the platform is shaped
+   the way it is (rendering strategy, search stack, distribution).
 
-### Platform Engineer — High-Level (Profile 2)
+---
 
-Start here if you compose stacks, tenants, sites, and modules using framework templates.
+## Catalog by topic
 
-| Document | Description |
-|---|---|
-| [PROJECT_ARCHITECTURE.md](PROJECT_ARCHITECTURE.md) | Architecture overview — configuration merge, output formats, module types |
-| [DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md) | Comprehensive guide — schemas, factories, templates, migration |
-| [FRAMEWORK_SCHEMAS.md](FRAMEWORK_SCHEMAS.md) | Complete schema reference for all framework models |
-| [PROJECT_FOLDER_STANDARD.md](PROJECT_FOLDER_STANDARD.md) | Convention-based project, stack, tenant, site, and release folder layout |
-| [SEARCH_STACK_DECISION.md](SEARCH_STACK_DECISION.md) | Elasticsearch vs OpenSearch recommendation, licensing notes, and versioned templates |
+### Getting started
 
-### Platform Engineer — Low-Level (Profile 3)
+| Document | Audience | Description |
+|---|---|---|
+| [DEVELOPER_QUICKSTART.md](DEVELOPER_QUICKSTART.md) | Developers | Prerequisites, render commands, troubleshooting |
+| [TOOLING_SETUP.md](TOOLING_SETUP.md) | All | Install the `koncept` CLI, KCL, and optional tools |
+| [WINDOWS_LOCAL_SETUP.md](WINDOWS_LOCAL_SETUP.md) | Developers | WSL2 + Docker Desktop + kind local setup |
+| [APPLICATION_CONFIGURATION_PATTERNS.md](APPLICATION_CONFIGURATION_PATTERNS.md) | Developers | Standard config/env patterns per language and framework |
 
-Start here if you design framework internals — builders, templates, procedures.
+### Architecture & reference
 
-| Document | Description |
-|---|---|
-| [TESTING_STRATEGY.md](TESTING_STRATEGY.md) | Testing approach — KCL unit tests, kubeconform, Helm lint, CI/CD |
-| [ACCEPTANCE_TESTING.md](ACCEPTANCE_TESTING.md) | Optional kind-based deployment smoke tests for generated manifests |
-| [CROSSPLANE_PATTERNS.md](CROSSPLANE_PATTERNS.md) | Crossplane composition patterns used in `crossplane_v2/` |
-| [IDP_EVOLUTION_PLAN.md](IDP_EVOLUTION_PLAN.md) | Roadmap — phases, implementation progress, priority tree |
-| [PLATFORM_COMPARISON_AND_KCL_ANALYSIS.md](PLATFORM_COMPARISON_AND_KCL_ANALYSIS.md) | KCL vs Go analysis, k0rdent/Fleet patterns, factory improvements |
+| Document | Audience | Description |
+|---|---|---|
+| [PROJECT_ARCHITECTURE.md](PROJECT_ARCHITECTURE.md) | All | Architecture, data flow, layers, how to extend |
+| [FRAMEWORK_SCHEMAS.md](FRAMEWORK_SCHEMAS.md) | Platform engineers | Complete KCL schema reference |
+| [DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md) | Platform engineers | Deep concepts guide — schemas, factories, templates |
+| [PROJECT_FOLDER_STANDARD.md](PROJECT_FOLDER_STANDARD.md) | Platform engineers | Folder conventions and path-derived values |
+| [FRAMEWORK_VERSIONING.md](FRAMEWORK_VERSIONING.md) | Platform engineers | Compatibility metadata, SemVer rules, support tiers |
 
-### All Users
+### Workflows & guides
 
-| Document | Description |
-|---|---|
-| [SECURITY.md](SECURITY.md) | Security policy — approved tools, MCP fetch safety, trusted domains |
-| [STORAGE_POLICY_PATTERNS.md](STORAGE_POLICY_PATTERNS.md) | Environment storage policy baseline (local-path, Ceph, Longhorn) |
-| [OPERATING_MODEL.md](OPERATING_MODEL.md) | Roles, change categories, and approval paths for platform/app/env changes |
-| [PLATFORM_METRICS.md](PLATFORM_METRICS.md) | Opt-in local CLI telemetry — enabling, storage, and aggregation |
+| Document | Audience | Description |
+|---|---|---|
+| [WORKFLOWS.md](WORKFLOWS.md) | Developers / Platform engineers | Role-based and step-by-step task recipes |
+| [MIGRATION_GUIDE.md](MIGRATION_GUIDE.md) | Platform engineers | Migrate from raw manifests to the template pattern |
+| [STORAGE_POLICY_PATTERNS.md](STORAGE_POLICY_PATTERNS.md) | Platform engineers | Storage baseline (local-path, Ceph, Longhorn) per environment |
+
+### Testing & verification
+
+| Document | Audience | Description |
+|---|---|---|
+| [TESTING_STRATEGY.md](TESTING_STRATEGY.md) | Contributors | Testing layers and the testing pyramid |
+| [VERIFICATION_MATRIX.md](VERIFICATION_MATRIX.md) | Contributors | Canonical lint/test/render verification runbook |
+| [ACCEPTANCE_TESTING.md](ACCEPTANCE_TESTING.md) | Contributors | kind dry-run acceptance matrix |
+| [ACCEPTANCE_RUNTIME.md](ACCEPTANCE_RUNTIME.md) | Contributors | Real-cluster runtime acceptance layer |
+| [ACCEPTANCE_DEPENDENCIES.md](ACCEPTANCE_DEPENDENCIES.md) | Contributors | Template acceptance levels and dependency scenarios |
+| [GOLDEN_OUTPUTS.md](GOLDEN_OUTPUTS.md) | Contributors | Golden render-drift review gate |
+
+### Operations & governance
+
+| Document | Audience | Description |
+|---|---|---|
+| [OPERATING_MODEL.md](OPERATING_MODEL.md) | All | Roles, change categories, approval paths |
+| [SECURITY.md](SECURITY.md) | All | Security policy, approved tools, fetch safety |
+| [POLICY_EXEMPTIONS.md](POLICY_EXEMPTIONS.md) | Contributors | Narrow, owned, expiring policy waivers |
+| [PLATFORM_METRICS.md](PLATFORM_METRICS.md) | Platform engineers | Opt-in local CLI telemetry and aggregation |
+| [CHANGELOG_WORKFLOW.md](CHANGELOG_WORKFLOW.md) | Contributors | Release-note fragment workflow |
+
+### Infrastructure & integrations
+
+| Document | Audience | Description |
+|---|---|---|
+| [CROSSPLANE_PATTERNS.md](CROSSPLANE_PATTERNS.md) | Platform engineers | Crossplane XRD/Composition/function-kcl patterns |
+| [BACKSTAGE_ADOPTION_ANALYSIS.md](BACKSTAGE_ADOPTION_ANALYSIS.md) | Platform engineers | Developer-portal adoption analysis |
+| [BACKSTAGE_PLUGIN_GUIDE.md](BACKSTAGE_PLUGIN_GUIDE.md) | Platform engineers | Backstage plugin installation and integration |
+
+### Decisions / ADRs
+
+| Document | Audience | Description |
+|---|---|---|
+| [decisions/DISTRIBUTION_AND_SHARING_MODEL.md](decisions/DISTRIBUTION_AND_SHARING_MODEL.md) | All | CLI = installable package; Git + GitOps = how teams share work |
+| [decisions/RENDERING_STRATEGY_DECISION.md](decisions/RENDERING_STRATEGY_DECISION.md) | Platform engineers | Kustomize for dev; Crossplane v2 for the variable stack; Timoni/Kusion assessment |
+| [decisions/SEARCH_STACK_DECISION.md](decisions/SEARCH_STACK_DECISION.md) | Platform engineers | Elasticsearch vs OpenSearch recommendation and licensing |
+
+### Planning & analysis (meta)
+
+| Document | Audience | Description |
+|---|---|---|
+| [IDP_EVOLUTION_PLAN.md](IDP_EVOLUTION_PLAN.md) | All | Current-state assessment, phases, roadmap |
+| [WORK_MATRIX.md](WORK_MATRIX.md) | All | Phases mapped to user profiles and tasks |
+| [PLATFORM_COMPARISON_AND_KCL_ANALYSIS.md](PLATFORM_COMPARISON_AND_KCL_ANALYSIS.md) | Platform engineers | KCL vs Go analysis, k0rdent/Fleet patterns |

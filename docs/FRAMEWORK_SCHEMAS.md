@@ -662,7 +662,7 @@ Use `TelemetryPipelineSpec` for non-trivial flows; use `LogPipelineSpec` for sim
 - `DataPrepperModule` is Kubernetes-native because there is no widely adopted dedicated OSS Data Prepper operator.
 - Use explicit versioned imports: `templates.elastic.v7_10_2.*`, `templates.elastic.v9_4_1.*`, and `templates.fluentbit.v3_2_10.*`.
 - `elastic/v7_10_2/*` templates intentionally avoid Elastic ECK and pin the last Apache-2.0 OSS artifact line (`7.10.2`).
-- `elastic/v9_4_1/*` templates use Elastic ECK CRDs and are suitable only when your intended internal usage is compatible with Elastic's license terms. See `docs/SEARCH_STACK_DECISION.md`.
+- `elastic/v9_4_1/*` templates use Elastic ECK CRDs and are suitable only when your intended internal usage is compatible with Elastic's license terms. See `docs/decisions/SEARCH_STACK_DECISION.md`.
 
 ### Secret Management
 

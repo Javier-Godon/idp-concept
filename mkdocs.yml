@@ -8,9 +8,8 @@ nav:
       - Project Architecture: docs/PROJECT_ARCHITECTURE.md
       - Framework Schemas: docs/FRAMEWORK_SCHEMAS.md
   - Operations:
-      - User Workflow Guides: docs/USER_WORKFLOW_GUIDES.md
+      - Workflows: docs/WORKFLOWS.md
       - Migration Guide: docs/MIGRATION_GUIDE.md
-      - Development Workflows: docs/DEVELOPMENT_WORKFLOWS.md
       - Tooling Setup: docs/TOOLING_SETUP.md
       - Windows Local Setup: docs/WINDOWS_LOCAL_SETUP.md
   - Security: docs/SECURITY.md
@@ -18,6 +17,10 @@ nav:
   - Backstage:
       - Adoption Analysis: docs/BACKSTAGE_ADOPTION_ANALYSIS.md
       - Plugin Guide: docs/BACKSTAGE_PLUGIN_GUIDE.md
+  - Decisions:
+      - Distribution & Sharing Model: docs/decisions/DISTRIBUTION_AND_SHARING_MODEL.md
+      - Rendering Strategy: docs/decisions/RENDERING_STRATEGY_DECISION.md
+      - Search Stack: docs/decisions/SEARCH_STACK_DECISION.md
   - Reference:
       - Crossplane Patterns: docs/CROSSPLANE_PATTERNS.md
       - IDP Evolution Plan: docs/IDP_EVOLUTION_PLAN.md

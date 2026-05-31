@@ -1,6 +1,6 @@
 ---
 name: knowledge-research
-description: "Research niche technologies (KCL, Nushell, Crossplane, Kusion, IDP patterns) using authoritative sources. Use when the AI lacks training data on a topic, needs to verify its own knowledge against official docs, or must learn a new pattern before generating code."
+description: "Research niche technologies (KCL, Crossplane, Kusion, IDP patterns) using authoritative sources. Use when the AI lacks training data on a topic, needs to verify its own knowledge against official docs, or must learn a new pattern before generating code."
 ---
 
 # Knowledge Research Skill for idp-concept
@@ -8,7 +8,7 @@ description: "Research niche technologies (KCL, Nushell, Crossplane, Kusion, IDP
 ## When to Use
 - Before writing KCL code — verify syntax against official docs
 - Before creating Crossplane compositions — check function-kcl API
-- Before modifying Nushell scripts — verify command syntax
+- Before modifying the Go CLI (`cmd/koncept`) — verify KCL Go SDK / Cobra usage
 - When the user asks about a technology the AI has limited training data on
 - When implementing a pattern the AI hasn't seen before
 - When the AI needs to validate its own knowledge (KCL, Kusion, platform engineering)
@@ -23,7 +23,7 @@ description: "Research niche technologies (KCL, Nushell, Crossplane, Kusion, IDP
 
 | Priority | Source | Trust Level | How to Access |
 |---|---|---|---|
-| 1st | Official docs (kcl-lang.io, nushell.sh, docs.crossplane.io) | **Authoritative** | Fetch via MCP |
+| 1st | Official docs (kcl-lang.io, go.dev, docs.crossplane.io) | **Authoritative** | Fetch via MCP |
 | 2nd | Official repos (kcl-lang/*, crossplane-contrib/function-kcl) | **Authoritative** | Fetch raw GitHub content |
 | 3rd | Expert practitioner repos (vfarcic/crossplane-kubernetes) | **High** | Fetch raw GitHub content |
 | 4th | Local project code (`framework/`, `projects/`) | **Functional but not authoritative** | Read local files |
@@ -58,14 +58,13 @@ When creating or modifying Crossplane compositions with KCL:
    - Fetch KCL files from `https://github.com/vfarcic/crossplane-kubernetes/tree/main/kcl`
 3. **Local reference**: `crossplane_v2/` directory in this project
 
-### Nushell Script Patterns
+### Go CLI Patterns
 
-When modifying `platform_cli/koncept` or `platform_cli/koncepttask`:
+When modifying the `koncept` Go CLI (`cmd/koncept`):
 
-1. **Fetch command reference**: `https://www.nushell.sh/commands/`
-2. **Fetch language guide**: `https://www.nushell.sh/book/`
-3. **For advanced patterns**: Fetch from `https://github.com/vfarcic/crossplane-app` (78.7% Nushell)
-4. **For Nushell + AI integration**: Fetch from `https://github.com/vfarcic/dot-ai`
+1. **KCL Go SDK**: `https://www.kcl-lang.io/docs/reference/xlang-api/go-api`
+2. **Cobra command framework**: `https://github.com/spf13/cobra`
+3. **Local reference**: `cmd/koncept/cmd/` (subcommand implementations)
 
 ### Kusion Spec Format
 
@@ -102,9 +101,9 @@ https://www.kcl-lang.io/docs/reference/lang/spec/schema
 https://www.kcl-lang.io/docs/reference/model/overview
 https://www.kcl-lang.io/docs/tools/cli/kcl/overview
 
-# Nushell
-https://www.nushell.sh/book/
-https://www.nushell.sh/commands/
+# Go
+https://go.dev/doc/
+https://www.kcl-lang.io/docs/reference/xlang-api/go-api
 
 # Crossplane
 https://docs.crossplane.io/latest/concepts/compositions/

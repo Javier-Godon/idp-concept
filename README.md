@@ -57,14 +57,14 @@ by a real product team.
 
 | Tool | Purpose | Install |
 |---|---|---|
-| [Go](https://go.dev/) | Builds the preferred `koncept` CLI | [TOOLING_SETUP.md](docs/TOOLING_SETUP.md) |
+| [Go](https://go.dev/) | Builds the `koncept` CLI | [TOOLING_SETUP.md](docs/TOOLING_SETUP.md) |
 | [KCL](https://www.kcl-lang.io/) (`kcl`) | Renders configurations | [TOOLING_SETUP.md](docs/TOOLING_SETUP.md#kcl) |
-| [Nushell](https://www.nushell.sh/) (`nu`) | Legacy/developer CLI only | [TOOLING_SETUP.md](docs/TOOLING_SETUP.md#nushell) |
 
 ### 2. Set Up the CLI
 
-The **Go CLI** (`cmd/koncept`) is the preferred, packaged interface. The Nushell
-`platform_cli/koncept` remains available as legacy/developer tooling.
+The **Go CLI** (`cmd/koncept`) is the single, packaged interface — installed as a
+cross-platform binary that every team member runs locally (see
+[the distribution & sharing model](docs/decisions/DISTRIBUTION_AND_SHARING_MODEL.md)).
 
 ```bash
 # Build the Go CLI (requires Go and kcl)
@@ -79,14 +79,6 @@ ln -s "$(pwd)/bin/koncept" ~/.local/bin/koncept
 
 # Shell completions
 koncept completion bash > /etc/bash_completion.d/koncept   # or zsh|fish|powershell
-```
-
-Legacy Nushell CLI:
-
-```bash
-chmod +x platform_cli/koncept
-mkdir -p ~/.local/bin
-ln -s "$(pwd)/platform_cli/koncept" ~/.local/bin/koncept
 ```
 
 ### 3. Render Manifests
@@ -152,7 +144,7 @@ idp-concept/
 ├── projects/            # Your applications
 │   ├── erp_back/        #   Example project (template approach — recommended)
 │   └── video_streaming/ #   Example project (raw approach — full control)
-├── platform_cli/        # Nushell CLI tools (koncept, koncepttask)
+├── cmd/koncept/         # Go CLI (the installable package)
 ├── crossplane_v2/       # Crossplane XRDs, Compositions, Providers
 └── docs/                # Documentation
 ```
@@ -213,25 +205,24 @@ See [projects/erp_back/](projects/erp_back/) for the template approach and [proj
 
 ## Documentation
 
+Start at the **[documentation index](docs/README.md)** — it provides a single, ordered
+reading path and groups every document by audience and topic.
+
+Key entry points:
+
 | Document | Audience | Content |
 |---|---|---|
+| [docs/README (index)](docs/README.md) | All | Master index and recommended reading path |
 | [DEVELOPER_QUICKSTART](docs/DEVELOPER_QUICKSTART.md) | Developers | Day-to-day usage, render commands, config options |
 | [PROJECT_ARCHITECTURE](docs/PROJECT_ARCHITECTURE.md) | All | Architecture, data flow, how everything connects |
-| [FRAMEWORK_SCHEMAS](docs/FRAMEWORK_SCHEMAS.md) | Platform engineers | Complete schema reference |
-| [DEVELOPER_GUIDE](docs/DEVELOPER_GUIDE.md) | Platform engineers | How to extend the framework |
-| [TESTING_STRATEGY](docs/TESTING_STRATEGY.md) | Contributors | Testing patterns and conventions |
-| [VERIFICATION_MATRIX](docs/VERIFICATION_MATRIX.md) | Contributors | Canonical lint/test/render verification workflow |
-| [FRAMEWORK_VERSIONING](docs/FRAMEWORK_VERSIONING.md) | Platform engineers | Framework compatibility metadata, support tiers, deprecation policy |
-| [OPERATING_MODEL](docs/OPERATING_MODEL.md) | All | Roles, change categories, and approval paths |
-| [PLATFORM_METRICS](docs/PLATFORM_METRICS.md) | Platform engineers | Opt-in local CLI telemetry and aggregation |
-| [TOOLING_SETUP](docs/TOOLING_SETUP.md) | All | Installation and environment setup |
-| [SECURITY](docs/SECURITY.md) | All | Security policy and approved tools |
-| [PLATFORM_COMPARISON](docs/PLATFORM_COMPARISON_AND_KCL_ANALYSIS.md) | Platform engineers | KCL vs Go, k0rdent/Fleet patterns |
+| [WORKFLOWS](docs/WORKFLOWS.md) | Developers / Platform engineers | Role-based and step-by-step render workflows |
+| [Distribution & Sharing Model](docs/decisions/DISTRIBUTION_AND_SHARING_MODEL.md) | All | How the CLI is installed and how teams share work via Git/GitOps |
+| [Rendering Strategy Decision](docs/decisions/RENDERING_STRATEGY_DECISION.md) | Platform engineers | Kustomize for dev, Crossplane v2 for the variable stack |
 
 ## Technologies
 
-- **[KCL](https://www.kcl-lang.io/)** — Configuration language (CNCF Sandbox)
-- **[Nushell](https://www.nushell.sh/)** — CLI scripting
+- **[KCL](https://www.kcl-lang.io/)** — Configuration language and single source of truth (CNCF Sandbox)
+- **[Go](https://go.dev/)** — The `koncept` CLI (the installable package)
 - **[Crossplane](https://www.crossplane.io/)** — Kubernetes-native infrastructure provisioning
 - **[ArgoCD](https://argo-cd.readthedocs.io/)** — GitOps continuous delivery
 

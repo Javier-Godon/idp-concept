@@ -25,15 +25,13 @@ tasks:
 
   generate:all:
     cmds:
-      - |
-        nu -c '
-        let items = {{.items | toJson}}
-        for item in $items {
-          echo $"Generating chart for ($item)"
-          ^task generate:chart item=$item
-          ^task generate:values item=$item
-          ^task generate:templates item=$item
-        }
-        ^task generate:helmfile
-        '    
-  
+      - for: { var: items }
+        task: generate:chart
+        vars: { item: "{{.ITEM}}" }
+      - for: { var: items }
+        task: generate:values
+        vars: { item: "{{.ITEM}}" }
+      - for: { var: items }
+        task: generate:templates
+        vars: { item: "{{.ITEM}}" }
+      - task: generate:helmfile

@@ -19,7 +19,7 @@ All resources are:
 | Technology | Official Docs | Status | Notes |
 |---|---|---|---|
 | **KCL** | [kcl-lang.io/docs](https://www.kcl-lang.io/docs/) | CNCF Sandbox | v0.10.0 (project), v0.11.2 (latest upstream). Constraint-based config language |
-| **Nushell** | [nushell.sh/book](https://www.nushell.sh/book/) | Active OSS | Structured data shell used for platform CLI |
+| **Go** | [go.dev/doc](https://go.dev/doc/) | Stable | Language of the `koncept` CLI (the installable package) |
 | **Crossplane** | [docs.crossplane.io](https://docs.crossplane.io/) | CNCF Graduated | Kubernetes-native infrastructure provisioning |
 | **ArgoCD** | [argo-cd.readthedocs.io](https://argo-cd.readthedocs.io/) | CNCF Graduated | GitOps continuous delivery |
 | **Helm** | [helm.sh/docs](https://helm.sh/docs/) | CNCF Graduated | Kubernetes package manager |
@@ -157,7 +157,7 @@ All resources are:
 - **Language**: KCL 66%, Nushell 30.6%, Just 3%
 
 **What to learn from this repo:**
-- **Closest external match to idp-concept's technology stack** (KCL + Crossplane + Nushell)
+- **Closest external match to idp-concept's technology stack** (KCL + Crossplane). Note: idp-concept's CLI is now written in **Go**, not Nushell, so treat this repo's Nushell tooling as illustrative rather than directly transferable.
 - Production-grade Crossplane compositions written in KCL
 - `CLAUDE.md` — mature AI instruction patterns for KCL+Crossplane development
 - `.mcp.json` — MCP configuration patterns for AI-assisted workflow
@@ -173,7 +173,7 @@ All resources are:
 - `/tests/` — Chainsaw test suites per cloud provider
 - `/prds/` — Product Requirement Documents (AI-driven feature development)
 
-**Relevance to idp-concept:** The most relevant external project. Demonstrates the same KCL→Crossplane pipeline with Nushell tooling. Shows how to structure AI-assisted development with PRDs and CLAUDE.md. The `kcl/data.k` schema definitions parallel our `framework/models/` approach.
+**Relevance to idp-concept:** The most relevant external project. Demonstrates the same KCL→Crossplane pipeline. Shows how to structure AI-assisted development with PRDs and CLAUDE.md. The `kcl/data.k` schema definitions parallel our `framework/models/` approach. (idp-concept's own CLI tooling is Go, not Nushell.)
 
 ---
 
@@ -190,7 +190,7 @@ All resources are:
 - Heavy Nushell scripting patterns for infrastructure automation
 - CLAUDE.md and MCP config for AI-assisted development
 
-**Relevance to idp-concept:** Complements crossplane-kubernetes with app-layer patterns. The heavy Nushell usage is directly relevant to our `platform_cli/` scripts.
+**Relevance to idp-concept:** Complements crossplane-kubernetes with app-layer patterns. Its Nushell scripting is historical context only — idp-concept's CLI is implemented in Go.
 
 ---
 
@@ -429,7 +429,7 @@ When working on this project, AI assistants should:
 1. **Fetch KCL docs** when unsure about syntax: `https://www.kcl-lang.io/docs/reference/lang/`
 2. **Reference kcl-lang/modules** for schema design patterns when creating new module definitions
 3. **Check vfarcic/crossplane-kubernetes** for KCL+Crossplane composition patterns (closest match to this project)
-4. **Fetch Nushell docs** when modifying `platform_cli/koncept`: `https://www.nushell.sh/book/`
+4. **Fetch Go / KCL Go SDK docs** when modifying the `koncept` CLI (`cmd/koncept`): `https://www.kcl-lang.io/docs/reference/xlang-api/go-api`
 5. **Reference crossplane-contrib/function-kcl** for KCL-in-Crossplane API details
 6. **Check kcl-lang/konfig** for K8s abstraction layer patterns
 7. **ONLY fetch from the trusted domain allowlist** in [SECURITY.md](SECURITY.md) — no exceptions
@@ -446,7 +446,7 @@ When the AI needs patterns or examples beyond the local codebase:
 | 2nd | **vfarcic/crossplane-kubernetes** | KCL+Crossplane patterns, closest external match |
 | 3rd | **kcl-lang/modules** + **kcl-lang/examples** | KCL schema patterns, module structure, language idioms |
 | 4th | **crossplane-contrib/function-kcl** | KCL-in-Crossplane API details |
-| 5th | **Official docs** (kcl-lang.io, nushell.sh, docs.crossplane.io) | Syntax reference, API docs |
+| 5th | **Official docs** (kcl-lang.io, go.dev, docs.crossplane.io) | Syntax reference, API docs |
 | 6th | **KusionStack/kusion** | Kusion spec format, IDP orchestration patterns |
 | 7th | **CNCF TAG App Delivery** | Platform engineering maturity, architectural validation |
 

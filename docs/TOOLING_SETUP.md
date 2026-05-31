@@ -12,14 +12,14 @@
 | **koncept Go CLI** | Primary scaffold/render/validate/policy interface | **REQUIRED** | Build from `cmd/koncept` until release binaries are published |
 | **Go** (`go`) | Builds the `koncept` CLI from source | Required until release binaries are published | v1.23+ |
 | **KCL** (`kcl`) | Direct KCL troubleshooting; installed in the CI image | Recommended locally | v0.11+ |
-| **Nushell** (`nu`) | Legacy/developer scripts in `platform_cli/` | Optional | v0.90+ |
 | **kubeconform** | Validates rendered K8s manifests against schemas | Recommended | Latest |
 | **Helm** (`helm`) | Lints and templates Helm charts | Recommended | v3+ |
-| **go-task** (`task`) | Task runner used by `koncepttask` | Optional | v3+ |
+| **go-task** (`task`) | Task runner used by project Taskfile templates | Optional | v3+ |
 | **helmfile** | Manages Helmfile deployments | Optional | v0.169+ |
 | **kubectl** | Interacts with live Kubernetes clusters | Optional | v1.28+ |
 
-> The Go CLI is the default user path. Nushell remains useful for maintaining legacy scripts and `koncepttask`, but product teams should not need it for normal scaffold/render/policy workflows.
+> The Go CLI is the single user path for scaffold/render/validate/policy workflows. `kcl` is
+> only needed locally for direct troubleshooting; everything else is optional.
 
 For Windows/company laptops, prefer WSL2 + Docker Desktop + kind and see `docs/WINDOWS_LOCAL_SETUP.md` for local footprint and Ceph guidance.
 
@@ -50,7 +50,7 @@ KUBECONFORM_VERSION="v0.7.0"
 curl -fsSL "https://github.com/yannh/kubeconform/releases/download/${KUBECONFORM_VERSION}/kubeconform-linux-amd64.tar.gz" \
   | tar -xz -C ~/.local/bin kubeconform
 
-# 4. go-task — optional, for koncepttask
+# 4. go-task — optional, for project Taskfile templates
 TASK_VERSION="v3.43.3"
 curl -fsSL "https://github.com/go-task/task/releases/download/${TASK_VERSION}/task_linux_amd64.tar.gz" \
   | tar -xz -C ~/.local/bin task
@@ -104,8 +104,8 @@ Install tools for all users on the machine. Requires `sudo`.
 |---|---|
 | Different version per project (pin exact versions) | One-time `mise` install step |
 | Reproducible: commit `.mise.toml` to Git | Tools stored in `~/.local/share/mise/` (not truly in the repo dir) |
-| No system-wide installation needed | Shebang `#!/usr/bin/env nu` still requires PATH setup |
-| Automatic version switching when entering project dir | Not all tools have mise plugins (nushell support via `ubi`) |
+| No system-wide installation needed | Tools stored in a shared cache, not the repo dir |
+| Automatic version switching when entering project dir | Not all tools have mise plugins |
 
 **When to use**: Team projects where tool version consistency matters; prevents "works on my machine" issues.
 
@@ -127,88 +127,6 @@ koncept completion bash > ~/.local/share/bash-completion/completions/koncept
 ```
 
 Release packaging is partially implemented with `make build-all`, `make checksums`, and `make docker`; publishing signed release artifacts is still pending.
-
----
-
-## Nushell (legacy/developer tooling)
-
-**Why**: The `koncept` and `koncepttask` CLI scripts have `#!/usr/bin/env nu` as their shebang line. Without `nu` on your `PATH`, these scripts cannot run.
-
-**Can it be project-local?** `#!/usr/bin/env nu` means `nu` must be on `$PATH`. You can control which version is active per project (via mise), but the binary must be findable in `PATH`.
-
-### Install: User-Local (Recommended — no root)
-
-```bash
-# Check latest version: https://github.com/nushell/nushell/releases
-NU_VERSION="0.104.1"
-mkdir -p ~/.local/bin
-curl -fsSL "https://github.com/nushell/nushell/releases/download/${NU_VERSION}/nu-${NU_VERSION}-x86_64-unknown-linux-gnu.tar.gz" \
-  | tar -xz --strip-components=1 -C ~/.local/bin "nu-${NU_VERSION}-x86_64-unknown-linux-gnu/nu"
-chmod +x ~/.local/bin/nu
-nu --version     # Should print: 0.104.1
-```
-
-### Install: System-Wide via apt (Ubuntu/Debian — clean, signed)
-
-Official GPG-signed apt repository — recommended for system-wide installs:
-
-```bash
-# Add the official Nushell apt repo (GPG-signed via Gemfury)
-wget -qO- https://apt.fury.io/nushell/gpg.key | sudo gpg --dearmor -o /etc/apt/keyrings/fury-nushell.gpg
-echo "deb [signed-by=/etc/apt/keyrings/fury-nushell.gpg] https://apt.fury.io/nushell/ /" \
-  | sudo tee /etc/apt/sources.list.d/fury-nushell.list
-sudo apt update && sudo apt install nushell
-nu --version
-```
-
-### Install: Via mise (version-pinned per project)
-
-```bash
-# Install mise first (user-local, no root):
-curl https://mise.run | sh
-echo 'eval "$(~/.local/bin/mise activate bash)"' >> ~/.bashrc
-source ~/.bashrc
-
-# Add to project .mise.toml (or .tool-versions):
-cat >> /path/to/idp-concept/.mise.toml << 'EOF'
-[tools]
-nushell = "0.104.1"   # pin exact version
-EOF
-
-# Inside the project directory:
-cd /path/to/idp-concept
-mise install          # downloads and installs nu 0.104.1
-nu --version          # 0.104.1 (active only in this project dir)
-```
-
-### Using Nushell Daily (Making it Your Default Shell)
-
-Since Nushell is a full interactive shell, you may want it as your day-to-day shell:
-
-```bash
-# Add to /etc/shells (requires sudo)
-which nu | sudo tee -a /etc/shells
-
-# Change your default shell:
-chsh -s $(which nu)
-# Re-login to apply
-
-# Or: launch nu from bash by just typing:
-nu
-```
-
-**Pros of using Nushell daily**:
-- Native compatibility — no context switching between `bash` for daily use and `nu` for running scripts
-- Same language you use to write `koncept` scripts
-- Structured data output (tables, records) makes working with YAML/JSON/CSV natural
-- Excellent autocompletion and history
-
-**Cons of using Nushell daily**:
-- Not POSIX-compatible — bash/sh scripts must still be run with `bash script.sh` (Nushell doesn't run `.sh` files by default; use `bash` prefix)
-- Some CLI tools assume bash syntax for config (e.g., `.bashrc` sourcing patterns)
-- Learning curve for someone coming from bash
-
-**Verdict**: Nushell is a production-quality shell since v0.90 and is safe for daily use. Many developers use it as their primary shell. Start with it in a separate terminal tab before committing to `chsh`.
 
 ---
 
@@ -302,7 +220,7 @@ helm version --short
 
 ## go-task
 
-**Why**: Task runner used by `koncepttask`. Not required if you only use `koncept` directly.
+**Why**: Task runner used by the project Taskfile templates. Not required if you only use `koncept` directly.
 
 ```bash
 # User-local install
@@ -336,7 +254,6 @@ Create `/path/to/idp-concept/.mise.toml`:
 
 ```toml
 [tools]
-nushell       = "0.104.1"
 kcl           = "0.11.0"
 # kubeconform is available via the 'ubi' plugin
 # helm via 'helm' plugin (mise has native helm support on some distros)
@@ -345,8 +262,6 @@ kcl           = "0.11.0"
 # Ensure project-local tools are on PATH when in this directory
 PATH = "{{env.PATH}}"
 ```
-
-> **Note**: mise's nushell support uses the `ubi` (Universal Binary Installer) backend — verify support with `mise plugins ls-remote | grep nushell` before relying on it in CI.
 
 ```bash
 # Install mise (user-local):
@@ -368,7 +283,6 @@ Run this checklist after setup:
 
 ```bash
 # Check all tools are on PATH and print versions:
-nu --version            # 0.104.1 (or higher)
 kcl version             # v0.11.x
 kubeconform -v          # v0.7.x
 helm version --short    # v3.x.x (optional)
@@ -392,5 +306,4 @@ kcl test ./...          # PASS: 243/243
 | **Solo developer, one machine** | User-local binary (`~/.local/bin`) — simple, no root |
 | **Team project, version consistency** | mise with `.mise.toml` committed to repo |
 | **Shared server / CI agent** | System-wide via package manager or official script |
-| **Try Nushell as daily shell** | Start with user-local install; run `nu` from bash; `chsh` when comfortable |
-| **Docker-based dev environment** | Use Nushell Docker image as base: `ghcr.io/nushell/nushell:latest-bookworm` |
+| **Docker-based dev environment** | Use the pinned `koncept` CI image (`make docker`) which bundles the kcl toolchain |
