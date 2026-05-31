@@ -34,6 +34,10 @@ type ProjectSpec struct {
 	GitRepoURL string
 	// FrameworkPath is the kcl.mod path to the framework package (relative to the project root).
 	FrameworkPath string
+	// FrameworkVersionConstraint documents the framework compatibility contract.
+	FrameworkVersionConstraint string
+	// FrameworkSupportTier documents support expectations for generated stacks.
+	FrameworkSupportTier string
 	// BackstageOwner is the ownership label/owner value.
 	BackstageOwner string
 }
@@ -45,19 +49,21 @@ func NewProjectSpec(name string) ProjectSpec {
 	slug := Slugify(name)
 	dash := strings.ReplaceAll(slug, "_", "-")
 	return ProjectSpec{
-		DisplayName:    name,
-		Slug:           slug,
-		SchemaPrefix:   CamelCase(slug),
-		DashName:       dash,
-		AppPackage:     slug + "_api",
-		AppName:        dash + "-api",
-		AppsNamespace:  dash + "-apps",
-		Image:          "ghcr.io/example/" + dash + "-api",
-		Version:        "0.1.0",
-		Port:           8080,
-		GitRepoURL:     "https://github.com/example/" + dash,
-		FrameworkPath:  "../../framework",
-		BackstageOwner: "platform-team",
+		DisplayName:                name,
+		Slug:                       slug,
+		SchemaPrefix:               CamelCase(slug),
+		DashName:                   dash,
+		AppPackage:                 slug + "_api",
+		AppName:                    dash + "-api",
+		AppsNamespace:              dash + "-apps",
+		Image:                      "ghcr.io/example/" + dash + "-api",
+		Version:                    "0.1.0",
+		Port:                       8080,
+		GitRepoURL:                 "https://github.com/example/" + dash,
+		FrameworkPath:              "../../framework",
+		FrameworkVersionConstraint: ">=0.1.0 <1.0.0",
+		FrameworkSupportTier:       "tier-1",
+		BackstageOwner:             "platform-team",
 	}
 }
 

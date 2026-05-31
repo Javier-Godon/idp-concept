@@ -71,6 +71,22 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 	}
 
 	outDir := resolveOutputDir(cfg)
+	if cfg.Spec.FrameworkPath != "" {
+		printInfo(fmt.Sprintf("Framework path: %s", cfg.Spec.FrameworkPath))
+	}
+	printInfo(fmt.Sprintf("Framework source: %s", cfg.Spec.Framework.Source))
+	if cfg.Spec.Framework.Version != "" {
+		printInfo(fmt.Sprintf("Framework version: %s", cfg.Spec.Framework.Version))
+	}
+	if cfg.Spec.Framework.VersionConstraint != "" {
+		printInfo(fmt.Sprintf("Framework version constraint: %s", cfg.Spec.Framework.VersionConstraint))
+	}
+	if cfg.Spec.Framework.SupportTier != "" {
+		printInfo(fmt.Sprintf("Framework support tier: %s", cfg.Spec.Framework.SupportTier))
+	}
+	if len(cfg.Spec.Framework.TestedVersions) > 0 {
+		printInfo(fmt.Sprintf("Framework tested versions: %s", strings.Join(cfg.Spec.Framework.TestedVersions, ", ")))
+	}
 	printInfo(fmt.Sprintf("Default output format: %s", cfg.Spec.DefaultOutput))
 	printInfo(fmt.Sprintf("Output directory: %s", outDir))
 	if cfg.Spec.Output.HelmTemplatesDir != "" {

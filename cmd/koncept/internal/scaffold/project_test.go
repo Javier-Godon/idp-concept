@@ -40,10 +40,27 @@ func TestGenerateWritesAllFiles(t *testing.T) {
 
 	// Key files must exist with the slug-substituted paths.
 	mustExist := []string{
+		"inventory_service/koncept.yaml",
 		"inventory_service/kcl.mod",
 		"inventory_service/core_sources/inventory_service_configurations.k",
 		"inventory_service/modules/appops/inventory_service_api/inventory_service_api_module_def.k",
 		"inventory_service/pre_releases/manifests/dev/factory/render.k",
+	}
+
+	konceptData, err := os.ReadFile(filepath.Join(dest, "inventory_service/koncept.yaml"))
+	if err != nil {
+		t.Fatalf("read generated koncept.yaml: %v", err)
+	}
+	if !strings.Contains(string(konceptData), "versionConstraint: \">=0.1.0 <1.0.0\"") {
+		t.Errorf("generated koncept.yaml missing framework version constraint")
+	}
+
+	stackData, err := os.ReadFile(filepath.Join(dest, "inventory_service/stacks/inventory_service_stack.k"))
+	if err != nil {
+		t.Fatalf("read generated stack: %v", err)
+	}
+	if !strings.Contains(string(stackData), "compatibility = compat.FrameworkCompatibility") {
+		t.Errorf("generated stack missing framework compatibility metadata")
 	}
 	for _, rel := range mustExist {
 		if _, err := os.Stat(filepath.Join(dest, rel)); err != nil {

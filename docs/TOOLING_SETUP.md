@@ -9,16 +9,17 @@
 
 | Tool | Used For | Required? | Version Needed |
 |---|---|---|---|
-| **Nushell** (`nu`) | Runs `koncept` and `koncepttask` CLI scripts | **REQUIRED** | v0.90+ |
-| **KCL** (`kcl`) | Compiles and renders KCL configs; runs tests | **REQUIRED** | v0.11+ |
+| **koncept Go CLI** | Primary scaffold/render/validate/policy interface | **REQUIRED** | Build from `cmd/koncept` until release binaries are published |
+| **Go** (`go`) | Builds the `koncept` CLI from source | Required until release binaries are published | v1.23+ |
+| **KCL** (`kcl`) | Direct KCL troubleshooting; installed in the CI image | Recommended locally | v0.11+ |
+| **Nushell** (`nu`) | Legacy/developer scripts in `platform_cli/` | Optional | v0.90+ |
 | **kubeconform** | Validates rendered K8s manifests against schemas | Recommended | Latest |
 | **Helm** (`helm`) | Lints and templates Helm charts | Recommended | v3+ |
 | **go-task** (`task`) | Task runner used by `koncepttask` | Optional | v3+ |
 | **helmfile** | Manages Helmfile deployments | Optional | v0.169+ |
 | **kubectl** | Interacts with live Kubernetes clusters | Optional | v1.28+ |
 
-> **Currently installed on this machine** (Ubuntu 24.04): KCL, kubeconform, Helm.
-> **Missing**: Nushell, go-task, helmfile.
+> The Go CLI is the default user path. Nushell remains useful for maintaining legacy scripts and `koncepttask`, but product teams should not need it for normal scaffold/render/policy workflows.
 
 For Windows/company laptops, prefer WSL2 + Docker Desktop + kind and see `docs/WINDOWS_LOCAL_SETUP.md` for local footprint and Ceph guidance.
 
@@ -29,14 +30,14 @@ For Windows/company laptops, prefer WSL2 + Docker Desktop + kind and see `docs/W
 Install everything you need for this project without root access, into your user account:
 
 ```bash
-# 1. Nushell — install pre-built binary to ~/.local/bin (no root needed)
+# 1. koncept Go CLI — build until release binaries are published
+# Requires Go on PATH; use your OS package manager, mise, or https://go.dev/doc/install.
+cd cmd/koncept
+make build
 mkdir -p ~/.local/bin
-NU_VERSION="0.104.1"   # update to latest from https://github.com/nushell/nushell/releases
-curl -fsSL "https://github.com/nushell/nushell/releases/download/${NU_VERSION}/nu-${NU_VERSION}-x86_64-unknown-linux-gnu.tar.gz" \
-  | tar -xz --strip-components=1 -C ~/.local/bin "nu-${NU_VERSION}-x86_64-unknown-linux-gnu/nu"
-chmod +x ~/.local/bin/nu
+ln -sf "$(pwd)/bin/koncept" ~/.local/bin/koncept
 
-# 2. KCL — official install script (installs to /usr/local/bin, needs sudo)
+# 2. KCL — useful for direct troubleshooting
 #   OR user-local (no root):
 KCL_VERSION="v0.11.0"  # update to latest from https://github.com/kcl-lang/cli/releases
 mkdir -p ~/.local/bin
@@ -59,7 +60,7 @@ echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
 source ~/.bashrc
 
 # Verify
-nu --version && kcl version && kubeconform -v && task --version
+koncept --version && kcl version && kubeconform -v
 ```
 
 ---
@@ -112,7 +113,24 @@ Install tools for all users on the machine. Requires `sudo`.
 
 ---
 
-## Nushell
+## koncept Go CLI
+
+**Why**: This is the primary supported interface for product teams. It includes project/module/env/release scaffolding, rendering, validation, policy checks, golden drift checks, changelog fragments, dependency diagnostics, and `doctor`.
+
+```bash
+cd /path/to/idp-concept/cmd/koncept
+make build
+mkdir -p ~/.local/bin
+ln -sf "$(pwd)/bin/koncept" ~/.local/bin/koncept
+koncept --version
+koncept completion bash > ~/.local/share/bash-completion/completions/koncept
+```
+
+Release packaging is partially implemented with `make build-all`, `make checksums`, and `make docker`; publishing signed release artifacts is still pending.
+
+---
+
+## Nushell (legacy/developer tooling)
 
 **Why**: The `koncept` and `koncepttask` CLI scripts have `#!/usr/bin/env nu` as their shebang line. Without `nu` on your `PATH`, these scripts cannot run.
 

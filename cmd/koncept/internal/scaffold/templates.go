@@ -10,6 +10,7 @@ type projectFile struct {
 // projectFiles is the ordered set of files written by Generate. Paths are
 // POSIX-style and relative to the project root (destRoot/<slug>).
 var projectFiles = []projectFile{
+	{"koncept_yaml", "koncept.yaml", tplKonceptYaml},
 	{"kcl.mod", "kcl.mod", tplKclMod},
 	{"main.k", "main.k", tplMainK},
 	{"core_configs", "core_sources/{{.Slug}}_configurations.k", tplCoreConfigurations},
@@ -40,6 +41,32 @@ version = "0.1.0"
 [dependencies]
 framework = { path = "{{.FrameworkPath}}" }
 k8s = "1.31.2"
+`
+
+const tplKonceptYaml = `apiVersion: koncept.bluesolution.es/v1
+kind: ProjectConfig
+metadata:
+  name: {{.Slug}}
+  version: "0.1.0"
+spec:
+  frameworkPath: "{{.FrameworkPath}}"
+  framework:
+    source: local
+    version: dev
+    versionConstraint: "{{.FrameworkVersionConstraint}}"
+    supportTier: "{{.FrameworkSupportTier}}"
+    supportWindow: "until next minor framework release"
+    testedVersions:
+      - dev
+  defaultOutput: yaml
+  factory:
+    seedFile: factory_seed.k
+    renderFile: render.k
+  output:
+    defaultDir: output
+  backstage:
+    owner: {{.BackstageOwner}}
+    lifecycle: experimental
 `
 
 const tplMainK = `"""
@@ -135,12 +162,20 @@ Profile-specific folders override only the values that differ.
 """
 
 import framework.models.stack
+import framework.models.compatibility as compat
 import framework.assembly.helpers as asm
 import {{.Slug}}.modules.appops.{{.AppPackage}}.{{.AppPackage}}_module_def as {{.AppPackage}}
 
 schema {{.SchemaPrefix}}Stack(stack.Stack):
     appImage: str = "{{.Image}}"
     appVersion: str = "{{.Version}}"
+    compatibility = compat.FrameworkCompatibility {
+        version = "dev"
+        versionConstraint = "{{.FrameworkVersionConstraint}}"
+        supportTier = "{{.FrameworkSupportTier}}"
+        source = "local"
+        supportWindow = "until next minor framework release"
+    }
 
     _apps_namespace = asm.create_namespace(instanceConfigurations.appsNamespace, instanceConfigurations)
 

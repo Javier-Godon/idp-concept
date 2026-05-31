@@ -15,6 +15,8 @@
 > Update 2026-05-31: added explicit policy exemptions for `koncept policy check` via `--exemptions <file>`. Exemptions are narrow (`rule` + workload target), owned, reasoned, and expiring; invalid, expired, or stale waivers fail the command. New workflow doc: `docs/POLICY_EXEMPTIONS.md`.
 >
 > Update 2026-05-31 (changelog workflow): added `koncept changelog new|check|render` for framework/platform release-note fragments under `.changes/unreleased/`. Fragments use Keep-a-Changelog categories and require owner metadata; CI validates fragments so release intent is reviewed with code. New workflow doc: `docs/CHANGELOG_WORKFLOW.md`.
+>
+> Update 2026-05-31 (framework compatibility): started Phase D with descriptive framework compatibility metadata before remote package publishing. `framework.models.compatibility.FrameworkCompatibility` can now be attached to `Stack`, `StackInstance`, and `Release`; `koncept init project` emits `koncept.yaml` plus stack compatibility metadata; and `koncept doctor` prints framework source/version constraints/support tier/tested versions. New workflow doc: `docs/FRAMEWORK_VERSIONING.md`.
 
 ---
 
@@ -405,16 +407,18 @@ The previous roadmap emphasized many future phases. Given the current state, the
 ### Deliverables
 
 - [ ] Define semantic versioning rules for `framework/`.
-- [ ] Add framework compatibility metadata to stacks/releases.
+- [x] Add framework compatibility metadata to stacks/releases.
 - [ ] Publish framework packages as versioned OCI artifacts or a clearly tagged KCL module distribution.
 - [ ] Provide migration docs from local path dependencies to version-pinned dependencies.
 - [x] Add `koncept deps` output suitable for troubleshooting module resolution.
-- [ ] Define support windows and deprecation policy for templates and output procedures.
+- [x] Define support windows and deprecation policy for templates and output procedures.
 
 ### Success criteria
 
 - Product A can stay on framework version `x.y.z` while Product B upgrades.
 - Framework breaking changes have a documented migration path.
+
+**Implementation learning (2026-05-31, framework compatibility):** the first safe step toward multi-repo readiness is a visible compatibility contract, not immediate OCI/package publishing. Generated projects now carry framework expectations in both `koncept.yaml` (for CLI/project diagnostics) and KCL stack metadata (for render-time/platform review context). The metadata remains optional and descriptive because existing projects still use local path dependencies and no authoritative remote version source exists yet. This matches the same secure rollout pattern used for policy exemptions: expose intent, make drift reviewable, then add enforcement only after real projects have pinned versions and migration docs.
 
 ---
 

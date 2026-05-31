@@ -8,28 +8,29 @@
 
 | Tool | Purpose | Required | Install |
 |---|---|---|---|
-| [Nushell](https://www.nushell.sh/book/installation.html) (`nu`) | Runs `koncept` CLI scripts | **Yes** | See [TOOLING_SETUP.md](./TOOLING_SETUP.md#nushell) |
-| [KCL](https://www.kcl-lang.io/docs/user_docs/getting-started/install) (`kcl`) | Renders and tests KCL configs | **Yes** | See [TOOLING_SETUP.md](./TOOLING_SETUP.md#kcl) |
+| `koncept` Go CLI | Primary developer interface for scaffold/render/validate/policy workflows | **Yes** | See [TOOLING_SETUP.md](./TOOLING_SETUP.md#koncept-go-cli) |
+| [KCL](https://www.kcl-lang.io/docs/user_docs/getting-started/install) (`kcl`) | Direct KCL troubleshooting and local test runs | Recommended | See [TOOLING_SETUP.md](./TOOLING_SETUP.md#kcl) |
+| [Nushell](https://www.nushell.sh/book/installation.html) (`nu`) | Legacy/developer scripts in `platform_cli/` | Optional | See [TOOLING_SETUP.md](./TOOLING_SETUP.md#nushell-legacydeveloper-tooling) |
 | [kubeconform](https://github.com/yannh/kubeconform) | Validates K8s manifests | Recommended | See [TOOLING_SETUP.md](./TOOLING_SETUP.md#kubeconform) |
 | [Helm](https://helm.sh/docs/intro/install/) | Lints Helm chart output | Optional | See [TOOLING_SETUP.md](./TOOLING_SETUP.md#helm) |
 
 ## Quick Commands
 
 ```bash
-# Navigate to your environment directory
-cd projects/<project>/pre_releases/manifests/<env>/
+# Navigate to your project root and pass the factory path
+cd projects/<project>/
 
 # Validate configuration (catches errors before rendering)
-koncept validate
+koncept validate --factory pre_releases/manifests/<env>/factory
 
 # Render manifests (pick the format your team uses)
-koncept render argocd          # Plain K8s YAML for GitOps deployment
-koncept render helmfile        # Helm charts + helmfile.yaml
-koncept render kusion          # Kusion spec
-koncept render kustomize       # Kustomize base with kustomization.yaml
-koncept render timoni          # CUE-based Timoni bundle
-koncept render crossplane      # Crossplane managed resources
-koncept render backstage       # Backstage catalog entities
+koncept render argocd --factory pre_releases/manifests/<env>/factory      # Tier 1 GitOps YAML
+koncept render helmfile --factory pre_releases/manifests/<env>/factory    # Tier 1 Helmfile
+koncept render backstage --factory pre_releases/manifests/<env>/factory   # Tier 1 catalog metadata
+koncept render kusion --factory pre_releases/manifests/<env>/factory      # Compatibility path
+koncept render kustomize --factory pre_releases/manifests/<env>/factory   # Compatibility path
+koncept render timoni --factory pre_releases/manifests/<env>/factory      # Experimental path
+koncept render crossplane --factory pre_releases/manifests/<env>/factory  # Platform-team path
 
 # Navigate to a production release
 cd projects/<project>/releases/<version>/
@@ -79,6 +80,7 @@ As a developer, you interact with **site** and **tenant** configuration files:
 - `framework/` — Core platform schemas (contact platform engineers)
 - `modules/` — Module definitions (contact platform engineers)
 - `render.k` — Generic renderer (auto-managed)
+- `koncept.yaml` — Project CLI/framework metadata; update through platform-approved versioning changes
 
 ## Available Infrastructure Services
 
@@ -155,6 +157,8 @@ koncept render backstage
 ```
 
 > **All 9 formats** are rendered from the same KCL source — change one config, re-render any format.
+
+For framework compatibility metadata and support windows, see [FRAMEWORK_VERSIONING.md](./FRAMEWORK_VERSIONING.md).
 
 ## Validation
 

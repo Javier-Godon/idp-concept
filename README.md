@@ -213,6 +213,7 @@ See [projects/erp_back/](projects/erp_back/) for the template approach and [proj
 | [DEVELOPER_GUIDE](docs/DEVELOPER_GUIDE.md) | Platform engineers | How to extend the framework |
 | [TESTING_STRATEGY](docs/TESTING_STRATEGY.md) | Contributors | Testing patterns and conventions |
 | [VERIFICATION_MATRIX](docs/VERIFICATION_MATRIX.md) | Contributors | Canonical lint/test/render verification workflow |
+| [FRAMEWORK_VERSIONING](docs/FRAMEWORK_VERSIONING.md) | Platform engineers | Framework compatibility metadata, support tiers, deprecation policy |
 | [TOOLING_SETUP](docs/TOOLING_SETUP.md) | All | Installation and environment setup |
 | [SECURITY](docs/SECURITY.md) | All | Security policy and approved tools |
 | [PLATFORM_COMPARISON](docs/PLATFORM_COMPARISON_AND_KCL_ANALYSIS.md) | Platform engineers | KCL vs Go, k0rdent/Fleet patterns |

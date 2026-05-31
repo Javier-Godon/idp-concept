@@ -3,6 +3,7 @@ Core IDP metadata model tests.
 """
 import runtime
 import models.metadata as meta
+import models.compatibility as compat
 import models.project as project
 import models.tenant as tenant
 import models.profile as profile
@@ -156,4 +157,33 @@ test_stack_metadata_instance = lambda {
     assert _stack.instance.metadata.tags[0] == "blue-green"
 }
 
+# === Test: Stack compatibility is copied to instance ===
+test_stack_compatibility_instance = lambda {
+    _component = component.Component {
+        name = "api"
+        kind = "APPLICATION"
+        namespace = "apps"
+        configurations = _empty_config
+        asset = component.ComponentAsset {
+            image = "example/api"
+            version = "1.0.0"
+        }
+        leaders = []
+        manifests = []
+        dependsOn = []
+    }.instance
+
+    _stack = stack.Stack {
+        instanceConfigurations = _empty_config
+        compatibility = compat.FrameworkCompatibility {
+            version = "0.2.0"
+            versionConstraint = ">=0.2.0 <0.3.0"
+            supportTier = "tier-1"
+        }
+        components = [_component]
+    }
+
+    assert _stack.instance.compatibility.version == "0.2.0"
+    assert _stack.instance.compatibility.supportTier == "tier-1"
+}
 

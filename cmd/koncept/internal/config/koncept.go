@@ -21,11 +21,21 @@ type ProjectMetadata struct {
 
 type ProjectSpec struct {
 	FrameworkPath string           `yaml:"frameworkPath"`
+	Framework     FrameworkConfig  `yaml:"framework"`
 	DefaultOutput string           `yaml:"defaultOutput"`
 	Factory       FactoryConfig    `yaml:"factory"`
 	Validation    ValidationConfig `yaml:"validation"`
 	Output        OutputConfig     `yaml:"output"`
 	Backstage     BackstageConfig  `yaml:"backstage"`
+}
+
+type FrameworkConfig struct {
+	Source            string   `yaml:"source"`
+	Version           string   `yaml:"version"`
+	VersionConstraint string   `yaml:"versionConstraint"`
+	SupportTier       string   `yaml:"supportTier"`
+	SupportWindow     string   `yaml:"supportWindow"`
+	TestedVersions    []string `yaml:"testedVersions"`
 }
 
 type FactoryConfig struct {
@@ -80,6 +90,9 @@ func Load(dir string) *ProjectConfig {
 	if cfg.Spec.DefaultOutput == "" {
 		cfg.Spec.DefaultOutput = "yaml"
 	}
+	if cfg.Spec.Framework.Source == "" {
+		cfg.Spec.Framework.Source = "local"
+	}
 	return cfg
 }
 
@@ -88,6 +101,9 @@ func defaults() *ProjectConfig {
 		APIVersion: "koncept.bluesolution.es/v1",
 		Kind:       "ProjectConfig",
 		Spec: ProjectSpec{
+			Framework: FrameworkConfig{
+				Source: "local",
+			},
 			DefaultOutput: "yaml",
 			Factory: FactoryConfig{
 				SeedFile:   "factory_seed.k",
