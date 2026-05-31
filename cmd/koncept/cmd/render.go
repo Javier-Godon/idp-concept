@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"path/filepath"
+	"time"
 
 	"github.com/idp-concept/koncept/internal/config"
 	"github.com/idp-concept/koncept/internal/factory"
@@ -31,6 +32,13 @@ func runRender(cmd *cobra.Command, args []string) error {
 		format = args[0]
 	}
 
+	start := time.Now()
+	err := renderFormat(cfg, format)
+	recorder().Record("render", format, time.Since(start), err)
+	return err
+}
+
+func renderFormat(cfg *config.ProjectConfig, format string) error {
 	if !factory.HasRenderK(factoryDir) {
 		return fmt.Errorf("render.k not found in %s — run 'koncept init' first", factoryDir)
 	}

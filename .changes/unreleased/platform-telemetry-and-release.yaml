@@ -1,0 +1,4 @@
+type: added
+summary: Add opt-in local CLI telemetry (koncept metrics), release/runtime CI workflows, and output support tiers
+owner: platform-team
+issue: IDP-EVOLUTION

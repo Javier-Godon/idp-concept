@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/idp-concept/koncept/internal/config"
 	"github.com/idp-concept/koncept/internal/factory"
@@ -20,8 +21,11 @@ func runValidate(cmd *cobra.Command, args []string) error {
 
 	fmt.Println("[Validate] Checking factory configuration...")
 
+	start := time.Now()
 	seedFile := cfg.Spec.Factory.SeedFile
-	if err := factory.Validate(factoryDir, seedFile); err != nil {
+	err := factory.Validate(factoryDir, seedFile)
+	recorder().Record("validate", "", time.Since(start), err)
+	if err != nil {
 		printError(fmt.Sprintf("Validation failed:\n%v", err))
 		return err
 	}

@@ -46,3 +46,5 @@ Start here if you design framework internals — builders, templates, procedures
 |---|---|
 | [SECURITY.md](SECURITY.md) | Security policy — approved tools, MCP fetch safety, trusted domains |
 | [STORAGE_POLICY_PATTERNS.md](STORAGE_POLICY_PATTERNS.md) | Environment storage policy baseline (local-path, Ceph, Longhorn) |
+| [OPERATING_MODEL.md](OPERATING_MODEL.md) | Roles, change categories, and approval paths for platform/app/env changes |
+| [PLATFORM_METRICS.md](PLATFORM_METRICS.md) | Opt-in local CLI telemetry — enabling, storage, and aggregation |

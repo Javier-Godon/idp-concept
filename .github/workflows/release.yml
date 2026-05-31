@@ -1,0 +1,92 @@
+name: Release koncept
+
+# Phase A of the IDP Evolution Plan: ship the Go CLI as the primary, packaged
+# interface. On a version tag this builds cross-platform binaries with
+# checksums, publishes them on the GitHub Release, and pushes a pinned CI
+# container image (kcl toolchain bundled) to GHCR.
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Version to build (e.g. v1.0.0). Binaries only; no publish."
+        required: false
+        default: "dev"
+
+permissions:
+  contents: write
+  packages: write
+
+env:
+  IMAGE_NAME: ghcr.io/${{ github.repository }}/koncept
+
+jobs:
+  binaries:
+    name: Build binaries and checksums
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: cmd/koncept/go.mod
+
+      - name: Cross-compile and checksum
+        working-directory: cmd/koncept
+        run: make checksums
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: koncept-binaries
+          path: |
+            cmd/koncept/bin/koncept-*
+            cmd/koncept/bin/SHA256SUMS
+
+      - name: Publish GitHub Release assets
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            cmd/koncept/bin/koncept-*
+            cmd/koncept/bin/SHA256SUMS
+
+  image:
+    name: Build and push container image
+    runs-on: ubuntu-latest
+    needs: binaries
+    if: startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Derive image tags
+        id: meta
+        run: |
+          set -euo pipefail
+          VERSION="${GITHUB_REF_NAME}"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: cmd/koncept/Dockerfile
+          push: true
+          build-args: |
+            VERSION=${{ steps.meta.outputs.version }}
+          tags: |
+            ${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.version }}
+            ${{ env.IMAGE_NAME }}:latest

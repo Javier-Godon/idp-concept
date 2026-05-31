@@ -3,15 +3,25 @@ package cmd
 import (
 	"fmt"
 
+	"github.com/idp-concept/koncept/internal/metrics"
 	"github.com/spf13/cobra"
 )
 
 var (
-	version    = "dev"
-	buildTime  = "unknown"
-	factoryDir string
-	outputDir  string
+	version       = "dev"
+	buildTime     = "unknown"
+	factoryDir    string
+	outputDir     string
+	metricsEnable bool
+	metricsFile   string
 )
+
+// recorder returns a metrics recorder honoring the --metrics flag and the
+// KONCEPT_METRICS env var. Telemetry is local-only and opt-in.
+func recorder() *metrics.Recorder {
+	enabled := metricsEnable || metrics.EnabledFromEnv()
+	return metrics.NewRecorder(enabled, metricsFile, version)
+}
 
 var rootCmd = &cobra.Command{
 	Use:   "koncept",
@@ -34,6 +44,8 @@ func Execute() error {
 func init() {
 	rootCmd.PersistentFlags().StringVar(&factoryDir, "factory", "factory", "factory directory path")
 	rootCmd.PersistentFlags().StringVar(&outputDir, "output", "", "output directory path")
+	rootCmd.PersistentFlags().BoolVar(&metricsEnable, "metrics", false, "record opt-in local telemetry (also enabled by KONCEPT_METRICS=1)")
+	rootCmd.PersistentFlags().StringVar(&metricsFile, "metrics-file", "", "telemetry JSONL path (default: user config dir or KONCEPT_METRICS_FILE)")
 
 	rootCmd.AddCommand(renderCmd)
 	rootCmd.AddCommand(validateCmd)
@@ -49,6 +61,7 @@ func init() {
 	rootCmd.AddCommand(completionCmd)
 	rootCmd.AddCommand(policyCmd)
 	rootCmd.AddCommand(changelogCmd)
+	rootCmd.AddCommand(metricsCmd)
 }
 
 func printSuccess(msg string) {

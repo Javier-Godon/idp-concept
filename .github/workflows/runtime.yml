@@ -1,0 +1,79 @@
+name: Runtime Acceptance (opt-in)
+
+# Phase E of the IDP Evolution Plan: prove that selected templates actually
+# reconcile in a real cluster, not only that they render. This is intentionally
+# kept OUT of the fast PR gate (validate.yml) and runs on a nightly schedule or
+# on manual dispatch so the default developer loop stays fast.
+
+on:
+  schedule:
+    # Nightly at 02:30 UTC.
+    - cron: "30 2 * * *"
+  workflow_dispatch:
+    inputs:
+      group:
+        description: "Runtime group to execute (see scripts/acceptance_runtime.sh)"
+        required: true
+        default: "runtime-rollouts"
+        type: choice
+        options:
+          - runtime-basic
+          - runtime-rollouts
+          - runtime-webapp-stacks
+          - runtime-cnpg
+          - runtime-kafka
+          - runtime-mongodb
+          - runtime-rabbitmq
+          - runtime-redis
+          - runtime-keycloak-postgresql
+          - runtime-opensearch
+      install_dependencies:
+        description: "Install pinned operators/controllers before apply"
+        required: false
+        default: "false"
+        type: boolean
+
+permissions:
+  contents: read
+
+env:
+  KCL_VERSION: "0.10.0"
+  KIND_VERSION: "v0.24.0"
+  KIND_NODE_IMAGE: "kindest/node:v1.33.0"
+
+jobs:
+  runtime:
+    name: Real kind apply + readiness
+    runs-on: ubuntu-latest
+    # Runtime jobs are heavy; never let one hang the schedule.
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install KCL
+        uses: kcl-lang/setup-kcl@v0.2.1
+        with:
+          kcl-version: ${{ env.KCL_VERSION }}
+
+      - name: Install kind
+        run: |
+          set -euo pipefail
+          curl -fsSLo /usr/local/bin/kind \
+            "https://github.com/kubernetes-sigs/kind/releases/download/${KIND_VERSION}/kind-linux-amd64"
+          chmod +x /usr/local/bin/kind
+          kind version
+
+      - name: Verify kubectl
+        run: kubectl version --client=true
+
+      - name: Run runtime acceptance
+        env:
+          RUNTIME_GROUP: ${{ github.event.inputs.group || 'runtime-rollouts' }}
+          INSTALL_DEPS: ${{ github.event.inputs.install_dependencies || 'false' }}
+        run: |
+          set -euo pipefail
+          ARGS=(--case "$RUNTIME_GROUP" --kind-image "$KIND_NODE_IMAGE")
+          if [[ "$INSTALL_DEPS" == "true" ]]; then
+            ARGS+=(--install-dependencies)
+          fi
+          ./scripts/acceptance_runtime.sh "${ARGS[@]}"

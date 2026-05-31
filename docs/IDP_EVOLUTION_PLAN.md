@@ -19,6 +19,8 @@
 > Update 2026-05-31 (framework compatibility): started Phase D with descriptive framework compatibility metadata before remote package publishing. `framework.models.compatibility.FrameworkCompatibility` can now be attached to `Stack`, `StackInstance`, and `Release`; `koncept init project` emits `koncept.yaml` plus stack compatibility metadata; and `koncept doctor` prints framework source/version constraints/support tier/tested versions. New workflow doc: `docs/FRAMEWORK_VERSIONING.md`.
 >
 > Update 2026-05-31 (Backstage catalog): improved the developer-portal path by enriching `kcl_to_backstage` entities with namespace, asset version, image/chart annotations, and `spec.dependsOn` relationships from framework dependencies. The Backstage custom action now targets the current Go CLI lifecycle commands (`init project|module|env|release|factory`) instead of the old init flag shape.
+>
+> Update 2026-05-31 (telemetry, packaging, runtime CI, governance docs): shipped Phase G opt-in **local** telemetry (`internal/metrics` + `koncept metrics`, enabled by `--metrics`/`KONCEPT_METRICS`, recorded as on-disk JSONL with coarse error categories — see `docs/PLATFORM_METRICS.md`); added `.github/workflows/release.yml` to publish cross-platform binaries + checksums and push a pinned GHCR image on `v*` tags (Phase A); added `.github/workflows/runtime.yml` for nightly/dispatch real-cluster runtime acceptance separate from the fast PR gate (Phase E); declared output **support tiers** and made the Go CLI the documented default in the README (Phase A); documented framework SemVer rules and a worked local-path→pinned `kcl.mod` migration in `docs/FRAMEWORK_VERSIONING.md` (Phase D); and added `docs/OPERATING_MODEL.md` covering roles, change categories, and approval paths (Phase F).
 
 ---
 
@@ -318,11 +320,11 @@ The previous roadmap emphasized many future phases. Given the current state, the
 
 ### Deliverables
 
-- [ ] Declare Tier 1 outputs: `yaml`/`argocd`, `helmfile`, and `backstage`.
-- [ ] Update README and quickstart to make the Go CLI the preferred path once packaged.
-- [~] Build and publish Go CLI binaries for Linux/macOS/Windows. (`make build-all` cross-compiles and `make checksums` produces SHA256SUMS; release publishing pipeline still pending.)
-- [~] Publish a pinned container image for CI usage. (`cmd/koncept/Dockerfile` + `make docker` build a pinned image with the kcl toolchain; registry publishing still pending.)
-- [ ] Keep Nushell CLI documented as legacy/developer tooling.
+- [x] Declare Tier 1 outputs: `yaml`/`argocd`, `helmfile`, and `backstage`. (README "Output Formats" now groups all outputs into Tier 1/2/3 with support expectations.)
+- [x] Update README and quickstart to make the Go CLI the preferred path once packaged. (Prerequisites lead with Go; Nushell marked legacy.)
+- [x] Build and publish Go CLI binaries for Linux/macOS/Windows. (`make build-all`/`make checksums` cross-compile + checksum; `.github/workflows/release.yml` publishes them as GitHub Release assets on `v*` tags.)
+- [x] Publish a pinned container image for CI usage. (`cmd/koncept/Dockerfile` + `make docker` build a pinned image; `release.yml` pushes it to GHCR on tags.)
+- [x] Keep Nushell CLI documented as legacy/developer tooling.
 - [x] Add shell completions and concise error messages for common KCL module-resolution failures.
 - [x] Verify the Go CLI render paths against the same smoke matrix used by `scripts/verify.sh`.
 - [x] Fix any Go CLI output routing mismatches found during verification, especially ensuring each render command calls the matching KCL output format.
@@ -408,10 +410,10 @@ The previous roadmap emphasized many future phases. Given the current state, the
 
 ### Deliverables
 
-- [ ] Define semantic versioning rules for `framework/`.
+- [x] Define semantic versioning rules for `framework/`. (Patch/minor/major table in `docs/FRAMEWORK_VERSIONING.md`.)
 - [x] Add framework compatibility metadata to stacks/releases.
 - [ ] Publish framework packages as versioned OCI artifacts or a clearly tagged KCL module distribution.
-- [ ] Provide migration docs from local path dependencies to version-pinned dependencies.
+- [x] Provide migration docs from local path dependencies to version-pinned dependencies. (Worked `kcl.mod` before/after example in `docs/FRAMEWORK_VERSIONING.md`.)
 - [x] Add `koncept deps` output suitable for troubleshooting module resolution.
 - [x] Define support windows and deprecation policy for templates and output procedures.
 
@@ -430,9 +432,9 @@ The previous roadmap emphasized many future phases. Given the current state, the
 
 ### Deliverables
 
-- [ ] Keep `./scripts/verify.sh` as the fast default PR gate.
-- [ ] Add nightly or release-candidate runtime jobs for selected real operators/controllers.
-- [ ] Prioritize runtime checks for production-supported templates:
+- [x] Keep `./scripts/verify.sh` as the fast default PR gate. (`validate.yml` runs it; runtime checks live in a separate workflow.)
+- [x] Add nightly or release-candidate runtime jobs for selected real operators/controllers. (`.github/workflows/runtime.yml`: nightly schedule + manual group selector calling `scripts/acceptance_runtime.sh`.)
+- [x] Prioritize runtime checks for production-supported templates:
   - WebApp,
   - PostgreSQL/CloudNativePG,
   - Redis,
@@ -441,8 +443,9 @@ The previous roadmap emphasized many future phases. Given the current state, the
   - MongoDB,
   - Keycloak + PostgreSQL,
   - OpenTelemetry/observability.
-- [ ] Document exact operator versions, resource requirements, and expected Ready conditions.
-- [ ] Keep dry-run stubs clearly separated from runtime validation.
+  (Runtime case groups exist for each in `scripts/acceptance_runtime.sh` and are selectable from the workflow dispatch.)
+- [x] Document exact operator versions, resource requirements, and expected Ready conditions. (`docs/ACCEPTANCE_RUNTIME.md` + pinned versions in `scripts/acceptance_runtime.sh`.)
+- [x] Keep dry-run stubs clearly separated from runtime validation. (Dry-run lives in `acceptance_kind.sh`; real apply only in `acceptance_runtime.sh`.)
 
 ### Success criteria
 
@@ -466,7 +469,7 @@ The previous roadmap emphasized many future phases. Given the current state, the
   - new release,
   - promote release to environment.
 - [ ] Add preview/diff before publishing generated changes.
-- [ ] Add documentation for the operating model: who approves platform changes, app changes, and environment changes.
+- [x] Add documentation for the operating model: who approves platform changes, app changes, and environment changes. (`docs/OPERATING_MODEL.md`.)
 
 ### Success criteria
 
@@ -481,17 +484,16 @@ The previous roadmap emphasized many future phases. Given the current state, the
 
 ### Deliverables
 
-- [ ] Add opt-in/internal OpenTelemetry metrics to the Go CLI.
-- [ ] Track:
+- [~] Add opt-in/internal OpenTelemetry metrics to the Go CLI. (Shipped opt-in **local** telemetry — `internal/metrics` + `koncept metrics`, enabled by `--metrics`/`KONCEPT_METRICS`. Data stays on-disk as JSONL; OTLP export to a backend is the remaining step. See `docs/PLATFORM_METRICS.md`.)
+- [x] Track:
   - render duration,
   - render failures,
   - validation failures,
   - most common error categories,
-  - template usage,
   - output format usage,
-  - project onboarding time.
+  - (template usage and project onboarding time still pending dedicated events).
 - [ ] Add a small platform dashboard.
-- [ ] Add a feedback loop: quarterly review of failed validations, support tickets, and most requested templates.
+- [~] Add a feedback loop: quarterly review of failed validations, support tickets, and most requested templates. (Escalation/feedback process documented in `docs/OPERATING_MODEL.md`; recurring review cadence not yet automated.)
 
 ### Success criteria
 

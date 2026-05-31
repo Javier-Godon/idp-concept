@@ -12,17 +12,23 @@ Teams get locked into specific tools (Helm, Kustomize, etc.). When requirements 
 
 ## Output Formats
 
-| Format | Command | Use Case |
-|---|---|---|
-| **ArgoCD** | `koncept render argocd` | Plain YAML for GitOps deployment |
-| **Helm** | `koncept render helm` | Standard Helm charts |
-| **Helmfile** | `koncept render helmfile` | Helm charts + helmfile.yaml |
-| **Kusion** | `koncept render kusion` | Kusion spec with dependency ordering |
-| **Kustomize** | `koncept render kustomize` | Kustomize bases |
-| **Timoni** | `koncept render timoni` | CUE-based Timoni bundles |
-| **Crossplane** | `koncept render crossplane` | Crossplane managed resources |
-| **Backstage** | `koncept render backstage` | Backstage catalog entities |
-| **YAML** | `koncept render yaml` | Raw multi-document YAML |
+Outputs are organized into **support tiers** so teams know what is production-supported
+versus experimental (see the [evolution plan](docs/IDP_EVOLUTION_PLAN.md#51-output-format-sprawl)):
+
+| Tier | Format | Command | Use Case |
+|---|---|---|---|
+| **Tier 1** | **ArgoCD/YAML** | `koncept render argocd` / `koncept render yaml` | Plain YAML for GitOps deployment — company default |
+| **Tier 1** | **Helmfile** | `koncept render helmfile` | Helm charts + helmfile.yaml |
+| **Tier 1** | **Backstage** | `koncept render backstage` | Backstage catalog entities |
+| **Tier 2** | **Helm** | `koncept render helm` | Standard Helm charts |
+| **Tier 2** | **Kustomize** | `koncept render kustomize` | Kustomize bases |
+| **Tier 2** | **Crossplane** | `koncept render crossplane` | Crossplane managed resources |
+| **Tier 3** | **Timoni** | `koncept render timoni` | CUE-based Timoni bundles (experimental) |
+| **Tier 3** | **Kusion** | `koncept render kusion` | Kusion spec with dependency ordering (experimental) |
+
+**Tier 1** outputs are fully tested and documented for company usage. **Tier 2** are
+maintained for platform/infrastructure teams. **Tier 3** are experimental unless adopted
+by a real product team.
 
 ## How It Works
 
@@ -51,8 +57,9 @@ Teams get locked into specific tools (Helm, Kustomize, etc.). When requirements 
 
 | Tool | Purpose | Install |
 |---|---|---|
-| [Nushell](https://www.nushell.sh/) (`nu`) | Runs `koncept` CLI | [TOOLING_SETUP.md](docs/TOOLING_SETUP.md#nushell) |
+| [Go](https://go.dev/) | Builds the preferred `koncept` CLI | [TOOLING_SETUP.md](docs/TOOLING_SETUP.md) |
 | [KCL](https://www.kcl-lang.io/) (`kcl`) | Renders configurations | [TOOLING_SETUP.md](docs/TOOLING_SETUP.md#kcl) |
+| [Nushell](https://www.nushell.sh/) (`nu`) | Legacy/developer CLI only | [TOOLING_SETUP.md](docs/TOOLING_SETUP.md#nushell) |
 
 ### 2. Set Up the CLI
 
@@ -121,6 +128,7 @@ koncept doctor            # dependency, version, path, and factory checks
 koncept golden check      # detect render drift against committed golden files
 koncept changelog check   # validate release-note fragments in .changes/unreleased
 koncept deps              # troubleshoot KCL module resolution
+koncept metrics           # summarize opt-in local telemetry (enable with --metrics)
 ```
 
 ### 5. Run Tests
@@ -214,6 +222,8 @@ See [projects/erp_back/](projects/erp_back/) for the template approach and [proj
 | [TESTING_STRATEGY](docs/TESTING_STRATEGY.md) | Contributors | Testing patterns and conventions |
 | [VERIFICATION_MATRIX](docs/VERIFICATION_MATRIX.md) | Contributors | Canonical lint/test/render verification workflow |
 | [FRAMEWORK_VERSIONING](docs/FRAMEWORK_VERSIONING.md) | Platform engineers | Framework compatibility metadata, support tiers, deprecation policy |
+| [OPERATING_MODEL](docs/OPERATING_MODEL.md) | All | Roles, change categories, and approval paths |
+| [PLATFORM_METRICS](docs/PLATFORM_METRICS.md) | Platform engineers | Opt-in local CLI telemetry and aggregation |
 | [TOOLING_SETUP](docs/TOOLING_SETUP.md) | All | Installation and environment setup |
 | [SECURITY](docs/SECURITY.md) | All | Security policy and approved tools |
 | [PLATFORM_COMPARISON](docs/PLATFORM_COMPARISON_AND_KCL_ANALYSIS.md) | Platform engineers | KCL vs Go, k0rdent/Fleet patterns |

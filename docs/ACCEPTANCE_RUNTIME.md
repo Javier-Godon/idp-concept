@@ -178,3 +178,19 @@ Nightly or release validation, still one case at a time:
 ./scripts/acceptance_runtime.sh --case runtime-all --install-dependencies
 ```
 
+
+## CI: scheduled runtime workflow
+
+Runtime acceptance runs outside the fast PR gate so the default developer loop
+stays fast. `.github/workflows/runtime.yml` provides:
+
+- a **nightly schedule** (02:30 UTC) that runs the `runtime-rollouts` group on a
+  disposable kind cluster, and
+- a **manual `workflow_dispatch`** with a `group` selector (e.g. `runtime-cnpg`,
+  `runtime-kafka`, `runtime-keycloak-postgresql`) and an `install_dependencies`
+  toggle for cases that need pinned operators/controllers.
+
+The workflow installs a pinned `kind` and the pinned KCL toolchain, then calls
+`./scripts/acceptance_runtime.sh --case <group>`. Because it performs real
+`kubectl apply` plus rollout/Ready waits, it is kept separate from the dry-run
+matrix in `validate.yml` and never gates ordinary pull requests.

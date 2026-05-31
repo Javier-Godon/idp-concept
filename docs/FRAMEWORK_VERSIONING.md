@@ -82,3 +82,47 @@ When framework publishing is ready, projects should move in stages:
 4. Extend CI to run `koncept doctor`, golden checks, and policy checks against the pinned version.
 5. Migrate product projects one by one instead of changing every project at once.
 
+### Worked example: local path → pinned dependency
+
+A project consuming the framework from a local path declares it in its `kcl.mod`:
+
+```toml
+# projects/erp_back/kcl.mod (before — local path)
+[dependencies]
+framework = { path = "../../framework" }
+```
+
+Once the framework is published as a tagged OCI/registry artifact, the same
+project pins a version instead:
+
+```toml
+# projects/erp_back/kcl.mod (after — version-pinned)
+[dependencies]
+framework = "1.2.0"
+# or, explicitly via OCI:
+# framework = { oci = "oci://ghcr.io/your-org/idp-framework", tag = "1.2.0" }
+```
+
+Migration steps for one project:
+
+```bash
+# 1. Record the framework version the project is tested against.
+#    Update koncept.yaml spec.framework.version + testedVersions and the
+#    stack-level compat.FrameworkCompatibility metadata to the target tag.
+
+# 2. Repoint kcl.mod from the local path to the pinned artifact (as above).
+
+# 3. Prove the pinned version still renders identically and passes governance.
+koncept doctor --factory <factory-dir>
+koncept golden check --factory <factory-dir>
+koncept policy check --factory <factory-dir>
+./scripts/verify.sh
+
+# 4. Only after the reference project is green, repeat for the next project.
+```
+
+Because the import roots and schema paths are unchanged, only `kcl.mod` and the
+compatibility metadata change — KCL source files keep importing
+`framework.templates.*` exactly as before. This is what lets Product A stay on
+`1.2.0` while Product B moves to `1.3.0` without a coordinated big-bang upgrade.
+
