@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webapp-api
+  namespace: webapp-apps
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: webapp-api
+  template:
+    metadata:
+      labels:
+        app: webapp-api
+    spec:
+      containers:
+      - env:
+        - name: APP_PROFILE
+          value: default
+        image: ghcr.io/example/webapp-api:0.1.0
+        imagePullPolicy: IfNotPresent
+        livenessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /healthz
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 10
+        name: webapp-api
+        ports:
+        - containerPort: 8080
+        readinessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /readyz
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          successThreshold: 1
+          timeoutSeconds: 10
+        resources:
+          limits:
+            cpu: '1'
+            memory: 512Mi
+          requests:
+            cpu: 100m
+            memory: 256Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: webapp-api
+  namespace: webapp-apps
+spec:
+  ports:
+  - port: 8080
+  selector:
+    app: webapp-api
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: webapp-apps

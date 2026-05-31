@@ -62,6 +62,16 @@ func TestGenerateWritesAllFiles(t *testing.T) {
 	if !strings.Contains(string(stackData), "compatibility = compat.FrameworkCompatibility") {
 		t.Errorf("generated stack missing framework compatibility metadata")
 	}
+	for _, marker := range []string{
+		"# koncept:imports:end",
+		"# koncept:modules:end",
+		"# koncept:components",
+		"# koncept:accessories",
+	} {
+		if !strings.Contains(string(stackData), marker) {
+			t.Errorf("generated stack missing wire marker %q (breaks 'init module --wire')", marker)
+		}
+	}
 	for _, rel := range mustExist {
 		if _, err := os.Stat(filepath.Join(dest, rel)); err != nil {
 			t.Errorf("expected file %s: %v", rel, err)

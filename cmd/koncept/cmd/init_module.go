@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/idp-concept/koncept/internal/scaffold"
@@ -15,6 +16,7 @@ var (
 	initModuleVersion string
 	initModulePort    int
 	initModuleStorage string
+	initModuleWire    bool
 )
 
 var initModuleCmd = &cobra.Command{
@@ -79,6 +81,27 @@ func runInitModule(cmd *cobra.Command, args []string) error {
 	}
 	printSuccess(fmt.Sprintf("Created %s", createdPath))
 
+	if initModuleWire {
+		stackPath := filepath.Join(projectRoot, "stacks", slug+"_stack.k")
+		if err := scaffold.WireModule(spec, stackPath); err != nil {
+			printError(fmt.Sprintf("Auto-wire skipped: %v", err))
+			fmt.Println()
+			fmt.Println("Wire it manually into your stack (e.g. stacks/<project>_stack.k):")
+			fmt.Println()
+			for _, line := range strings.Split(strings.TrimRight(wiring, "\n"), "\n") {
+				fmt.Printf("    %s\n", line)
+			}
+			return err
+		}
+		printSuccess(fmt.Sprintf("Wired %s into %s", spec.Package, stackPath))
+		fmt.Println()
+		fmt.Println("Re-render and validate:")
+		fmt.Println("  koncept validate")
+		fmt.Println("  koncept render argocd")
+		fmt.Println("  koncept policy check")
+		return nil
+	}
+
 	fmt.Println()
 	fmt.Println("Wire it into your stack (e.g. stacks/<project>_stack.k):")
 	fmt.Println()
@@ -99,5 +122,6 @@ func init() {
 	initModuleCmd.Flags().StringVar(&initModuleVersion, "version", "", "image/operator version tag")
 	initModuleCmd.Flags().IntVar(&initModulePort, "port", 0, "service/container port (default 8080)")
 	initModuleCmd.Flags().StringVar(&initModuleStorage, "storage", "", "persistent volume size for stateful modules (default 1Gi)")
+	initModuleCmd.Flags().BoolVar(&initModuleWire, "wire", false, "auto-wire the module into the project stack (requires koncept markers in the stack file)")
 	initCmd.AddCommand(initModuleCmd)
 }

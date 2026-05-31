@@ -23,6 +23,8 @@
 > Update 2026-05-31 (telemetry, packaging, runtime CI, governance docs): shipped Phase G opt-in **local** telemetry (`internal/metrics` + `koncept metrics`, enabled by `--metrics`/`KONCEPT_METRICS`, recorded as on-disk JSONL with coarse error categories — see `docs/PLATFORM_METRICS.md`); added `.github/workflows/release.yml` to publish cross-platform binaries + checksums and push a pinned GHCR image on `v*` tags (Phase A); added `.github/workflows/runtime.yml` for nightly/dispatch real-cluster runtime acceptance separate from the fast PR gate (Phase E); declared output **support tiers** and made the Go CLI the documented default in the README (Phase A); documented framework SemVer rules and a worked local-path→pinned `kcl.mod` migration in `docs/FRAMEWORK_VERSIONING.md` (Phase D); and added `docs/OPERATING_MODEL.md` covering roles, change categories, and approval paths (Phase F).
 >
 > Update 2026-05-31 (service-catalog metadata): completed the Phase F catalog-metadata deliverable. `framework.models.metadata.Metadata` gained explicit `sloTier`, `dataClassification`, and `runbook` fields (alongside existing `costCenter`/`support`), `RenderStack` now carries optional `metadata`, and `procedures.kcl_to_backstage.generate_catalog_from_stack` emits these as `koncept.io/*` annotations on every Domain/System/Component/Resource entity while letting `owner`/`lifecycle` override render defaults. The `erp_back` shared stack demonstrates the full set, and new procedure tests guard the behaviour (421 KCL + Go tests and golden `yaml`/`argocd` snapshots remain green).
+>
+> Update 2026-05-31 (init --wire + generated goldens): completed Phase B's generated golden fixtures and the long-deferred `init module --wire` enhancement together. `koncept init project` now emits stable wire markers in the generated stack; `koncept init module --wire` performs marker-scoped, fail-loud auto-wiring (refuses unmarked stacks, rejects re-wiring, never parses arbitrary KCL); and `scripts/golden_generated.sh` scaffolds webapp / webapp+postgres / webapp+redis / webapp+kafka end-to-end and snapshots the rendered Tier-1 YAML under `tests/golden_generated/`. CI gained the generated-golden check and a marker-contract unit test. See `docs/GOLDEN_OUTPUTS.md`.
 
 ---
 
@@ -250,6 +252,8 @@ The current Go `init` command scaffolds a factory, not a full project/product. B
 
 **Implementation learning (2026-05-30):** `koncept init module` deliberately *generates the module def file and prints a paste-ready stack wiring snippet* rather than programmatically editing the stack `.k` file. Auto-rewriting KCL with regex/AST surgery is brittle and risks corrupting hand-authored stacks; printing a verified snippet keeps the secure path while still removing the boilerplate. Infra modules are emitted as accessories under `modules/infraops/` and webapps as components under `modules/appops/`, matching the framework's component/accessory split. Generated webapp + postgres modules were verified to compile, render, and pass `koncept policy check` in a fresh scaffolded project. A future enhancement can offer an opt-in `--wire` flag that appends to a clearly marked stack region once a stable insertion marker convention exists.
 
+**Implementation learning (2026-05-31, `init module --wire`):** the opt-in `--wire` flag from the 2026-05-30 note shipped, built on the secure path that note required. `koncept init project` now emits four stable markers in the generated stack (`# koncept:imports:end`, `# koncept:modules:end`, and trailing `# koncept:components` / `# koncept:accessories` on the list lines). `--wire` edits *only* inside those markers: it inserts the import before the imports marker, the `_<module> = ...{}.instance` block before the modules marker, and appends the instance var to the correct list line. Three guarantees keep it from corrupting hand-authored stacks: (1) if any required marker is absent it refuses and falls back to printing the paste snippet, leaving the file byte-for-byte unchanged; (2) re-wiring an already-present module errors instead of duplicating; (3) it never parses arbitrary KCL — only marker lines and the bracketed list region are touched, so the brittle "regex/AST surgery" the original note warned against is avoided. This unblocked Phase B's generated golden fixtures: `scripts/golden_generated.sh` now scaffolds webapp / webapp+postgres / webapp+redis / webapp+kafka end-to-end (project + `--wire` + render) and snapshots the rendered YAML, so the scaffolding templates, the wiring, and the framework templates are all drift-guarded together. A new project test locks the marker contract so wiring can never silently regress.
+
 **Implementation learning (2026-05-30, env/release):** `koncept init env` and `koncept init release` reuse the same template engine and "never overwrite, fail loudly" guarantees as `init project`/`init module`. Two design choices proved important: (1) *shared vs. owned files* — a release's production site (`sites/production/default/...`) and `releases/kcl.mod` are shared across versions, so they are skipped-if-present rather than treated as errors, while version-specific stack/factory files must not pre-exist; this lets a project accumulate `v1_0_0`, `v2_0_0`, ... without manual cleanup. (2) *render-friendly defaults* — generated environments default to `storageClassName = "local-path"` and `useLocalPersistentVolumes = True` so a brand-new environment renders and applies on a laptop/kind cluster out of the box; teams harden these for real staging/production. Both new factories were verified to `kcl run` cleanly: staging inherits the shared stack's image tag, while the release stack pins its own `appVersion`. The CLI prints the exact `--factory` path for `validate`/`render`/`policy check`, mirroring the secure no-auto-edit philosophy of `init module`.
 
 ### 5.5 Documentation drift
@@ -353,14 +357,16 @@ The previous roadmap emphasized many future phases. Given the current state, the
 - [x] `koncept init release <version>` creates immutable release structure.
 - [x] Generated projects use the recommended minimal transitive `kcl.mod` pattern.
 - [~] Backstage scaffolder actions call the same Go CLI scaffold lifecycle as local users (`koncept init project|module|env|release|factory`). Remaining: review every template workflow end-to-end in a real Backstage backend and keep generated YAML inputs aligned with the CLI scaffold fields.
-- [~] Add golden generated fixtures for at least:
+- [x] Add golden generated fixtures for at least:
   - webapp only,
   - webapp + PostgreSQL,
   - webapp + Redis,
   - webapp + Kafka.
-  (Committed golden render snapshots now guard the `erp_back` reference factories
-  — a webapp+PostgreSQL stack — across `yaml`/`argocd`. Dedicated per-template
-  generated fixtures are still pending.)
+  (Shipped: `scripts/golden_generated.sh` scaffolds each combo with
+  `koncept init project` + `koncept init module --wire`, renders Tier-1 `yaml`,
+  and diffs against committed snapshots under `tests/golden_generated/<combo>/`.
+  CI runs the check in the Go CLI job. The earlier `erp_back` factory goldens
+  remain the hand-authored reference guard. See `docs/GOLDEN_OUTPUTS.md`.)
 
 ### Success criteria
 

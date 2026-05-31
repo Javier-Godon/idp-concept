@@ -108,6 +108,11 @@ koncept init module webapp orders-api
 koncept init module postgres orders-db    # also: redis, kafka, mongodb, rabbitmq, database
 #   → modules/<area>/<name>/<name>_module_def.k + paste-ready stack wiring
 
+# Or auto-wire the module straight into the project stack (marker-scoped, safe)
+koncept init module redis orders-cache --wire
+#   → inserts the import, instance block, and accessory list entry; refuses to
+#     touch a stack that lacks the koncept wire markers
+
 # Enforce baseline security/ownership policy on rendered manifests
 koncept policy check --factory <factory-dir>
 #   no privileged containers · no latest/untagged images
@@ -122,6 +127,12 @@ koncept changelog check   # validate release-note fragments in .changes/unreleas
 koncept deps              # troubleshoot KCL module resolution
 koncept metrics           # summarize opt-in local telemetry (enable with --metrics)
 ```
+
+> Two golden gates guard rendering: `scripts/golden.sh` for the hand-authored
+> `erp_back` reference factories, and `scripts/golden_generated.sh` for what the
+> CLI generates (`koncept init project` + `init module --wire` for webapp,
+> webapp+postgres, webapp+redis, webapp+kafka). See `docs/GOLDEN_OUTPUTS.md`.
+
 
 ### 5. Run Tests
 

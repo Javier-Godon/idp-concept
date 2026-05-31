@@ -165,6 +165,7 @@ import framework.models.stack
 import framework.models.compatibility as compat
 import framework.assembly.helpers as asm
 import {{.Slug}}.modules.appops.{{.AppPackage}}.{{.AppPackage}}_module_def as {{.AppPackage}}
+# koncept:imports:end
 
 schema {{.SchemaPrefix}}Stack(stack.Stack):
     appImage: str = "{{.Image}}"
@@ -192,8 +193,10 @@ schema {{.SchemaPrefix}}Stack(stack.Stack):
         dependsOn = [_apps_namespace]
     }.instance
 
-    components = [_app]
-    accessories = []
+    # koncept:modules:end
+
+    components = [_app]  # koncept:components
+    accessories = []  # koncept:accessories
 `
 
 const tplDevStackDef = `"""{{.DisplayName}} development stack — only profile-specific overrides live here."""

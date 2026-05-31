@@ -1,0 +1,4 @@
+type: added
+summary: Add 'koncept init module --wire' marker-scoped stack auto-wiring and generated golden fixtures (scripts/golden_generated.sh) for webapp, webapp+postgres, webapp+redis, and webapp+kafka
+owner: platform-team
+issue: IDP-EVOLUTION

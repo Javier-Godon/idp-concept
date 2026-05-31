@@ -266,18 +266,129 @@ func renderWiring(spec ModuleSpec, mt moduleType) string {
 		listName = "accessories"
 	}
 	var b strings.Builder
-	fmt.Fprintf(&b, "import %s.modules.%s.%s.%s_module_def as %s\n\n",
+	b.WriteString(moduleImportLine(spec, mt) + "\n\n")
+	b.WriteString(renderInstanceBlock(spec, mt, "") + "\n")
+	fmt.Fprintf(&b, "# Append %s to the stack %s list:\n", spec.InstanceVar, listName)
+	fmt.Fprintf(&b, "#     %s = [..., %s]\n", listName, spec.InstanceVar)
+	return b.String()
+}
+
+// Stack wiring markers emitted by `koncept init project`. `--wire` edits only the
+// regions delimited by these markers and refuses to touch stacks that lack them,
+// so hand-authored stacks are never silently rewritten.
+const (
+	markerImportsEnd  = "# koncept:imports:end"
+	markerModulesEnd  = "# koncept:modules:end"
+	markerComponents  = "# koncept:components"
+	markerAccessories = "# koncept:accessories"
+)
+
+// moduleImportLine returns the KCL import statement that exposes the generated
+// module def under its package alias.
+func moduleImportLine(spec ModuleSpec, mt moduleType) string {
+	return fmt.Sprintf("import %s.modules.%s.%s.%s_module_def as %s",
 		spec.ProjectSlug, mt.area, spec.Package, spec.Package, spec.Package)
+}
+
+// renderInstanceBlock renders the `_<pkg> = <Schema> { ... }.instance` block,
+// prefixing every line with indent (empty for a top-level snippet, four spaces
+// when wired inside a schema body).
+func renderInstanceBlock(spec ModuleSpec, mt moduleType, indent string) string {
+	var b strings.Builder
 	fmt.Fprintf(&b, "%s = %s.%sModule {\n", spec.InstanceVar, spec.Package, spec.SchemaName)
 	fmt.Fprintf(&b, "    name = %q\n", spec.K8sName)
 	b.WriteString("    namespace = _apps_namespace.name\n")
 	b.WriteString("    configurations = instanceConfigurations\n")
 	b.WriteString(mt.wiringFields(spec))
 	b.WriteString("    dependsOn = [_apps_namespace]\n")
-	b.WriteString("}.instance\n\n")
-	fmt.Fprintf(&b, "# Append %s to the stack %s list:\n", spec.InstanceVar, listName)
-	fmt.Fprintf(&b, "#     %s = [..., %s]\n", listName, spec.InstanceVar)
-	return b.String()
+	b.WriteString("}.instance\n")
+	if indent == "" {
+		return b.String()
+	}
+	lines := strings.Split(strings.TrimRight(b.String(), "\n"), "\n")
+	var out strings.Builder
+	for _, line := range lines {
+		if line == "" {
+			out.WriteString("\n")
+			continue
+		}
+		out.WriteString(indent + line + "\n")
+	}
+	return out.String()
+}
+
+// WireModule inserts the generated module's import, instance block, and stack
+// list membership into a marker-annotated stack file. It edits only the regions
+// delimited by koncept markers; if any required marker is missing it returns an
+// error and leaves the file untouched. Re-wiring an already-wired module is also
+// rejected so the operation stays idempotent and non-destructive.
+func WireModule(spec ModuleSpec, stackPath string) error {
+	mt := spec.typeConfig()
+	data, err := os.ReadFile(stackPath)
+	if err != nil {
+		return fmt.Errorf("read stack %s: %w", stackPath, err)
+	}
+	content := string(data)
+
+	listMarker := markerComponents
+	if mt.kind == KindAccessory {
+		listMarker = markerAccessories
+	}
+	for _, marker := range []string{markerImportsEnd, markerModulesEnd, listMarker} {
+		if !strings.Contains(content, marker) {
+			return fmt.Errorf("stack %s is not wire-ready: missing marker %q\n"+
+				"  re-run without --wire and paste the printed snippet, or add the marker manually",
+				stackPath, marker)
+		}
+	}
+
+	importLine := moduleImportLine(spec, mt)
+	if strings.Contains(content, importLine) || strings.Contains(content, spec.InstanceVar+" =") {
+		return fmt.Errorf("module %q already appears wired into %s", spec.Package, stackPath)
+	}
+
+	lines := strings.Split(content, "\n")
+	var out []string
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		switch {
+		case trimmed == markerImportsEnd:
+			out = append(out, importLine, line)
+		case trimmed == markerModulesEnd:
+			out = append(out, renderInstanceBlock(spec, mt, "    "), line)
+		case strings.Contains(line, listMarker):
+			out = append(out, appendToListLine(line, spec.InstanceVar))
+		default:
+			out = append(out, line)
+		}
+	}
+
+	if err := os.WriteFile(stackPath, []byte(strings.Join(out, "\n")), 0o644); err != nil {
+		return fmt.Errorf("write stack %s: %w", stackPath, err)
+	}
+	return nil
+}
+
+// appendToListLine appends a variable to a KCL list assignment line of the form
+// `    name = [a, b]  # marker`, producing `    name = [a, b, var]  # marker`.
+// An empty list `[]` becomes `[var]`.
+func appendToListLine(line, variable string) string {
+	close := strings.LastIndex(line, "]")
+	if close < 0 {
+		return line
+	}
+	open := strings.LastIndex(line[:close], "[")
+	if open < 0 {
+		return line
+	}
+	inner := strings.TrimSpace(line[open+1 : close])
+	var newInner string
+	if inner == "" {
+		newInner = variable
+	} else {
+		newInner = inner + ", " + variable
+	}
+	return line[:open+1] + newInner + line[close:]
 }
 
 func emptyDefBody(ModuleSpec) string { return "" }

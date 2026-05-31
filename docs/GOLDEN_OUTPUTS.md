@@ -86,3 +86,47 @@ fails the build with the diff in the logs.
 2. Run `./scripts/golden.sh update` to generate the snapshot.
 3. Commit the new `golden/` files. Keep the set small and representative —
    golden coverage is a review aid, not a substitute for unit/acceptance tests.
+
+## Generated scaffold goldens
+
+`scripts/golden.sh` guards *hand-authored* reference factories. A second gate,
+`scripts/golden_generated.sh`, guards what the **Go CLI generates** — the golden
+paths a new product team actually uses. It scaffolds each supported combination
+with `koncept init project` plus `koncept init module --wire`, renders Tier-1
+`yaml`, and diffs the result against a committed snapshot.
+
+This catches regressions in three layers at once: the project/module scaffolding
+templates, the marker-based stack wiring, and the framework templates those combos
+consume.
+
+Committed snapshots live under `tests/golden_generated/<combo>/manifests.yaml`:
+
+| Combo | Scaffold steps | What it guards |
+|---|---|---|
+| `webapp` | `init project` | The minimal generated golden path (Deployment + Service + Namespace). |
+| `webapp-postgres` | `init project` + `init module postgres --wire` | App + CloudNativePG `Cluster` accessory wiring. |
+| `webapp-redis` | `init project` + `init module redis --wire` | App + Redis accessory wiring. |
+| `webapp-kafka` | `init project` + `init module kafka --wire` | App + Strimzi `Kafka` accessory wiring. |
+
+Only the rendered YAML is committed (one file per combo), never the whole
+generated project tree, so the accept-the-diff burden stays proportional to value.
+
+```bash
+# Scaffold each combo into a temp workspace, render, and diff (CI default).
+./scripts/golden_generated.sh check
+
+# Re-render and overwrite snapshots after an intended scaffold/template change.
+./scripts/golden_generated.sh update
+git diff -- tests/golden_generated
+```
+
+The script mirrors the repo layout in a temp directory (symlinking `framework`)
+so generated projects resolve the framework through the standard
+`../../framework` path. Renders go through the same sorted-key CLI path as the
+factory goldens, so they are byte-stable. CI runs the check in the Go CLI job,
+right after `scripts/golden.sh check`.
+
+To add a combo, append a `"<name>|<module-types>"` entry to the `COMBOS` array in
+`scripts/golden_generated.sh` and run `update`. A module type must be supported by
+`koncept init module` and the stack template must carry the koncept wire markers
+(every `koncept init project` stack does).

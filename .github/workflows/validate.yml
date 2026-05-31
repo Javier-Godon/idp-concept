@@ -9,6 +9,7 @@ on:
       - "framework/**"
       - "projects/**"
       - "scripts/**"
+      - "tests/**"
   push:
     branches: [main]
     paths:
@@ -18,6 +19,7 @@ on:
       - "framework/**"
       - "projects/**"
       - "scripts/**"
+      - "tests/**"
 
 permissions:
   contents: read
@@ -79,6 +81,11 @@ jobs:
         env:
           KONCEPT: ${{ github.workspace }}/cmd/koncept/bin/koncept
         run: ./scripts/golden.sh check
+
+      - name: Generated scaffold golden check
+        env:
+          KONCEPT: ${{ github.workspace }}/cmd/koncept/bin/koncept
+        run: ./scripts/golden_generated.sh check
 
       - name: Go CLI scaffold smoke
         working-directory: cmd/koncept
