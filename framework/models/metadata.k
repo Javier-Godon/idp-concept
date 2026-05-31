@@ -3,7 +3,8 @@ Common IDP metadata schemas.
 
 These optional fields capture common platform-catalog concepts used by IDPs
 such as Backstage, Humanitec, Port, Cortex, OpsLevel, and internal developer
-portals: ownership, lifecycle, taxonomy, links, contacts, labels, and annotations.
+portals: ownership, lifecycle, taxonomy, links, contacts, labels, annotations,
+SLO tier, data classification, cost center, and runbook references.
 """
 
 schema Link:
@@ -35,8 +36,11 @@ schema Metadata:
     domain?: str
     lifecycle?: str
     tier?: str
+    sloTier?: str
     criticality?: str
+    dataClassification?: str
     costCenter?: str
+    runbook?: str
     repository?: str
     documentation?: str
     support?: str

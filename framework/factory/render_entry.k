@@ -49,7 +49,7 @@ render_from_seed = lambda stack: any, project_name: str, git_repo_url: str, mani
         manifests.yaml_stream([_crossplane])
 
     if output == "backstage":
-        _backstage = backstage_proc.generate_catalog_from_stack(stack.components, stack.accessories, stack.k8snamespaces, project_name, "1.0.0", "platform-team", "production", git_repo_url, "dir:docs/")
+        _backstage = backstage_proc.generate_catalog_from_stack(stack.components, stack.accessories, stack.k8snamespaces, project_name, "1.0.0", "platform-team", "production", git_repo_url, "dir:docs/", stack.metadata)
         manifests.yaml_stream([_backstage])
 
     Undefined

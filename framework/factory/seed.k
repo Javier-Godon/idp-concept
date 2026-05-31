@@ -77,6 +77,7 @@ schema FactorySeed:
         k8snamespaces = stack.k8snamespaces
         components = stack.components
         accessories = stack.accessories
+        metadata = stack.metadata
     }
     projectName: str = project.instance.name
 

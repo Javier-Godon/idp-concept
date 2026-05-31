@@ -21,6 +21,8 @@
 > Update 2026-05-31 (Backstage catalog): improved the developer-portal path by enriching `kcl_to_backstage` entities with namespace, asset version, image/chart annotations, and `spec.dependsOn` relationships from framework dependencies. The Backstage custom action now targets the current Go CLI lifecycle commands (`init project|module|env|release|factory`) instead of the old init flag shape.
 >
 > Update 2026-05-31 (telemetry, packaging, runtime CI, governance docs): shipped Phase G opt-in **local** telemetry (`internal/metrics` + `koncept metrics`, enabled by `--metrics`/`KONCEPT_METRICS`, recorded as on-disk JSONL with coarse error categories — see `docs/PLATFORM_METRICS.md`); added `.github/workflows/release.yml` to publish cross-platform binaries + checksums and push a pinned GHCR image on `v*` tags (Phase A); added `.github/workflows/runtime.yml` for nightly/dispatch real-cluster runtime acceptance separate from the fast PR gate (Phase E); declared output **support tiers** and made the Go CLI the documented default in the README (Phase A); documented framework SemVer rules and a worked local-path→pinned `kcl.mod` migration in `docs/FRAMEWORK_VERSIONING.md` (Phase D); and added `docs/OPERATING_MODEL.md` covering roles, change categories, and approval paths (Phase F).
+>
+> Update 2026-05-31 (service-catalog metadata): completed the Phase F catalog-metadata deliverable. `framework.models.metadata.Metadata` gained explicit `sloTier`, `dataClassification`, and `runbook` fields (alongside existing `costCenter`/`support`), `RenderStack` now carries optional `metadata`, and `procedures.kcl_to_backstage.generate_catalog_from_stack` emits these as `koncept.io/*` annotations on every Domain/System/Component/Resource entity while letting `owner`/`lifecycle` override render defaults. The `erp_back` shared stack demonstrates the full set, and new procedure tests guard the behaviour (421 KCL + Go tests and golden `yaml`/`argocd` snapshots remain green).
 
 ---
 
@@ -296,7 +298,7 @@ KCL is a strong fit for typed configuration, but it is niche. A medium company s
    - Track render failures, validation failures, template usage, project count, onboarding time, and most common errors.
 
 10. **Developer-facing service catalog metadata**
-    - Owners, lifecycle, SLO tier, data classification, cost center, docs, runbooks, and support contacts should flow into Backstage and labels/annotations.
+    - Owners, lifecycle, SLO tier, data classification, cost center, docs, runbooks, and support contacts now flow into the Backstage catalog via `models.metadata.Metadata` on the `Stack` (rendered as `koncept.io/*` annotations). Mirroring the same fields onto rendered K8s labels/annotations is the remaining step.
 
 ---
 
@@ -461,7 +463,7 @@ The previous roadmap emphasized many future phases. Given the current state, the
 ### Deliverables
 
 - [~] Connect Backstage templates to the same project/module scaffolding contracts as the CLI. The shared custom action now invokes the current Go CLI lifecycle commands; full portal workflow validation is still pending.
-- [~] Generate catalog entities with ownership, lifecycle, system, domain, repository, docs, support metadata, and dependency graph data. Remaining: SLO tier, data classification, cost center, runbook/support-contact metadata need explicit model fields before they can be rendered safely.
+- [x] Generate catalog entities with ownership, lifecycle, system, domain, repository, docs, support metadata, and dependency graph data. SLO tier, data classification, cost center, runbook, and support-contact now have explicit `models.metadata.Metadata` fields (`sloTier`, `dataClassification`, `costCenter`, `runbook`, `support`) that flow into the Backstage catalog as `koncept.io/*` annotations on every entity, with `owner`/`lifecycle` overriding render defaults.
 - [ ] Add workflow templates for:
   - new web app,
   - new database/cache/queue,

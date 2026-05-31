@@ -96,7 +96,19 @@ metadata:
     backstage.io/kubernetes-id: <component-name>
     koncept.io/namespace: <kubernetes-namespace>
     koncept.io/asset-version: <image-or-chart-version>
+    # Service-catalog governance annotations (when Stack.metadata is set):
+    koncept.io/owner: <owning-team>
+    koncept.io/slo-tier: <slo-tier>
+    koncept.io/criticality: <criticality>
+    koncept.io/data-classification: <classification>
+    koncept.io/cost-center: <cost-center>
+    koncept.io/runbook: <runbook-url>
+    koncept.io/support-contact: <support-channel>
 ```
+
+Populate these by attaching `framework.models.metadata.Metadata` to the project
+`Stack` (see `docs/FRAMEWORK_SCHEMAS.md`). `owner`/`lifecycle` from metadata also
+override the render defaults on every generated entity.
 
 ### 2.2 TeraSky Kubernetes Ingestor
 

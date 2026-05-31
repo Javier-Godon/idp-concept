@@ -22,8 +22,11 @@ schema Metadata:
     domain?: str
     lifecycle?: str
     tier?: str
+    sloTier?: str
     criticality?: str
+    dataClassification?: str
     costCenter?: str
+    runbook?: str
     repository?: str
     documentation?: str
     support?: str
@@ -34,7 +37,27 @@ schema Metadata:
     contacts?: [Contact]
 ```
 
-Available on `Project`, `Tenant`, `Site`, `Profile`, `Stack`, and `Release` as `metadata?: Metadata`.
+Available on `Project`, `Tenant`, `Site`, `Profile`, `Stack`, `RenderStack`, and
+`Release` as `metadata?: Metadata`.
+
+When attached to a `Stack`/`RenderStack`, the catalog-oriented fields flow into
+the Backstage output (`koncept render backstage`). `owner` and `lifecycle`
+override the render defaults on every generated entity, and the following fields
+are emitted as `koncept.io/*` annotations on Domain, System, Component, and
+Resource entities:
+
+| Metadata field | Backstage annotation |
+|---|---|
+| `owner` | `koncept.io/owner` |
+| `team` | `koncept.io/team` |
+| `lifecycle` | `koncept.io/lifecycle` |
+| `tier` | `koncept.io/tier` |
+| `sloTier` | `koncept.io/slo-tier` |
+| `criticality` | `koncept.io/criticality` |
+| `dataClassification` | `koncept.io/data-classification` |
+| `costCenter` | `koncept.io/cost-center` |
+| `runbook` | `koncept.io/runbook` |
+| `support` | `koncept.io/support-contact` |
 
 ### Project
 

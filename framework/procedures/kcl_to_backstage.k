@@ -20,7 +20,7 @@ Usage:
     _entities = backstage.generate_catalog_from_stack(
         _stack.components, _stack.accessories, _stack.k8snamespaces,
         "my-project", "1.0.0", "platform-team", "production",
-        "https://github.com/org/repo"
+        "https://github.com/org/repo", "dir:docs/", _stack.metadata
     )
 """
 import models.modules.component
@@ -30,6 +30,39 @@ import models.modules.k8snamespace
 _BACKSTAGE_API_VERSION = "backstage.io/v1alpha1"
 
 # --- Entity generators ---
+
+_metadata_annotations = lambda meta: any -> {str:str} {
+    """Map portable IDP catalog metadata to koncept.io/* Backstage annotations."""
+    {} if meta is Undefined else {
+        if meta.owner is not Undefined:
+            "koncept.io/owner" = meta.owner
+        if meta.team is not Undefined:
+            "koncept.io/team" = meta.team
+        if meta.lifecycle is not Undefined:
+            "koncept.io/lifecycle" = meta.lifecycle
+        if meta.tier is not Undefined:
+            "koncept.io/tier" = meta.tier
+        if meta.sloTier is not Undefined:
+            "koncept.io/slo-tier" = meta.sloTier
+        if meta.criticality is not Undefined:
+            "koncept.io/criticality" = meta.criticality
+        if meta.dataClassification is not Undefined:
+            "koncept.io/data-classification" = meta.dataClassification
+        if meta.costCenter is not Undefined:
+            "koncept.io/cost-center" = meta.costCenter
+        if meta.runbook is not Undefined:
+            "koncept.io/runbook" = meta.runbook
+        if meta.support is not Undefined:
+            "koncept.io/support-contact" = meta.support
+    }
+}
+
+_apply_metadata_annotations = lambda entity: {str:}, anns: {str:str} -> {str:} {
+    """Merge derived catalog annotations onto an already-generated entity."""
+    entity if not anns else entity | {
+        metadata.annotations = entity.metadata.annotations | anns
+    }
+}
 
 generate_domain = lambda project_name: str, owner: str, techdocs_ref: str -> {str:} {
     """Generate a Backstage Domain entity from a project name."""
@@ -207,38 +240,50 @@ generate_resource_from_namespace = lambda ns: k8snamespace.K8sNamespaceInstance,
 
 # --- Full catalog generation ---
 
-generate_catalog_from_stack = lambda components: [component.ComponentInstance], accessories: [accessory.AccessoryInstance], namespaces: [k8snamespace.K8sNamespaceInstance], project_name: str, version: str, owner: str, lifecycle: str, repo_url: str, techdocs_ref: str -> {str:} {
-    """Generate a complete Backstage catalog structure from stack data."""
+generate_catalog_from_stack = lambda components: [component.ComponentInstance], accessories: [accessory.AccessoryInstance], namespaces: [k8snamespace.K8sNamespaceInstance], project_name: str, version: str, owner: str, lifecycle: str, repo_url: str, techdocs_ref: str, stack_metadata: any -> {str:} {
+    """Generate a complete Backstage catalog structure from stack data.
+
+    `stack_metadata` is an optional `models.metadata.Metadata` instance (or
+    Undefined). When present, its `owner`/`lifecycle` override the positional
+    defaults and SLO tier, data classification, cost center, runbook, and
+    support-contact fields are emitted as `koncept.io/*` annotations on every
+    generated entity.
+    """
     _stack_name = project_name
 
-    _domain = generate_domain(project_name, owner, techdocs_ref)
-    _system = generate_system(_stack_name, project_name, owner, techdocs_ref)
+    _owner = stack_metadata.owner if (stack_metadata is not Undefined and stack_metadata.owner is not Undefined) else owner
+    _lifecycle = stack_metadata.lifecycle if (stack_metadata is not Undefined and stack_metadata.lifecycle is not Undefined) else lifecycle
+    _meta_anns = _metadata_annotations(stack_metadata)
+
+    _domain = generate_domain(project_name, _owner, techdocs_ref)
+    _system = generate_system(_stack_name, project_name, _owner, techdocs_ref)
 
     # APPLICATION components → Backstage Components
     _app_components = [
-        generate_component_entity(c, _stack_name, owner, lifecycle, repo_url)
+        generate_component_entity(c, _stack_name, _owner, _lifecycle, repo_url)
         for c in components if c.kind == "APPLICATION"
     ] if components else []
 
     # INFRASTRUCTURE components → Backstage Resources
     _infra_resources = [
-        generate_resource_from_component(c, _stack_name, owner, lifecycle)
+        generate_resource_from_component(c, _stack_name, _owner, _lifecycle)
         for c in components if c.kind == "INFRASTRUCTURE"
     ] if components else []
 
     # Accessories → Backstage Resources
     _accessory_resources = [
-        generate_resource_from_accessory(a, _stack_name, owner, lifecycle)
+        generate_resource_from_accessory(a, _stack_name, _owner, _lifecycle)
         for a in accessories
     ] if accessories else []
 
     # Namespaces → Backstage Resources
     _namespace_resources = [
-        generate_resource_from_namespace(n, _stack_name, owner, lifecycle)
+        generate_resource_from_namespace(n, _stack_name, _owner, _lifecycle)
         for n in namespaces
     ] if namespaces else []
 
-    _all_entities = [_domain, _system] + _app_components + _infra_resources + _accessory_resources + _namespace_resources
+    _raw_entities = [_domain, _system] + _app_components + _infra_resources + _accessory_resources + _namespace_resources
+    _all_entities = [_apply_metadata_annotations(e, _meta_anns) for e in _raw_entities]
 
     {
         metadata = {

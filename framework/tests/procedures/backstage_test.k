@@ -6,6 +6,7 @@ import procedures.kcl_to_backstage as backstage
 import models.modules.component as component
 import models.modules.accessory as accessory
 import models.modules.k8snamespace as k8snamespace
+import models.metadata as metadata
 
 # --- Helpers (prefixed with _bs_ to avoid package-scope collisions) ---
 
@@ -146,7 +147,7 @@ test_bs_full_catalog = lambda {
     _namespaces = [_bs_mk_namespace("apps")]
     _catalog = backstage.generate_catalog_from_stack(
         _components, _accessories, _namespaces,
-        "erp-back", "1.0.0", "platform-team", "production", "https://github.com/org/repo", ""
+        "erp-back", "1.0.0", "platform-team", "production", "https://github.com/org/repo", "", Undefined
     )
     # Domain + System + 1 app component + 1 infra resource + 1 accessory resource + 1 namespace resource = 6
     assert _catalog.metadata.entityCount == 6
@@ -157,7 +158,7 @@ test_bs_full_catalog = lambda {
 test_bs_empty_stack = lambda {
     _catalog = backstage.generate_catalog_from_stack(
         [], [], [],
-        "empty-project", "0.1.0", "platform-team", "experimental", "", ""
+        "empty-project", "0.1.0", "platform-team", "experimental", "", "", Undefined
     )
     # Domain + System = 2
     assert _catalog.metadata.entityCount == 2
@@ -168,7 +169,7 @@ test_bs_components_only = lambda {
     _components = [_bs_mk_app_component("web", "apps"), _bs_mk_app_component("worker", "apps")]
     _catalog = backstage.generate_catalog_from_stack(
         _components, [], [],
-        "my-project", "2.0.0", "dev-team", "production", "", ""
+        "my-project", "2.0.0", "dev-team", "production", "", "", Undefined
     )
     # Domain + System + 2 app components = 4
     assert _catalog.metadata.entityCount == 4
@@ -215,4 +216,67 @@ test_bs_dependency_refs = lambda {
 
     _resource = backstage.generate_resource_from_component(_db, "erp-back", "platform-team", "production")
     assert _resource.spec.dependsOn == ["resource:kubernetes-namespace-apps"]
+}
+
+# === Test: stack metadata flows into catalog entity annotations ===
+test_bs_catalog_metadata_annotations = lambda {
+    _meta = metadata.Metadata {
+        owner = "payments-team"
+        team = "payments"
+        lifecycle = "production"
+        sloTier = "tier-1"
+        criticality = "high"
+        dataClassification = "confidential"
+        costCenter = "CC-4821"
+        runbook = "https://runbooks.example/payments"
+        support = "#payments-oncall"
+    }
+    _components = [_bs_mk_app_component("api", "apps")]
+    _catalog = backstage.generate_catalog_from_stack(
+        _components, [], [],
+        "erp-back", "1.0.0", "platform-team", "production", "", "", _meta
+    )
+    # owner from metadata overrides the positional default on every entity
+    _domain = _catalog.entities[0]
+    assert _domain.spec.owner == "payments-team"
+    _component = _catalog.entities[2]
+    assert _component.spec.owner == "payments-team"
+    _anns = _component.metadata.annotations
+    assert _anns["koncept.io/owner"] == "payments-team"
+    assert _anns["koncept.io/team"] == "payments"
+    assert _anns["koncept.io/slo-tier"] == "tier-1"
+    assert _anns["koncept.io/criticality"] == "high"
+    assert _anns["koncept.io/data-classification"] == "confidential"
+    assert _anns["koncept.io/cost-center"] == "CC-4821"
+    assert _anns["koncept.io/runbook"] == "https://runbooks.example/payments"
+    assert _anns["koncept.io/support-contact"] == "#payments-oncall"
+    # pre-existing annotations are preserved
+    assert _anns["koncept.io/namespace"] == "apps"
+}
+
+# === Test: absent metadata leaves entities unchanged ===
+test_bs_catalog_no_metadata = lambda {
+    _components = [_bs_mk_app_component("api", "apps")]
+    _catalog = backstage.generate_catalog_from_stack(
+        _components, [], [],
+        "erp-back", "1.0.0", "platform-team", "production", "", "", Undefined
+    )
+    _component = _catalog.entities[2]
+    assert _component.spec.owner == "platform-team"
+    assert "koncept.io/slo-tier" not in _component.metadata.annotations
+    assert "koncept.io/cost-center" not in _component.metadata.annotations
+}
+
+# === Test: lifecycle from metadata overrides positional default ===
+test_bs_catalog_metadata_lifecycle = lambda {
+    _meta = metadata.Metadata {
+        lifecycle = "experimental"
+    }
+    _components = [_bs_mk_app_component("api", "apps")]
+    _catalog = backstage.generate_catalog_from_stack(
+        _components, [], [],
+        "erp-back", "1.0.0", "platform-team", "production", "", "", _meta
+    )
+    _component = _catalog.entities[2]
+    assert _component.spec.lifecycle == "experimental"
 }
