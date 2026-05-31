@@ -1,0 +1,4 @@
+type: added
+summary: Add Go CLI changelog fragments for platform release notes
+owner: platform-team
+issue: IDP-EVOLUTION

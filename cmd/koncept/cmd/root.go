@@ -48,6 +48,7 @@ func init() {
 	rootCmd.AddCommand(doctorCmd)
 	rootCmd.AddCommand(completionCmd)
 	rootCmd.AddCommand(policyCmd)
+	rootCmd.AddCommand(changelogCmd)
 }
 
 func printSuccess(msg string) {

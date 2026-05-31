@@ -13,6 +13,8 @@
 > Update 2026-05-30 (golden workflow): shipped the golden render-drift review gate. `koncept golden check` now prints a concise line diff on drift (new `internal/golden` package, unit-tested), `scripts/golden.sh check|update` is the single entrypoint over the reference factories, and committed snapshots guard the `erp_back` dev (`yaml`+`argocd`), stg (`yaml`), and v1.0.0 production (`yaml`) factories. CI (`validate.yml`) runs `scripts/golden.sh check` after the policy gate. Renders are deterministic via the Go CLI's `WithSortKeys`. New workflow doc: `docs/GOLDEN_OUTPUTS.md`.
 >
 > Update 2026-05-31: added explicit policy exemptions for `koncept policy check` via `--exemptions <file>`. Exemptions are narrow (`rule` + workload target), owned, reasoned, and expiring; invalid, expired, or stale waivers fail the command. New workflow doc: `docs/POLICY_EXEMPTIONS.md`.
+>
+> Update 2026-05-31 (changelog workflow): added `koncept changelog new|check|render` for framework/platform release-note fragments under `.changes/unreleased/`. Fragments use Keep-a-Changelog categories and require owner metadata; CI validates fragments so release intent is reviewed with code. New workflow doc: `docs/CHANGELOG_WORKFLOW.md`.
 
 ---
 
@@ -191,7 +193,7 @@ koncept render argocd --all
 |---|---|
 | **Self-service onboarding** | Backstage templates exist, but the CLI and docs still expose too much internal structure. |
 | **Versioned platform distribution** | Projects still primarily depend on local path-based framework modules. |
-| **CI/CD governance** | `.github/workflows/validate.yml` now runs Go tests, render smoke, policy gate, golden drift check, `scripts/verify.sh`, and `git diff --check`. Remaining: golden coverage for more projects and required-check enforcement/branch protection. |
+| **CI/CD governance** | `.github/workflows/validate.yml` now runs Go tests, render smoke, policy gate, changelog-fragment validation, golden drift check, `scripts/verify.sh`, and `git diff --check`. Remaining: golden coverage for more projects and required-check enforcement/branch protection. |
 | **Policy as code** | Enforced in CI via `koncept policy check` (privileged/latest/resources/owner/secret-literal/namespace/network-policy rules) with explicit owner/reason/expiry exemptions. Remaining: external OPA/Kyverno admission parity. |
 | **Golden-file review workflow** | Shipped: `koncept golden check` with inline drift diff, `scripts/golden.sh`, committed snapshots for the `erp_back` reference factories, and a CI drift gate. Remaining: extend to more reference projects/formats. See `docs/GOLDEN_OUTPUTS.md`. |
 | **Operational telemetry** | No platform adoption/error/render metrics yet. |
@@ -380,7 +382,7 @@ The previous roadmap emphasized many future phases. Given the current state, the
   - [x] secret-looking values must use Secret references,
   - [x] namespace and network-policy conventions (explicit-namespace rule and per-namespace default-deny NetworkPolicy convention both shipped as warnings).
 - [x] Document and implement policy exemptions with owner, reason, and expiry.
-- [ ] Add release notes/changelog generation for framework changes.
+- [x] Add release notes/changelog generation for framework changes.
 
 ### Success criteria
 
@@ -391,6 +393,8 @@ The previous roadmap emphasized many future phases. Given the current state, the
 **Implementation learning (2026-05-30, golden workflow):** golden snapshots were placed *next to each factory* (`<factory>/../golden/<format>/manifests.yaml`) rather than in a central `golden/` tree, so a project owns its snapshots alongside the factory that produces them and removing a factory removes its goldens. Determinism was the key risk: ad-hoc `kcl run` does not sort map keys, but the Go CLI render path uses `WithSortKeys(true)`, so `golden update`/`check` both go through `factory.Render` and are byte-stable — this is why the gate routes through the CLI, not raw `kcl run`. Coverage is deliberately scoped to Tier-1 `yaml`/`argocd` for the `erp_back` reference (a webapp+PostgreSQL stack) plus one `yaml` snapshot each for staging and the production release; multi-file formats (`helmfile`, `backstage`) are left to render smoke checks until a real consumer needs snapshot review, keeping the maintainer's "accept the diff" burden proportional to value. The drift output prints a prefix/suffix-elided line diff so reviewers see only the changed region in CI logs.
 
 **Implementation learning (2026-05-31, policy exemptions):** the safer exemption path is not another `--no-*` rule toggle. Whole-rule disabling hides unrelated regressions and tends to persist in CI. The implemented model requires a `rule`, Kubernetes target (`kind` plus `namespace` or `name`), `owner`, `reason`, and `expiresOn`, and it fails on expired or stale exemptions. That makes an exemption a reviewable operational decision, not a quiet configuration default. Auto-discovery was deliberately avoided in this slice: CI should opt into a reviewed exemption file explicitly with `--exemptions`, so the presence of a local waiver file cannot accidentally weaken policy enforcement.
+
+**Implementation learning (2026-05-31, changelog fragments):** framework release notes should be captured as close to the code change as possible, but not by hand-editing a long changelog during every small PR. The implemented workflow uses small YAML fragments in `.changes/unreleased/`, validates them in CI, and renders a release section only when preparing a platform release. This follows the industry pattern used by towncrier/changesets-style tooling while keeping the IDP low-dependency and Go-CLI-native. Owner metadata is required because release notes are also an accountability artifact for platform consumers; anonymous fragments are rejected. The command intentionally renders to stdout by default and writes only when `--file` is explicit, avoiding surprising edits to `CHANGELOG.md`.
 
 ---
 

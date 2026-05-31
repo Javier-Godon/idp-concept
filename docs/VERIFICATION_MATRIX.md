@@ -19,6 +19,7 @@ The script runs scoped lint, acceptance fixture render checks, framework unit te
 | Unit tests | full framework suite | `cd framework && kcl test ./...` | All tests pass |
 | Render smoke | `erp_back` dev factory, all outputs | `cd projects/erp_back/pre_releases/manifests/dev/factory && kcl run render.k -D output=<mode>` | Command succeeds |
 | Policy gate | rendered Tier-1 YAML | `koncept policy check --factory projects/erp_back/pre_releases/manifests/dev/factory` | No blocking security/ownership findings |
+| Changelog fragments | `.changes/unreleased/*.yaml` | `koncept changelog check` | Release-note fragments are valid and owned |
 | Golden drift | reference factories (`erp_back` dev/stg/release) | `./scripts/golden.sh check` | Rendered output matches committed `golden/` snapshots |
 | Acceptance smoke | optional kind cluster | `./scripts/acceptance_kind.sh --case basic` | Generated resources apply and Deployment rolls out |
 
@@ -64,6 +65,9 @@ kcl test ./tests/templates/...
 # Run policy with explicit, expiring waivers when temporary exceptions are needed
 koncept policy check --factory <factory-dir> --exemptions policy-exemptions.yaml
 
+# Render the next platform release-note section from reviewed fragments
+koncept changelog render --version v0.2.0 --file CHANGELOG.next.md
+
 # Run grouped opt-in acceptance checks
 ./scripts/acceptance_kind.sh --case data
 ./scripts/acceptance_kind.sh --case search
@@ -93,7 +97,7 @@ koncept policy check --factory <factory-dir> --exemptions policy-exemptions.yaml
 ./scripts/acceptance_runtime.sh --case runtime-all --install-dependencies
 ```
 
-See `docs/ACCEPTANCE_DEPENDENCIES.md` for dependency requirements, `docs/ACCEPTANCE_RUNTIME.md` for the real deployment acceptance layer, `docs/GOLDEN_OUTPUTS.md` for snapshot review, and `docs/POLICY_EXEMPTIONS.md` for owned/time-bounded policy waivers.
+See `docs/ACCEPTANCE_DEPENDENCIES.md` for dependency requirements, `docs/ACCEPTANCE_RUNTIME.md` for the real deployment acceptance layer, `docs/GOLDEN_OUTPUTS.md` for snapshot review, `docs/POLICY_EXEMPTIONS.md` for owned/time-bounded policy waivers, and `docs/CHANGELOG_WORKFLOW.md` for platform release-note fragments.
 
 ## CI Recommendation
 

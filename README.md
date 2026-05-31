@@ -119,6 +119,7 @@ koncept policy check --factory <factory-dir>
 # Other helpers
 koncept doctor            # dependency, version, path, and factory checks
 koncept golden check      # detect render drift against committed golden files
+koncept changelog check   # validate release-note fragments in .changes/unreleased
 koncept deps              # troubleshoot KCL module resolution
 ```
 
@@ -226,4 +227,3 @@ See [projects/erp_back/](projects/erp_back/) for the template approach and [proj
 ## License
 
 See [LICENSE](LICENSE).
-
