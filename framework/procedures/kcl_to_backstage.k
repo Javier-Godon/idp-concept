@@ -70,8 +70,20 @@ generate_system = lambda stack_name: str, domain_name: str, owner: str, techdocs
     }
 }
 
+_dependency_ref = lambda dep: any -> str {
+    """Map a framework dependency object to a Backstage entity reference."""
+    "component:${dep.name}" if dep.kind == "APPLICATION" else \
+    "resource:kubernetes-namespace-${dep.name}" if dep.kind == "Namespace" else \
+    "resource:${dep.name}"
+}
+
+_dependency_refs = lambda deps: [any] -> [str] {
+    [_dependency_ref(dep) for dep in deps] if deps else []
+}
+
 generate_component_entity = lambda comp: component.ComponentInstance, system_name: str, owner: str, lifecycle: str, repo_url: str -> {str:} {
     """Generate a Backstage Component entity from a framework ComponentInstance."""
+    _depends_on_refs = _dependency_refs(comp.dependsOn)
     {
         apiVersion = _BACKSTAGE_API_VERSION
         kind = "Component"
@@ -81,6 +93,12 @@ generate_component_entity = lambda comp: component.ComponentInstance, system_nam
                 "backstage.io/kubernetes-id" = comp.name
                 "koncept.io/module-type" = comp.kind
                 "koncept.io/generated-by" = "idp-concept"
+                "koncept.io/namespace" = comp.namespace
+                "koncept.io/asset-version" = comp.asset.version
+                if comp.asset.image is not Undefined:
+                    "koncept.io/container-image" = comp.asset.image
+                if comp.asset.helmChart is not Undefined:
+                    "koncept.io/helm-chart" = comp.asset.helmChart
                 if repo_url:
                     "backstage.io/source-location" = "url:${repo_url}"
             }
@@ -90,6 +108,8 @@ generate_component_entity = lambda comp: component.ComponentInstance, system_nam
             lifecycle = lifecycle
             owner = owner
             system = system_name
+            if _depends_on_refs:
+                dependsOn = _depends_on_refs
         }
     }
 }
@@ -104,6 +124,7 @@ _infer_resource_type = lambda kind: str -> str {
 
 generate_resource_from_component = lambda comp: component.ComponentInstance, system_name: str, owner: str, lifecycle: str -> {str:} {
     """Generate a Backstage Resource entity from an INFRASTRUCTURE component."""
+    _depends_on_refs = _dependency_refs(comp.dependsOn)
     {
         apiVersion = _BACKSTAGE_API_VERSION
         kind = "Resource"
@@ -113,6 +134,12 @@ generate_resource_from_component = lambda comp: component.ComponentInstance, sys
                 "backstage.io/kubernetes-id" = comp.name
                 "koncept.io/module-type" = comp.kind
                 "koncept.io/generated-by" = "idp-concept"
+                "koncept.io/namespace" = comp.namespace
+                "koncept.io/asset-version" = comp.asset.version
+                if comp.asset.image is not Undefined:
+                    "koncept.io/container-image" = comp.asset.image
+                if comp.asset.helmChart is not Undefined:
+                    "koncept.io/helm-chart" = comp.asset.helmChart
             }
         }
         spec = {
@@ -120,12 +147,15 @@ generate_resource_from_component = lambda comp: component.ComponentInstance, sys
             lifecycle = lifecycle
             owner = owner
             system = system_name
+            if _depends_on_refs:
+                dependsOn = _depends_on_refs
         }
     }
 }
 
 generate_resource_from_accessory = lambda acc: accessory.AccessoryInstance, system_name: str, owner: str, lifecycle: str -> {str:} {
     """Generate a Backstage Resource entity from an AccessoryInstance."""
+    _depends_on_refs = _dependency_refs(acc.dependsOn)
     {
         apiVersion = _BACKSTAGE_API_VERSION
         kind = "Resource"
@@ -135,6 +165,10 @@ generate_resource_from_accessory = lambda acc: accessory.AccessoryInstance, syst
                 "backstage.io/kubernetes-id" = acc.name
                 "koncept.io/module-type" = acc.kind
                 "koncept.io/generated-by" = "idp-concept"
+                "koncept.io/namespace" = acc.namespace
+                "koncept.io/asset-version" = acc.asset.version
+                if acc.asset.image is not Undefined:
+                    "koncept.io/container-image" = acc.asset.image
             }
         }
         spec = {
@@ -142,6 +176,8 @@ generate_resource_from_accessory = lambda acc: accessory.AccessoryInstance, syst
             lifecycle = lifecycle
             owner = owner
             system = system_name
+            if _depends_on_refs:
+                dependsOn = _depends_on_refs
         }
     }
 }
@@ -152,11 +188,12 @@ generate_resource_from_namespace = lambda ns: k8snamespace.K8sNamespaceInstance,
         apiVersion = _BACKSTAGE_API_VERSION
         kind = "Resource"
         metadata = {
-            name = ns.name
+            name = "kubernetes-namespace-${ns.name}"
             annotations = {
                 "backstage.io/kubernetes-id" = ns.name
                 "koncept.io/module-type" = "K8sNamespace"
                 "koncept.io/generated-by" = "idp-concept"
+                "koncept.io/namespace" = ns.name
             }
         }
         spec = {

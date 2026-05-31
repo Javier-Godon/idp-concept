@@ -12,7 +12,7 @@ interface ExecutorResult {
 }
 
 /**
- * Execute the koncept Nushell CLI with the given arguments.
+ * Execute the koncept Go CLI with the given arguments.
  *
  * Security:
  * - Arguments are passed as an array (not interpolated into a shell string)
@@ -34,7 +34,7 @@ export async function executeKoncept(
             shell: false,
             env: {
                 ...process.env,
-                // Ensure Nushell can find KCL
+                // Ensure the Go CLI can find kcl and other ecosystem tools.
                 PATH: process.env.PATH,
             },
         });
@@ -65,7 +65,7 @@ export async function executeKoncept(
         child.on('error', (err: Error) => {
             reject(
                 new Error(
-                    `Failed to execute koncept: ${err.message}. Ensure koncept (Nushell) is installed and in PATH.`,
+                    `Failed to execute koncept: ${err.message}. Ensure the Go CLI binary is installed and in PATH.`,
                 ),
             );
         });

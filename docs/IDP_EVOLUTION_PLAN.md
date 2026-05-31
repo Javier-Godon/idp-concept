@@ -17,6 +17,8 @@
 > Update 2026-05-31 (changelog workflow): added `koncept changelog new|check|render` for framework/platform release-note fragments under `.changes/unreleased/`. Fragments use Keep-a-Changelog categories and require owner metadata; CI validates fragments so release intent is reviewed with code. New workflow doc: `docs/CHANGELOG_WORKFLOW.md`.
 >
 > Update 2026-05-31 (framework compatibility): started Phase D with descriptive framework compatibility metadata before remote package publishing. `framework.models.compatibility.FrameworkCompatibility` can now be attached to `Stack`, `StackInstance`, and `Release`; `koncept init project` emits `koncept.yaml` plus stack compatibility metadata; and `koncept doctor` prints framework source/version constraints/support tier/tested versions. New workflow doc: `docs/FRAMEWORK_VERSIONING.md`.
+>
+> Update 2026-05-31 (Backstage catalog): improved the developer-portal path by enriching `kcl_to_backstage` entities with namespace, asset version, image/chart annotations, and `spec.dependsOn` relationships from framework dependencies. The Backstage custom action now targets the current Go CLI lifecycle commands (`init project|module|env|release|factory`) instead of the old init flag shape.
 
 ---
 
@@ -346,7 +348,7 @@ The previous roadmap emphasized many future phases. Given the current state, the
 - [x] `koncept init env <dev|stg|prod>` creates site/profile/pre-release structure.
 - [x] `koncept init release <version>` creates immutable release structure.
 - [x] Generated projects use the recommended minimal transitive `kcl.mod` pattern.
-- [ ] Backstage scaffolder templates call the same scaffold logic or use the same source templates as the CLI.
+- [~] Backstage scaffolder actions call the same Go CLI scaffold lifecycle as local users (`koncept init project|module|env|release|factory`). Remaining: review every template workflow end-to-end in a real Backstage backend and keep generated YAML inputs aligned with the CLI scaffold fields.
 - [~] Add golden generated fixtures for at least:
   - webapp only,
   - webapp + PostgreSQL,
@@ -455,8 +457,8 @@ The previous roadmap emphasized many future phases. Given the current state, the
 
 ### Deliverables
 
-- [ ] Connect Backstage templates to the same project/module scaffolding contracts as the CLI.
-- [ ] Generate catalog entities with ownership, lifecycle, system, domain, SLO tier, repository, docs, and support metadata.
+- [~] Connect Backstage templates to the same project/module scaffolding contracts as the CLI. The shared custom action now invokes the current Go CLI lifecycle commands; full portal workflow validation is still pending.
+- [~] Generate catalog entities with ownership, lifecycle, system, domain, repository, docs, support metadata, and dependency graph data. Remaining: SLO tier, data classification, cost center, runbook/support-contact metadata need explicit model fields before they can be rendered safely.
 - [ ] Add workflow templates for:
   - new web app,
   - new database/cache/queue,

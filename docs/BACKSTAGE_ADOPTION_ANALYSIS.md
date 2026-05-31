@@ -11,7 +11,7 @@
 - [5. Compatibility Assessment](#5-compatibility-assessment)
 - [6. Concept Mapping: idp-concept → Backstage](#6-concept-mapping-idp-concept--backstage)
 - [7. Plugin Ecosystem for Our Stack](#7-plugin-ecosystem-for-our-stack)
-- [8. Nushell CLI Coexistence Strategy](#8-nushell-cli-coexistence-strategy)
+- [8. CLI Coexistence Strategy](#8-cli-coexistence-strategy)
 - [9. Gap Analysis](#9-gap-analysis)
 - [10. CNCF Maturity Model Alignment](#10-cncf-maturity-model-alignment)
 - [11. Adoption Roadmap](#11-adoption-roadmap)
@@ -28,13 +28,13 @@
 - Backstage is the **only viable free OSS developer portal** with sufficient maturity and ecosystem
 - **Full compatibility** with all our technologies: KCL (via custom actions), Crossplane (TeraSky plugin), ArgoCD (Roadie plugin), Helm, Kubernetes, Kafka, Keycloak, Vault
 - The **TeraSky Kubernetes Ingestor** plugin is a perfect bridge — it auto-ingests K8s workloads and Crossplane claims as Backstage catalog entities, and auto-generates Templates from Crossplane XRDs
-- The Nushell CLI (`koncept`) **remains essential** as the build/render tool; Backstage wraps it as a self-service UI layer
-- **One new output procedure** is needed: `kcl_to_backstage` to generate `catalog-info.yaml` from KCL models
+- The Go CLI (`koncept`) **remains essential** as the build/render tool; Backstage wraps it as a self-service UI layer
+- `kcl_to_backstage` now generates catalog entities from KCL models, including module metadata annotations and `spec.dependsOn` relationships for graph views
 - New technology requirement: **Node.js + TypeScript + React** for Backstage customization
 
 **Gaps to Fill Before Adoption**:
-1. `kcl_to_backstage` output procedure (catalog-info.yaml generation from KCL models)
-2. Custom Backstage scaffolder actions wrapping `koncept` CLI
+1. Backstage scaffolder templates wired to the current `koncept init project|module|env|release` lifecycle commands
+2. Production Backstage instance deployment and plugin configuration
 3. Node.js/TypeScript development capability
 
 ---
@@ -47,7 +47,7 @@
 |---|---|
 | 8 output formats (YAML, Helm, Helmfile, Kusion, ArgoCD, Kustomize, Timoni, Crossplane) | ✅ |
 | 268 unit tests, full TDD | ✅ |
-| Nushell CLI (`koncept`) with render/validate/init/publish | ✅ |
+| Go CLI (`koncept`) with render/validate/init/publish/policy/golden/changelog | ✅ |
 | 16 framework templates (WebApp, Database, Kafka, PostgreSQL, MongoDB, RabbitMQ, Redis, Keycloak, OpenSearch, Vault, QuestDB, MinIO, Observability, OpenTelemetry) | ✅ |
 | Framework builders (deployment, service, configmap, storage, service_account, leader, network_policy, pdb) | ✅ |
 | Security (secretKeyRef, ExternalSecrets, check blocks, kubeconform) | ✅ |
@@ -63,8 +63,8 @@ Developer → koncept CLI → KCL Source → factory/ → output procedures → 
 ### What's Missing
 
 - **No web UI** — all interactions via CLI
-- **No service catalog** — no central view of what's deployed where
-- **No self-service** — developers need KCL/CLI knowledge
+- **Partial service catalog** — `koncept render backstage` emits catalog data, but no production portal is deployed yet
+- **Partial self-service** — CLI scaffolding and Backstage templates/actions exist, but portal workflows still need production hardening
 - **No visualizations** — no dependency graphs, health dashboards
 - **No golden path templates** — scaffolding exists but only via CLI
 
@@ -172,7 +172,7 @@ spec:
 | **Vault** (HashiCorp) | Community Plugin | Vault plugin | ✅ Active — visualize secrets |
 | **PostgreSQL** (CloudNativePG) | Via K8s Plugin | Kubernetes plugin monitors CRDs | ✅ Indirect |
 | **KCL** | Custom Action needed | No existing plugin | ⚠️ Custom scaffolder action required |
-| **Nushell CLI** | Custom Action needed | No existing plugin | ⚠️ Custom scaffolder action wrapping CLI |
+| **Go CLI** | Custom Action needed | No existing plugin | ✅ Custom scaffolder actions wrap `koncept` lifecycle commands |
 | **Grafana** | Community Plugin | Grafana plugin | ✅ Active — embed dashboards |
 | **Prometheus** | Community Plugin | Prometheus by Roadie | ✅ Active — metrics visualization |
 | **SonarQube** | Community Plugin | SonarQube by SDA SE | ✅ Active — code quality |
@@ -180,7 +180,7 @@ spec:
 
 ### Verdict: **Fully Compatible**
 
-Every technology in our stack has either a native Backstage plugin or can be integrated via custom actions. The two custom integrations needed (KCL execution, Nushell CLI wrapping) are straightforward scaffolder actions.
+Every technology in our stack has either a native Backstage plugin or can be integrated via custom actions. The remaining custom integration is operational hardening of the Backstage scaffolder workflows that execute the Go CLI.
 
 ---
 
@@ -197,7 +197,7 @@ Every technology in our stack has either a native Backstage plugin or can be int
 | **Accessory** (kind: CRD) | **Resource** | `kubernetes-crd` | Operator CRDs (Kafka, PostgreSQL, etc.) |
 | **Accessory** (kind: SECRET) | **Resource** | `secret` | ExternalSecrets, Vault references |
 | **ThirdParty** (HELM) | **Component** | `library` or **Resource** | External Helm charts |
-| **K8sNamespace** | — | — | Implicit in Backstage namespace field |
+| **K8sNamespace** | **Resource** | `kubernetes-namespace` | Rendered as `kubernetes-namespace-<name>` so namespace dependency targets do not collide with workload/resource names |
 | **Tenant** | **Group** | `customer` | Maps to organizational entity |
 | **Site** | Labels/Annotations | `koncept.io/site: dev-cluster` | Environment metadata on entities |
 | **Profile** | Labels | `koncept.io/profile: v1.0.0` | Version metadata |
@@ -343,7 +343,7 @@ metadata:
 
 ---
 
-## 8. Nushell CLI Coexistence Strategy
+## 8. CLI Coexistence Strategy
 
 ### Question: Does `koncept` still make sense alongside Backstage?
 
@@ -378,9 +378,9 @@ metadata:
           │                │
           ▼                ▼
 ┌─────────────────────────────────────────────────────────┐
-│                   KONCEPT CLI (Nushell)                    │
-│  koncept render argocd | helmfile | kusion | crossplane   │
-│  koncept validate | koncept init | koncept publish        │
+│                    KONCEPT CLI (Go)                     │
+│  koncept render argocd | helmfile | backstage | ...     │
+│  koncept validate | init project|module|env|release     │
 └─────────────────────────────┬───────────────────────────┘
                               │
                               ▼
@@ -439,7 +439,7 @@ export const konceptRenderAction = createTemplateAction({
 
 | Gap | Priority | Effort | Description |
 |---|---|---|---|
-| **`kcl_to_backstage` output procedure** | P0 | Medium | Generate `catalog-info.yaml` from KCL Stack/Component/Accessory models. New output procedure in `framework/procedures/` |
+| **`kcl_to_backstage` output procedure** | Done | — | Generates Domain/System/Component/Resource catalog data from KCL Stack/Component/Accessory/Namespace models, with module annotations and dependency refs. |
 | **Backstage annotations in manifests** | P0 | Low | Add TeraSky Ingestor annotations to K8s manifests generated by builders (system, owner, lifecycle, component-type) |
 | **Node.js/TypeScript development setup** | P1 | Low | Package.json, TypeScript config for custom Backstage plugins/actions |
 | **Custom scaffolder actions** | P1 | Medium | `koncept:render`, `koncept:validate`, `koncept:init` actions wrapping CLI |
@@ -471,10 +471,11 @@ Output: Multi-document YAML with Backstage entity descriptors
 - 1 Component entity per APPLICATION Component
 - 1 Resource entity per INFRASTRUCTURE Component
 - 1 Resource entity per Accessory (CRD, SECRET)
-- 1 Location entity pointing to all descriptors
+- 1 Resource entity per Kubernetes namespace
+- Component/Resource `spec.dependsOn` entries from framework dependencies
 ```
 
-This follows the same pattern as our existing output procedures (`kcl_to_yaml`, `kcl_to_helm`, etc.) — TDD, 8+ tests, integrated into `render.k` and `koncept` CLI.
+This follows the same pattern as our existing output procedures (`kcl_to_yaml`, `kcl_to_helm`, etc.) — TDD, 10+ tests, integrated into `render.k` and `koncept` CLI.
 
 ---
 
@@ -484,7 +485,7 @@ This follows the same pattern as our existing output procedures (`kcl_to_yaml`, 
 
 | Aspect | Current | Evidence |
 |---|---|---|
-| Investment | Dedicated tooling (KCL, Nushell CLI) | framework/, platform_cli/ |
+| Investment | Dedicated tooling (KCL, Go CLI, legacy Nushell scripts) | framework/, cmd/koncept/, platform_cli/ |
 | Adoption | Platform engineers use it, developers need training | CLI requires KCL/factory knowledge |
 | Interfaces | CLI only (`koncept`) | No web UI, no self-service portal |
 | Operations | Manual factory creation, some scaffolding | `koncept init` exists but basic |
@@ -631,7 +632,7 @@ Create Backstage Templates mapping to our KCL templates:
 | **TeraSky plugin maturity** — smaller community (69 stars) | Plugin bugs, slow fixes | Medium | TeraSky actively maintains (updated 4 days ago for Backstage 1.49.3). Contribute fixes upstream. |
 | **Node.js/TypeScript learning curve** | Slower development of custom actions | Medium | Custom actions are small TypeScript functions; scaffold from examples |
 | **Portal adoption** — developers may prefer CLI | Low portal usage | Low | Make portal the golden path for common tasks; CLI for power users |
-| **KCL in Backstage** — no native integration | Custom action needed for every KCL operation | Medium | Wrap `koncept` CLI (Nushell); KCL doesn't need to run in Node.js |
+| **KCL in Backstage** — no native integration | Custom action needed for every KCL operation | Medium | Wrap the `koncept` Go CLI; KCL doesn't need to run in Node.js |
 | **Monorepo catalog management** — many entities in one repo | Catalog complexity | Low | Use Location entities with glob patterns; TeraSky Ingestor handles deployed resources |
 
 ---
@@ -651,21 +652,21 @@ Create Backstage Templates mapping to our KCL templates:
 2. 33,000+ stars, 1,867 contributors, Apache-2.0 license
 3. Plugins exist for every technology in our stack
 4. TeraSky Kubernetes Ingestor auto-bridges K8s resources → catalog
-5. Custom scaffolder actions enable wrapping our Nushell CLI
+5. Custom scaffolder actions enable wrapping the Go CLI
 6. CNCF ecosystem alignment (Backstage, Crossplane, ArgoCD all CNCF)
 
 **Consequences**:
 - New technology requirement: Node.js + TypeScript + React
 - New infrastructure: PostgreSQL for Backstage (already have template)
-- New output procedure: `kcl_to_backstage`
+- Backstage catalog output and custom actions need ongoing compatibility with CLI contracts
 - Ongoing Backstage version maintenance
 - `koncept` CLI remains as the build tool; Backstage wraps it
 
-### ADR-002: Keep Nushell CLI Alongside Portal
+### ADR-002: Keep CLI Alongside Portal
 
 **Status**: Proposed
 
-**Context**: With a web portal, should the Nushell CLI (`koncept`) be deprecated?
+**Context**: With a web portal, should the `koncept` CLI be deprecated?
 
 **Decision**: Keep `koncept` CLI as the primary build/render tool. Backstage wraps it via scaffolder actions.
 

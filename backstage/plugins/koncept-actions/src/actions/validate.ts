@@ -7,6 +7,7 @@ import { executeKoncept } from '../lib/executor';
  *
  * Validates KCL configurations by compiling factory_seed.k.
  * Catches schema errors before rendering.
+ * Uses the Go CLI's `--factory` flag from the workspace root.
  */
 export function konceptValidateAction() {
     return createTemplateAction({
@@ -29,14 +30,17 @@ export function konceptValidateAction() {
         },
         async handler(ctx) {
             const { factoryDir } = ctx.input;
-            const workDir = factoryDir
-                ? `${ctx.workspacePath}/${factoryDir}`
-                : `${ctx.workspacePath}/factory`;
+            const args = ['validate'];
+            if (factoryDir) {
+                args.push('--factory', factoryDir);
+            }
 
-            ctx.logger.info(`Validating KCL configurations in ${workDir}`);
+            ctx.logger.info(
+                `Validating KCL configurations in ${factoryDir || './factory'}`,
+            );
 
-            const result = await executeKoncept(['validate'], {
-                cwd: workDir,
+            const result = await executeKoncept(args, {
+                cwd: ctx.workspacePath,
                 logger: ctx.logger,
             });
 

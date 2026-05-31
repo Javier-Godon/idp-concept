@@ -94,6 +94,8 @@ kubernetes:
 metadata:
   annotations:
     backstage.io/kubernetes-id: <component-name>
+    koncept.io/namespace: <kubernetes-namespace>
+    koncept.io/asset-version: <image-or-chart-version>
 ```
 
 ### 2.2 TeraSky Kubernetes Ingestor
@@ -232,7 +234,7 @@ import { EntityCatalogGraphCard } from '@backstage/plugin-catalog-graph';
 ```
 
 **How it maps to idp-concept**:
-- Component → `dependsOn` → Resource (e.g., erp-api → erp-postgres)
+- Component/Resource → `spec.dependsOn` → Resource (e.g., erp-api → erp-postgres or `kubernetes-namespace-<name>` namespace resources)
 - System → `hasPart` → Component/Resource (e.g., ERP Back → erp-api, erp-postgres)
 - Domain → `hasPart` → System (e.g., ERP Back → ERP Back system)
 
@@ -573,6 +575,10 @@ permission:
 | `backstage.io/source-location` | `kcl_to_backstage` (repo_url param) | Source code link |
 | `koncept.io/generated-by` | `kcl_to_backstage` | Identifies idp-concept entities |
 | `koncept.io/module-type` | `kcl_to_backstage` | Module type (APPLICATION, INFRASTRUCTURE, CRD, SECRET) |
+| `koncept.io/namespace` | `kcl_to_backstage` | Kubernetes namespace for Component and Resource entities |
+| `koncept.io/asset-version` | `kcl_to_backstage` | Framework asset version backing a Component or Resource |
+| `koncept.io/container-image` | `kcl_to_backstage` | Container image when the module declares one |
+| `koncept.io/helm-chart` | `kcl_to_backstage` | Helm chart when the module declares one |
 | `argocd/app-name` | Manual or `kcl_to_argocd` | ArgoCD plugin entity matching |
 | `grafana/dashboard-selector` | Manual | Grafana dashboard embedding |
 | `prometheus.io/rule` | Manual | Prometheus metrics display |

@@ -1,7 +1,7 @@
 {
     "name": "@idp-concept/backstage-plugin-koncept-actions",
     "version": "0.1.0",
-    "description": "Backstage scaffolder actions wrapping the koncept Nushell CLI for idp-concept IDP",
+    "description": "Backstage scaffolder actions wrapping the koncept Go CLI for idp-concept IDP",
     "license": "Apache-2.0",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",

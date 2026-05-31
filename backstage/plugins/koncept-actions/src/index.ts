@@ -1,5 +1,5 @@
 /**
- * Backstage scaffolder actions wrapping the koncept Nushell CLI.
+ * Backstage scaffolder actions wrapping the koncept Go CLI.
  *
  * These actions allow Backstage Software Templates to invoke KCL rendering,
  * validation, initialization, and publishing through the koncept CLI.

@@ -15,7 +15,7 @@ _bs_mk_app_component = lambda name: str, ns: str -> component.ComponentInstance 
         kind = "APPLICATION"
         namespace = ns
         configurations = {}
-        asset = { version = "1.0.0" }
+        asset = { image = "ghcr.io/example/${name}:1.0.0", version = "1.0.0" }
         leaders = [{ name = name, kind = "Deployment", apiVersion = "apps/v1" }]
         manifests = [
             { apiVersion = "apps/v1", kind = "Deployment", metadata = { name = name, namespace = ns } }
@@ -30,7 +30,7 @@ _bs_mk_infra_component = lambda name: str, ns: str -> component.ComponentInstanc
         kind = "INFRASTRUCTURE"
         namespace = ns
         configurations = {}
-        asset = { version = "16.0" }
+        asset = { helmChart = "bitnami/postgresql", version = "16.0" }
         leaders = [{ name = name, kind = "StatefulSet", apiVersion = "apps/v1" }]
         manifests = [
             { apiVersion = "apps/v1", kind = "StatefulSet", metadata = { name = name, namespace = ns } }
@@ -97,6 +97,9 @@ test_bs_generate_component_entity = lambda {
     assert _entity.spec.lifecycle == "production"
     assert _entity.spec.system == "erp-back"
     assert _entity.metadata.annotations["backstage.io/kubernetes-id"] == "api"
+    assert _entity.metadata.annotations["koncept.io/namespace"] == "apps"
+    assert _entity.metadata.annotations["koncept.io/asset-version"] == "1.0.0"
+    assert _entity.metadata.annotations["koncept.io/container-image"] == "ghcr.io/example/api:1.0.0"
 }
 
 # === Test: generate Resource from INFRASTRUCTURE component ===
@@ -107,6 +110,7 @@ test_bs_generate_resource_from_infra = lambda {
     assert _entity.kind == "Resource"
     assert _entity.metadata.name == "postgres-db"
     assert _entity.spec.owner == "platform-team"
+    assert _entity.metadata.annotations["koncept.io/helm-chart"] == "bitnami/postgresql"
 }
 
 # === Test: generate Resource from CRD accessory ===
@@ -131,7 +135,8 @@ test_bs_generate_resource_from_namespace = lambda {
     _ns = _bs_mk_namespace("apps")
     _entity = backstage.generate_resource_from_namespace(_ns, "erp-back", "platform-team", "production")
     assert _entity.kind == "Resource"
-    assert _entity.metadata.name == "apps"
+    assert _entity.metadata.name == "kubernetes-namespace-apps"
+    assert _entity.metadata.annotations["koncept.io/namespace"] == "apps"
 }
 
 # === Test: full catalog with mixed components ===
@@ -197,4 +202,17 @@ test_bs_techdocs_annotation = lambda {
 test_bs_no_techdocs_when_empty = lambda {
     _domain = backstage.generate_domain("my-proj", "team", "")
     assert "backstage.io/techdocs-ref" not in _domain.metadata.annotations
+}
+
+# === Test: dependency relationships are emitted as Backstage entity refs ===
+test_bs_dependency_refs = lambda {
+    _ns = _bs_mk_namespace("apps")
+    _db = _bs_mk_infra_component("postgres-db", "data") | { dependsOn = [_ns] }
+    _api = _bs_mk_app_component("api", "apps") | { dependsOn = [_ns, _db] }
+
+    _component = backstage.generate_component_entity(_api, "erp-back", "platform-team", "production", "")
+    assert _component.spec.dependsOn == ["resource:kubernetes-namespace-apps", "resource:postgres-db"]
+
+    _resource = backstage.generate_resource_from_component(_db, "erp-back", "platform-team", "production")
+    assert _resource.spec.dependsOn == ["resource:kubernetes-namespace-apps"]
 }
