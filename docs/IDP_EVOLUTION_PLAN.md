@@ -2,13 +2,17 @@
 
 > Current-state assessment and roadmap for **idp-concept** as a practical Internal Developer Platform for a medium-sized company with several products.
 >
-> Last reviewed: 2026-05-30. Repository verification at review time: `./scripts/verify.sh` passed with `416/416` KCL tests and ERP factory smoke renders for `yaml`, `argocd`, `helmfile`, `helm`, `kustomize`, `timoni`, `crossplane`, and `backstage`. Go CLI package tests also passed.
+> Last reviewed: 2026-05-31. Repository verification at review time: `./scripts/verify.sh`, golden drift checks, Go CLI package tests, and the policy gate passed.
 >
 > Update 2026-05-30: added `koncept completion`, `koncept policy check` (baseline security/ownership gate), `koncept init project` (full validating webapp skeleton), concise KCL module-resolution error hints, build metadata wiring, and CI image/build tooling (`Dockerfile`, `make docker`, `make checksums`). Generated projects render Tier-1 output and pass `koncept policy check` out of the box.
 >
 > Update 2026-05-30 (later): added `koncept init module <type> <name>` scaffolding for `webapp`, `database`, `postgres`, `redis`, `kafka`, `mongodb`, and `rabbitmq` (generates a module def under `modules/<area>/` and prints paste-ready stack wiring), and extended `koncept policy check` with two new rules — `no-secret-literals` (secret-looking env values must use a Secret reference) and `require-namespace` (Tier-1 workloads must declare an explicit namespace). Generated modules compile, render, and pass policy in a fresh project.
 >
 > Update 2026-05-30 (later still): completed the Phase B project-lifecycle scaffolding with `koncept init env <name>` (adds a profile + site + pre-release factory for an environment — `dev|stg|prod` presets plus arbitrary names) and `koncept init release <version>` (adds a versioned stack, a shared production site, and an immutable `releases/<version>_production/factory`). Both generators mirror the proven `erp_back` layout, never overwrite existing files, and were verified to `kcl run` cleanly in a freshly scaffolded project (staging renders the dev image tag, the release pins its own `appVersion`). Extended `koncept policy check` with the `require-network-policy` rule (warns when a namespace runs workloads but has no NetworkPolicy, encouraging a default-deny posture). All Go package tests pass.
+>
+> Update 2026-05-30 (golden workflow): shipped the golden render-drift review gate. `koncept golden check` now prints a concise line diff on drift (new `internal/golden` package, unit-tested), `scripts/golden.sh check|update` is the single entrypoint over the reference factories, and committed snapshots guard the `erp_back` dev (`yaml`+`argocd`), stg (`yaml`), and v1.0.0 production (`yaml`) factories. CI (`validate.yml`) runs `scripts/golden.sh check` after the policy gate. Renders are deterministic via the Go CLI's `WithSortKeys`. New workflow doc: `docs/GOLDEN_OUTPUTS.md`.
+>
+> Update 2026-05-31: added explicit policy exemptions for `koncept policy check` via `--exemptions <file>`. Exemptions are narrow (`rule` + workload target), owned, reasoned, and expiring; invalid, expired, or stale waivers fail the command. New workflow doc: `docs/POLICY_EXEMPTIONS.md`.
 
 ---
 
@@ -38,7 +42,7 @@ It is **not** trying to be a generic “big tech” platform framework for every
 | **Easy for application developers?** | **Potentially yes**, if developers use Backstage or simple `koncept` commands and do not edit KCL internals. Direct KCL authoring is not developer-friendly enough yet. |
 | **Easy for platform engineers?** | **Moderate**. The template approach in `projects/erp_back/` is usable, but the framework has a large concept surface. |
 | **Easy to create a new project?** | **Not yet easy enough**. The structure is clear, but project creation still requires many coordinated files unless Backstage or a richer Go CLI scaffold is used. |
-| **Best-practice alignment?** | **Good foundation**: typed configs, GitOps outputs, operator-backed infra, tests, acceptance matrix, secret-reference patterns. Missing: versioned distribution, CI policy gates, golden outputs, platform telemetry, and production runtime validation for operators. |
+| **Best-practice alignment?** | **Good foundation**: typed configs, GitOps outputs, operator-backed infra, tests, acceptance matrix, secret-reference patterns, CI policy gates, and golden drift review. Remaining: versioned distribution, platform telemetry, and production runtime validation for operators. |
 | **Main risk?** | Too much framework surface area too early: many outputs, many templates, two CLIs, and stale docs can make adoption harder than the platform problem itself. |
 
 ### Recommended positioning
@@ -187,9 +191,9 @@ koncept render argocd --all
 |---|---|
 | **Self-service onboarding** | Backstage templates exist, but the CLI and docs still expose too much internal structure. |
 | **Versioned platform distribution** | Projects still primarily depend on local path-based framework modules. |
-| **CI/CD governance** | `scripts/verify.sh` is strong, but `.github/workflows` was not present during this review. |
-| **Policy as code** | Security rules exist in docs/conventions, but not yet as enforced OPA/Kyverno/KCL policy gates. |
-| **Golden-file review workflow** | Planned and partly supported by CLI commands, but not yet a standard repository workflow. |
+| **CI/CD governance** | `.github/workflows/validate.yml` now runs Go tests, render smoke, policy gate, golden drift check, `scripts/verify.sh`, and `git diff --check`. Remaining: golden coverage for more projects and required-check enforcement/branch protection. |
+| **Policy as code** | Enforced in CI via `koncept policy check` (privileged/latest/resources/owner/secret-literal/namespace/network-policy rules) with explicit owner/reason/expiry exemptions. Remaining: external OPA/Kyverno admission parity. |
+| **Golden-file review workflow** | Shipped: `koncept golden check` with inline drift diff, `scripts/golden.sh`, committed snapshots for the `erp_back` reference factories, and a CI drift gate. Remaining: extend to more reference projects/formats. See `docs/GOLDEN_OUTPUTS.md`. |
 | **Operational telemetry** | No platform adoption/error/render metrics yet. |
 | **Runtime proof for operators** | Many operator-heavy cases are dry-run only unless opt-in runtime scripts are used with real dependencies. |
 
@@ -266,7 +270,7 @@ KCL is a strong fit for typed configuration, but it is niche. A medium company s
    - Run `./scripts/verify.sh`, Go tests, `git diff --check`, and selected acceptance tests on PRs.
 
 4. **Golden-output workflow**
-   - Commit expected renders for reference projects and require explicit review for render changes.
+   - Shipped for the `erp_back` reference factories; extend only when another project/format has a real consumer that needs snapshot review.
 
 5. **Policy-as-code gate**
    - Enforce no `latest` tags, no privileged pods, required resources, required labels, secret-looking values must use Secret references, and namespace/network policy conventions.
@@ -339,11 +343,14 @@ The previous roadmap emphasized many future phases. Given the current state, the
 - [x] `koncept init release <version>` creates immutable release structure.
 - [x] Generated projects use the recommended minimal transitive `kcl.mod` pattern.
 - [ ] Backstage scaffolder templates call the same scaffold logic or use the same source templates as the CLI.
-- [ ] Add golden generated fixtures for at least:
+- [~] Add golden generated fixtures for at least:
   - webapp only,
   - webapp + PostgreSQL,
   - webapp + Redis,
   - webapp + Kafka.
+  (Committed golden render snapshots now guard the `erp_back` reference factories
+  — a webapp+PostgreSQL stack — across `yaml`/`argocd`. Dedicated per-template
+  generated fixtures are still pending.)
 
 ### Success criteria
 
@@ -364,7 +371,7 @@ The previous roadmap emphasized many future phases. Given the current state, the
   - `./scripts/verify.sh`,
   - `git diff --check`,
   - selected CLI smoke checks for the ERP dev factory.
-- [ ] Add golden-output checks for reference projects.
+- [x] Add golden-output checks for reference projects.
 - [x] Add policy-as-code checks for rendered YAML (`koncept policy check`):
   - [x] no privileged containers,
   - [x] no `latest` tags,
@@ -372,7 +379,7 @@ The previous roadmap emphasized many future phases. Given the current state, the
   - [x] required ownership labels/annotations,
   - [x] secret-looking values must use Secret references,
   - [x] namespace and network-policy conventions (explicit-namespace rule and per-namespace default-deny NetworkPolicy convention both shipped as warnings).
-- [ ] Document policy exemptions with owner, reason, and expiry.
+- [x] Document and implement policy exemptions with owner, reason, and expiry.
 - [ ] Add release notes/changelog generation for framework changes.
 
 ### Success criteria
@@ -380,6 +387,10 @@ The previous roadmap emphasized many future phases. Given the current state, the
 - Pull requests show whether KCL, Go CLI, rendered manifests, and policies pass.
 - Render drift is visible and intentionally approved.
 - Security conventions are enforced, not only documented.
+
+**Implementation learning (2026-05-30, golden workflow):** golden snapshots were placed *next to each factory* (`<factory>/../golden/<format>/manifests.yaml`) rather than in a central `golden/` tree, so a project owns its snapshots alongside the factory that produces them and removing a factory removes its goldens. Determinism was the key risk: ad-hoc `kcl run` does not sort map keys, but the Go CLI render path uses `WithSortKeys(true)`, so `golden update`/`check` both go through `factory.Render` and are byte-stable — this is why the gate routes through the CLI, not raw `kcl run`. Coverage is deliberately scoped to Tier-1 `yaml`/`argocd` for the `erp_back` reference (a webapp+PostgreSQL stack) plus one `yaml` snapshot each for staging and the production release; multi-file formats (`helmfile`, `backstage`) are left to render smoke checks until a real consumer needs snapshot review, keeping the maintainer's "accept the diff" burden proportional to value. The drift output prints a prefix/suffix-elided line diff so reviewers see only the changed region in CI logs.
+
+**Implementation learning (2026-05-31, policy exemptions):** the safer exemption path is not another `--no-*` rule toggle. Whole-rule disabling hides unrelated regressions and tends to persist in CI. The implemented model requires a `rule`, Kubernetes target (`kind` plus `namespace` or `name`), `owner`, `reason`, and `expiresOn`, and it fails on expired or stale exemptions. That makes an exemption a reviewable operational decision, not a quiet configuration default. Auto-discovery was deliberately avoided in this slice: CI should opt into a reviewed exemption file explicitly with `--exemptions`, so the presence of a local waiver file cannot accidentally weaken policy enforcement.
 
 ---
 
@@ -507,7 +518,7 @@ Potential future work:
 | **P0** | Go CLI packaging and verification | Removes niche CLI dependency friction. |
 | **P0** | Full project/module/environment scaffolding | Directly answers “is it easy to create a new project?” |
 | **P0** | CI workflow + policy basics | Required before several products depend on the platform. |
-| **P1** | Golden outputs and drift review | Makes render changes reviewable and trustworthy. |
+| **P1** | Extend golden outputs where justified | Makes render changes reviewable without turning snapshots into a high-maintenance burden. |
 | **P1** | Framework versioning | Allows product teams to upgrade independently. |
 | **P1** | Backstage workflow integration | Makes the platform self-service for non-KCL users. |
 | **P1/P2** | Runtime operator validation | Builds confidence in production infrastructure templates. |

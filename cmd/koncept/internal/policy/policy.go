@@ -18,17 +18,21 @@ const (
 
 // Finding is a single policy violation against a rendered manifest.
 type Finding struct {
-	Rule     string
-	Severity Severity
-	Kind     string
-	Name     string
-	Message  string
+	Rule      string
+	Severity  Severity
+	Kind      string
+	Namespace string
+	Name      string
+	Message   string
 }
 
 func (f Finding) String() string {
 	target := f.Kind
 	if f.Name != "" {
 		target = f.Kind + "/" + f.Name
+	}
+	if f.Namespace != "" {
+		target = f.Namespace + "/" + target
 	}
 	return fmt.Sprintf("[%s] %s (%s): %s", f.Severity, f.Rule, target, f.Message)
 }
@@ -116,10 +120,11 @@ func checkNetworkPolicies(docs []map[string]any) []Finding {
 		}
 		warned[ns] = true
 		findings = append(findings, Finding{
-			Rule:     "require-network-policy",
-			Severity: SeverityWarning,
-			Kind:     kind,
-			Name:     metadataName(doc),
+			Rule:      "require-network-policy",
+			Severity:  SeverityWarning,
+			Kind:      kind,
+			Namespace: ns,
+			Name:      metadataName(doc),
 			Message: fmt.Sprintf(
 				"namespace %q has workloads but no NetworkPolicy (add a default-deny NetworkPolicy)", ns),
 		})
@@ -131,9 +136,10 @@ func checkDoc(doc map[string]any, opts Options) []Finding {
 	var findings []Finding
 	kind, _ := doc["kind"].(string)
 	name := metadataName(doc)
+	namespace := metadataNamespace(doc)
 
 	add := func(rule string, sev Severity, msg string) {
-		findings = append(findings, Finding{Rule: rule, Severity: sev, Kind: kind, Name: name, Message: msg})
+		findings = append(findings, Finding{Rule: rule, Severity: sev, Kind: kind, Namespace: namespace, Name: name, Message: msg})
 	}
 
 	podSpec := podSpecOf(doc)

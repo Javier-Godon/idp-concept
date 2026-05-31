@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/idp-concept/koncept/internal/factory"
 	"github.com/idp-concept/koncept/internal/policy"
@@ -16,6 +17,7 @@ var (
 	policyNoSecretRefs bool
 	policyNoNamespace  bool
 	policyNoNetPol     bool
+	policyExemptions   string
 )
 
 var policyCmd = &cobra.Command{
@@ -33,7 +35,8 @@ var policyCmd = &cobra.Command{
   - namespaces running workloads should have a NetworkPolicy (default-deny)
 
 Errors fail the command (exit 1). Warnings are reported but do not fail unless
---warn-as-error is set.`,
+--warn-as-error is set. Use --exemptions for narrow, owned, expiring waivers
+rather than disabling whole rules.`,
 	Args:      cobra.MaximumNArgs(1),
 	ValidArgs: []string{"check"},
 	RunE:      runPolicy,
@@ -65,6 +68,19 @@ func runPolicy(cmd *cobra.Command, args []string) error {
 	findings, err := policy.Check(rendered, opts)
 	if err != nil {
 		return fmt.Errorf("policy check failed: %w", err)
+	}
+	if policyExemptions != "" {
+		exemptions, err := policy.LoadExemptionsFile(policyExemptions)
+		if err != nil {
+			return err
+		}
+		findings, err = policy.ApplyExemptions(findings, exemptions, time.Now())
+		if err != nil {
+			return fmt.Errorf("policy exemptions invalid: %w", err)
+		}
+		if len(exemptions) > 0 {
+			printInfo(fmt.Sprintf("policy: applied %d exemption(s) from %s", len(exemptions), policyExemptions))
+		}
 	}
 
 	errors, warnings := 0, 0
@@ -99,4 +115,5 @@ func init() {
 	policyCmd.Flags().BoolVar(&policyNoSecretRefs, "no-require-secret-refs", false, "disable the secret-literal env rule")
 	policyCmd.Flags().BoolVar(&policyNoNamespace, "no-require-namespace", false, "disable the explicit namespace rule")
 	policyCmd.Flags().BoolVar(&policyNoNetPol, "no-require-network-policy", false, "disable the per-namespace NetworkPolicy rule")
+	policyCmd.Flags().StringVar(&policyExemptions, "exemptions", "", "path to a policy exemptions YAML file with owned, expiring waivers")
 }

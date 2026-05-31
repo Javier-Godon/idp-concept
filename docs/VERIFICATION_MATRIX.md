@@ -18,6 +18,8 @@ The script runs scoped lint, acceptance fixture render checks, framework unit te
 | Acceptance fixture render | every `framework/tests/acceptance/cases/*_workload.k` fixture | `./scripts/verify.sh` | Every template fixture renders through the IDP path |
 | Unit tests | full framework suite | `cd framework && kcl test ./...` | All tests pass |
 | Render smoke | `erp_back` dev factory, all outputs | `cd projects/erp_back/pre_releases/manifests/dev/factory && kcl run render.k -D output=<mode>` | Command succeeds |
+| Policy gate | rendered Tier-1 YAML | `koncept policy check --factory projects/erp_back/pre_releases/manifests/dev/factory` | No blocking security/ownership findings |
+| Golden drift | reference factories (`erp_back` dev/stg/release) | `./scripts/golden.sh check` | Rendered output matches committed `golden/` snapshots |
 | Acceptance smoke | optional kind cluster | `./scripts/acceptance_kind.sh --case basic` | Generated resources apply and Deployment rolls out |
 
 Supported `<mode>` values for smoke checks:
@@ -59,6 +61,9 @@ kcl test ./tests/templates/...
 # Target new low-cost template fixtures
 ./scripts/acceptance_kind.sh --case data-admin --case release-notes
 
+# Run policy with explicit, expiring waivers when temporary exceptions are needed
+koncept policy check --factory <factory-dir> --exemptions policy-exemptions.yaml
+
 # Run grouped opt-in acceptance checks
 ./scripts/acceptance_kind.sh --case data
 ./scripts/acceptance_kind.sh --case search
@@ -88,7 +93,7 @@ kcl test ./tests/templates/...
 ./scripts/acceptance_runtime.sh --case runtime-all --install-dependencies
 ```
 
-See `docs/ACCEPTANCE_DEPENDENCIES.md` for dependency requirements and `docs/ACCEPTANCE_RUNTIME.md` for the real deployment acceptance layer.
+See `docs/ACCEPTANCE_DEPENDENCIES.md` for dependency requirements, `docs/ACCEPTANCE_RUNTIME.md` for the real deployment acceptance layer, `docs/GOLDEN_OUTPUTS.md` for snapshot review, and `docs/POLICY_EXEMPTIONS.md` for owned/time-bounded policy waivers.
 
 ## CI Recommendation
 
@@ -98,3 +103,6 @@ In CI, call the single script entrypoint:
 ./scripts/verify.sh
 ```
 
+CI also runs the Go CLI policy gate and `./scripts/golden.sh check` in
+`.github/workflows/validate.yml` so security findings and render drift are
+visible before merge.

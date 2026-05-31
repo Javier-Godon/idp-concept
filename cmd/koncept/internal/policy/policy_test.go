@@ -1,6 +1,10 @@
 package policy
 
-import "testing"
+import (
+	"strings"
+	"testing"
+	"time"
+)
 
 const goodManifest = `
 apiVersion: apps/v1
@@ -247,5 +251,83 @@ spec:
 	findings, _ := Check(manifest, opts)
 	if countRule(findings, "require-network-policy") != 0 {
 		t.Error("require-network-policy should not fire when disabled")
+	}
+}
+
+func TestApplyExemptionsFiltersMatchingFinding(t *testing.T) {
+	findings, err := Check(secretLiteralManifest, DefaultOptions())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	filtered, err := ApplyExemptions(findings, []Exemption{{
+		Rule:      "no-secret-literals",
+		Kind:      "Deployment",
+		Namespace: "apps",
+		Name:      "secret-app",
+		Owner:     "security",
+		Reason:    "legacy app migration tracked in PLATFORM-123",
+		ExpiresOn: "2026-12-31",
+	}}, time.Date(2026, 5, 31, 12, 0, 0, 0, time.UTC))
+	if err != nil {
+		t.Fatalf("unexpected exemption error: %v", err)
+	}
+	if countRule(filtered, "no-secret-literals") != 0 {
+		t.Fatalf("expected no-secret-literals to be exempted, got %+v", filtered)
+	}
+}
+
+func TestApplyExemptionsRejectsExpired(t *testing.T) {
+	_, err := ApplyExemptions([]Finding{{
+		Rule:      "require-owner",
+		Kind:      "Deployment",
+		Namespace: "apps",
+		Name:      "app",
+	}}, []Exemption{{
+		Rule:      "require-owner",
+		Kind:      "Deployment",
+		Namespace: "apps",
+		Name:      "app",
+		Owner:     "platform",
+		Reason:    "temporary migration",
+		ExpiresOn: "2026-05-30",
+	}}, time.Date(2026, 5, 31, 12, 0, 0, 0, time.UTC))
+	if err == nil || !strings.Contains(err.Error(), "expired") {
+		t.Fatalf("expected expired exemption error, got %v", err)
+	}
+}
+
+func TestApplyExemptionsRejectsStale(t *testing.T) {
+	_, err := ApplyExemptions([]Finding{{
+		Rule:      "require-owner",
+		Kind:      "Deployment",
+		Namespace: "apps",
+		Name:      "app",
+	}}, []Exemption{{
+		Rule:      "require-owner",
+		Kind:      "Deployment",
+		Namespace: "apps",
+		Name:      "other-app",
+		Owner:     "platform",
+		Reason:    "temporary migration",
+		ExpiresOn: "2026-12-31",
+	}}, time.Date(2026, 5, 31, 12, 0, 0, 0, time.UTC))
+	if err == nil || !strings.Contains(err.Error(), "stale") {
+		t.Fatalf("expected stale exemption error, got %v", err)
+	}
+}
+
+func TestApplyExemptionsRequiresTarget(t *testing.T) {
+	_, err := ApplyExemptions([]Finding{{
+		Rule: "require-owner",
+		Kind: "Deployment",
+	}}, []Exemption{{
+		Rule:      "require-owner",
+		Owner:     "platform",
+		Reason:    "temporary migration",
+		ExpiresOn: "2026-12-31",
+	}}, time.Date(2026, 5, 31, 12, 0, 0, 0, time.UTC))
+	if err == nil || !strings.Contains(err.Error(), "must set kind") {
+		t.Fatalf("expected narrow target error, got %v", err)
 	}
 }

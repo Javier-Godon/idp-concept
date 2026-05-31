@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 
 	"github.com/idp-concept/koncept/internal/factory"
+	"github.com/idp-concept/koncept/internal/golden"
 	"github.com/idp-concept/koncept/internal/output"
 	"github.com/spf13/cobra"
 )
@@ -101,6 +102,9 @@ func goldenCheck(goldenDir string) error {
 
 		if result != string(existing) {
 			printError(fmt.Sprintf("Golden file drift: %s", goldenFile))
+			if summary := golden.Summary(string(existing), result); summary != "" {
+				fmt.Println(summary)
+			}
 			drift = true
 		} else {
 			printSuccess(fmt.Sprintf("Golden file matches: %s", goldenFile))

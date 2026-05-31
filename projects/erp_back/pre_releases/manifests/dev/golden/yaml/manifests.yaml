@@ -1,0 +1,151 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: erp-api
+  namespace: erp-apps
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: erp-api
+  template:
+    metadata:
+      labels:
+        app: erp-api
+    spec:
+      containers:
+      - env:
+        - name: SPRING_PROFILES_ACTIVE
+          value: default
+        - name: JAVA_OPTS
+          value: -Xmx1g -Xms512m
+        - name: SPRING_DATASOURCE_URL
+          value: jdbc:postgresql://erp-postgres.erp-postgres.svc.cluster.local:5432/erp_db
+        - name: SPRING_DATASOURCE_USERNAME
+          valueFrom:
+            secretKeyRef:
+              key: username
+              name: erp-db-credentials
+        - name: SPRING_DATASOURCE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              key: password
+              name: erp-db-credentials
+        image: ghcr.io/javier-godon/erp-back-api:1.0.0
+        imagePullPolicy: IfNotPresent
+        livenessProbe:
+          failureThreshold: 5
+          httpGet:
+            path: /actuator/health/liveness
+            port: 8080
+          initialDelaySeconds: 60
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 10
+        name: erp-api
+        ports:
+        - containerPort: 8080
+        readinessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /actuator/health/readiness
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 5
+          successThreshold: 1
+          timeoutSeconds: 10
+        resources:
+          limits:
+            cpu: '2'
+            memory: 4Gi
+          requests:
+            cpu: 500m
+            memory: 1Gi
+        startupProbe:
+          failureThreshold: 10
+          httpGet:
+            path: /actuator/health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: erp-api
+  namespace: erp-apps
+spec:
+  ports:
+  - port: 8080
+  selector:
+    app: erp-api
+  type: ClusterIP
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: erp-postgres
+  namespace: erp-postgres
+spec:
+  instances: 3
+  enableSuperuserAccess: false
+  enablePDB: true
+  storage:
+    size: 20Gi
+    storageClass: local-path
+  bootstrap:
+    initdb:
+      database: erp_db
+      owner: erp_app
+  monitoring:
+    enablePodMonitor: true
+  backup:
+    retentionPolicy: 7d
+  imageName: postgres:16.4-alpine
+  resources:
+    requests:
+      cpu: 500m
+      memory: 1Gi
+    limits:
+      cpu: '2'
+      memory: 4Gi
+  primaryUpdateStrategy: unsupervised
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: ScheduledBackup
+metadata:
+  name: erp-postgres-daily-backup
+  namespace: erp-postgres
+spec:
+  cluster:
+    name: erp-postgres
+  schedule: 0 0 2 * * *
+  immediate: true
+  backupOwnerReference: cluster
+  method: barmanObjectStore
+  suspend: false
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: Pooler
+metadata:
+  name: erp-postgres-rw
+  namespace: erp-postgres
+spec:
+  cluster:
+    name: erp-postgres
+  instances: 2
+  type: rw
+  pgbouncer:
+    poolMode: session
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: erp-apps
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: erp-postgres

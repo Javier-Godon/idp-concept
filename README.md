@@ -114,6 +114,7 @@ koncept policy check --factory <factory-dir>
 #   no privileged containers · no latest/untagged images
 #   resource requests+limits on workloads · ownership labels
 #   secret-looking env values must use Secret references · explicit namespaces
+#   temporary waivers: --exemptions policy-exemptions.yaml
 
 # Other helpers
 koncept doctor            # dependency, version, path, and factory checks
@@ -225,5 +226,4 @@ See [projects/erp_back/](projects/erp_back/) for the template approach and [proj
 ## License
 
 See [LICENSE](LICENSE).
-
 
