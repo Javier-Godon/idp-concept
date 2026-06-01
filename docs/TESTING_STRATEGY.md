@@ -9,6 +9,7 @@
 - [3. K8s Manifest Validation (`kubeconform`)](#3-k8s-manifest-validation-kubeconform)
 - [4. Helm Chart Linting (`helm lint`)](#4-helm-chart-linting-helm-lint)
 - [5. Integration Tests (End-to-End Render Pipeline)](#5-integration-tests-end-to-end-render-pipeline)
+- [5.3 Crossplane V2 Composition and Management Tests](#53-crossplane-v2-composition-and-management-tests)
 - [6. Test Organization](#6-test-organization)
 - [7. Running Tests](#7-running-tests)
 - [8. CI/CD Integration](#8-cicd-integration)
@@ -24,6 +25,7 @@
 | **K8s Compliance** | `kubeconform` | Generated YAML against K8s OpenAPI schemas | Fast |
 | **Chart Linting** | `helm lint` | Generated Helm chart structure and values | Fast |
 | **Integration** | `kcl run` + `kubeconform` | Full render pipeline → valid K8s manifests | Medium |
+| **Crossplane composition** | `crossplane render` + optional Go tests | XRD/Composition/XR/function output and function results | Medium |
 | **Acceptance** | `kind` + `kubectl` | Curated generated workloads really apply and roll out in Kubernetes | Slow / opt-in |
 
 ### Testing Pyramid
@@ -31,6 +33,8 @@
 ```
          ┌──────────────┐
          │ Acceptance   │  ← kind + kubectl, curated deployability checks
+         ├──────────────┤
+         │ Crossplane   │  ← crossplane render + reconcile/update/delete checks
          ├──────────────┤
          │ Integration  │  ← Full render pipeline (kcl run → kubeconform)
          ├──────────────┤
@@ -254,6 +258,23 @@ Runtime acceptance does **not** install dry-run CRD stubs. Operator-backed templ
 ```
 
 See `docs/ACCEPTANCE_RUNTIME.md` for runtime groups and readiness semantics.
+
+### 5.3 Crossplane V2 Composition and Management Tests
+
+Crossplane tests must prove the platform API is manageable after deployment, not only that YAML renders.
+
+Required levels for supported Crossplane APIs:
+
+| Level | Tooling | Expected proof |
+|---|---|---|
+| Static render | `koncept render crossplane` or `kcl run ... -D output=crossplane` | XRD, Composition, XR, Provider/Function prerequisites render deterministically. |
+| Local composition preview | `crossplane render xr.yaml composition.yaml functions.yaml --include-function-results` | Function pipeline returns the expected desired resources and no fatal function results. |
+| Function unit tests | `go test` for custom `function-sdk-go` functions; KCL tests for shared KCL helpers | Composition logic is tested independently from a cluster. |
+| Reconciliation | kind or real cluster with pinned Crossplane providers/functions | XR/Claim reaches Synced/Ready and expected composed resources exist. |
+| Management lifecycle | kubectl/Go helper updates and deletes the XR/Claim | Updates propagate to composed resources; deletion cleans up or intentionally orphans resources according to policy. |
+| Upgrade/rollback | composition revisions or pinned `compositionRevisionRef` | Existing XRs can be safely upgraded or rolled back. |
+
+Recommended future Go tooling: add `koncept crossplane test` as the single supported wrapper for static render, policy checks, `crossplane render`, and optional reconciliation/update/delete checks. This keeps Crossplane validation in the same CLI surface as render, policy, golden, and changelog workflows.
 
 ---
 

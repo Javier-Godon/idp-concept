@@ -29,6 +29,8 @@
 > Update 2026-06-01 (Kubernetes metadata mirroring): completed the remaining Phase F metadata propagation gap for Tier-1 YAML/ArgoCD output. `procedures.kcl_to_yaml.yaml_stream_stack` now applies `RenderStack.metadata` centrally to rendered Kubernetes manifests: catalog fields (`owner`, `team`, `lifecycle`, `tier`, `sloTier`, `criticality`, `dataClassification`, `costCenter`, `runbook`, `support`) become `koncept.io/*` annotations, explicit `Metadata.annotations` are merged into manifest annotations, and explicit `Metadata.labels` are merged into manifest labels. Resource-specific labels/annotations win on conflicts, avoiding global metadata overwrites; arbitrary catalog fields are intentionally not inferred as labels because URLs/entity refs can violate Kubernetes label value constraints.
 >
 > Update 2026-06-01 (Helmfile/Crossplane V2 output parity): prioritized depth on existing strategic outputs before adding new breadth. Safe `RenderStack.metadata` catalog fields (`owner`, `team`, `lifecycle`, `tier`, `sloTier`, `criticality`, `dataClassification`, `costCenter`) plus explicit `metadata.labels` now flow into Helmfile top-level `labels`, `commonLabels`, and generated release labels, with Helmfile-specific options still taking precedence. Crossplane V2 rendering now has a stack-aware entrypoint and applies the same metadata labels/annotations used by YAML/ArgoCD to XRDs, Compositions, XRs, prerequisite Provider/Function resources, Crossplane `Object` wrappers, and the wrapped Kubernetes manifests. This closes an adoption/governance gap for the two outputs most likely to be used by platform/infrastructure teams.
+>
+> Update 2026-06-01 (Crossplane V2 maturity research): the current Crossplane V2 output is now classified as a bridge, not the professional target architecture, when it wraps finalized Kubernetes manifests in `provider-kubernetes` Objects. Research against official Crossplane docs, crossplane-contrib functions, `vfarcic/crossplane-kubernetes`, and Upbound reference platforms sets a higher bar: typed intent-level XRDs/Claims, provider-native managed resources where available, versioned `function-kcl`/`function-go-templating` or custom Go functions for composition logic, explicit connection/status contracts, composition revision rollout strategy, and reconciliation/update/delete tests before support.
 
 ---
 
@@ -211,6 +213,7 @@ koncept render argocd --all
 | **Policy as code** | Enforced in CI via `koncept policy check` (privileged/latest/resources/owner/secret-literal/namespace/network-policy rules) with explicit owner/reason/expiry exemptions. Remaining: external OPA/Kyverno admission parity. |
 | **Golden-file review workflow** | Shipped: `koncept golden check` with inline drift diff, `scripts/golden.sh`, committed snapshots for the `erp_back` reference factories, and a CI drift gate. Remaining: extend to more reference projects/formats. See `docs/GOLDEN_OUTPUTS.md`. |
 | **Output metadata parity** | YAML/ArgoCD, Backstage, Helmfile, and Crossplane V2 now consume `RenderStack.metadata` for their supported metadata surfaces. Remaining: decide whether Tier 2/3 formats such as Helm/Kustomize/Timoni/Kusion need the same support based on real consumers. |
+| **Crossplane V2 professional management** | Current output can generate Crossplane packages, but the bridge still wraps Kubernetes manifests in provider-kubernetes Objects. Target: intent-level XRDs, provider-native resources, composition functions, explicit status/connection details, composition revisions, and lifecycle tests. See `docs/CROSSPLANE_PATTERNS.md`. |
 | **Operational telemetry** | No platform adoption/error/render metrics yet. |
 | **Runtime proof for operators** | Many operator-heavy cases are dry-run only unless opt-in runtime scripts are used with real dependencies. |
 
@@ -220,6 +223,7 @@ koncept render argocd --all
 - Do not let product teams fork framework internals. Provide extension points, versioned packages, or platform-team-owned changes.
 - Do not make every developer learn KCL. Use KCL as the platform configuration language, not as the primary developer UX.
 - Do not treat dry-run CRD stubs as production validation. They are useful for schema shape checks only.
+- Do not promote Crossplane V2 APIs that are just large `provider-kubernetes` Object wrappers around copied Deployments, Services, ConfigMaps, or CRDs. Use Object only for small cluster glue or temporary migration bridges with tests and an exit path.
 
 ---
 
@@ -308,6 +312,9 @@ KCL is a strong fit for typed configuration, but it is niche. A medium company s
 
 10. **Developer-facing service catalog metadata**
     - Owners, lifecycle, SLO tier, data classification, cost center, docs, runbooks, and support contacts now flow into the Backstage catalog via `models.metadata.Metadata` on the `Stack` (rendered as `koncept.io/*` annotations). The Tier-1 YAML/ArgoCD path now mirrors those catalog fields to Kubernetes annotations and merges explicit stack labels/annotations into rendered manifests.
+
+11. **Crossplane V2 maturity**
+    - Replace "hello world" and manifest-wrapping Crossplane examples with professional platform APIs: typed XRDs/Claims, provider-native managed resources, versioned composition functions, explicit status/connection handling, and real reconciliation/update/delete tests.
 
 ---
 
@@ -467,6 +474,35 @@ The previous roadmap emphasized many future phases. Given the current state, the
 
 ---
 
+## 12.1 Phase E2 — Crossplane V2 Professional Management (P1)
+
+**Goal:** raise Crossplane V2 from simple generated examples to a real platform-control-plane path that operators can manage after deployment.
+
+### Deliverables
+
+- [ ] Reclassify current manifest-wrapping `kcl_to_crossplane` output as a compatibility bridge and document it as non-final for production Crossplane APIs.
+- [ ] Define an XRD design checklist for every supported Crossplane API: intent-level fields, OpenAPI validation, defaults/enums, descriptions, status fields, printer columns, claim scope, connection-secret contract, and versioning policy.
+- [ ] Prefer provider-native managed resources and operator CRDs over `provider-kubernetes` Objects. Allow `Object` only for namespaces, small RBAC/bootstrap glue, or temporary migration bridges with an owner and removal path.
+- [ ] Move advanced composition logic into pinned, reviewed packages using `function-kcl`, `function-go-templating`, or custom functions built with `function-sdk-go`; inline functions remain limited to examples/prototypes.
+- [ ] Add Crossplane package tests:
+  - local `crossplane render` fixtures with function results,
+  - golden drift checks for generated XRD/Composition/XR output,
+  - cluster reconciliation tests that create an XR/Claim and verify Synced/Ready,
+  - update tests that prove changes propagate to composed resources,
+  - delete tests that prove cleanup or intentional orphaning,
+  - composition revision or `compositionRevisionRef` rollback tests for supported APIs.
+- [ ] Add Go CLI support, likely `koncept crossplane test`, that wraps render, static policy checks, `crossplane render`, and optional kind/runtime reconciliation checks with consistent output.
+- [ ] Create or refactor at least one serious reference API, such as PostgreSQL or Keycloak+PostgreSQL, using provider-native/operator-managed resources and function-based composition instead of copied nested manifests.
+- [ ] Document the operating runbook for deployed Crossplane APIs: inspect XR/Claim conditions, trace composed resources, read function results, locate connection Secrets, perform safe updates, pin/roll back composition revisions, and clean up resources.
+
+### Success criteria
+
+- A platform engineer can install Crossplane prerequisites, apply one supported API package, create a Claim, update it, observe status/connection outputs, roll back a composition revision, and delete it using documented commands.
+- Supported Crossplane APIs have tests that prove ongoing management, not only initial YAML generation.
+- New Crossplane APIs cannot be marked supported unless they pass the checklist and tests in `docs/CROSSPLANE_PATTERNS.md`.
+
+---
+
 ## 13. Phase F — Developer Portal and Service Catalog Maturity (P1/P2)
 
 **Goal:** make Backstage the preferred self-service interface for non-platform engineers.
@@ -548,6 +584,7 @@ Potential future work:
 | **P1** | Extend golden outputs where justified | Makes render changes reviewable without turning snapshots into a high-maintenance burden. |
 | **P1** | Framework versioning | Allows product teams to upgrade independently. |
 | **P1** | Backstage workflow integration | Makes the platform self-service for non-KCL users. |
+| **P1** | Crossplane V2 professional management | Converts the current manifest-wrapper bridge into typed, testable, provider-native platform APIs. |
 | **P1/P2** | Runtime operator validation | Builds confidence in production infrastructure templates. |
 | **P2** | Platform telemetry | Measures adoption and pain points. |
 | **P2/P3** | Fleet/Score/plugin expansion | Valuable only after the golden path is adopted. |

@@ -21,6 +21,7 @@ The script runs scoped lint, acceptance fixture render checks, framework unit te
 | Policy gate | rendered Tier-1 YAML | `koncept policy check --factory projects/erp_back/pre_releases/manifests/dev/factory` | No blocking security/ownership findings |
 | Changelog fragments | `.changes/unreleased/*.yaml` | `koncept changelog check` | Release-note fragments are valid and owned |
 | Golden drift | reference factories (`erp_back` dev/stg/release) | `./scripts/golden.sh check` | Rendered output matches committed `golden/` snapshots |
+| Crossplane render smoke | generated Crossplane output | `cd projects/erp_back/pre_releases/manifests/dev/factory && kcl run render.k -D output=crossplane` | XRD, Composition, XR, and prerequisites render without errors |
 | Acceptance smoke | optional kind cluster | `./scripts/acceptance_kind.sh --case basic` | Generated resources apply and Deployment rolls out |
 
 Supported `<mode>` values for smoke checks:
@@ -65,6 +66,16 @@ kcl test ./tests/templates/...
 # Run policy with explicit, expiring waivers when temporary exceptions are needed
 koncept policy check --factory <factory-dir> --exemptions policy-exemptions.yaml
 
+# Crossplane v2 static render smoke
+cd projects/erp_back/pre_releases/manifests/dev/factory
+kcl run render.k -D output=crossplane
+
+# Crossplane v2 composition preview once fixture files exist
+crossplane render xr.yaml composition.yaml functions.yaml --include-function-results
+
+# Required for supported Crossplane APIs: reconcile, update, delete, and revision rollback tests
+# through the future `koncept crossplane test` wrapper or the project-specific kind/runtime script.
+
 # Render the next platform release-note section from reviewed fragments
 koncept changelog render --version v0.2.0 --file CHANGELOG.next.md
 
@@ -97,7 +108,7 @@ koncept changelog render --version v0.2.0 --file CHANGELOG.next.md
 ./scripts/acceptance_runtime.sh --case runtime-all --install-dependencies
 ```
 
-See `docs/ACCEPTANCE_DEPENDENCIES.md` for dependency requirements, `docs/ACCEPTANCE_RUNTIME.md` for the real deployment acceptance layer, `docs/GOLDEN_OUTPUTS.md` for snapshot review, `docs/POLICY_EXEMPTIONS.md` for owned/time-bounded policy waivers, and `docs/CHANGELOG_WORKFLOW.md` for platform release-note fragments.
+See `docs/ACCEPTANCE_DEPENDENCIES.md` for dependency requirements, `docs/ACCEPTANCE_RUNTIME.md` for the real deployment acceptance layer, `docs/GOLDEN_OUTPUTS.md` for snapshot review, `docs/POLICY_EXEMPTIONS.md` for owned/time-bounded policy waivers, `docs/CHANGELOG_WORKFLOW.md` for platform release-note fragments, and `docs/CROSSPLANE_PATTERNS.md` for the Crossplane v2 management test bar.
 
 ## CI Recommendation
 
