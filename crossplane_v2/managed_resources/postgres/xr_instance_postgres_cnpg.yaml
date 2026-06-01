@@ -1,0 +1,50 @@
+## PostgreSQL XR/Claim instance examples
+##
+## Cluster-scoped XR (platform-owned):
+---
+apiVersion: koncept.bluesolution.es/v1alpha1
+kind: XPostgresInstance
+metadata:
+  name: erp-back-postgres
+spec:
+  namespace: erp-back-data
+  dbName: erp_back
+  ownerUsername: erp_back
+  instances: 3
+  storageSize: "50Gi"
+  storageClass: "fast-nvme"
+  postgresVersion: 16
+  environment: production
+  owner: erp-back-team
+  enableBackups: true
+  backupSchedule: "0 2 * * *"
+---
+## Namespace-scoped Claim (product-team usage — preferred):
+apiVersion: koncept.bluesolution.es/v1alpha1
+kind: PostgresInstance
+metadata:
+  name: erp-back-postgres
+  namespace: erp-back-data
+spec:
+  namespace: erp-back-data
+  dbName: erp_back
+  instances: 3
+  storageSize: "50Gi"
+  postgresVersion: 16
+  environment: production
+  owner: erp-back-team
+---
+## Development / local single-instance example:
+apiVersion: koncept.bluesolution.es/v1alpha1
+kind: PostgresInstance
+metadata:
+  name: erp-back-postgres-dev
+  namespace: erp-back-dev
+spec:
+  namespace: erp-back-dev
+  dbName: erp_back
+  instances: 1
+  storageSize: "2Gi"
+  postgresVersion: 16
+  environment: development
+  owner: erp-back-team

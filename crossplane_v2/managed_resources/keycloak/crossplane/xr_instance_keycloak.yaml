@@ -1,10 +1,50 @@
+---
+# Production XR — platform team deploys cluster-scoped
 apiVersion: koncept.bluesolution.es/v1alpha1
 kind: XKeycloak
 metadata:
   name: blue-keycloak
+  labels:
+    koncept.io/environment: production
+    koncept.io/owner: platform-team
 spec:
-  hostname: bluesolution.es
-  replicas: 1
+  hostname: keycloak.bluesolution.es
   namespace: keycloak
-  label:
-    namespace: keycloak
+  instances: 2
+  db:
+    host: blue-postgres-cluster-rw.postgres.svc.cluster.local
+    database: keycloak
+    vendor: postgres
+    secretRef:
+      name: keycloak-db-credentials
+      namespace: keycloak
+  ingressEnabled: true
+  tlsEnabled: true
+  environment: production
+  owner: platform-team
+
+---
+# Development Claim — product team deploys namespace-scoped
+apiVersion: koncept.bluesolution.es/v1alpha1
+kind: Keycloak
+metadata:
+  name: dev-keycloak
+  namespace: team-alpha
+  labels:
+    koncept.io/environment: development
+    koncept.io/owner: team-alpha
+spec:
+  hostname: keycloak-dev.example.com
+  namespace: keycloak-dev
+  instances: 1
+  db:
+    host: dev-postgres-cluster-rw.postgres-dev.svc.cluster.local
+    database: keycloak_dev
+    vendor: postgres
+    secretRef:
+      name: keycloak-dev-db-credentials
+      namespace: keycloak-dev
+  ingressEnabled: true
+  tlsEnabled: false
+  environment: development
+  owner: team-alpha

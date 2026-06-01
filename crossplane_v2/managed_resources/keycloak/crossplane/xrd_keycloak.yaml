@@ -2,36 +2,151 @@ apiVersion: apiextensions.crossplane.io/v2
 kind: CompositeResourceDefinition
 metadata:
   name: xkeycloaks.koncept.bluesolution.es
+  annotations:
+    koncept.io/tier: "2"
+    koncept.io/operator: "keycloak-operator"
+    koncept.io/operator-version: "26.4.x"
+    koncept.io/last-reviewed: "2026-06-01"
 spec:
   scope: Cluster
   group: koncept.bluesolution.es
   names:
     kind: XKeycloak
     plural: xkeycloaks
+  # Namespace-scoped Claims for product teams
+  claimNames:
+    kind: Keycloak
+    plural: keycloaks
+  defaultCompositionRef:
+    name: xkeycloaks.koncept.bluesolution.es
   versions:
     - name: v1alpha1
       served: true
       referenceable: true
+      additionalPrinterColumns:
+        - name: HOSTNAME
+          type: string
+          jsonPath: .spec.hostname
+        - name: INSTANCES
+          type: integer
+          jsonPath: .spec.instances
+        - name: NAMESPACE
+          type: string
+          jsonPath: .spec.namespace
+        - name: DB-HOST
+          type: string
+          jsonPath: .spec.db.host
+        - name: READY
+          type: string
+          jsonPath: .status.conditions[?(@.type=="Ready")].status
+        - name: AGE
+          type: date
+          jsonPath: .metadata.creationTimestamp
       schema:
         openAPIV3Schema:
           type: object
           properties:
             spec:
               type: object
+              description: Keycloak configures a Keycloak identity provider managed by the keycloak-operator.
+              required:
+                - hostname
+                - namespace
               properties:
                 hostname:
                   type: string
-                  description: Base hostname for Keycloak ingress.
-                replicas:
-                  type: integer
-                  description: Number of Keycloak replicas.
-                  default: 1
+                  description: Base hostname for the Keycloak ingress rule (e.g. keycloak.example.com).
                 namespace:
                   type: string
+                  description: Kubernetes namespace where Keycloak runs.
+                instances:
+                  type: integer
+                  description: Number of Keycloak replicas. Use 1 for dev, 2+ for HA.
+                  default: 1
+                  minimum: 1
+                  maximum: 5
+                db:
+                  type: object
+                  description: External PostgreSQL database connection settings.
+                  required:
+                    - host
+                    - database
+                  properties:
+                    host:
+                      type: string
+                      description: PostgreSQL hostname or service DNS.
+                    database:
+                      type: string
+                      description: Database name.
+                      default: keycloak
+                    vendor:
+                      type: string
+                      description: Database vendor identifier.
+                      default: postgres
+                      enum:
+                        - postgres
+                        - mysql
+                        - mariadb
+                    secretRef:
+                      type: object
+                      description: Reference to a Secret containing db.user and db.password.
+                      required:
+                        - name
+                        - namespace
+                      properties:
+                        name:
+                          type: string
+                        namespace:
+                          type: string
+                ingressEnabled:
+                  type: boolean
+                  description: Whether to enable the Keycloak ingress.
+                  default: true
+                tlsEnabled:
+                  type: boolean
+                  description: Whether TLS is enabled on the ingress.
+                  default: false
+                environment:
+                  type: string
+                  description: "Target environment tier: local, development, staging, production."
+                  default: production
+                  enum:
+                    - local
+                    - development
+                    - staging
+                    - production
+                owner:
+                  type: string
+                  description: Team or system that owns this Keycloak instance.
+                  default: ""
+                # Legacy label field — preserved for backwards compatibility
                 label:
                   type: object
+                  description: "Deprecated: use namespace field instead."
                   properties:
                     namespace:
                       type: string
-              required:
-                - hostname
+            status:
+              type: object
+              properties:
+                conditions:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      type:
+                        type: string
+                      status:
+                        type: string
+                      reason:
+                        type: string
+                      message:
+                        type: string
+                      lastTransitionTime:
+                        type: string
+                adminConsoleUrl:
+                  type: string
+                  description: URL of the Keycloak admin console.
+                keycloakCRName:
+                  type: string
+                  description: Name of the generated Keycloak CRD instance.

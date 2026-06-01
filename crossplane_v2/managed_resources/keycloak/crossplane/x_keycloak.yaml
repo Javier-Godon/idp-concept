@@ -2,12 +2,17 @@ apiVersion: apiextensions.crossplane.io/v1
 kind: Composition
 metadata:
   name: xkeycloaks.koncept.bluesolution.es
+  annotations:
+    koncept.io/tier: "2"
+    koncept.io/operator: "keycloak-operator"
+    koncept.io/last-reviewed: "2026-06-01"
 spec:
   compositeTypeRef:
     apiVersion: koncept.bluesolution.es/v1alpha1
     kind: XKeycloak
   mode: Pipeline
   pipeline:
+    # Step 1: Create the Keycloak namespace
     - step: create-namespace
       functionRef:
         name: function-patch-and-transform
@@ -15,22 +20,39 @@ spec:
         apiVersion: pt.fn.crossplane.io/v1beta1
         kind: Resources
         resources:
-          - name: namespaceKeycloak
+          - name: ns-keycloak
             base:
               apiVersion: kubernetes.crossplane.io/v1alpha2
               kind: Object
+              metadata:
+                name: ns-keycloak
               spec:
                 forProvider:
                   manifest:
                     apiVersion: v1
                     kind: Namespace
                     metadata:
-                      name: keycloak
+                      name: placeholder
                 providerConfigRef:
                   name: provider-kubernetes
-    - step: automatically-detect-readiness
+            patches:
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.namespace
+                toFieldPath: spec.forProvider.manifest.metadata.name
+
+    # Step 2: Enforce ordering — namespace must be ready before Keycloak CRD
+    - step: enforce-ordering
       functionRef:
-        name: function-auto-ready
+        name: function-sequencer
+      input:
+        apiVersion: sequencer.fn.crossplane.io/v1beta1
+        kind: Input
+        rules:
+          - sequence:
+              - ns-keycloak
+              - keycloak-instance
+
+    # Step 3: Create Keycloak CRD instance (operator-native — keycloak-operator manages pods/secrets)
     - step: create-keycloak
       functionRef:
         name: function-patch-and-transform
@@ -42,44 +64,85 @@ spec:
             base:
               apiVersion: kubernetes.crossplane.io/v1alpha2
               kind: Object
+              metadata:
+                name: keycloak-instance
               spec:
                 providerConfigRef:
                   name: provider-kubernetes
                 forProvider:
                   manifest:
-                    apiVersion: k8s.keycloak.org/v1
+                    apiVersion: k8s.keycloak.org/v2alpha1
                     kind: Keycloak
                     metadata:
-                      name: keycloak
-                      namespace: keycloak
+                      name: placeholder
+                      namespace: placeholder
                     spec:
                       db:
-                        database: blue_postgres
-                        host: blue-postgres.postgres.svc.cluster.local
-                        password: postgres
-                        user: postgres
+                        database: keycloak
+                        host: placeholder
                         vendor: postgres
+                        usernameSecret:
+                          name: placeholder
+                          key: username
+                        passwordSecret:
+                          name: placeholder
+                          key: password
                       ingress:
                         enabled: true
-                        hostname: bluesolution.es
+                        hostname: placeholder
                       instances: 1
             patches:
-              - fromFieldPath: "spec.label.namespace"
-                toFieldPath: "spec.forProvider.manifest.metadata.namespace"
-                policy:
-                  fromFieldPath: "Required"
+              # Identity
+              - type: FromCompositeFieldPath
+                fromFieldPath: metadata.name
+                toFieldPath: spec.forProvider.manifest.metadata.name
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.namespace
+                toFieldPath: spec.forProvider.manifest.metadata.namespace
+              # Replicas
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.instances
+                toFieldPath: spec.forProvider.manifest.spec.instances
+              # Ingress
               - type: FromCompositeFieldPath
                 fromFieldPath: spec.hostname
                 toFieldPath: spec.forProvider.manifest.spec.ingress.hostname
               - type: FromCompositeFieldPath
-                fromFieldPath: spec.replicas
-                toFieldPath: spec.forProvider.manifest.spec.instances
+                fromFieldPath: spec.ingressEnabled
+                toFieldPath: spec.forProvider.manifest.spec.ingress.enabled
+              # Database — host, database name, vendor
               - type: FromCompositeFieldPath
-                fromFieldPath: spec.namespace
-                toFieldPath: spec.forProvider.manifest.metadata.namespace
-              # - type: FromCompositeFieldPath
-              #   fromFieldPath: metadata.namespace
-              #   toFieldPath: spec.forProvider.namespace
-              # - type: FromCompositeFieldPath
-              #   fromFieldPath: metadata.namespace
-              #   toFieldPath: metadata.namespace
+                fromFieldPath: spec.db.host
+                toFieldPath: spec.forProvider.manifest.spec.db.host
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.db.database
+                toFieldPath: spec.forProvider.manifest.spec.db.database
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.db.vendor
+                toFieldPath: spec.forProvider.manifest.spec.db.vendor
+              # Database credentials via Secret reference (no hardcoded passwords)
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.db.secretRef.name
+                toFieldPath: spec.forProvider.manifest.spec.db.usernameSecret.name
+                policy:
+                  fromFieldPath: Optional
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.db.secretRef.name
+                toFieldPath: spec.forProvider.manifest.spec.db.passwordSecret.name
+                policy:
+                  fromFieldPath: Optional
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.db.secretRef.namespace
+                toFieldPath: spec.forProvider.manifest.spec.db.usernameSecret.namespace
+                policy:
+                  fromFieldPath: Optional
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.db.secretRef.namespace
+                toFieldPath: spec.forProvider.manifest.spec.db.passwordSecret.namespace
+                policy:
+                  fromFieldPath: Optional
+
+    # Step 4: Auto-detect readiness from managed resources
+    - step: automatically-detect-readiness
+      functionRef:
+        name: function-auto-ready

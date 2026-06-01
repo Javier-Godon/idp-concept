@@ -2,7 +2,13 @@ apiVersion: apiextensions.crossplane.io/v2
 kind: CompositeResourceDefinition
 metadata:
   name: xkafkastrimzis.koncept.bluesolution.es
+  annotations:
+    koncept.io/tier: "2"
+    koncept.io/operator: "strimzi-kafka-operator"
+    koncept.io/operator-version: "0.46.0"
+    koncept.io/last-reviewed: "2026-06-01"
 spec:
+  scope: Cluster
   group: koncept.bluesolution.es
   names:
     kind: XKafkaStrimzi
@@ -10,16 +16,130 @@ spec:
   claimNames:
     kind: KafkaStrimzi
     plural: kafkastrimzis
+  defaultCompositionRef:
+    name: xkafkastrimzi-composition
   versions:
     - name: v1alpha1
       served: true
       referenceable: true
+      additionalPrinterColumns:
+        - name: NAMESPACE
+          type: string
+          jsonPath: .spec.namespace
+        - name: REPLICAS
+          type: integer
+          jsonPath: .spec.replicas
+        - name: VERSION
+          type: string
+          jsonPath: .spec.kafkaVersion
+        - name: STORAGE
+          type: string
+          jsonPath: .spec.storageSize
+        - name: READY
+          type: string
+          jsonPath: .status.conditions[?(@.type=="Ready")].status
+        - name: AGE
+          type: date
+          jsonPath: .metadata.creationTimestamp
       schema:
         openAPIV3Schema:
           type: object
           properties:
             spec:
               type: object
+              description: KafkaStrimzi configures a Kafka cluster managed by Strimzi.
+              required:
+                - namespace
               properties:
                 namespace:
                   type: string
+                  description: Kubernetes namespace where Strimzi and the Kafka cluster run.
+                clusterName:
+                  type: string
+                  description: Name of the Kafka cluster. Defaults to the XR name.
+                  default: ""
+                replicas:
+                  type: integer
+                  description: Number of Kafka broker replicas.
+                  default: 1
+                  minimum: 1
+                  maximum: 9
+                zookeeperReplicas:
+                  type: integer
+                  description: Number of ZooKeeper replicas (for KRaft-less setups).
+                  default: 1
+                  minimum: 1
+                  maximum: 5
+                kafkaVersion:
+                  type: string
+                  description: Kafka version to deploy.
+                  default: "3.9.0"
+                  enum:
+                    - "3.7.0"
+                    - "3.8.0"
+                    - "3.9.0"
+                storageSize:
+                  type: string
+                  description: Storage size for each Kafka broker PVC.
+                  default: "5Gi"
+                  pattern: '^\d+(Gi|Mi|Ti)$'
+                storageClass:
+                  type: string
+                  description: StorageClass for Kafka broker PVCs. Defaults to cluster default.
+                  default: ""
+                topics:
+                  type: array
+                  description: List of Kafka topics to pre-create.
+                  items:
+                    type: object
+                    required:
+                      - name
+                    properties:
+                      name:
+                        type: string
+                        description: Topic name.
+                      partitions:
+                        type: integer
+                        description: Number of partitions.
+                        default: 1
+                      replicas:
+                        type: integer
+                        description: Replication factor.
+                        default: 1
+                environment:
+                  type: string
+                  description: "Target environment: local, development, staging, production."
+                  default: production
+                  enum:
+                    - local
+                    - development
+                    - staging
+                    - production
+                owner:
+                  type: string
+                  description: Team or system that owns this Kafka cluster.
+                  default: ""
+            status:
+              type: object
+              properties:
+                conditions:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      type:
+                        type: string
+                      status:
+                        type: string
+                      reason:
+                        type: string
+                      message:
+                        type: string
+                      lastTransitionTime:
+                        type: string
+                kafkaClusterName:
+                  type: string
+                  description: Name of the generated Kafka cluster CRD instance.
+                bootstrapServer:
+                  type: string
+                  description: Kafka bootstrap server DNS (populated by operator).

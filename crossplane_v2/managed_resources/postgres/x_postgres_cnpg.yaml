@@ -1,0 +1,160 @@
+## PostgreSQL Composition — CloudNativePG (CNPG) Provider-Native Pattern
+##
+## Prerequisite: CNPG operator must be installed on the cluster.
+## Install via: kubectl apply -f https://raw.githubusercontent.com/cloudnative-pg/cloudnative-pg/release-1.24/releases/cnpg-1.24.0.yaml
+## Or use the cnpg-controller Helm chart (see docs/CROSSPLANE_PATTERNS.md section 4).
+##
+## This composition uses:
+##   - provider-kubernetes Object for the Namespace (small cluster glue, acceptable per patterns)
+##   - provider-kubernetes Object for the CNPG Cluster CRD (operator-native resource, not a raw Deployment)
+##   - FromCompositeFieldPath patches to inject all XR spec fields into the Cluster
+##   - function-sequencer to ensure namespace is ready before the Cluster is created
+##   - function-auto-ready for composite readiness detection
+##
+## The CNPG operator manages Pods, Services, PVCs, and Secrets automatically.
+## The connection Secret (named <claim-name>-<owner>-connection) is written by CNPG.
+
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: xpostgresinstance-cnpg-composition
+  annotations:
+    koncept.io/operator: "cloudnative-pg"
+    koncept.io/pattern: "operator-native-crd"
+    koncept.io/bridge-pattern: "false"
+spec:
+  compositeTypeRef:
+    apiVersion: koncept.bluesolution.es/v1alpha1
+    kind: XPostgresInstance
+  mode: Pipeline
+  pipeline:
+
+    # Step 1: Create all composed resources (namespace + CNPG Cluster)
+    - step: render-resources
+      functionRef:
+        name: function-patch-and-transform
+      input:
+        apiVersion: pt.fn.crossplane.io/v1beta1
+        kind: Resources
+        resources:
+
+          # --- Namespace (small cluster glue: allowed provider-kubernetes Object) ---
+          - name: ns-postgres
+            base:
+              apiVersion: kubernetes.crossplane.io/v1alpha2
+              kind: Object
+              spec:
+                providerConfigRef:
+                  name: provider-kubernetes
+                forProvider:
+                  manifest:
+                    apiVersion: v1
+                    kind: Namespace
+                    metadata:
+                      name: postgres  # overridden by patch
+                      labels:
+                        koncept.io/managed-by: crossplane
+            patches:
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.namespace
+                toFieldPath: spec.forProvider.manifest.metadata.name
+                policy:
+                  fromFieldPath: Required
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.owner
+                toFieldPath: spec.forProvider.manifest.metadata.labels["koncept.io/owner"]
+
+          # --- CNPG Cluster (operator-native CRD — not a raw Deployment wrapper) ---
+          # CNPG operator reconciles this CRD into Pods, Services, PVCs, and Secrets.
+          - name: cnpg-cluster
+            base:
+              apiVersion: kubernetes.crossplane.io/v1alpha2
+              kind: Object
+              spec:
+                providerConfigRef:
+                  name: provider-kubernetes
+                forProvider:
+                  manifest:
+                    apiVersion: postgresql.cnpg.io/v1
+                    kind: Cluster
+                    metadata:
+                      name: postgres-cluster  # overridden by patch
+                      namespace: postgres      # overridden by patch
+                      labels:
+                        koncept.io/managed-by: crossplane
+                    spec:
+                      instances: 1             # overridden by patch
+                      storage:
+                        size: 10Gi             # overridden by patch
+                      postgresql:
+                        parameters:
+                          max_connections: "200"
+                          shared_buffers: "256MB"
+                      bootstrap:
+                        initdb:
+                          database: mydb       # overridden by patch
+                          owner: mydb          # overridden by patch
+                      managed:
+                        roles: []
+            patches:
+              # Target namespace
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.namespace
+                toFieldPath: spec.forProvider.manifest.metadata.namespace
+                policy:
+                  fromFieldPath: Required
+              # Cluster name derived from XR name
+              - type: FromCompositeFieldPath
+                fromFieldPath: metadata.name
+                toFieldPath: spec.forProvider.manifest.metadata.name
+                transforms:
+                  - type: string
+                    string:
+                      fmt: "%s-cluster"
+              # Instance count
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.instances
+                toFieldPath: spec.forProvider.manifest.spec.instances
+              # Storage size
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.storageSize
+                toFieldPath: spec.forProvider.manifest.spec.storage.size
+              # Storage class (optional — leave unset to use cluster default)
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.storageClass
+                toFieldPath: spec.forProvider.manifest.spec.storage.storageClass
+                policy:
+                  fromFieldPath: Optional
+              # Database name
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.dbName
+                toFieldPath: spec.forProvider.manifest.spec.bootstrap.initdb.database
+                policy:
+                  fromFieldPath: Required
+              # Database owner (use ownerUsername if set, otherwise fall back to dbName)
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.ownerUsername
+                toFieldPath: spec.forProvider.manifest.spec.bootstrap.initdb.owner
+                policy:
+                  fromFieldPath: Optional
+              # Owner label
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.owner
+                toFieldPath: spec.forProvider.manifest.metadata.labels["koncept.io/owner"]
+
+    # Step 2: Enforce namespace-before-cluster creation order
+    - step: sequence-creation
+      functionRef:
+        name: function-sequencer
+      input:
+        apiVersion: sequencer.fn.crossplane.io/v1beta1
+        kind: Input
+        rules:
+          - sequence:
+              - ns-postgres
+              - cnpg-cluster
+
+    # Step 3: Detect readiness from composed resources
+    - step: automatically-detect-readiness
+      functionRef:
+        name: function-auto-ready
