@@ -25,6 +25,8 @@
 > Update 2026-05-31 (service-catalog metadata): completed the Phase F catalog-metadata deliverable. `framework.models.metadata.Metadata` gained explicit `sloTier`, `dataClassification`, and `runbook` fields (alongside existing `costCenter`/`support`), `RenderStack` now carries optional `metadata`, and `procedures.kcl_to_backstage.generate_catalog_from_stack` emits these as `koncept.io/*` annotations on every Domain/System/Component/Resource entity while letting `owner`/`lifecycle` override render defaults. The `erp_back` shared stack demonstrates the full set, and new procedure tests guard the behaviour (421 KCL + Go tests and golden `yaml`/`argocd` snapshots remain green).
 >
 > Update 2026-05-31 (init --wire + generated goldens): completed Phase B's generated golden fixtures and the long-deferred `init module --wire` enhancement together. `koncept init project` now emits stable wire markers in the generated stack; `koncept init module --wire` performs marker-scoped, fail-loud auto-wiring (refuses unmarked stacks, rejects re-wiring, never parses arbitrary KCL); and `scripts/golden_generated.sh` scaffolds webapp / webapp+postgres / webapp+redis / webapp+kafka end-to-end and snapshots the rendered Tier-1 YAML under `tests/golden_generated/`. CI gained the generated-golden check and a marker-contract unit test. See `docs/GOLDEN_OUTPUTS.md`.
+>
+> Update 2026-06-01 (Kubernetes metadata mirroring): completed the remaining Phase F metadata propagation gap for Tier-1 YAML/ArgoCD output. `procedures.kcl_to_yaml.yaml_stream_stack` now applies `RenderStack.metadata` centrally to rendered Kubernetes manifests: catalog fields (`owner`, `team`, `lifecycle`, `tier`, `sloTier`, `criticality`, `dataClassification`, `costCenter`, `runbook`, `support`) become `koncept.io/*` annotations, explicit `Metadata.annotations` are merged into manifest annotations, and explicit `Metadata.labels` are merged into manifest labels. Resource-specific labels/annotations win on conflicts, avoiding global metadata overwrites; arbitrary catalog fields are intentionally not inferred as labels because URLs/entity refs can violate Kubernetes label value constraints.
 
 ---
 
@@ -302,7 +304,7 @@ KCL is a strong fit for typed configuration, but it is niche. A medium company s
    - Track render failures, validation failures, template usage, project count, onboarding time, and most common errors.
 
 10. **Developer-facing service catalog metadata**
-    - Owners, lifecycle, SLO tier, data classification, cost center, docs, runbooks, and support contacts now flow into the Backstage catalog via `models.metadata.Metadata` on the `Stack` (rendered as `koncept.io/*` annotations). Mirroring the same fields onto rendered K8s labels/annotations is the remaining step.
+    - Owners, lifecycle, SLO tier, data classification, cost center, docs, runbooks, and support contacts now flow into the Backstage catalog via `models.metadata.Metadata` on the `Stack` (rendered as `koncept.io/*` annotations). The Tier-1 YAML/ArgoCD path now mirrors those catalog fields to Kubernetes annotations and merges explicit stack labels/annotations into rendered manifests.
 
 ---
 
@@ -469,7 +471,7 @@ The previous roadmap emphasized many future phases. Given the current state, the
 ### Deliverables
 
 - [~] Connect Backstage templates to the same project/module scaffolding contracts as the CLI. The shared custom action now invokes the current Go CLI lifecycle commands; full portal workflow validation is still pending.
-- [x] Generate catalog entities with ownership, lifecycle, system, domain, repository, docs, support metadata, and dependency graph data. SLO tier, data classification, cost center, runbook, and support-contact now have explicit `models.metadata.Metadata` fields (`sloTier`, `dataClassification`, `costCenter`, `runbook`, `support`) that flow into the Backstage catalog as `koncept.io/*` annotations on every entity, with `owner`/`lifecycle` overriding render defaults.
+- [x] Generate catalog entities with ownership, lifecycle, system, domain, repository, docs, support metadata, and dependency graph data. SLO tier, data classification, cost center, runbook, and support-contact now have explicit `models.metadata.Metadata` fields (`sloTier`, `dataClassification`, `costCenter`, `runbook`, `support`) that flow into the Backstage catalog as `koncept.io/*` annotations on every entity, with `owner`/`lifecycle` overriding render defaults. The same governance fields now mirror into Kubernetes manifest annotations on the YAML/ArgoCD render path, while explicit `Metadata.labels`/`Metadata.annotations` are merged into rendered manifests with resource-specific values taking precedence.
 - [ ] Add workflow templates for:
   - new web app,
   - new database/cache/queue,

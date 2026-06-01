@@ -44,9 +44,18 @@ When attached to a `Stack`/`RenderStack`, the catalog-oriented fields flow into
 the Backstage output (`koncept render backstage`). `owner` and `lifecycle`
 override the render defaults on every generated entity, and the following fields
 are emitted as `koncept.io/*` annotations on Domain, System, Component, and
-Resource entities:
+Resource entities.
 
-| Metadata field | Backstage annotation |
+The YAML/ArgoCD render path (`procedures.kcl_to_yaml.yaml_stream_stack`) mirrors
+the same `koncept.io/*` fields onto Kubernetes manifest annotations. Explicit
+`Metadata.annotations` are merged into manifest annotations, and explicit
+`Metadata.labels` are merged into manifest labels. Existing resource-specific
+labels and annotations win on key conflicts so stack-level governance metadata
+cannot accidentally overwrite template-specific resource intent. Arbitrary
+catalog fields such as `owner` or `runbook` are not inferred as Kubernetes labels,
+because common values such as entity refs and URLs may not be valid label values.
+
+| Metadata field | Backstage/Kubernetes annotation |
 |---|---|
 | `owner` | `koncept.io/owner` |
 | `team` | `koncept.io/team` |
