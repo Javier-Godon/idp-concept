@@ -741,7 +741,7 @@ helmfile = hf.HelmfileRenderOptions {
 }
 ```
 
-Supported configuration groups include top-level `bases`, `repositories`, `environments`, nested `helmfiles`, `defaults`, `helmDefaults`, global `values`/`secrets`, selectors, labels/commonLabels, hooks, API versions, lock file settings, generated release defaults, per-release overrides, and extra hand-authored releases. Use `includeGeneratedReleases = False` when the Helmfile should contain only `extraReleases`/nested `helmfiles`.
+Supported configuration groups include top-level `bases`, `repositories`, `environments`, nested `helmfiles`, `defaults`, `helmDefaults`, global `values`/`secrets`, selectors, labels/commonLabels, hooks, API versions, lock file settings, generated release defaults, per-release overrides, and extra hand-authored releases. Generated module releases derive Helmfile `needs` from component/accessory `dependsOn` relationships; per-release overrides can replace those generated needs. Use `includeGeneratedReleases = False` when the Helmfile should contain only `extraReleases`/nested `helmfiles`.
 
 ---
 

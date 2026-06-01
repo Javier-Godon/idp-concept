@@ -128,7 +128,15 @@ _release_override = lambda options: hf.HelmfileRenderOptions, name: str -> any {
     _release_patch_dict(options.releaseOverrides[name]) if options and options.releaseOverrides and name in options.releaseOverrides else {}
 }
 
-_generated_release = lambda name: str, namespace: str, chart_base_path: str, options: hf.HelmfileRenderOptions -> any {
+_dependency_needs = lambda deps: [any] -> [str] {
+    [
+        "${dep.namespace}/${dep.name}"
+        for dep in (deps if deps else [])
+        if dep.kind == "APPLICATION" or dep.kind == "INFRASTRUCTURE" or dep.kind == "CRD" or dep.kind == "SECRET"
+    ]
+}
+
+_generated_release = lambda name: str, namespace: str, chart_base_path: str, options: hf.HelmfileRenderOptions, needs: [str] = [] -> any {
     {
         name = name
         namespace = options.namespace if options and options.namespace else namespace
@@ -137,12 +145,13 @@ _generated_release = lambda name: str, namespace: str, chart_base_path: str, opt
         createNamespace = True
         kubeContext = options.kubeContext if options else Undefined
         labels = options.labels if options else Undefined
+        needs = needs if needs else Undefined
     } | _release_patch_dict(options.releaseDefaults if options and options.releaseDefaults else None) | _release_override(options, name)
 }
 
 generate_releases_from_components_with_options = lambda components: [component.ComponentInstance], options: hf.HelmfileRenderOptions, chart_base_path: str -> [any] {
     """Generate Helmfile releases from component instances."""
-    [_generated_release(comp.name, comp.namespace, chart_base_path, options) for comp in components] if components else []
+    [_generated_release(comp.name, comp.namespace, chart_base_path, options, _dependency_needs(comp.dependsOn)) for comp in components] if components else []
 }
 
 generate_releases_from_components = lambda components: [component.ComponentInstance], chart_base_path: str -> [any] {
@@ -151,7 +160,7 @@ generate_releases_from_components = lambda components: [component.ComponentInsta
 
 generate_releases_from_accessories_with_options = lambda accessories: [accessory.AccessoryInstance], options: hf.HelmfileRenderOptions, chart_base_path: str -> [any] {
     """Generate Helmfile releases from accessory instances."""
-    [_generated_release(acc.name, acc.namespace, chart_base_path, options) for acc in accessories] if accessories else []
+    [_generated_release(acc.name, acc.namespace, chart_base_path, options, _dependency_needs(acc.dependsOn)) for acc in accessories] if accessories else []
 }
 
 generate_releases_from_accessories = lambda accessories: [accessory.AccessoryInstance], chart_base_path: str -> [any] {

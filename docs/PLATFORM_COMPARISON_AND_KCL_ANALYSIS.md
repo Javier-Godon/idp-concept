@@ -303,5 +303,7 @@ The immediate strategic bottleneck is output depth, not output breadth. Because 
 
 - Helmfile now receives safe `RenderStack.metadata` catalog fields and explicit labels as default top-level, common, and generated release labels while preserving Helmfile-specific overrides.
 - Crossplane V2 now renders from the full `RenderStack` and applies stack labels/annotations to XRDs, Compositions, XRs, prerequisites, Crossplane `Object` wrappers, and wrapped Kubernetes manifests.
+- Helmfile generated releases now translate framework `dependsOn` relationships between components/accessories into Helmfile `needs` entries such as `data/postgres`; per-release `releaseOverrides` remain authoritative for hand-tuned orchestration.
+- Crossplane V2 sequencer rules now use the actual generated resource names for namespace dependencies (`ns-*`), so the strategic ordering contract matches the rendered `function-sequencer` resources instead of only expressing the logical dependency.
 
-This keeps the long-term Score/TemplateChain items on the roadmap, but gates them behind a stronger standard: new strategic surfaces should not be added until the supported outputs carry ownership, lifecycle, support, and review metadata consistently.
+This keeps the long-term Score/TemplateChain items on the roadmap, but gates them behind a stronger standard: new strategic surfaces should not be added until the supported outputs carry ownership, lifecycle, support, review metadata, and dependency ordering consistently.

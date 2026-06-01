@@ -30,6 +30,8 @@
 >
 > Update 2026-06-01 (Helmfile/Crossplane V2 output parity): prioritized depth on existing strategic outputs before adding new breadth. Safe `RenderStack.metadata` catalog fields (`owner`, `team`, `lifecycle`, `tier`, `sloTier`, `criticality`, `dataClassification`, `costCenter`) plus explicit `metadata.labels` now flow into Helmfile top-level `labels`, `commonLabels`, and generated release labels, with Helmfile-specific options still taking precedence. Crossplane V2 rendering now has a stack-aware entrypoint and applies the same metadata labels/annotations used by YAML/ArgoCD to XRDs, Compositions, XRs, prerequisite Provider/Function resources, Crossplane `Object` wrappers, and the wrapped Kubernetes manifests. This closes an adoption/governance gap for the two outputs most likely to be used by platform/infrastructure teams.
 >
+> Update 2026-06-01 (Helmfile/Crossplane V2 ordering parity): implementation learning showed that metadata parity is necessary but not sufficient for production coherence. Helmfile generated releases now derive `needs` from framework component/accessory `dependsOn` relationships while allowing `releaseOverrides` to replace those values when operators need exact Helmfile orchestration. Crossplane V2 namespace dependency rules now point at the actual generated `ns-*` resources consumed by `function-sequencer`, aligning the rendered composition with the IDP dependency graph.
+>
 > Update 2026-06-01 (Crossplane V2 maturity research): the current Crossplane V2 output is now classified as a bridge, not the professional target architecture, when it wraps finalized Kubernetes manifests in `provider-kubernetes` Objects. Research against official Crossplane docs, crossplane-contrib functions, `vfarcic/crossplane-kubernetes`, and Upbound reference platforms sets a higher bar: typed intent-level XRDs/Claims, provider-native managed resources where available, versioned `function-kcl`/`function-go-templating` or custom Go functions for composition logic, explicit connection/status contracts, composition revision rollout strategy, and reconciliation/update/delete tests before support.
 
 ---
@@ -562,7 +564,7 @@ Potential future work:
 - Plugin architecture if product teams need extension without framework forks.
 - Additional infrastructure templates based on actual product demand.
 
-**Implementation learning (2026-06-01):** the safest strategic path is not to add Fleet or Score immediately. The higher-leverage step is to make priority existing outputs production-coherent first. Helmfile and Crossplane V2 now share the same stack metadata contract as YAML/ArgoCD/Backstage where their formats support it, improving governance and reviewability without adding another output surface.
+**Implementation learning (2026-06-01):** the safest strategic path is not to add Fleet or Score immediately. The higher-leverage step is to make priority existing outputs production-coherent first. Helmfile and Crossplane V2 now share the same stack metadata contract as YAML/ArgoCD/Backstage where their formats support it, and both priority outputs now preserve framework dependency ordering in their native orchestration surfaces. This improves governance, reviewability, and rollout safety without adding another output surface.
 
 **Rule:** no new Tier 1 output or template family without:
 

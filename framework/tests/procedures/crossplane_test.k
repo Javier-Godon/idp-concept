@@ -206,7 +206,7 @@ test_sequencer_namespace_dep = lambda {
     _comp = _xp_mk_component("api", "apps", [_ns])
     _result = xp._build_sequencer_rules([_comp], [])
     assert len(_result) == 1
-    assert _result[0].sequence[0] == "apps"
+    assert _result[0].sequence[0] == "ns-apps"
     assert _result[0].sequence[1] == "comp-api-.*"
 }
 
@@ -254,6 +254,7 @@ test_full_stack_with_deps = lambda {
     assert _result.metadata.xrKind == "XErpBack"
     # Composition should have 3 pipeline steps (with sequencer)
     assert len(_result.composition.spec.pipeline) == 3
+    assert _result.composition.spec.pipeline[1].input.rules[1].sequence[0] == "ns-data"
 }
 
 test_full_stack_empty = lambda {

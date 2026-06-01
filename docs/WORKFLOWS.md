@@ -502,6 +502,8 @@ _stack = renderstack.RenderStack {
 
 Use `releaseOverrides` to customize generated module releases and `extraReleases` for releases that are part of the Helmfile but not generated from a KCL module. Use `includeGeneratedReleases = False` for a Helmfile that is entirely hand-authored in KCL.
 
+Generated Helmfile releases also translate framework `dependsOn` relationships between components and accessories into Helmfile `needs` entries using `namespace/name` format. Namespace-only dependencies are omitted because they are handled by `createNamespace`; use `releaseOverrides.<name>.needs` when an operator needs to replace the generated dependency list.
+
 ---
 
 ## 6. Rendering Kusion Spec

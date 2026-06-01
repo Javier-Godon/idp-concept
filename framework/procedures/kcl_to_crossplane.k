@@ -135,7 +135,7 @@ _dep_resource_pattern = lambda dep: any -> str {
     """Get the resource name pattern for a dependency. Namespaces get exact names,
     components/accessories get regex patterns to match all their resources."""
     _name = _sanitize(dep.name)
-    _name if dep.kind == "Namespace" else ("comp-${_name}-.*" if dep.kind == "APPLICATION" or dep.kind == "INFRASTRUCTURE" else "acc-${_name}-.*")
+    _ns_resource_name(_name) if dep.kind == "Namespace" else ("comp-${_name}-.*" if dep.kind == "APPLICATION" or dep.kind == "INFRASTRUCTURE" else "acc-${_name}-.*")
 }
 
 _module_resource_pattern = lambda module_type: str, module_name: str -> str {

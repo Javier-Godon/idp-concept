@@ -246,3 +246,59 @@ test_generate_helmfile_extra_only = lambda {
     assert len(_helmfile.releases) == 1
     assert _helmfile.releases[0].name == "external-dns"
 }
+
+test_generate_helmfile_needs_from_module_dependencies = lambda {
+    _db = accessory.AccessoryInstance {
+        name = "postgres"
+        kind = "CRD"
+        namespace = "data"
+        configurations = {}
+        asset = { version = "16.0" }
+        leaders = [{ name = "postgres", kind = "StatefulSet", apiVersion = "apps/v1" }]
+        manifests = [{ apiVersion = "apps/v1", kind = "StatefulSet", metadata = { name = "postgres", namespace = "data" } }]
+        dependsOn = []
+    }
+    _api = component.ComponentInstance {
+        name = "api"
+        kind = "APPLICATION"
+        namespace = "apps"
+        configurations = {}
+        asset = { version = "1.0.0" }
+        leaders = [{ name = "api", kind = "Deployment", apiVersion = "apps/v1" }]
+        manifests = [{ apiVersion = "apps/v1", kind = "Deployment", metadata = { name = "api", namespace = "apps" } }]
+        dependsOn = [_db]
+    }
+
+    _helmfile = helmfile_proc.generate_helmfile([_api], [_db], "./charts")
+    assert _helmfile.releases[0].name == "api"
+    assert _helmfile.releases[0].needs[0] == "data/postgres"
+}
+
+test_generate_helmfile_dependency_override_wins = lambda {
+    _db = accessory.AccessoryInstance {
+        name = "postgres"
+        kind = "CRD"
+        namespace = "data"
+        configurations = {}
+        asset = { version = "16.0" }
+        leaders = [{ name = "postgres", kind = "StatefulSet", apiVersion = "apps/v1" }]
+        manifests = [{ apiVersion = "apps/v1", kind = "StatefulSet", metadata = { name = "postgres", namespace = "data" } }]
+        dependsOn = []
+    }
+    _api = component.ComponentInstance {
+        name = "api"
+        kind = "APPLICATION"
+        namespace = "apps"
+        configurations = {}
+        asset = { version = "1.0.0" }
+        leaders = [{ name = "api", kind = "Deployment", apiVersion = "apps/v1" }]
+        manifests = [{ apiVersion = "apps/v1", kind = "Deployment", metadata = { name = "api", namespace = "apps" } }]
+        dependsOn = [_db]
+    }
+
+    _helmfile = helmfile_proc.generate_helmfile_with_options([_api], [_db], hf.HelmfileRenderOptions {
+        chartBasePath = "./charts"
+        releaseOverrides = {api = hf.ReleasePatch {needs = ["platform/external-secret"]}}
+    })
+    assert _helmfile.releases[0].needs[0] == "platform/external-secret"
+}
