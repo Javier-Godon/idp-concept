@@ -293,6 +293,15 @@ No other tool in this landscape offers **9 output formats from a single KCL sour
 
 ### Long-term (Strategic)
 
-- [ ] Evaluate Score spec as alternative input format alongside KCL
-- [ ] Consider Backstage integration via catalog entities (already have `backstage` output)
-- [ ] Monitor k0rdent's TemplateChain pattern for upgrade ordering ideas
+- [~] Evaluate Score spec as alternative input format alongside KCL, but defer implementation until priority existing outputs are production-coherent
+- [x] Continue Backstage integration via catalog entities (`backstage` output now carries enriched ownership/lifecycle/dependency metadata)
+- [~] Monitor k0rdent's TemplateChain pattern for upgrade ordering ideas; keep this as design research until stack/release compatibility metadata needs enforced upgrade paths
+
+### Strategic implementation learning (2026-06-01)
+
+The immediate strategic bottleneck is output depth, not output breadth. Because Helmfile and Crossplane V2 are the priority operational outputs, the first implementation slice strengthened their governance metadata parity instead of adding Score/Fleet:
+
+- Helmfile now receives safe `RenderStack.metadata` catalog fields and explicit labels as default top-level, common, and generated release labels while preserving Helmfile-specific overrides.
+- Crossplane V2 now renders from the full `RenderStack` and applies stack labels/annotations to XRDs, Compositions, XRs, prerequisites, Crossplane `Object` wrappers, and wrapped Kubernetes manifests.
+
+This keeps the long-term Score/TemplateChain items on the roadmap, but gates them behind a stronger standard: new strategic surfaces should not be added until the supported outputs carry ownership, lifecycle, support, and review metadata consistently.

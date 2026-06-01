@@ -275,6 +275,30 @@ test_full_stack_resource_ordering = lambda {
     assert _resources[2].name == "comp-web-deployment-web"
 }
 
+test_full_stack_metadata_propagation = lambda {
+    _ns = _xp_mk_namespace("apps")
+    _comp = _xp_mk_component("api", "apps", [_ns])
+    _meta = {
+        owner = "platform-team"
+        lifecycle = "production"
+        sloTier = "gold"
+        labels = {"app.kubernetes.io/managed-by" = "koncept"}
+        annotations = {"example.com/custom" = "custom-value"}
+    }
+    _result = xp.generate_crossplane_from_stack([_comp], [], [_ns], "my-app", "1.0.0", _meta)
+    _resource = _result.composition.spec.pipeline[0].input.resources[1]
+    _wrapped = _resource.base
+    _manifest = _wrapped.spec.forProvider.manifest
+    assert _result.xrd.metadata.annotations["koncept.io/owner"] == "platform-team"
+    assert _result.composition.metadata.annotations["koncept.io/slo-tier"] == "gold"
+    assert _result.xr.metadata.annotations["koncept.io/lifecycle"] == "production"
+    assert _result.prerequisites[0].metadata.annotations["koncept.io/owner"] == "platform-team"
+    assert _wrapped.metadata.annotations["example.com/custom"] == "custom-value"
+    assert _wrapped.metadata.labels["app.kubernetes.io/managed-by"] == "koncept"
+    assert _manifest.metadata.annotations["koncept.io/owner"] == "platform-team"
+    assert _manifest.metadata.labels["app.kubernetes.io/managed-by"] == "koncept"
+}
+
 test_prerequisites_pinned_versions = lambda {
     _result = xp.generate_prerequisites()
     _k8s_provider = [r for r in _result if r.kind == "Provider" and r.metadata.name == "provider-kubernetes"][0]

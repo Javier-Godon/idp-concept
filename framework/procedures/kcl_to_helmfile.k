@@ -16,6 +16,35 @@ import models.modules.component
 import models.modules.accessory
 import custom.helmfile.helmfile as hf
 
+_metadata_labels = lambda meta: any -> {str:str} {
+    {} if meta is Undefined else {
+        if meta.owner is not Undefined:
+            owner = meta.owner
+        if meta.team is not Undefined:
+            team = meta.team
+        if meta.lifecycle is not Undefined:
+            lifecycle = meta.lifecycle
+        if meta.tier is not Undefined:
+            tier = meta.tier
+        if meta.sloTier is not Undefined:
+            sloTier = meta.sloTier
+        if meta.criticality is not Undefined:
+            criticality = meta.criticality
+        if meta.dataClassification is not Undefined:
+            dataClassification = meta.dataClassification
+        if meta.costCenter is not Undefined:
+            costCenter = meta.costCenter
+    } | (meta.labels if meta is not Undefined and meta.labels is not Undefined else {})
+}
+
+_options_with_metadata = lambda options: hf.HelmfileRenderOptions, meta: any -> hf.HelmfileRenderOptions {
+    _labels = _metadata_labels(meta)
+    options if not _labels else options | {
+        labels = _labels | (options.labels if options.labels else {})
+        commonLabels = _labels | (options.commonLabels if options.commonLabels else {})
+    }
+}
+
 _chart_base_path = lambda options: hf.HelmfileRenderOptions, fallback: str -> str {
     options.chartBasePath if options and options.chartBasePath else fallback
 }
@@ -129,36 +158,37 @@ generate_releases_from_accessories = lambda accessories: [accessory.AccessoryIns
     generate_releases_from_accessories_with_options(accessories, hf.HelmfileRenderOptions {chartBasePath = chart_base_path}, chart_base_path)
 }
 
-generate_helmfile_with_options = lambda components: [component.ComponentInstance], accessories: [accessory.AccessoryInstance], options: hf.HelmfileRenderOptions -> hf.Helmfile {
+generate_helmfile_with_options = lambda components: [component.ComponentInstance], accessories: [accessory.AccessoryInstance], options: hf.HelmfileRenderOptions, stack_metadata: any = Undefined -> hf.Helmfile {
     """Generate a complete Helmfile from components, accessories, and render options."""
-    _chart_base = _chart_base_path(options, "./charts")
+    _options = _options_with_metadata(options, stack_metadata)
+    _chart_base = _chart_base_path(_options, "./charts")
     _generated_releases = []
-    if options.includeGeneratedReleases:
-        _generated_releases += generate_releases_from_components_with_options(components, options, _chart_base)
-        _generated_releases += generate_releases_from_accessories_with_options(accessories, options, _chart_base)
-    _extra_releases = options.extraReleases if options.extraReleases else []
+    if _options.includeGeneratedReleases:
+        _generated_releases += generate_releases_from_components_with_options(components, _options, _chart_base)
+        _generated_releases += generate_releases_from_accessories_with_options(accessories, _options, _chart_base)
+    _extra_releases = _options.extraReleases if _options.extraReleases else []
 
     hf.Helmfile {
-        bases = options.bases
-        repositories = options.repositories
+        bases = _options.bases
+        repositories = _options.repositories
         releases = _generated_releases + _extra_releases
-        environments = options.environments
-        helmfiles = options.helmfiles
-        defaults = options.defaults
-        helmDefaults = options.helmDefaults
-        kubeContext = options.kubeContext
-        namespace = options.namespace
-        selectors = options.selectors
-        labels = options.labels
-        commonLabels = options.commonLabels
-        values = options.values
-        secrets = options.secrets
-        templates = options.templates
-        hooks = options.hooks
-        apiVersions = options.apiVersions
-        missingFileHandler = options.missingFileHandler
-        lockFilePath = options.lockFilePath
-        suppressOutputLineRegex = options.suppressOutputLineRegex
+        environments = _options.environments
+        helmfiles = _options.helmfiles
+        defaults = _options.defaults
+        helmDefaults = _options.helmDefaults
+        kubeContext = _options.kubeContext
+        namespace = _options.namespace
+        selectors = _options.selectors
+        labels = _options.labels
+        commonLabels = _options.commonLabels
+        values = _options.values
+        secrets = _options.secrets
+        templates = _options.templates
+        hooks = _options.hooks
+        apiVersions = _options.apiVersions
+        missingFileHandler = _options.missingFileHandler
+        lockFilePath = _options.lockFilePath
+        suppressOutputLineRegex = _options.suppressOutputLineRegex
     }
 }
 
@@ -168,5 +198,5 @@ generate_helmfile = lambda components: [component.ComponentInstance], accessorie
 
 generate_helmfile_from_stack = lambda input_stack: any, default_chart_base_path: str = "./charts" -> hf.Helmfile {
     _options = hf.HelmfileRenderOptions {chartBasePath = default_chart_base_path} | (input_stack.helmfile or {})
-    generate_helmfile_with_options(input_stack.components, input_stack.accessories, _options)
+    generate_helmfile_with_options(input_stack.components, input_stack.accessories, _options, input_stack.metadata)
 }

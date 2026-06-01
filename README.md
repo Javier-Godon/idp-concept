@@ -28,7 +28,10 @@ versus experimental (see the [evolution plan](docs/IDP_EVOLUTION_PLAN.md#51-outp
 
 **Tier 1** outputs are fully tested and documented for company usage. **Tier 2** are
 maintained for platform/infrastructure teams. **Tier 3** are experimental unless adopted
-by a real product team.
+by a real product team. Stack governance metadata is propagated through the supported
+native surfaces: Kubernetes annotations/labels for YAML/ArgoCD and Crossplane V2,
+Helmfile labels/commonLabels/release labels for Helmfile, and catalog annotations for
+Backstage.
 
 ## How It Works
 

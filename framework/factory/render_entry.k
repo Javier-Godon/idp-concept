@@ -45,7 +45,7 @@ render_from_seed = lambda stack: any, project_name: str, git_repo_url: str, mani
         manifests.yaml_stream([_timoni_module])
 
     if output == "crossplane":
-        _crossplane = crossplane_proc.generate_crossplane_from_stack(stack.components, stack.accessories, stack.k8snamespaces, project_name, "1.0.0")
+        _crossplane = crossplane_proc.generate_crossplane_from_render_stack(stack, project_name, "1.0.0")
         manifests.yaml_stream([_crossplane])
 
     if output == "backstage":

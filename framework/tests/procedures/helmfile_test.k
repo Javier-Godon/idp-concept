@@ -194,6 +194,50 @@ test_generate_helmfile_from_stack_options = lambda {
     assert _helmfile.releases[0].installed == False
 }
 
+test_generate_helmfile_from_stack_metadata_labels = lambda {
+    _components = [component.ComponentInstance {
+        name = "api"
+        kind = "APPLICATION"
+        namespace = "apps"
+        configurations = {}
+        asset = { version = "1.0.0" }
+        leaders = [{ name = "api", kind = "Deployment", apiVersion = "apps/v1" }]
+        manifests = [{ apiVersion = "apps/v1", kind = "Deployment", metadata = { name = "api", namespace = "apps" } }]
+        dependsOn = []
+    }]
+    _stack = renderstack.RenderStack {
+        instanceConfigurations = {}
+        components = _components
+        accessories = []
+        k8snamespaces = []
+        metadata = {
+            owner = "platform-team"
+            lifecycle = "production"
+            sloTier = "gold"
+            labels = {
+                "app.kubernetes.io/managed-by" = "koncept"
+                "company.io/team" = "payments"
+            }
+        }
+        helmfile = hf.HelmfileRenderOptions {
+            labels = {environment = "dev"}
+            commonLabels = {"company.io/cost-center" = "CC-4821"}
+        }
+    }
+    _helmfile = helmfile_proc.generate_helmfile_from_stack(_stack, "./charts")
+    assert _helmfile.labels.owner == "platform-team"
+    assert _helmfile.labels.lifecycle == "production"
+    assert _helmfile.labels.sloTier == "gold"
+    assert _helmfile.labels["app.kubernetes.io/managed-by"] == "koncept"
+    assert _helmfile.labels["company.io/team"] == "payments"
+    assert _helmfile.labels.environment == "dev"
+    assert _helmfile.commonLabels["company.io/cost-center"] == "CC-4821"
+    assert _helmfile.commonLabels["company.io/team"] == "payments"
+    assert _helmfile.releases[0].labels.owner == "platform-team"
+    assert _helmfile.releases[0].labels["app.kubernetes.io/managed-by"] == "koncept"
+    assert _helmfile.releases[0].labels.environment == "dev"
+}
+
 test_generate_helmfile_extra_only = lambda {
     _helmfile = helmfile_proc.generate_helmfile_with_options([], [], hf.HelmfileRenderOptions {
         includeGeneratedReleases = False
@@ -202,4 +246,3 @@ test_generate_helmfile_extra_only = lambda {
     assert len(_helmfile.releases) == 1
     assert _helmfile.releases[0].name == "external-dns"
 }
-

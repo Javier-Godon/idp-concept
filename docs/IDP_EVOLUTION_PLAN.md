@@ -27,6 +27,8 @@
 > Update 2026-05-31 (init --wire + generated goldens): completed Phase B's generated golden fixtures and the long-deferred `init module --wire` enhancement together. `koncept init project` now emits stable wire markers in the generated stack; `koncept init module --wire` performs marker-scoped, fail-loud auto-wiring (refuses unmarked stacks, rejects re-wiring, never parses arbitrary KCL); and `scripts/golden_generated.sh` scaffolds webapp / webapp+postgres / webapp+redis / webapp+kafka end-to-end and snapshots the rendered Tier-1 YAML under `tests/golden_generated/`. CI gained the generated-golden check and a marker-contract unit test. See `docs/GOLDEN_OUTPUTS.md`.
 >
 > Update 2026-06-01 (Kubernetes metadata mirroring): completed the remaining Phase F metadata propagation gap for Tier-1 YAML/ArgoCD output. `procedures.kcl_to_yaml.yaml_stream_stack` now applies `RenderStack.metadata` centrally to rendered Kubernetes manifests: catalog fields (`owner`, `team`, `lifecycle`, `tier`, `sloTier`, `criticality`, `dataClassification`, `costCenter`, `runbook`, `support`) become `koncept.io/*` annotations, explicit `Metadata.annotations` are merged into manifest annotations, and explicit `Metadata.labels` are merged into manifest labels. Resource-specific labels/annotations win on conflicts, avoiding global metadata overwrites; arbitrary catalog fields are intentionally not inferred as labels because URLs/entity refs can violate Kubernetes label value constraints.
+>
+> Update 2026-06-01 (Helmfile/Crossplane V2 output parity): prioritized depth on existing strategic outputs before adding new breadth. Safe `RenderStack.metadata` catalog fields (`owner`, `team`, `lifecycle`, `tier`, `sloTier`, `criticality`, `dataClassification`, `costCenter`) plus explicit `metadata.labels` now flow into Helmfile top-level `labels`, `commonLabels`, and generated release labels, with Helmfile-specific options still taking precedence. Crossplane V2 rendering now has a stack-aware entrypoint and applies the same metadata labels/annotations used by YAML/ArgoCD to XRDs, Compositions, XRs, prerequisite Provider/Function resources, Crossplane `Object` wrappers, and the wrapped Kubernetes manifests. This closes an adoption/governance gap for the two outputs most likely to be used by platform/infrastructure teams.
 
 ---
 
@@ -208,6 +210,7 @@ koncept render argocd --all
 | **CI/CD governance** | `.github/workflows/validate.yml` now runs Go tests, render smoke, policy gate, changelog-fragment validation, golden drift check, `scripts/verify.sh`, and `git diff --check`. Remaining: golden coverage for more projects and required-check enforcement/branch protection. |
 | **Policy as code** | Enforced in CI via `koncept policy check` (privileged/latest/resources/owner/secret-literal/namespace/network-policy rules) with explicit owner/reason/expiry exemptions. Remaining: external OPA/Kyverno admission parity. |
 | **Golden-file review workflow** | Shipped: `koncept golden check` with inline drift diff, `scripts/golden.sh`, committed snapshots for the `erp_back` reference factories, and a CI drift gate. Remaining: extend to more reference projects/formats. See `docs/GOLDEN_OUTPUTS.md`. |
+| **Output metadata parity** | YAML/ArgoCD, Backstage, Helmfile, and Crossplane V2 now consume `RenderStack.metadata` for their supported metadata surfaces. Remaining: decide whether Tier 2/3 formats such as Helm/Kustomize/Timoni/Kusion need the same support based on real consumers. |
 | **Operational telemetry** | No platform adoption/error/render metrics yet. |
 | **Runtime proof for operators** | Many operator-heavy cases are dry-run only unless opt-in runtime scripts are used with real dependencies. |
 
@@ -230,8 +233,8 @@ The 9-output strategy is a differentiator, but it can become a maintenance burde
 
 | Tier | Outputs | Support expectation |
 |---|---|---|
-| Tier 1 | `yaml`/`argocd`, `helmfile`, `backstage` | Fully tested and documented for company usage. |
-| Tier 2 | `helm`, `kustomize`, `crossplane` | Maintained for platform/infrastructure teams. |
+| Tier 1 | `yaml`/`argocd`, `helmfile`, `backstage` | Fully tested and documented for company usage. Governance metadata must flow through the output's native metadata surface. |
+| Tier 2 | `helm`, `kustomize`, `crossplane` | Maintained for platform/infrastructure teams. Crossplane V2 now has stack metadata parity because it is a priority infrastructure output. |
 | Tier 3 | `timoni`, `kusion` | Experimental unless adopted by a real product team. |
 
 ### 5.2 Single CLI implementation
@@ -522,6 +525,8 @@ Potential future work:
 - Score input if developers need a platform-neutral workload spec.
 - Plugin architecture if product teams need extension without framework forks.
 - Additional infrastructure templates based on actual product demand.
+
+**Implementation learning (2026-06-01):** the safest strategic path is not to add Fleet or Score immediately. The higher-leverage step is to make priority existing outputs production-coherent first. Helmfile and Crossplane V2 now share the same stack metadata contract as YAML/ArgoCD/Backstage where their formats support it, improving governance and reviewability without adding another output surface.
 
 **Rule:** no new Tier 1 output or template family without:
 

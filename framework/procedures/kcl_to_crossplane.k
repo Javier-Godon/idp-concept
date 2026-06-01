@@ -30,6 +30,7 @@ Usage:
 import models.modules.component
 import models.modules.accessory
 import models.modules.k8snamespace
+import procedures.kcl_to_yaml as yaml_proc
 
 # --- Constants ---
 
@@ -74,50 +75,54 @@ _manifest_resource_name = lambda prefix: str, module_name: str, manifest: any ->
 
 # --- Wrap K8s manifest in Crossplane Object ---
 
-_wrap_in_object = lambda resource_name: str, manifest: any -> {str:} {
+_wrap_in_object = lambda resource_name: str, manifest: any, meta: any = Undefined -> {str:} {
+    _manifest = yaml_proc.apply_stack_metadata(manifest, meta)
     {
         name = resource_name
-        base = {
+        base = yaml_proc.apply_stack_metadata({
             apiVersion = "kubernetes.crossplane.io/v1alpha2"
             kind = "Object"
             metadata.name = resource_name
             spec = {
                 providerConfigRef.name = _PROVIDER_KUBERNETES
-                forProvider.manifest = manifest
+                forProvider.manifest = _manifest
             }
-        }
+        }, meta)
     }
 }
 
 # --- Process module types into Crossplane resources ---
 
-_process_namespaces = lambda namespaces: [k8snamespace.K8sNamespaceInstance] -> [{str:}] {
+_process_namespaces = lambda namespaces: [k8snamespace.K8sNamespaceInstance], meta: any = Undefined -> [{str:}] {
     [
         _wrap_in_object(
             _ns_resource_name(ns.name)
             m
+            meta
         )
         for ns in namespaces
         for m in ns.manifests
     ] if namespaces else []
 }
 
-_process_components = lambda components: [component.ComponentInstance] -> [{str:}] {
+_process_components = lambda components: [component.ComponentInstance], meta: any = Undefined -> [{str:}] {
     [
         _wrap_in_object(
             _manifest_resource_name("comp", comp.name, m)
             m
+            meta
         )
         for comp in components
         for m in comp.manifests
     ] if components else []
 }
 
-_process_accessories = lambda accessories: [accessory.AccessoryInstance] -> [{str:}] {
+_process_accessories = lambda accessories: [accessory.AccessoryInstance], meta: any = Undefined -> [{str:}] {
     [
         _wrap_in_object(
             _manifest_resource_name("acc", acc.name, m)
             m
+            meta
         )
         for acc in accessories
         for m in acc.manifests
@@ -156,10 +161,10 @@ _build_sequencer_rules = lambda components: [component.ComponentInstance], acces
 
 # --- Generate XRD ---
 
-generate_xrd = lambda stack_name: str, xr_kind: str -> {str:} {
+generate_xrd = lambda stack_name: str, xr_kind: str, meta: any = Undefined -> {str:} {
     """Generate a CompositeResourceDefinition for a stack."""
     _plural = xr_kind.lower() + "s"
-    {
+    yaml_proc.apply_stack_metadata({
         apiVersion = "apiextensions.crossplane.io/v2"
         kind = "CompositeResourceDefinition"
         metadata.name = "${_plural}.${_API_GROUP}"
@@ -195,12 +200,12 @@ generate_xrd = lambda stack_name: str, xr_kind: str -> {str:} {
                 }
             }]
         }
-    }
+    }, meta)
 }
 
 # --- Generate Composition ---
 
-generate_composition = lambda xr_kind: str, resources: [{str:}], sequencer_rules: [{str:}] -> {str:} {
+generate_composition = lambda xr_kind: str, resources: [{str:}], sequencer_rules: [{str:}], meta: any = Undefined -> {str:} {
     """Generate a Composition with pipeline steps for resource creation, sequencing, and readiness."""
     _pipeline = [
         {
@@ -230,7 +235,7 @@ generate_composition = lambda xr_kind: str, resources: [{str:}], sequencer_rules
             functionRef.name = "function-auto-ready"
         }
     ]
-    {
+    yaml_proc.apply_stack_metadata({
         apiVersion = "apiextensions.crossplane.io/v1"
         kind = "Composition"
         metadata.name = "${xr_kind.lower()}-composition"
@@ -242,26 +247,26 @@ generate_composition = lambda xr_kind: str, resources: [{str:}], sequencer_rules
             mode = "Pipeline"
             pipeline = _pipeline + _sequencer_step + _ready_step
         }
-    }
+    }, meta)
 }
 
 # --- Generate XR Instance ---
 
-generate_xr = lambda xr_kind: str, instance_name: str -> {str:} {
+generate_xr = lambda xr_kind: str, instance_name: str, meta: any = Undefined -> {str:} {
     """Generate a Composite Resource instance to trigger deployment."""
-    {
+    yaml_proc.apply_stack_metadata({
         apiVersion = _API_VERSION
         kind = xr_kind
         metadata.name = instance_name
         spec.id = instance_name
-    }
+    }, meta)
 }
 
 # --- Generate prerequisites ---
 
-generate_prerequisites = lambda -> [{str:}] {
+generate_prerequisites = lambda meta: any = Undefined -> [{str:}] {
     """Generate the Crossplane infrastructure prerequisites (providers + functions)."""
-    [
+    _resources = [
         # Provider: Kubernetes
         {
             apiVersion = "pkg.crossplane.io/v1"
@@ -308,11 +313,12 @@ generate_prerequisites = lambda -> [{str:}] {
             spec.package = _FUNC_AUTO_READY_VERSION
         }
     ]
+    [yaml_proc.apply_stack_metadata(resource, meta) for resource in _resources]
 }
 
 # --- Main entry point ---
 
-generate_crossplane_from_stack = lambda components: [component.ComponentInstance], accessories: [accessory.AccessoryInstance], namespaces: [k8snamespace.K8sNamespaceInstance], stack_name: str, version: str -> {str:} {
+generate_crossplane_from_stack = lambda components: [component.ComponentInstance], accessories: [accessory.AccessoryInstance], namespaces: [k8snamespace.K8sNamespaceInstance], stack_name: str, version: str, meta: any = Undefined -> {str:} {
     """Generate complete Crossplane output (XRD + Composition + XR + prerequisites) from stack data.
 
     Args:
@@ -329,19 +335,19 @@ generate_crossplane_from_stack = lambda components: [component.ComponentInstance
     _instance_name = "${_sanitize(stack_name)}-workload"
 
     # Process all modules into Crossplane resources (order: namespaces → accessories → components)
-    _ns_resources = _process_namespaces(namespaces)
-    _acc_resources = _process_accessories(accessories)
-    _comp_resources = _process_components(components)
+    _ns_resources = _process_namespaces(namespaces, meta)
+    _acc_resources = _process_accessories(accessories, meta)
+    _comp_resources = _process_components(components, meta)
     _all_resources = _ns_resources + _acc_resources + _comp_resources
 
     # Build sequencer rules from dependsOn chains
     _sequencer_rules = _build_sequencer_rules(components, accessories)
 
     {
-        xrd = generate_xrd(stack_name, _xr_kind)
-        composition = generate_composition(_xr_kind, _all_resources, _sequencer_rules)
-        xr = generate_xr(_xr_kind, _instance_name)
-        prerequisites = generate_prerequisites()
+        xrd = generate_xrd(stack_name, _xr_kind, meta)
+        composition = generate_composition(_xr_kind, _all_resources, _sequencer_rules, meta)
+        xr = generate_xr(_xr_kind, _instance_name, meta)
+        prerequisites = generate_prerequisites(meta)
         metadata = {
             resourceCount = len(_all_resources)
             sequencerRules = len(_sequencer_rules)
@@ -349,4 +355,9 @@ generate_crossplane_from_stack = lambda components: [component.ComponentInstance
             version = version
         }
     }
+}
+
+generate_crossplane_from_render_stack = lambda input_stack: any, stack_name: str, version: str -> {str:} {
+    """Generate complete Crossplane output from a RenderStack, preserving stack metadata."""
+    generate_crossplane_from_stack(input_stack.components, input_stack.accessories, input_stack.k8snamespaces, stack_name, version, input_stack.metadata)
 }
