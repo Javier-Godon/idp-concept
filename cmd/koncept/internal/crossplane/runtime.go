@@ -16,7 +16,10 @@ const (
 	RuntimeProfileLifecycle    = "lifecycle"
 	RuntimeProfileCatalog      = "catalog"
 	RuntimeProfileAPILifecycle = "api-lifecycle"
+	RuntimeProfileMatrix       = "matrix"
 )
+
+var matrixProfiles = []string{RuntimeProfileSmoke, RuntimeProfileCatalog, RuntimeProfileAPILifecycle}
 
 // ValidateRuntimeMode checks if a runtime mode is supported.
 func ValidateRuntimeMode(mode string) error {
@@ -31,11 +34,24 @@ func ValidateRuntimeMode(mode string) error {
 // ValidateRuntimeProfile checks if a runtime profile is supported.
 func ValidateRuntimeProfile(profile string) error {
 	switch profile {
-	case RuntimeProfileNone, RuntimeProfileSmoke, RuntimeProfileLifecycle, RuntimeProfileCatalog, RuntimeProfileAPILifecycle:
+	case RuntimeProfileNone, RuntimeProfileSmoke, RuntimeProfileLifecycle, RuntimeProfileCatalog, RuntimeProfileAPILifecycle, RuntimeProfileMatrix:
 		return nil
 	default:
-		return fmt.Errorf("invalid runtime profile %q (use one of: %s, %s, %s, %s, %s)", profile, RuntimeProfileNone, RuntimeProfileSmoke, RuntimeProfileLifecycle, RuntimeProfileCatalog, RuntimeProfileAPILifecycle)
+		return fmt.Errorf("invalid runtime profile %q (use one of: %s, %s, %s, %s, %s, %s)", profile, RuntimeProfileNone, RuntimeProfileSmoke, RuntimeProfileLifecycle, RuntimeProfileCatalog, RuntimeProfileAPILifecycle, RuntimeProfileMatrix)
 	}
+}
+
+// ExpandRuntimeProfiles expands a runtime profile into one or more concrete
+// profile steps. The matrix profile runs a standard progression from low-risk
+// checks toward API-lifecycle validation.
+func ExpandRuntimeProfiles(profile string) ([]string, error) {
+	if err := ValidateRuntimeProfile(profile); err != nil {
+		return nil, err
+	}
+	if profile != RuntimeProfileMatrix {
+		return []string{profile}, nil
+	}
+	return append([]string{}, matrixProfiles...), nil
 }
 
 // RuntimeOptions controls optional kubectl-based Crossplane runtime checks.
@@ -59,6 +75,9 @@ func ResolveRuntimeOptions(profile string, opts RuntimeOptions) (RuntimeOptions,
 	}
 	if profile == RuntimeProfileNone {
 		return opts, nil
+	}
+	if profile == RuntimeProfileMatrix {
+		return opts, fmt.Errorf("runtime profile %q must be expanded with ExpandRuntimeProfiles before resolving options", RuntimeProfileMatrix)
 	}
 	if opts.Mode != "" && opts.Mode != RuntimeModeNone {
 		return opts, fmt.Errorf("runtime profile %q cannot be combined with explicit runtime mode %q", profile, opts.Mode)

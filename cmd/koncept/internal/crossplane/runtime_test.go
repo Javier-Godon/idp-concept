@@ -18,7 +18,7 @@ func TestValidateRuntimeModeInvalid(t *testing.T) {
 }
 
 func TestValidateRuntimeProfile(t *testing.T) {
-	cases := []string{RuntimeProfileNone, RuntimeProfileSmoke, RuntimeProfileLifecycle, RuntimeProfileCatalog, RuntimeProfileAPILifecycle}
+	cases := []string{RuntimeProfileNone, RuntimeProfileSmoke, RuntimeProfileLifecycle, RuntimeProfileCatalog, RuntimeProfileAPILifecycle, RuntimeProfileMatrix}
 	for _, profile := range cases {
 		if err := ValidateRuntimeProfile(profile); err != nil {
 			t.Fatalf("ValidateRuntimeProfile(%q) error = %v", profile, err)
@@ -85,5 +85,25 @@ func TestResolveRuntimeOptionsAPILifecycleProfile(t *testing.T) {
 	}
 	if resolved.Timeout != "180s" {
 		t.Fatalf("expected api-lifecycle timeout 180s, got %q", resolved.Timeout)
+	}
+}
+
+func TestExpandRuntimeProfilesMatrix(t *testing.T) {
+	profiles, err := ExpandRuntimeProfiles(RuntimeProfileMatrix)
+	if err != nil {
+		t.Fatalf("ExpandRuntimeProfiles(matrix) error = %v", err)
+	}
+	if len(profiles) != 3 {
+		t.Fatalf("expected 3 matrix profiles, got %d", len(profiles))
+	}
+	if profiles[0] != RuntimeProfileSmoke || profiles[1] != RuntimeProfileCatalog || profiles[2] != RuntimeProfileAPILifecycle {
+		t.Fatalf("unexpected matrix profile sequence: %#v", profiles)
+	}
+}
+
+func TestResolveRuntimeOptionsMatrixRequiresExpansion(t *testing.T) {
+	_, err := ResolveRuntimeOptions(RuntimeProfileMatrix, RuntimeOptions{Mode: RuntimeModeNone})
+	if err == nil {
+		t.Fatalf("expected matrix profile to require expansion")
 	}
 }

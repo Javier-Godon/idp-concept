@@ -452,6 +452,7 @@ koncept crossplane test --runtime-profile smoke
 koncept crossplane test --runtime-profile lifecycle --runtime-timeout 180s
 koncept crossplane test --runtime-profile catalog
 koncept crossplane test --runtime-profile api-lifecycle
+koncept crossplane test --runtime-profile matrix
 koncept crossplane test --require-cli --keep-artifacts
 koncept crossplane test --skip-render
 koncept crossplane test --runtime-mode server-dry-run
@@ -468,6 +469,7 @@ Current command scope:
   - `--runtime-profile lifecycle`: preset for `apply-delete` checks with cleanup on.
   - `--runtime-profile catalog`: preset for prerequisite-aware `server-dry-run` checks (useful to validate full package shape).
   - `--runtime-profile api-lifecycle`: preset for XR/composition/XRD apply/wait/delete checks with a longer default timeout.
+  - `--runtime-profile matrix`: ordered progression `smoke -> catalog -> api-lifecycle` to run increasing-confidence checks in one command.
   - `--runtime-mode server-dry-run`: server-side apply validation for generated artifacts.
   - `--runtime-mode apply-delete`: apply XR/composition/XRD, wait for Ready on XR, then cleanup (cleanup defaults on; prerequisites excluded unless explicitly requested).
   - `--runtime-profile` and an explicit non-`none` `--runtime-mode` are mutually exclusive to avoid ambiguous execution intent.

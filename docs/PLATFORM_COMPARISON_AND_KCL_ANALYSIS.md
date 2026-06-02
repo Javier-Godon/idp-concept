@@ -371,3 +371,11 @@ Runtime profile presets are now split into generic and API-oriented intent layer
 - API-oriented: `catalog` (prerequisite-aware server validation) and `api-lifecycle` (XR/composition/XRD lifecycle validation with longer timeout defaults).
 - This keeps short-term execution practical while moving the command surface toward the long-term objective of managed Crossplane API lifecycle confidence.
 
+### Strategic implementation learning (2026-06-02H)
+
+To reduce operational decision friction, runtime profiles now include a `matrix` preset that executes `smoke -> catalog -> api-lifecycle` in order.
+
+- This preserves secure defaults while creating a single progressive validation path for teams.
+- The command still blocks ambiguous intent: matrix/profile presets cannot be combined with explicit non-`none` runtime modes.
+- The staged sequence keeps strategic delivery fast and consistent across local and CI usage patterns.
+
