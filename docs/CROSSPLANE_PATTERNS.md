@@ -557,13 +557,54 @@ This generates:
 2. **Stack modules** produce finalized K8s manifests
 3. **`kcl_to_crossplane`** wraps each manifest in a `kubernetes.crossplane.io/v1alpha2 Object`
 4. **`dependsOn`** ordering maps to `function-sequencer` rules using exact wrapped resource names (regex fallback only for unresolved external dependencies)
-5. **Output** is static YAML — no in-cluster KCL execution needed
+5. **Governance metadata** from `RenderStack.metadata` applied as annotations throughout:
+   - Composition metadata and labels
+   - Each wrapped Object's metadata
+   - XRD and XR annotations
+   - Prerequisites annotations
+6. **Output** is static YAML — no in-cluster KCL execution needed
 
-### Current Advantages
-- **Automatic ordering** via function-sequencer (derived from `dependsOn`)
-- **All module types** supported: namespaces, components, accessories, third-party
-- **Consistent** with other output formats (same stack → different outputs)
-- **Tested**: procedure tests in `framework/tests/procedures/crossplane_test.k`
+### Verified Implementation (June 2026)
+
+✅ **Complete Features**:
+- Resource wrapping with Crossplane `Object` manifests
+- Concrete sequencer rule names for namespace/component/accessory dependencies
+- Stack governance metadata applied at Composition/XRD/XR/Object/prerequisite levels
+- Pinned Provider/Function package versions (verified in generated prerequisites)
+- Three-stage pipeline: patch-and-transform → sequencer → auto-ready
+- Golden snapshot validation for regression detection
+- 20+ procedure tests covering XRD/Composition/XR/prerequisites generation
+- CLI integration: `koncept render crossplane` + `koncept crossplane test`
+
+**Governance Metadata Flow**:
+```
+RenderStack.metadata
+  ↓
+Composition.metadata.annotations
+  ├─→ koncept.io/owner
+  ├─→ koncept.io/team
+  ├─→ koncept.io/lifecycle
+  ├─→ koncept.io/slo-tier
+  ├─→ koncept.io/criticality
+  ├─→ koncept.io/data-classification
+  ├─→ koncept.io/cost-center
+  ├─→ koncept.io/runbook
+  ├─→ koncept.io/support-contact
+  └─→ Each wrapped Object inherits annotations
+```
+
+**Sequencer Rules Example**:
+```yaml
+pipeline:
+  - step: sequence-creation
+    functionRef:
+      name: function-sequencer
+    input:
+      rules:
+        - sequence: [ns-erp-apps, comp-erp-api-deployment-erp-api]
+        - sequence: [ns-erp-postgres, acc-erp-postgres-cluster-erp-postgres]
+        - sequence: [acc-erp-postgres-cluster-erp-postgres, acc-erp-postgres-pooler-erp-postgres-rw]
+```
 
 ### Maturity Gap
 
@@ -574,6 +615,18 @@ This output is still a bridge, not the final professional Crossplane model, when
 - Move complex composition logic into versioned `function-kcl`, `function-go-templating`, or custom Go function packages.
 - Keep provider-kubernetes Objects only for namespaces, small RBAC/bootstrap glue, or temporary compatibility bridges.
 - Add Crossplane-specific tests that prove reconcile/update/delete behavior, not only render shape.
+
+### Planned Enhancements
+
+🔄 **Runtime Validation**:
+- Expand beyond `smoke` profile to exercise actual Crossplane reconciliation
+- Build fixtures for provider-native managed resources integration tests
+- Add Crossplane update/delete lifecycle testing
+
+📋 **Future Maturity**:
+- Native provider equivalents for PostgreSQL (CloudNativePG operator vs provider-sql)
+- Kafka Strimzi composition with provider-native or manager integration
+- Keycloak composition with generated TypedJSONSchema for platform teams
 
 ---
 
