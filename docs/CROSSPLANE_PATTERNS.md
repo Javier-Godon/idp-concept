@@ -448,6 +448,8 @@ Example:
 
 ```bash
 koncept crossplane test
+koncept crossplane test --runtime-profile smoke
+koncept crossplane test --runtime-profile lifecycle --runtime-timeout 180s
 koncept crossplane test --require-cli --keep-artifacts
 koncept crossplane test --skip-render
 koncept crossplane test --runtime-mode server-dry-run
@@ -460,8 +462,11 @@ Current command scope:
 - validates required sections (`xrd`, `composition`, `xr`, `prerequisites`), pipeline shape, and pinned Provider/Function packages;
 - runs `crossplane render ... --include-function-results` when the binary is available (or fails when `--require-cli` is set).
 - can run optional kubectl runtime checks:
+  - `--runtime-profile smoke`: preset for `server-dry-run` checks.
+  - `--runtime-profile lifecycle`: preset for `apply-delete` checks with cleanup on.
   - `--runtime-mode server-dry-run`: server-side apply validation for generated artifacts.
   - `--runtime-mode apply-delete`: apply XR/composition/XRD, wait for Ready on XR, then cleanup (cleanup defaults on; prerequisites excluded unless explicitly requested).
+  - `--runtime-profile` and an explicit non-`none` `--runtime-mode` are mutually exclusive to avoid ambiguous execution intent.
 
 Future scope can extend this same entrypoint with optional cluster reconciliation/update/delete checks.
 

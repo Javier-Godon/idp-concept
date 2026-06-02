@@ -10,6 +10,10 @@ const (
 	RuntimeModeNone         = "none"
 	RuntimeModeServerDryRun = "server-dry-run"
 	RuntimeModeApplyDelete  = "apply-delete"
+
+	RuntimeProfileNone      = "none"
+	RuntimeProfileSmoke     = "smoke"
+	RuntimeProfileLifecycle = "lifecycle"
 )
 
 // ValidateRuntimeMode checks if a runtime mode is supported.
@@ -22,6 +26,16 @@ func ValidateRuntimeMode(mode string) error {
 	}
 }
 
+// ValidateRuntimeProfile checks if a runtime profile is supported.
+func ValidateRuntimeProfile(profile string) error {
+	switch profile {
+	case RuntimeProfileNone, RuntimeProfileSmoke, RuntimeProfileLifecycle:
+		return nil
+	default:
+		return fmt.Errorf("invalid runtime profile %q (use one of: %s, %s, %s)", profile, RuntimeProfileNone, RuntimeProfileSmoke, RuntimeProfileLifecycle)
+	}
+}
+
 // RuntimeOptions controls optional kubectl-based Crossplane runtime checks.
 type RuntimeOptions struct {
 	Mode                 string
@@ -30,6 +44,36 @@ type RuntimeOptions struct {
 	IncludePrerequisites bool
 	Cleanup              bool
 	CleanupPrerequisites bool
+}
+
+// ResolveRuntimeOptions merges a runtime profile into explicit runtime options.
+// Profiles are mutually exclusive with an explicit non-none mode.
+func ResolveRuntimeOptions(profile string, opts RuntimeOptions) (RuntimeOptions, error) {
+	if err := ValidateRuntimeProfile(profile); err != nil {
+		return opts, err
+	}
+	if err := ValidateRuntimeMode(opts.Mode); err != nil {
+		return opts, err
+	}
+	if profile == RuntimeProfileNone {
+		return opts, nil
+	}
+	if opts.Mode != "" && opts.Mode != RuntimeModeNone {
+		return opts, fmt.Errorf("runtime profile %q cannot be combined with explicit runtime mode %q", profile, opts.Mode)
+	}
+
+	if profile == RuntimeProfileSmoke {
+		opts.Mode = RuntimeModeServerDryRun
+		return opts, nil
+	}
+
+	// lifecycle profile
+	opts.Mode = RuntimeModeApplyDelete
+	if opts.Timeout == "" {
+		opts.Timeout = "120s"
+	}
+	opts.Cleanup = true
+	return opts, nil
 }
 
 // RunRuntimeChecks executes optional kubectl checks against generated artifacts.

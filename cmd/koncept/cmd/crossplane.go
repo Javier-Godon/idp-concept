@@ -15,6 +15,7 @@ var (
 	crossplaneTestRequireCLI        bool
 	crossplaneTestKeepFiles         bool
 	crossplaneRuntimeMode           string
+	crossplaneRuntimeProfile        string
 	crossplaneRuntimeContext        string
 	crossplaneRuntimeTimeout        string
 	crossplaneRuntimePrereqs        bool
@@ -80,19 +81,23 @@ func runCrossplaneTest(cmd *cobra.Command, args []string) error {
 		printInfo("crossplane test: local crossplane render skipped")
 	}
 
-	if err := xptest.ValidateRuntimeMode(crossplaneRuntimeMode); err != nil {
+	runtimeOpts, err := xptest.ResolveRuntimeOptions(crossplaneRuntimeProfile, xptest.RuntimeOptions{
+		Mode:                 crossplaneRuntimeMode,
+		KubeContext:          crossplaneRuntimeContext,
+		Timeout:              crossplaneRuntimeTimeout,
+		IncludePrerequisites: crossplaneRuntimePrereqs,
+		Cleanup:              crossplaneRuntimeCleanup,
+		CleanupPrerequisites: crossplaneRuntimeCleanupPrereqs,
+	})
+	if err != nil {
 		return err
 	}
-	if crossplaneRuntimeMode != xptest.RuntimeModeNone {
-		printInfo(fmt.Sprintf("crossplane test: running runtime mode %s", crossplaneRuntimeMode))
-		err = xptest.RunRuntimeChecks(report.ArtifactsDir, xptest.RuntimeOptions{
-			Mode:                 crossplaneRuntimeMode,
-			KubeContext:          crossplaneRuntimeContext,
-			Timeout:              crossplaneRuntimeTimeout,
-			IncludePrerequisites: crossplaneRuntimePrereqs,
-			Cleanup:              crossplaneRuntimeCleanup,
-			CleanupPrerequisites: crossplaneRuntimeCleanupPrereqs,
-		})
+	if runtimeOpts.Mode != xptest.RuntimeModeNone {
+		if crossplaneRuntimeProfile != xptest.RuntimeProfileNone {
+			printInfo(fmt.Sprintf("crossplane test: using runtime profile %s", crossplaneRuntimeProfile))
+		}
+		printInfo(fmt.Sprintf("crossplane test: running runtime mode %s", runtimeOpts.Mode))
+		err = xptest.RunRuntimeChecks(report.ArtifactsDir, runtimeOpts)
 		recorder().Record("crossplane-test", "runtime", time.Since(start), err)
 		if err != nil {
 			return err
@@ -110,9 +115,10 @@ func runCrossplaneTest(cmd *cobra.Command, args []string) error {
 }
 
 func init() {
-	crossplaneTestCmd.Flags().BoolVar(&crossplaneTestSkipRender, "skip-render", false, "skip optional local `crossplane render` execution")
+	crossplaneTestCmd.Flags().BoolVar(&crossplaneTestSkipRender, "skip-render", false, "skip optional local crossplane render execution")
 	crossplaneTestCmd.Flags().BoolVar(&crossplaneTestRequireCLI, "require-cli", false, "fail when crossplane CLI is not installed")
 	crossplaneTestCmd.Flags().BoolVar(&crossplaneTestKeepFiles, "keep-artifacts", false, "keep generated temporary crossplane artifacts for inspection")
+	crossplaneTestCmd.Flags().StringVar(&crossplaneRuntimeProfile, "runtime-profile", xptest.RuntimeProfileNone, "runtime profile preset: none|smoke|lifecycle")
 	crossplaneTestCmd.Flags().StringVar(&crossplaneRuntimeMode, "runtime-mode", xptest.RuntimeModeNone, "optional kubectl runtime mode: none|server-dry-run|apply-delete")
 	crossplaneTestCmd.Flags().StringVar(&crossplaneRuntimeContext, "runtime-context", "", "optional kube context for runtime mode")
 	crossplaneTestCmd.Flags().StringVar(&crossplaneRuntimeTimeout, "runtime-timeout", "120s", "wait timeout for runtime apply-delete mode")

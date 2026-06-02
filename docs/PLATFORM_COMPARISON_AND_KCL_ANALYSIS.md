@@ -355,3 +355,11 @@ Crossplane test maturity was extended without sacrificing safety defaults:
 - Runtime checks are explicit and controlled: prerequisites are excluded unless requested, cleanup is enabled by default, and prerequisite cleanup requires its own explicit flag.
 - This supports steady progress toward operational confidence while keeping the baseline local workflow deterministic and low-risk.
 
+### Strategic implementation learning (2026-06-02F)
+
+To keep adoption simple while expanding runtime confidence, Crossplane runtime checks now support named profiles:
+
+- `smoke` maps to safe server-side dry-run validation.
+- `lifecycle` maps to apply/wait/delete validation with cleanup defaults.
+- Profiles are intentionally mutually exclusive with explicit non-`none` runtime modes to avoid ambiguous intent in CI or local workflows.
+
