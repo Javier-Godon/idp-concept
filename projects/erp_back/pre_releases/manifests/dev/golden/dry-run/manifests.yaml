@@ -1,0 +1,106 @@
+apiVersion: koncept.bluesolution.es/v1alpha1
+kind: DryRunPlan
+metadata:
+  name: ERP Back-dry-run
+  project: ERP Back
+  version: 1.0.0
+  generatedBy: koncept dry-run
+spec:
+  mergedConfigurations:
+    projectName: erp_back
+    siteName: dev_cluster
+    brandIcon: internal-logo
+    appsNamespace: erp-apps
+    gitRepoUrl: https://github.com/Javier-Godon/idp-concept
+    rootPaths:
+      postgres: erp-postgres.erp-postgres.svc.cluster.local
+    storageClassName: local-path
+    useLocalPersistentVolumes: true
+    postgresNamespace: erp-postgres
+    postgresHost: erp-postgres.erp-postgres.svc.cluster.local
+    postgresPort: 5432
+    postgresDatabase: erp_db
+    springProfile: default
+    javaOpts: -Xmx1g -Xms512m
+  stackMetadata:
+    owner: erp-platform-team
+    team: erp-platform
+    system: erp-back
+    domain: erp
+    lifecycle: production
+    sloTier: tier-1
+    criticality: high
+    dataClassification: internal
+    costCenter: CC-ERP-001
+    runbook: https://runbooks.bluesolution.es/erp-back
+    repository: https://github.com/Javier-Godon/idp-concept
+    support: '#erp-platform-support'
+  inventory:
+    namespaces:
+    - erp-apps
+    - erp-postgres
+    components:
+    - name: erp-api
+      namespace: erp-apps
+      kind: component
+      leaders:
+      - APPLICATION:erp-api
+      dependsOn:
+      - Namespace:cluster:erp-apps
+    accessories:
+    - name: erp-postgres
+      namespace: erp-postgres
+      kind: accessory
+      leaders:
+      - CRD:erp-postgres
+      dependsOn:
+      - Namespace:cluster:erp-postgres
+  dependencies:
+  - from: erp-apps/erp-api
+    to: cluster/erp-apps
+    dependencyKind: Namespace
+  - from: erp-postgres/erp-postgres
+    to: cluster/erp-postgres
+    dependencyKind: Namespace
+  outputs:
+    helmfile:
+      releaseCount: 2
+      releases:
+      - name: erp-api
+        namespace: erp-apps
+        chart: ./charts/erp-api
+        needs: []
+      - name: erp-postgres
+        namespace: erp-postgres
+        chart: ./charts/erp-postgres
+        needs: []
+    crossplane:
+      metadata:
+        resourceCount: 7
+        sequencerRules: 5
+        xrKind: XErpBack
+        version: 1.0.0
+      sequencerRules:
+      - sequence:
+        - ns-erp-apps
+        - comp-erp-api-deployment-erp-api
+      - sequence:
+        - ns-erp-apps
+        - comp-erp-api-service-erp-api
+      - sequence:
+        - ns-erp-postgres
+        - acc-erp-postgres-cluster-erp-postgres
+      - sequence:
+        - ns-erp-postgres
+        - acc-erp-postgres-scheduledbackup-erp-postgres-daily-backup
+      - sequence:
+        - ns-erp-postgres
+        - acc-erp-postgres-pooler-erp-postgres-rw
+      prerequisites:
+      - Provider/provider-kubernetes
+      - ProviderConfig/provider-kubernetes
+      - Provider/provider-helm
+      - ProviderConfig/helm-provider
+      - Function/function-patch-and-transform
+      - Function/function-sequencer
+      - Function/function-auto-ready

@@ -35,7 +35,7 @@ fi
 # Reference factories and the formats each one snapshots.
 # Format: "<factory-dir>|<comma-separated-formats>"
 TARGETS=(
-  "projects/erp_back/pre_releases/manifests/dev/factory|yaml,argocd"
+  "projects/erp_back/pre_releases/manifests/dev/factory|yaml,argocd,helmfile,crossplane,dry-run"
   "projects/erp_back/pre_releases/manifests/stg/factory|yaml"
   "projects/erp_back/releases/v1_0_0_production/factory|yaml"
 )

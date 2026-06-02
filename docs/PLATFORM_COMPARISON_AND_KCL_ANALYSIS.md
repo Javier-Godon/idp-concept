@@ -331,3 +331,11 @@ To keep implementation speed steady without sacrificing control-plane safety, th
 - The command intentionally prioritizes Helmfile/Crossplane orchestration visibility so teams can detect dependency identity drift before generating or applying deployable artifacts.
 - This shifts the near-term operating model: every strategic output hardening slice should include both renderer changes and dry-run observability updates to keep operators aligned with real generated behavior.
 
+### Strategic implementation learning (2026-06-02C)
+
+The next adaptation is tightening regression visibility for the same priority surfaces:
+
+- The reference golden workflow now snapshots `helmfile`, `crossplane`, and `dry-run` outputs on `projects/erp_back/pre_releases/manifests/dev/factory` in addition to `yaml`/`argocd`.
+- This keeps the strategic gate consistent with implementation priorities: Helmfile dependency orchestration, Crossplane sequencing metadata, and dry-run planning contracts must remain reviewable and deterministic in CI.
+- The approach stays intentionally narrow (single representative factory for these extra formats) to preserve steady velocity and avoid high-maintenance snapshot sprawl.
+

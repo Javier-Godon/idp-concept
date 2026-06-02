@@ -1,0 +1,45 @@
+releases:
+- name: erp-api
+  namespace: erp-apps
+  chart: ./charts/erp-api
+  createNamespace: true
+  labels:
+    owner: erp-platform-team
+    team: erp-platform
+    lifecycle: production
+    sloTier: tier-1
+    criticality: high
+    dataClassification: internal
+    costCenter: CC-ERP-001
+  values:
+  - ./charts/erp-api/values.yaml
+- name: erp-postgres
+  namespace: erp-postgres
+  chart: ./charts/erp-postgres
+  createNamespace: true
+  labels:
+    owner: erp-platform-team
+    team: erp-platform
+    lifecycle: production
+    sloTier: tier-1
+    criticality: high
+    dataClassification: internal
+    costCenter: CC-ERP-001
+  values:
+  - ./charts/erp-postgres/values.yaml
+labels:
+  owner: erp-platform-team
+  team: erp-platform
+  lifecycle: production
+  sloTier: tier-1
+  criticality: high
+  dataClassification: internal
+  costCenter: CC-ERP-001
+commonLabels:
+  owner: erp-platform-team
+  team: erp-platform
+  lifecycle: production
+  sloTier: tier-1
+  criticality: high
+  dataClassification: internal
+  costCenter: CC-ERP-001

@@ -1,0 +1,616 @@
+xrd:
+  apiVersion: apiextensions.crossplane.io/v2
+  kind: CompositeResourceDefinition
+  metadata:
+    name: xerpbacks.koncept.bluesolution.es
+    labels: {}
+    annotations:
+      koncept.io/owner: erp-platform-team
+      koncept.io/team: erp-platform
+      koncept.io/lifecycle: production
+      koncept.io/slo-tier: tier-1
+      koncept.io/criticality: high
+      koncept.io/data-classification: internal
+      koncept.io/cost-center: CC-ERP-001
+      koncept.io/runbook: https://runbooks.bluesolution.es/erp-back
+      koncept.io/support-contact: '#erp-platform-support'
+  spec:
+    group: koncept.bluesolution.es
+    names:
+      kind: XErpBack
+      plural: xerpbacks
+    claimNames:
+      kind: ErpBack
+      plural: erp backs
+    versions:
+    - name: v1alpha1
+      served: true
+      referenceable: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                id:
+                  type: string
+                  description: Unique identifier for this deployment
+                namespace:
+                  type: string
+                  description: Default namespace for resources
+composition:
+  apiVersion: apiextensions.crossplane.io/v1
+  kind: Composition
+  metadata:
+    name: xerpback-composition
+    labels: {}
+    annotations:
+      koncept.io/owner: erp-platform-team
+      koncept.io/team: erp-platform
+      koncept.io/lifecycle: production
+      koncept.io/slo-tier: tier-1
+      koncept.io/criticality: high
+      koncept.io/data-classification: internal
+      koncept.io/cost-center: CC-ERP-001
+      koncept.io/runbook: https://runbooks.bluesolution.es/erp-back
+      koncept.io/support-contact: '#erp-platform-support'
+  spec:
+    compositeTypeRef:
+      apiVersion: koncept.bluesolution.es/v1alpha1
+      kind: XErpBack
+    mode: Pipeline
+    pipeline:
+    - step: render-manifests
+      functionRef:
+        name: function-patch-and-transform
+      input:
+        apiVersion: pt.fn.crossplane.io/v1beta1
+        kind: Resources
+        resources:
+        - name: ns-erp-apps
+          base:
+            apiVersion: kubernetes.crossplane.io/v1alpha2
+            kind: Object
+            metadata:
+              name: ns-erp-apps
+              labels: {}
+              annotations:
+                koncept.io/owner: erp-platform-team
+                koncept.io/team: erp-platform
+                koncept.io/lifecycle: production
+                koncept.io/slo-tier: tier-1
+                koncept.io/criticality: high
+                koncept.io/data-classification: internal
+                koncept.io/cost-center: CC-ERP-001
+                koncept.io/runbook: https://runbooks.bluesolution.es/erp-back
+                koncept.io/support-contact: '#erp-platform-support'
+            spec:
+              providerConfigRef:
+                name: provider-kubernetes
+              forProvider:
+                manifest:
+                  apiVersion: v1
+                  kind: Namespace
+                  metadata:
+                    annotations:
+                      koncept.io/owner: erp-platform-team
+                      koncept.io/team: erp-platform
+                      koncept.io/lifecycle: production
+                      koncept.io/slo-tier: tier-1
+                      koncept.io/criticality: high
+                      koncept.io/data-classification: internal
+                      koncept.io/cost-center: CC-ERP-001
+                      koncept.io/runbook: https://runbooks.bluesolution.es/erp-back
+                      koncept.io/support-contact: '#erp-platform-support'
+                    labels: {}
+                    name: erp-apps
+        - name: ns-erp-postgres
+          base:
+            apiVersion: kubernetes.crossplane.io/v1alpha2
+            kind: Object
+            metadata:
+              name: ns-erp-postgres
+              labels: {}
+              annotations:
+                koncept.io/owner: erp-platform-team
+                koncept.io/team: erp-platform
+                koncept.io/lifecycle: production
+                koncept.io/slo-tier: tier-1
+                koncept.io/criticality: high
+                koncept.io/data-classification: internal
+                koncept.io/cost-center: CC-ERP-001
+                koncept.io/runbook: https://runbooks.bluesolution.es/erp-back
+                koncept.io/support-contact: '#erp-platform-support'
+            spec:
+              providerConfigRef:
+                name: provider-kubernetes
+              forProvider:
+                manifest:
+                  apiVersion: v1
+                  kind: Namespace
+                  metadata:
+                    annotations:
+                      koncept.io/owner: erp-platform-team
+                      koncept.io/team: erp-platform
+                      koncept.io/lifecycle: production
+                      koncept.io/slo-tier: tier-1
+                      koncept.io/criticality: high
+                      koncept.io/data-classification: internal
+                      koncept.io/cost-center: CC-ERP-001
+                      koncept.io/runbook: https://runbooks.bluesolution.es/erp-back
+                      koncept.io/support-contact: '#erp-platform-support'
+                    labels: {}
+                    name: erp-postgres
+        - name: acc-erp-postgres-cluster-erp-postgres
+          base:
+            apiVersion: kubernetes.crossplane.io/v1alpha2
+            kind: Object
+            metadata:
+              name: acc-erp-postgres-cluster-erp-postgres
+              labels: {}
+              annotations:
+                koncept.io/owner: erp-platform-team
+                koncept.io/team: erp-platform
+                koncept.io/lifecycle: production
+                koncept.io/slo-tier: tier-1
+                koncept.io/criticality: high
+                koncept.io/data-classification: internal
+                koncept.io/cost-center: CC-ERP-001
+                koncept.io/runbook: https://runbooks.bluesolution.es/erp-back
+                koncept.io/support-contact: '#erp-platform-support'
+            spec:
+              providerConfigRef:
+                name: provider-kubernetes
+              forProvider:
+                manifest:
+                  apiVersion: postgresql.cnpg.io/v1
+                  kind: Cluster
+                  metadata:
+                    name: erp-postgres
+                    namespace: erp-postgres
+                    labels: {}
+                    annotations:
+                      koncept.io/owner: erp-platform-team
+                      koncept.io/team: erp-platform
+                      koncept.io/lifecycle: production
+                      koncept.io/slo-tier: tier-1
+                      koncept.io/criticality: high
+                      koncept.io/data-classification: internal
+                      koncept.io/cost-center: CC-ERP-001
+                      koncept.io/runbook: https://runbooks.bluesolution.es/erp-back
+                      koncept.io/support-contact: '#erp-platform-support'
+                  spec:
+                    instances: 3
+                    enableSuperuserAccess: false
+                    enablePDB: true
+                    storage:
+                      size: 20Gi
+                      storageClass: local-path
+                    bootstrap:
+                      initdb:
+                        database: erp_db
+                        owner: erp_app
+                    monitoring:
+                      enablePodMonitor: true
+                    backup:
+                      retentionPolicy: 7d
+                    imageName: postgres:16.4-alpine
+                    resources:
+                      requests:
+                        cpu: 500m
+                        memory: 1Gi
+                      limits:
+                        cpu: '2'
+                        memory: 4Gi
+                    primaryUpdateStrategy: unsupervised
+        - name: acc-erp-postgres-scheduledbackup-erp-postgres-daily-backup
+          base:
+            apiVersion: kubernetes.crossplane.io/v1alpha2
+            kind: Object
+            metadata:
+              name: acc-erp-postgres-scheduledbackup-erp-postgres-daily-backup
+              labels: {}
+              annotations:
+                koncept.io/owner: erp-platform-team
+                koncept.io/team: erp-platform
+                koncept.io/lifecycle: production
+                koncept.io/slo-tier: tier-1
+                koncept.io/criticality: high
+                koncept.io/data-classification: internal
+                koncept.io/cost-center: CC-ERP-001
+                koncept.io/runbook: https://runbooks.bluesolution.es/erp-back
+                koncept.io/support-contact: '#erp-platform-support'
+            spec:
+              providerConfigRef:
+                name: provider-kubernetes
+              forProvider:
+                manifest:
+                  apiVersion: postgresql.cnpg.io/v1
+                  kind: ScheduledBackup
+                  metadata:
+                    name: erp-postgres-daily-backup
+                    namespace: erp-postgres
+                    labels: {}
+                    annotations:
+                      koncept.io/owner: erp-platform-team
+                      koncept.io/team: erp-platform
+                      koncept.io/lifecycle: production
+                      koncept.io/slo-tier: tier-1
+                      koncept.io/criticality: high
+                      koncept.io/data-classification: internal
+                      koncept.io/cost-center: CC-ERP-001
+                      koncept.io/runbook: https://runbooks.bluesolution.es/erp-back
+                      koncept.io/support-contact: '#erp-platform-support'
+                  spec:
+                    cluster:
+                      name: erp-postgres
+                    schedule: 0 0 2 * * *
+                    immediate: true
+                    backupOwnerReference: cluster
+                    method: barmanObjectStore
+                    suspend: false
+        - name: acc-erp-postgres-pooler-erp-postgres-rw
+          base:
+            apiVersion: kubernetes.crossplane.io/v1alpha2
+            kind: Object
+            metadata:
+              name: acc-erp-postgres-pooler-erp-postgres-rw
+              labels: {}
+              annotations:
+                koncept.io/owner: erp-platform-team
+                koncept.io/team: erp-platform
+                koncept.io/lifecycle: production
+                koncept.io/slo-tier: tier-1
+                koncept.io/criticality: high
+                koncept.io/data-classification: internal
+                koncept.io/cost-center: CC-ERP-001
+                koncept.io/runbook: https://runbooks.bluesolution.es/erp-back
+                koncept.io/support-contact: '#erp-platform-support'
+            spec:
+              providerConfigRef:
+                name: provider-kubernetes
+              forProvider:
+                manifest:
+                  apiVersion: postgresql.cnpg.io/v1
+                  kind: Pooler
+                  metadata:
+                    name: erp-postgres-rw
+                    namespace: erp-postgres
+                    labels: {}
+                    annotations:
+                      koncept.io/owner: erp-platform-team
+                      koncept.io/team: erp-platform
+                      koncept.io/lifecycle: production
+                      koncept.io/slo-tier: tier-1
+                      koncept.io/criticality: high
+                      koncept.io/data-classification: internal
+                      koncept.io/cost-center: CC-ERP-001
+                      koncept.io/runbook: https://runbooks.bluesolution.es/erp-back
+                      koncept.io/support-contact: '#erp-platform-support'
+                  spec:
+                    cluster:
+                      name: erp-postgres
+                    instances: 2
+                    type: rw
+                    pgbouncer:
+                      poolMode: session
+        - name: comp-erp-api-deployment-erp-api
+          base:
+            apiVersion: kubernetes.crossplane.io/v1alpha2
+            kind: Object
+            metadata:
+              name: comp-erp-api-deployment-erp-api
+              labels: {}
+              annotations:
+                koncept.io/owner: erp-platform-team
+                koncept.io/team: erp-platform
+                koncept.io/lifecycle: production
+                koncept.io/slo-tier: tier-1
+                koncept.io/criticality: high
+                koncept.io/data-classification: internal
+                koncept.io/cost-center: CC-ERP-001
+                koncept.io/runbook: https://runbooks.bluesolution.es/erp-back
+                koncept.io/support-contact: '#erp-platform-support'
+            spec:
+              providerConfigRef:
+                name: provider-kubernetes
+              forProvider:
+                manifest:
+                  apiVersion: apps/v1
+                  kind: Deployment
+                  metadata:
+                    annotations:
+                      koncept.io/owner: erp-platform-team
+                      koncept.io/team: erp-platform
+                      koncept.io/lifecycle: production
+                      koncept.io/slo-tier: tier-1
+                      koncept.io/criticality: high
+                      koncept.io/data-classification: internal
+                      koncept.io/cost-center: CC-ERP-001
+                      koncept.io/runbook: https://runbooks.bluesolution.es/erp-back
+                      koncept.io/support-contact: '#erp-platform-support'
+                    labels: {}
+                    name: erp-api
+                    namespace: erp-apps
+                  spec:
+                    replicas: 1
+                    selector:
+                      matchLabels:
+                        app: erp-api
+                    template:
+                      metadata:
+                        labels:
+                          app: erp-api
+                      spec:
+                        containers:
+                        - env:
+                          - name: SPRING_PROFILES_ACTIVE
+                            value: default
+                          - name: JAVA_OPTS
+                            value: -Xmx1g -Xms512m
+                          - name: SPRING_DATASOURCE_URL
+                            value: jdbc:postgresql://erp-postgres.erp-postgres.svc.cluster.local:5432/erp_db
+                          - name: SPRING_DATASOURCE_USERNAME
+                            valueFrom:
+                              secretKeyRef:
+                                key: username
+                                name: erp-db-credentials
+                          - name: SPRING_DATASOURCE_PASSWORD
+                            valueFrom:
+                              secretKeyRef:
+                                key: password
+                                name: erp-db-credentials
+                          image: ghcr.io/javier-godon/erp-back-api:1.0.0
+                          imagePullPolicy: IfNotPresent
+                          livenessProbe:
+                            failureThreshold: 5
+                            httpGet:
+                              path: /actuator/health/liveness
+                              port: 8080
+                            initialDelaySeconds: 60
+                            periodSeconds: 10
+                            successThreshold: 1
+                            timeoutSeconds: 10
+                          name: erp-api
+                          ports:
+                          - containerPort: 8080
+                          readinessProbe:
+                            failureThreshold: 3
+                            httpGet:
+                              path: /actuator/health/readiness
+                              port: 8080
+                            initialDelaySeconds: 30
+                            periodSeconds: 5
+                            successThreshold: 1
+                            timeoutSeconds: 10
+                          resources:
+                            limits:
+                              cpu: '2'
+                              memory: 4Gi
+                            requests:
+                              cpu: 500m
+                              memory: 1Gi
+                          startupProbe:
+                            failureThreshold: 10
+                            httpGet:
+                              path: /actuator/health
+                              port: 8080
+                            initialDelaySeconds: 30
+                            periodSeconds: 10
+                            successThreshold: 1
+                            timeoutSeconds: 10
+        - name: comp-erp-api-service-erp-api
+          base:
+            apiVersion: kubernetes.crossplane.io/v1alpha2
+            kind: Object
+            metadata:
+              name: comp-erp-api-service-erp-api
+              labels: {}
+              annotations:
+                koncept.io/owner: erp-platform-team
+                koncept.io/team: erp-platform
+                koncept.io/lifecycle: production
+                koncept.io/slo-tier: tier-1
+                koncept.io/criticality: high
+                koncept.io/data-classification: internal
+                koncept.io/cost-center: CC-ERP-001
+                koncept.io/runbook: https://runbooks.bluesolution.es/erp-back
+                koncept.io/support-contact: '#erp-platform-support'
+            spec:
+              providerConfigRef:
+                name: provider-kubernetes
+              forProvider:
+                manifest:
+                  apiVersion: v1
+                  kind: Service
+                  metadata:
+                    annotations:
+                      koncept.io/owner: erp-platform-team
+                      koncept.io/team: erp-platform
+                      koncept.io/lifecycle: production
+                      koncept.io/slo-tier: tier-1
+                      koncept.io/criticality: high
+                      koncept.io/data-classification: internal
+                      koncept.io/cost-center: CC-ERP-001
+                      koncept.io/runbook: https://runbooks.bluesolution.es/erp-back
+                      koncept.io/support-contact: '#erp-platform-support'
+                    labels: {}
+                    name: erp-api
+                    namespace: erp-apps
+                  spec:
+                    ports:
+                    - port: 8080
+                    selector:
+                      app: erp-api
+                    type: ClusterIP
+    - step: sequence-creation
+      functionRef:
+        name: function-sequencer
+      input:
+        apiVersion: sequencer.fn.crossplane.io/v1beta1
+        kind: Input
+        rules:
+        - sequence:
+          - ns-erp-apps
+          - comp-erp-api-deployment-erp-api
+        - sequence:
+          - ns-erp-apps
+          - comp-erp-api-service-erp-api
+        - sequence:
+          - ns-erp-postgres
+          - acc-erp-postgres-cluster-erp-postgres
+        - sequence:
+          - ns-erp-postgres
+          - acc-erp-postgres-scheduledbackup-erp-postgres-daily-backup
+        - sequence:
+          - ns-erp-postgres
+          - acc-erp-postgres-pooler-erp-postgres-rw
+    - step: automatically-detect-readiness
+      functionRef:
+        name: function-auto-ready
+xr:
+  apiVersion: koncept.bluesolution.es/v1alpha1
+  kind: XErpBack
+  metadata:
+    name: erp back-workload
+    labels: {}
+    annotations:
+      koncept.io/owner: erp-platform-team
+      koncept.io/team: erp-platform
+      koncept.io/lifecycle: production
+      koncept.io/slo-tier: tier-1
+      koncept.io/criticality: high
+      koncept.io/data-classification: internal
+      koncept.io/cost-center: CC-ERP-001
+      koncept.io/runbook: https://runbooks.bluesolution.es/erp-back
+      koncept.io/support-contact: '#erp-platform-support'
+  spec:
+    id: erp back-workload
+prerequisites:
+- apiVersion: pkg.crossplane.io/v1
+  kind: Provider
+  metadata:
+    name: provider-kubernetes
+    labels: {}
+    annotations:
+      koncept.io/owner: erp-platform-team
+      koncept.io/team: erp-platform
+      koncept.io/lifecycle: production
+      koncept.io/slo-tier: tier-1
+      koncept.io/criticality: high
+      koncept.io/data-classification: internal
+      koncept.io/cost-center: CC-ERP-001
+      koncept.io/runbook: https://runbooks.bluesolution.es/erp-back
+      koncept.io/support-contact: '#erp-platform-support'
+  spec:
+    package: xpkg.upbound.io/upbound/provider-kubernetes:v1
+- apiVersion: kubernetes.crossplane.io/v1alpha1
+  kind: ProviderConfig
+  metadata:
+    name: provider-kubernetes
+    labels: {}
+    annotations:
+      koncept.io/owner: erp-platform-team
+      koncept.io/team: erp-platform
+      koncept.io/lifecycle: production
+      koncept.io/slo-tier: tier-1
+      koncept.io/criticality: high
+      koncept.io/data-classification: internal
+      koncept.io/cost-center: CC-ERP-001
+      koncept.io/runbook: https://runbooks.bluesolution.es/erp-back
+      koncept.io/support-contact: '#erp-platform-support'
+  spec:
+    credentials:
+      source: InjectedIdentity
+- apiVersion: pkg.crossplane.io/v1
+  kind: Provider
+  metadata:
+    name: provider-helm
+    labels: {}
+    annotations:
+      koncept.io/owner: erp-platform-team
+      koncept.io/team: erp-platform
+      koncept.io/lifecycle: production
+      koncept.io/slo-tier: tier-1
+      koncept.io/criticality: high
+      koncept.io/data-classification: internal
+      koncept.io/cost-center: CC-ERP-001
+      koncept.io/runbook: https://runbooks.bluesolution.es/erp-back
+      koncept.io/support-contact: '#erp-platform-support'
+  spec:
+    package: xpkg.upbound.io/upbound/provider-helm:v1
+- apiVersion: helm.crossplane.io/v1beta1
+  kind: ProviderConfig
+  metadata:
+    name: helm-provider
+    labels: {}
+    annotations:
+      koncept.io/owner: erp-platform-team
+      koncept.io/team: erp-platform
+      koncept.io/lifecycle: production
+      koncept.io/slo-tier: tier-1
+      koncept.io/criticality: high
+      koncept.io/data-classification: internal
+      koncept.io/cost-center: CC-ERP-001
+      koncept.io/runbook: https://runbooks.bluesolution.es/erp-back
+      koncept.io/support-contact: '#erp-platform-support'
+  spec:
+    credentials:
+      source: InjectedIdentity
+- apiVersion: pkg.crossplane.io/v1beta1
+  kind: Function
+  metadata:
+    name: function-patch-and-transform
+    labels: {}
+    annotations:
+      koncept.io/owner: erp-platform-team
+      koncept.io/team: erp-platform
+      koncept.io/lifecycle: production
+      koncept.io/slo-tier: tier-1
+      koncept.io/criticality: high
+      koncept.io/data-classification: internal
+      koncept.io/cost-center: CC-ERP-001
+      koncept.io/runbook: https://runbooks.bluesolution.es/erp-back
+      koncept.io/support-contact: '#erp-platform-support'
+  spec:
+    package: xpkg.upbound.io/crossplane-contrib/function-patch-and-transform:v0.9.0
+- apiVersion: pkg.crossplane.io/v1beta1
+  kind: Function
+  metadata:
+    name: function-sequencer
+    labels: {}
+    annotations:
+      koncept.io/owner: erp-platform-team
+      koncept.io/team: erp-platform
+      koncept.io/lifecycle: production
+      koncept.io/slo-tier: tier-1
+      koncept.io/criticality: high
+      koncept.io/data-classification: internal
+      koncept.io/cost-center: CC-ERP-001
+      koncept.io/runbook: https://runbooks.bluesolution.es/erp-back
+      koncept.io/support-contact: '#erp-platform-support'
+  spec:
+    package: xpkg.upbound.io/crossplane-contrib/function-sequencer:v0.2.3
+- apiVersion: pkg.crossplane.io/v1beta1
+  kind: Function
+  metadata:
+    name: function-auto-ready
+    labels: {}
+    annotations:
+      koncept.io/owner: erp-platform-team
+      koncept.io/team: erp-platform
+      koncept.io/lifecycle: production
+      koncept.io/slo-tier: tier-1
+      koncept.io/criticality: high
+      koncept.io/data-classification: internal
+      koncept.io/cost-center: CC-ERP-001
+      koncept.io/runbook: https://runbooks.bluesolution.es/erp-back
+      koncept.io/support-contact: '#erp-platform-support'
+  spec:
+    package: xpkg.upbound.io/crossplane-contrib/function-auto-ready:v0.5.0
+metadata:
+  resourceCount: 7
+  sequencerRules: 5
+  xrKind: XErpBack
+  version: 1.0.0

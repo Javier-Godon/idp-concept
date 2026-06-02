@@ -1,6 +1,17 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+  annotations:
+    koncept.io/owner: erp-platform-team
+    koncept.io/team: erp-platform
+    koncept.io/lifecycle: production
+    koncept.io/slo-tier: tier-1
+    koncept.io/criticality: high
+    koncept.io/data-classification: internal
+    koncept.io/cost-center: CC-ERP-001
+    koncept.io/runbook: https://runbooks.bluesolution.es/erp-back
+    koncept.io/support-contact: '#erp-platform-support'
+  labels: {}
   name: erp-api
   namespace: erp-apps
 spec:
@@ -74,6 +85,17 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
+  annotations:
+    koncept.io/owner: erp-platform-team
+    koncept.io/team: erp-platform
+    koncept.io/lifecycle: production
+    koncept.io/slo-tier: tier-1
+    koncept.io/criticality: high
+    koncept.io/data-classification: internal
+    koncept.io/cost-center: CC-ERP-001
+    koncept.io/runbook: https://runbooks.bluesolution.es/erp-back
+    koncept.io/support-contact: '#erp-platform-support'
+  labels: {}
   name: erp-api
   namespace: erp-apps
 spec:
@@ -88,6 +110,17 @@ kind: Cluster
 metadata:
   name: erp-postgres
   namespace: erp-postgres
+  labels: {}
+  annotations:
+    koncept.io/owner: erp-platform-team
+    koncept.io/team: erp-platform
+    koncept.io/lifecycle: production
+    koncept.io/slo-tier: tier-1
+    koncept.io/criticality: high
+    koncept.io/data-classification: internal
+    koncept.io/cost-center: CC-ERP-001
+    koncept.io/runbook: https://runbooks.bluesolution.es/erp-back
+    koncept.io/support-contact: '#erp-platform-support'
 spec:
   instances: 3
   enableSuperuserAccess: false
@@ -118,6 +151,17 @@ kind: ScheduledBackup
 metadata:
   name: erp-postgres-daily-backup
   namespace: erp-postgres
+  labels: {}
+  annotations:
+    koncept.io/owner: erp-platform-team
+    koncept.io/team: erp-platform
+    koncept.io/lifecycle: production
+    koncept.io/slo-tier: tier-1
+    koncept.io/criticality: high
+    koncept.io/data-classification: internal
+    koncept.io/cost-center: CC-ERP-001
+    koncept.io/runbook: https://runbooks.bluesolution.es/erp-back
+    koncept.io/support-contact: '#erp-platform-support'
 spec:
   cluster:
     name: erp-postgres
@@ -132,6 +176,17 @@ kind: Pooler
 metadata:
   name: erp-postgres-rw
   namespace: erp-postgres
+  labels: {}
+  annotations:
+    koncept.io/owner: erp-platform-team
+    koncept.io/team: erp-platform
+    koncept.io/lifecycle: production
+    koncept.io/slo-tier: tier-1
+    koncept.io/criticality: high
+    koncept.io/data-classification: internal
+    koncept.io/cost-center: CC-ERP-001
+    koncept.io/runbook: https://runbooks.bluesolution.es/erp-back
+    koncept.io/support-contact: '#erp-platform-support'
 spec:
   cluster:
     name: erp-postgres
@@ -143,9 +198,31 @@ spec:
 apiVersion: v1
 kind: Namespace
 metadata:
+  annotations:
+    koncept.io/owner: erp-platform-team
+    koncept.io/team: erp-platform
+    koncept.io/lifecycle: production
+    koncept.io/slo-tier: tier-1
+    koncept.io/criticality: high
+    koncept.io/data-classification: internal
+    koncept.io/cost-center: CC-ERP-001
+    koncept.io/runbook: https://runbooks.bluesolution.es/erp-back
+    koncept.io/support-contact: '#erp-platform-support'
+  labels: {}
   name: erp-apps
 ---
 apiVersion: v1
 kind: Namespace
 metadata:
+  annotations:
+    koncept.io/owner: erp-platform-team
+    koncept.io/team: erp-platform
+    koncept.io/lifecycle: production
+    koncept.io/slo-tier: tier-1
+    koncept.io/criticality: high
+    koncept.io/data-classification: internal
+    koncept.io/cost-center: CC-ERP-001
+    koncept.io/runbook: https://runbooks.bluesolution.es/erp-back
+    koncept.io/support-contact: '#erp-platform-support'
+  labels: {}
   name: erp-postgres

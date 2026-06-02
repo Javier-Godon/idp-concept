@@ -24,6 +24,9 @@ Each reference factory stores its snapshots next to the factory, under a sibling
 projects/erp_back/
   pre_releases/manifests/dev/golden/yaml/manifests.yaml
   pre_releases/manifests/dev/golden/argocd/manifests.yaml
+  pre_releases/manifests/dev/golden/helmfile/manifests.yaml
+  pre_releases/manifests/dev/golden/crossplane/manifests.yaml
+  pre_releases/manifests/dev/golden/dry-run/manifests.yaml
   pre_releases/manifests/stg/golden/yaml/manifests.yaml
   releases/v1_0_0_production/golden/yaml/manifests.yaml
 ```
@@ -32,14 +35,15 @@ The committed reference set (kept intentionally small and Tier-1 focused):
 
 | Factory | Formats | What it guards |
 |---|---|---|
-| `erp_back` dev pre-release | `yaml`, `argocd` | The primary GitOps render path for a development environment. |
+| `erp_back` dev pre-release | `yaml`, `argocd`, `helmfile`, `crossplane`, `dry-run` | Tier-1 GitOps plus the prioritized Helmfile/Crossplane orchestration contracts and dry-run planning visibility. |
 | `erp_back` stg pre-release | `yaml` | Profile/site layering differences for staging. |
 | `erp_back` v1.0.0 production release | `yaml` | Immutable, version-pinned production render. |
 
-`yaml`/`argocd` are the Tier-1 GitOps outputs and are the canonical drift guard.
-Other formats (`helmfile`, `helm`, `backstage`, ...) are covered by the render
-smoke checks in `scripts/verify.sh`; add them to golden coverage only when a real
-consumer needs snapshot review for that format.
+`yaml`/`argocd` are still the Tier-1 canonical drift guard. The reference dev factory
+also snapshots `helmfile`, `crossplane`, and `dry-run` because they are current
+priority orchestration surfaces and need deterministic review of dependency metadata
+and sequencing behavior. Other formats (`helm`, `backstage`, ...) remain covered by
+render smoke checks in `scripts/verify.sh` until a real consumer needs snapshot review.
 
 ## Commands
 
