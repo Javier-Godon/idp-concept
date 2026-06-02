@@ -11,9 +11,11 @@ const (
 	RuntimeModeServerDryRun = "server-dry-run"
 	RuntimeModeApplyDelete  = "apply-delete"
 
-	RuntimeProfileNone      = "none"
-	RuntimeProfileSmoke     = "smoke"
-	RuntimeProfileLifecycle = "lifecycle"
+	RuntimeProfileNone         = "none"
+	RuntimeProfileSmoke        = "smoke"
+	RuntimeProfileLifecycle    = "lifecycle"
+	RuntimeProfileCatalog      = "catalog"
+	RuntimeProfileAPILifecycle = "api-lifecycle"
 )
 
 // ValidateRuntimeMode checks if a runtime mode is supported.
@@ -29,10 +31,10 @@ func ValidateRuntimeMode(mode string) error {
 // ValidateRuntimeProfile checks if a runtime profile is supported.
 func ValidateRuntimeProfile(profile string) error {
 	switch profile {
-	case RuntimeProfileNone, RuntimeProfileSmoke, RuntimeProfileLifecycle:
+	case RuntimeProfileNone, RuntimeProfileSmoke, RuntimeProfileLifecycle, RuntimeProfileCatalog, RuntimeProfileAPILifecycle:
 		return nil
 	default:
-		return fmt.Errorf("invalid runtime profile %q (use one of: %s, %s, %s)", profile, RuntimeProfileNone, RuntimeProfileSmoke, RuntimeProfileLifecycle)
+		return fmt.Errorf("invalid runtime profile %q (use one of: %s, %s, %s, %s, %s)", profile, RuntimeProfileNone, RuntimeProfileSmoke, RuntimeProfileLifecycle, RuntimeProfileCatalog, RuntimeProfileAPILifecycle)
 	}
 }
 
@@ -62,18 +64,35 @@ func ResolveRuntimeOptions(profile string, opts RuntimeOptions) (RuntimeOptions,
 		return opts, fmt.Errorf("runtime profile %q cannot be combined with explicit runtime mode %q", profile, opts.Mode)
 	}
 
-	if profile == RuntimeProfileSmoke {
+	switch profile {
+	case RuntimeProfileSmoke:
 		opts.Mode = RuntimeModeServerDryRun
 		return opts, nil
+	case RuntimeProfileLifecycle:
+		opts.Mode = RuntimeModeApplyDelete
+		if opts.Timeout == "" {
+			opts.Timeout = "120s"
+		}
+		opts.Cleanup = true
+		return opts, nil
+	case RuntimeProfileCatalog:
+		opts.Mode = RuntimeModeServerDryRun
+		opts.IncludePrerequisites = true
+		opts.Cleanup = false
+		opts.CleanupPrerequisites = false
+		return opts, nil
+	case RuntimeProfileAPILifecycle:
+		opts.Mode = RuntimeModeApplyDelete
+		opts.IncludePrerequisites = false
+		if opts.Timeout == "" {
+			opts.Timeout = "180s"
+		}
+		opts.Cleanup = true
+		opts.CleanupPrerequisites = false
+		return opts, nil
+	default:
+		return opts, nil
 	}
-
-	// lifecycle profile
-	opts.Mode = RuntimeModeApplyDelete
-	if opts.Timeout == "" {
-		opts.Timeout = "120s"
-	}
-	opts.Cleanup = true
-	return opts, nil
 }
 
 // RunRuntimeChecks executes optional kubectl checks against generated artifacts.

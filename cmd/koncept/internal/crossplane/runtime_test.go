@@ -18,7 +18,7 @@ func TestValidateRuntimeModeInvalid(t *testing.T) {
 }
 
 func TestValidateRuntimeProfile(t *testing.T) {
-	cases := []string{RuntimeProfileNone, RuntimeProfileSmoke, RuntimeProfileLifecycle}
+	cases := []string{RuntimeProfileNone, RuntimeProfileSmoke, RuntimeProfileLifecycle, RuntimeProfileCatalog, RuntimeProfileAPILifecycle}
 	for _, profile := range cases {
 		if err := ValidateRuntimeProfile(profile); err != nil {
 			t.Fatalf("ValidateRuntimeProfile(%q) error = %v", profile, err)
@@ -59,5 +59,31 @@ func TestResolveRuntimeOptionsProfileModeConflict(t *testing.T) {
 	_, err := ResolveRuntimeOptions(RuntimeProfileSmoke, RuntimeOptions{Mode: RuntimeModeApplyDelete})
 	if err == nil {
 		t.Fatalf("expected profile/mode conflict error")
+	}
+}
+
+func TestResolveRuntimeOptionsCatalogProfile(t *testing.T) {
+	resolved, err := ResolveRuntimeOptions(RuntimeProfileCatalog, RuntimeOptions{Mode: RuntimeModeNone})
+	if err != nil {
+		t.Fatalf("ResolveRuntimeOptions(catalog) error = %v", err)
+	}
+	if resolved.Mode != RuntimeModeServerDryRun {
+		t.Fatalf("expected server-dry-run mode, got %q", resolved.Mode)
+	}
+	if !resolved.IncludePrerequisites {
+		t.Fatalf("expected catalog profile to include prerequisites")
+	}
+}
+
+func TestResolveRuntimeOptionsAPILifecycleProfile(t *testing.T) {
+	resolved, err := ResolveRuntimeOptions(RuntimeProfileAPILifecycle, RuntimeOptions{Mode: RuntimeModeNone})
+	if err != nil {
+		t.Fatalf("ResolveRuntimeOptions(api-lifecycle) error = %v", err)
+	}
+	if resolved.Mode != RuntimeModeApplyDelete {
+		t.Fatalf("expected apply-delete mode, got %q", resolved.Mode)
+	}
+	if resolved.Timeout != "180s" {
+		t.Fatalf("expected api-lifecycle timeout 180s, got %q", resolved.Timeout)
 	}
 }

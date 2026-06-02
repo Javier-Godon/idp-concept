@@ -363,3 +363,11 @@ To keep adoption simple while expanding runtime confidence, Crossplane runtime c
 - `lifecycle` maps to apply/wait/delete validation with cleanup defaults.
 - Profiles are intentionally mutually exclusive with explicit non-`none` runtime modes to avoid ambiguous intent in CI or local workflows.
 
+### Strategic implementation learning (2026-06-02G)
+
+Runtime profile presets are now split into generic and API-oriented intent layers:
+
+- Generic: `smoke` and `lifecycle` for broad low-friction checks.
+- API-oriented: `catalog` (prerequisite-aware server validation) and `api-lifecycle` (XR/composition/XRD lifecycle validation with longer timeout defaults).
+- This keeps short-term execution practical while moving the command surface toward the long-term objective of managed Crossplane API lifecycle confidence.
+

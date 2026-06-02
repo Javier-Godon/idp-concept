@@ -118,7 +118,7 @@ func init() {
 	crossplaneTestCmd.Flags().BoolVar(&crossplaneTestSkipRender, "skip-render", false, "skip optional local crossplane render execution")
 	crossplaneTestCmd.Flags().BoolVar(&crossplaneTestRequireCLI, "require-cli", false, "fail when crossplane CLI is not installed")
 	crossplaneTestCmd.Flags().BoolVar(&crossplaneTestKeepFiles, "keep-artifacts", false, "keep generated temporary crossplane artifacts for inspection")
-	crossplaneTestCmd.Flags().StringVar(&crossplaneRuntimeProfile, "runtime-profile", xptest.RuntimeProfileNone, "runtime profile preset: none|smoke|lifecycle")
+	crossplaneTestCmd.Flags().StringVar(&crossplaneRuntimeProfile, "runtime-profile", xptest.RuntimeProfileNone, "runtime profile preset: none|smoke|lifecycle|catalog|api-lifecycle")
 	crossplaneTestCmd.Flags().StringVar(&crossplaneRuntimeMode, "runtime-mode", xptest.RuntimeModeNone, "optional kubectl runtime mode: none|server-dry-run|apply-delete")
 	crossplaneTestCmd.Flags().StringVar(&crossplaneRuntimeContext, "runtime-context", "", "optional kube context for runtime mode")
 	crossplaneTestCmd.Flags().StringVar(&crossplaneRuntimeTimeout, "runtime-timeout", "120s", "wait timeout for runtime apply-delete mode")

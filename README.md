@@ -128,7 +128,7 @@ koncept policy check --factory <factory-dir>
 
 # Other helpers
 koncept dry-run           # merged config + dependency graph + Helmfile/Crossplane plan
-koncept crossplane test   # Crossplane checks + optional local render/runtime profiles (smoke/lifecycle)
+koncept crossplane test   # Crossplane checks + optional local render/runtime profiles
 koncept doctor            # dependency, version, path, and factory checks
 koncept golden check      # detect render drift against committed golden files
 koncept changelog check   # validate release-note fragments in .changes/unreleased
