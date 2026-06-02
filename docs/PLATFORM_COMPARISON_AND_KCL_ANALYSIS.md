@@ -379,3 +379,11 @@ To reduce operational decision friction, runtime profiles now include a `matrix`
 - The command still blocks ambiguous intent: matrix/profile presets cannot be combined with explicit non-`none` runtime modes.
 - The staged sequence keeps strategic delivery fast and consistent across local and CI usage patterns.
 
+### Strategic implementation learning (2026-06-02I)
+
+Matrix execution now supports bounded staged runs via `--runtime-matrix-from` and `--runtime-matrix-stop-on`.
+
+- This allows one command surface to support both lighter PR validation and deeper nightly validation.
+- Boundaries are inclusive and validated for order, preventing accidental partial sequences that skip required early checks.
+- The change keeps velocity high while preserving deterministic progression and explicit operator intent.
+

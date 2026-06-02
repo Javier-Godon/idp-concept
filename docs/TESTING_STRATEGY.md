@@ -274,7 +274,7 @@ Required levels for supported Crossplane APIs:
 | Management lifecycle | kubectl/Go helper updates and deletes the XR/Claim | Updates propagate to composed resources; deletion cleans up or intentionally orphans resources according to policy. |
 | Upgrade/rollback | composition revisions or pinned `compositionRevisionRef` | Existing XRs can be safely upgraded or rolled back. |
 
-The repository now ships `koncept crossplane test` as the supported wrapper for static render-contract checks, optional local `crossplane render`, and opt-in kubectl runtime checks through either explicit modes (`server-dry-run`, `apply-delete`) or profile presets (`smoke`, `lifecycle`, `catalog`, `api-lifecycle`, `matrix`). Use it as the default local entrypoint before heavier reconciliation suites. Next maturity steps should extend this command with richer update/delete/revision scenarios mapped to supported APIs.
+The repository now ships `koncept crossplane test` as the supported wrapper for static render-contract checks, optional local `crossplane render`, and opt-in kubectl runtime checks through either explicit modes (`server-dry-run`, `apply-delete`) or profile presets (`smoke`, `lifecycle`, `catalog`, `api-lifecycle`, `matrix`). Matrix runs can be bounded with `--runtime-matrix-from` / `--runtime-matrix-stop-on` to support lighter PR checks versus fuller nightly validation. Use it as the default local entrypoint before heavier reconciliation suites. Next maturity steps should extend this command with richer update/delete/revision scenarios mapped to supported APIs.
 
 ---
 

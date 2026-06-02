@@ -107,3 +107,36 @@ func TestResolveRuntimeOptionsMatrixRequiresExpansion(t *testing.T) {
 		t.Fatalf("expected matrix profile to require expansion")
 	}
 }
+
+func TestSelectMatrixProfilesFromStop(t *testing.T) {
+	all, err := ExpandRuntimeProfiles(RuntimeProfileMatrix)
+	if err != nil {
+		t.Fatalf("ExpandRuntimeProfiles(matrix) error = %v", err)
+	}
+	selected, err := SelectMatrixProfiles(all, RuntimeProfileCatalog, RuntimeProfileAPILifecycle)
+	if err != nil {
+		t.Fatalf("SelectMatrixProfiles() error = %v", err)
+	}
+	if len(selected) != 2 {
+		t.Fatalf("expected 2 selected profiles, got %d", len(selected))
+	}
+	if selected[0] != RuntimeProfileCatalog || selected[1] != RuntimeProfileAPILifecycle {
+		t.Fatalf("unexpected selected sequence: %#v", selected)
+	}
+}
+
+func TestSelectMatrixProfilesOrderError(t *testing.T) {
+	all, _ := ExpandRuntimeProfiles(RuntimeProfileMatrix)
+	_, err := SelectMatrixProfiles(all, RuntimeProfileAPILifecycle, RuntimeProfileSmoke)
+	if err == nil {
+		t.Fatalf("expected order validation error")
+	}
+}
+
+func TestSelectMatrixProfilesInvalidBoundary(t *testing.T) {
+	all, _ := ExpandRuntimeProfiles(RuntimeProfileMatrix)
+	_, err := SelectMatrixProfiles(all, "not-a-step", "")
+	if err == nil {
+		t.Fatalf("expected invalid from-step error")
+	}
+}

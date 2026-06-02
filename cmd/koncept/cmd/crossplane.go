@@ -16,6 +16,8 @@ var (
 	crossplaneTestKeepFiles         bool
 	crossplaneRuntimeMode           string
 	crossplaneRuntimeProfile        string
+	crossplaneRuntimeMatrixFrom     string
+	crossplaneRuntimeMatrixStopOn   string
 	crossplaneRuntimeContext        string
 	crossplaneRuntimeTimeout        string
 	crossplaneRuntimePrereqs        bool
@@ -85,6 +87,15 @@ func runCrossplaneTest(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+	if (crossplaneRuntimeMatrixFrom != "" || crossplaneRuntimeMatrixStopOn != "") && crossplaneRuntimeProfile != xptest.RuntimeProfileMatrix {
+		return fmt.Errorf("--runtime-matrix-from/--runtime-matrix-stop-on require --runtime-profile matrix")
+	}
+	if crossplaneRuntimeProfile == xptest.RuntimeProfileMatrix {
+		profiles, err = xptest.SelectMatrixProfiles(profiles, crossplaneRuntimeMatrixFrom, crossplaneRuntimeMatrixStopOn)
+		if err != nil {
+			return err
+		}
+	}
 	baseRuntimeOpts := xptest.RuntimeOptions{
 		Mode:                 crossplaneRuntimeMode,
 		KubeContext:          crossplaneRuntimeContext,
@@ -129,6 +140,8 @@ func init() {
 	crossplaneTestCmd.Flags().BoolVar(&crossplaneTestRequireCLI, "require-cli", false, "fail when crossplane CLI is not installed")
 	crossplaneTestCmd.Flags().BoolVar(&crossplaneTestKeepFiles, "keep-artifacts", false, "keep generated temporary crossplane artifacts for inspection")
 	crossplaneTestCmd.Flags().StringVar(&crossplaneRuntimeProfile, "runtime-profile", xptest.RuntimeProfileNone, "runtime profile preset: none|smoke|lifecycle|catalog|api-lifecycle|matrix")
+	crossplaneTestCmd.Flags().StringVar(&crossplaneRuntimeMatrixFrom, "runtime-matrix-from", "", "matrix profile start step (smoke|catalog|api-lifecycle)")
+	crossplaneTestCmd.Flags().StringVar(&crossplaneRuntimeMatrixStopOn, "runtime-matrix-stop-on", "", "matrix profile end step (smoke|catalog|api-lifecycle)")
 	crossplaneTestCmd.Flags().StringVar(&crossplaneRuntimeMode, "runtime-mode", xptest.RuntimeModeNone, "optional kubectl runtime mode: none|server-dry-run|apply-delete")
 	crossplaneTestCmd.Flags().StringVar(&crossplaneRuntimeContext, "runtime-context", "", "optional kube context for runtime mode")
 	crossplaneTestCmd.Flags().StringVar(&crossplaneRuntimeTimeout, "runtime-timeout", "120s", "wait timeout for runtime apply-delete mode")

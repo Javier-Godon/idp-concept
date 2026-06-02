@@ -21,6 +21,15 @@ const (
 
 var matrixProfiles = []string{RuntimeProfileSmoke, RuntimeProfileCatalog, RuntimeProfileAPILifecycle}
 
+func isMatrixStep(profile string) bool {
+	for _, step := range matrixProfiles {
+		if profile == step {
+			return true
+		}
+	}
+	return false
+}
+
 // ValidateRuntimeMode checks if a runtime mode is supported.
 func ValidateRuntimeMode(mode string) error {
 	switch mode {
@@ -52,6 +61,43 @@ func ExpandRuntimeProfiles(profile string) ([]string, error) {
 		return []string{profile}, nil
 	}
 	return append([]string{}, matrixProfiles...), nil
+}
+
+// SelectMatrixProfiles returns a contiguous subset of matrix profiles from
+// optional start/end boundaries. Both boundaries are inclusive.
+func SelectMatrixProfiles(profiles []string, from string, stopOn string) ([]string, error) {
+	if len(profiles) == 0 {
+		return nil, fmt.Errorf("matrix profiles list is empty")
+	}
+	if from != "" && !isMatrixStep(from) {
+		return nil, fmt.Errorf("invalid runtime matrix from-step %q", from)
+	}
+	if stopOn != "" && !isMatrixStep(stopOn) {
+		return nil, fmt.Errorf("invalid runtime matrix stop-step %q", stopOn)
+	}
+
+	start := 0
+	end := len(profiles) - 1
+	if from != "" {
+		for i, profile := range profiles {
+			if profile == from {
+				start = i
+				break
+			}
+		}
+	}
+	if stopOn != "" {
+		for i, profile := range profiles {
+			if profile == stopOn {
+				end = i
+				break
+			}
+		}
+	}
+	if start > end {
+		return nil, fmt.Errorf("matrix from-step %q comes after stop-step %q", from, stopOn)
+	}
+	return append([]string{}, profiles[start:end+1]...), nil
 }
 
 // RuntimeOptions controls optional kubectl-based Crossplane runtime checks.
