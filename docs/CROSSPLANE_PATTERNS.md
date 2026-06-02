@@ -450,6 +450,8 @@ Example:
 koncept crossplane test
 koncept crossplane test --require-cli --keep-artifacts
 koncept crossplane test --skip-render
+koncept crossplane test --runtime-mode server-dry-run
+koncept crossplane test --runtime-mode apply-delete --runtime-timeout 180s
 ```
 
 Current command scope:
@@ -457,6 +459,9 @@ Current command scope:
 - renders Crossplane output from the factory (`output=crossplane`);
 - validates required sections (`xrd`, `composition`, `xr`, `prerequisites`), pipeline shape, and pinned Provider/Function packages;
 - runs `crossplane render ... --include-function-results` when the binary is available (or fails when `--require-cli` is set).
+- can run optional kubectl runtime checks:
+  - `--runtime-mode server-dry-run`: server-side apply validation for generated artifacts.
+  - `--runtime-mode apply-delete`: apply XR/composition/XRD, wait for Ready on XR, then cleanup (cleanup defaults on; prerequisites excluded unless explicitly requested).
 
 Future scope can extend this same entrypoint with optional cluster reconciliation/update/delete checks.
 

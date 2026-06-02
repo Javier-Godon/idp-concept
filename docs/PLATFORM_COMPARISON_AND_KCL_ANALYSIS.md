@@ -347,3 +347,11 @@ Crossplane V2 now has a dedicated CLI validation entrypoint aligned with the "de
 - The command runs local `crossplane render --include-function-results` when the CLI is available and can enforce that dependency with `--require-cli`; this gives a safe default path without forcing environment-specific tooling.
 - This closes one tactical gap from the strategic roadmap by making Crossplane verification part of the main Go CLI surface, while leaving runtime reconciliation/update/delete flows as the next explicit maturity increment.
 
+### Strategic implementation learning (2026-06-02E)
+
+Crossplane test maturity was extended without sacrificing safety defaults:
+
+- `koncept crossplane test` now adds opt-in runtime modes: `--runtime-mode server-dry-run` and `--runtime-mode apply-delete`.
+- Runtime checks are explicit and controlled: prerequisites are excluded unless requested, cleanup is enabled by default, and prerequisite cleanup requires its own explicit flag.
+- This supports steady progress toward operational confidence while keeping the baseline local workflow deterministic and low-risk.
+
