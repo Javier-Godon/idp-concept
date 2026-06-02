@@ -128,9 +128,30 @@ _release_override = lambda options: hf.HelmfileRenderOptions, name: str -> any {
     _release_patch_dict(options.releaseOverrides[name]) if options and options.releaseOverrides and name in options.releaseOverrides else {}
 }
 
-_dependency_needs = lambda deps: [any] -> [str] {
+_release_default_patch = lambda options: hf.HelmfileRenderOptions -> any {
+    options.releaseDefaults if options and options.releaseDefaults else None
+}
+
+_release_override_patch = lambda options: hf.HelmfileRenderOptions, module_name: str -> any {
+    options.releaseOverrides[module_name] if options and options.releaseOverrides and module_name in options.releaseOverrides else None
+}
+
+_effective_release_name = lambda module_name: str, options: hf.HelmfileRenderOptions -> str {
+    _default_patch = _release_default_patch(options)
+    _override_patch = _release_override_patch(options, module_name)
+    _override_patch.name if _override_patch != None and _override_patch.name != Undefined else (_default_patch.name if _default_patch != None and _default_patch.name != Undefined else module_name)
+}
+
+_effective_release_namespace = lambda module_namespace: str, module_name: str, options: hf.HelmfileRenderOptions -> str {
+    _base_namespace = options.namespace if options and options.namespace else module_namespace
+    _default_patch = _release_default_patch(options)
+    _override_patch = _release_override_patch(options, module_name)
+    _override_patch.namespace if _override_patch != None and _override_patch.namespace != Undefined else (_default_patch.namespace if _default_patch != None and _default_patch.namespace != Undefined else _base_namespace)
+}
+
+_dependency_needs = lambda deps: [any], options: hf.HelmfileRenderOptions -> [str] {
     [
-        "${dep.namespace}/${dep.name}"
+        "${_effective_release_namespace(dep.namespace, dep.name, options)}/${_effective_release_name(dep.name, options)}"
         for dep in (deps if deps else [])
         if dep.kind == "APPLICATION" or dep.kind == "INFRASTRUCTURE" or dep.kind == "CRD" or dep.kind == "SECRET"
     ]
@@ -151,7 +172,7 @@ _generated_release = lambda name: str, namespace: str, chart_base_path: str, opt
 
 generate_releases_from_components_with_options = lambda components: [component.ComponentInstance], options: hf.HelmfileRenderOptions, chart_base_path: str -> [any] {
     """Generate Helmfile releases from component instances."""
-    [_generated_release(comp.name, comp.namespace, chart_base_path, options, _dependency_needs(comp.dependsOn)) for comp in components] if components else []
+    [_generated_release(comp.name, comp.namespace, chart_base_path, options, _dependency_needs(comp.dependsOn, options)) for comp in components] if components else []
 }
 
 generate_releases_from_components = lambda components: [component.ComponentInstance], chart_base_path: str -> [any] {
@@ -160,7 +181,7 @@ generate_releases_from_components = lambda components: [component.ComponentInsta
 
 generate_releases_from_accessories_with_options = lambda accessories: [accessory.AccessoryInstance], options: hf.HelmfileRenderOptions, chart_base_path: str -> [any] {
     """Generate Helmfile releases from accessory instances."""
-    [_generated_release(acc.name, acc.namespace, chart_base_path, options, _dependency_needs(acc.dependsOn)) for acc in accessories] if accessories else []
+    [_generated_release(acc.name, acc.namespace, chart_base_path, options, _dependency_needs(acc.dependsOn, options)) for acc in accessories] if accessories else []
 }
 
 generate_releases_from_accessories = lambda accessories: [accessory.AccessoryInstance], chart_base_path: str -> [any] {

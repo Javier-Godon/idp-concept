@@ -197,36 +197,36 @@ test_accessory_wrapping = lambda {
 # === Test: sequencer rules from dependsOn ===
 test_sequencer_no_deps = lambda {
     _comp = _xp_mk_component("api", "apps", [])
-    _result = xp._build_sequencer_rules([_comp], [])
+    _result = xp._build_sequencer_rules([_comp], [], [])
     assert len(_result) == 0
 }
 
 test_sequencer_namespace_dep = lambda {
     _ns = _xp_mk_namespace("apps")
     _comp = _xp_mk_component("api", "apps", [_ns])
-    _result = xp._build_sequencer_rules([_comp], [])
-    assert len(_result) == 1
+    _result = xp._build_sequencer_rules([_comp], [], [_ns])
+    assert len(_result) == 2
     assert _result[0].sequence[0] == "ns-apps"
-    assert _result[0].sequence[1] == "comp-api-.*"
+    assert _result[0].sequence[1] == "comp-api-deployment-api"
 }
 
 test_sequencer_accessory_dep = lambda {
     _ns = _xp_mk_namespace("data")
     _acc = _xp_mk_accessory("postgres", "data", [_ns])
     _comp = _xp_mk_component("api", "apps", [_acc])
-    _result = xp._build_sequencer_rules([_comp], [_acc])
+    _result = xp._build_sequencer_rules([_comp], [_acc], [_ns])
     # comp depends on acc, acc depends on ns
-    assert len(_result) == 2
+    assert len(_result) == 3
 }
 
 test_sequencer_component_dep_pattern = lambda {
     _ns = _xp_mk_namespace("apps")
     _acc = _xp_mk_accessory("postgres", "data", [_ns])
     _comp = _xp_mk_component("api", "apps", [_acc])
-    _result = xp._build_sequencer_rules([_comp], [_acc])
-    # Find the rule where comp depends on acc
-    _comp_rule = [r for r in _result if r.sequence[1] == "comp-api-.*"][0]
-    assert _comp_rule.sequence[0] == "acc-postgres-.*"
+    _result = xp._build_sequencer_rules([_comp], [_acc], [_ns])
+    # Find the Deployment dependency rule for comp <- acc
+    _comp_rule = [r for r in _result if r.sequence[1] == "comp-api-deployment-api"][0]
+    assert _comp_rule.sequence[0] == "acc-postgres-statefulset-postgres"
 }
 
 # === Test: full generate_crossplane_from_stack ===
@@ -235,7 +235,7 @@ test_full_stack_simple = lambda {
     _comp = _xp_mk_component("api", "apps", [_ns])
     _result = xp.generate_crossplane_from_stack([_comp], [], [_ns], "my-app", "1.0.0")
     assert _result.metadata.resourceCount == 3  # 1 ns + 2 comp manifests
-    assert _result.metadata.sequencerRules == 1  # comp depends on ns
+    assert _result.metadata.sequencerRules == 2  # ns gates both comp manifests
     assert _result.metadata.xrKind == "XMyApp"
     assert _result.xrd.kind == "CompositeResourceDefinition"
     assert _result.composition.kind == "Composition"
@@ -249,12 +249,28 @@ test_full_stack_with_deps = lambda {
     _result = xp.generate_crossplane_from_stack([_comp], [_acc], [_ns], "erp-back", "2.0.0")
     # 1 ns + 1 acc + 2 comp = 4 resources
     assert _result.metadata.resourceCount == 4
-    # comp→acc, acc→ns = 2 rules
-    assert _result.metadata.sequencerRules == 2
+    # comp→acc contributes 2, acc→ns contributes 1
+    assert _result.metadata.sequencerRules == 3
     assert _result.metadata.xrKind == "XErpBack"
     # Composition should have 3 pipeline steps (with sequencer)
     assert len(_result.composition.spec.pipeline) == 3
-    assert _result.composition.spec.pipeline[1].input.rules[1].sequence[0] == "ns-data"
+    assert _result.composition.spec.pipeline[1].input.rules[2].sequence[0] == "ns-data"
+}
+
+test_sequencer_fallback_pattern_when_dependency_not_in_stack = lambda {
+    _external_acc = accessory.AccessoryInstance {
+        name = "external-db"
+        kind = "CRD"
+        namespace = "platform"
+        configurations = {}
+        asset = { version = "1.0.0" }
+        leaders = [{ name = "external-db", kind = "StatefulSet", apiVersion = "apps/v1", namespace = "platform" }]
+        manifests = [{ apiVersion = "apps/v1", kind = "StatefulSet", metadata = { name = "external-db", namespace = "platform" }, spec = { replicas = 1 } }]
+        dependsOn = []
+    }
+    _comp = _xp_mk_component("api", "apps", [_external_acc])
+    _result = xp._build_sequencer_rules([_comp], [], [])
+    assert _result[0].sequence[0] == "acc-external-db-.*"
 }
 
 test_full_stack_empty = lambda {

@@ -142,19 +142,53 @@ _module_resource_pattern = lambda module_type: str, module_name: str -> str {
     "${module_type}-${_sanitize(module_name)}-.*"
 }
 
-_build_sequencer_rules = lambda components: [component.ComponentInstance], accessories: [accessory.AccessoryInstance] -> [{str:}] {
+_component_resource_names = lambda components: [component.ComponentInstance], module_name: str, module_namespace: str -> [str] {
+    [
+        _manifest_resource_name("comp", comp.name, m)
+        for comp in (components if components else [])
+        for m in comp.manifests
+        if comp.name == module_name and comp.namespace == module_namespace
+    ]
+}
+
+_accessory_resource_names = lambda accessories: [accessory.AccessoryInstance], module_name: str, module_namespace: str -> [str] {
+    [
+        _manifest_resource_name("acc", acc.name, m)
+        for acc in (accessories if accessories else [])
+        for m in acc.manifests
+        if acc.name == module_name and acc.namespace == module_namespace
+    ]
+}
+
+_namespace_resource_names = lambda namespaces: [k8snamespace.K8sNamespaceInstance], name: str -> [str] {
+    [_ns_resource_name(ns.name) for ns in (namespaces if namespaces else []) if ns.name == name]
+}
+
+_dependency_resource_names = lambda dep: any, components: [component.ComponentInstance], accessories: [accessory.AccessoryInstance], namespaces: [k8snamespace.K8sNamespaceInstance] -> [str] {
+    _ns_names = _namespace_resource_names(namespaces, dep.name) if dep.kind == "Namespace" else []
+    _comp_names = _component_resource_names(components, dep.name, dep.namespace) if dep.kind == "APPLICATION" or dep.kind == "INFRASTRUCTURE" else []
+    _acc_names = _accessory_resource_names(accessories, dep.name, dep.namespace) if dep.kind == "CRD" or dep.kind == "SECRET" else []
+    _resolved = _ns_names + _comp_names + _acc_names
+    _resolved if _resolved else [_dep_resource_pattern(dep)]
+}
+
+_build_sequencer_rules = lambda components: [component.ComponentInstance], accessories: [accessory.AccessoryInstance], namespaces: [k8snamespace.K8sNamespaceInstance] -> [{str:}] {
     """Build function-sequencer rules from dependsOn chains.
-    Each dependency creates a sequence: [dependency-pattern, dependent-pattern].
-    The sequencer ensures dependency resources are ready before dependent resources are created."""
+    Each dependency creates sequences using concrete wrapped resource names whenever
+    possible (regex fallback only for unresolved dependency references)."""
     _comp_rules = [
-        { sequence = [_dep_resource_pattern(dep), _module_resource_pattern("comp", comp.name)] }
+        { sequence = [dep_name, dependent_name] }
         for comp in (components if components else [])
         for dep in (comp.dependsOn if comp.dependsOn else [])
+        for dep_name in _dependency_resource_names(dep, components, accessories, namespaces)
+        for dependent_name in [_manifest_resource_name("comp", comp.name, m) for m in comp.manifests]
     ]
     _acc_rules = [
-        { sequence = [_dep_resource_pattern(dep), _module_resource_pattern("acc", acc.name)] }
+        { sequence = [dep_name, dependent_name] }
         for acc in (accessories if accessories else [])
         for dep in (acc.dependsOn if acc.dependsOn else [])
+        for dep_name in _dependency_resource_names(dep, components, accessories, namespaces)
+        for dependent_name in [_manifest_resource_name("acc", acc.name, m) for m in acc.manifests]
     ]
     _comp_rules + _acc_rules
 }
@@ -341,7 +375,7 @@ generate_crossplane_from_stack = lambda components: [component.ComponentInstance
     _all_resources = _ns_resources + _acc_resources + _comp_resources
 
     # Build sequencer rules from dependsOn chains
-    _sequencer_rules = _build_sequencer_rules(components, accessories)
+    _sequencer_rules = _build_sequencer_rules(components, accessories, namespaces)
 
     {
         xrd = generate_xrd(stack_name, _xr_kind, meta)

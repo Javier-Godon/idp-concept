@@ -296,6 +296,7 @@ No other tool in this landscape offers **9 output formats from a single KCL sour
 - [~] Evaluate Score spec as alternative input format alongside KCL, but defer implementation until priority existing outputs are production-coherent
 - [x] Continue Backstage integration via catalog entities (`backstage` output now carries enriched ownership/lifecycle/dependency metadata)
 - [~] Monitor k0rdent's TemplateChain pattern for upgrade ordering ideas; keep this as design research until stack/release compatibility metadata needs enforced upgrade paths
+- [~] Keep output-governance parity as a hard gate: do not add new strategic outputs until Helmfile and Crossplane carry the same dependency, ownership, lifecycle, and support contracts under tests
 
 ### Strategic implementation learning (2026-06-01)
 
@@ -307,3 +308,18 @@ The immediate strategic bottleneck is output depth, not output breadth. Because 
 - Crossplane V2 sequencer rules now use the actual generated resource names for namespace dependencies (`ns-*`), so the strategic ordering contract matches the rendered `function-sequencer` resources instead of only expressing the logical dependency.
 
 This keeps the long-term Score/TemplateChain items on the roadmap, but gates them behind a stronger standard: new strategic surfaces should not be added until the supported outputs carry ownership, lifecycle, support, review metadata, and dependency ordering consistently.
+
+### Strategic implementation learning (2026-06-02)
+
+The next correction focused on dependency identity drift between generated orchestration layers and rendered resources:
+
+- Helmfile generated `needs` now resolve against the dependency release's **effective identity** after `releaseDefaults` and dependency `releaseOverrides` (renamed releases and overridden namespaces), reducing orchestration mismatch risk.
+- Crossplane V2 sequencer rules now emit **concrete wrapped resource names** for namespace/component/accessory dependencies, with regex fallback only when a dependency is intentionally external to the rendered stack.
+- Procedure tests were expanded to lock both behaviors (`framework/tests/procedures/helmfile_test.k`, `framework/tests/procedures/crossplane_test.k`) so future evolution keeps parity by default.
+
+Updated execution order for strategic work:
+
+1. Keep hardening Helmfile and Crossplane output contracts (dependency identity, metadata parity, deterministic ordering, pinning, tests).
+2. Add CLI ergonomics that increase safe adoption (`koncept dry-run`, scaffold improvements) once output contracts are stable.
+3. Re-evaluate new strategic surfaces (Score/Fleet/TemplateChain-enforced upgrades) only after existing high-priority outputs satisfy production coherence checks.
+
