@@ -15,6 +15,7 @@ import procedures.kcl_to_kustomize as kustomize_proc
 import procedures.kcl_to_timoni as timoni_proc
 import procedures.kcl_to_crossplane as crossplane_proc
 import procedures.kcl_to_backstage as backstage_proc
+import procedures.kcl_to_dry_run as dry_run_proc
 
 render_from_seed = lambda stack: any, project_name: str, git_repo_url: str, manifest_path: str, output: str -> any {
     if output == "yaml":
@@ -51,6 +52,10 @@ render_from_seed = lambda stack: any, project_name: str, git_repo_url: str, mani
     if output == "backstage":
         _backstage = backstage_proc.generate_catalog_from_stack(stack.components, stack.accessories, stack.k8snamespaces, project_name, "1.0.0", "platform-team", "production", git_repo_url, "dir:docs/", stack.metadata)
         manifests.yaml_stream([_backstage])
+
+    if output == "dry-run":
+        _plan = dry_run_proc.generate_dry_run_from_stack(stack, project_name, "1.0.0")
+        manifests.yaml_stream([_plan])
 
     Undefined
 }

@@ -32,19 +32,22 @@ cd projects/my-project/pre_releases/manifests/dev/factory
 # 2. Validate configuration (catch errors before rendering)
 koncept validate
 
-# 3. Render manifests for GitOps
+# 3. Preview merged config + dependency orchestration safely
+koncept dry-run                # output/dry_run_plan.yaml (Helmfile + Crossplane-aware)
+
+# 4. Render manifests for GitOps
 koncept render argocd          # Plain K8s YAML → commit to Git → ArgoCD syncs
 
-# 4. Render Helm charts for environment customization
+# 5. Render Helm charts for environment customization
 koncept render helmfile        # Helm charts + values.yaml + helmfile.yaml
 
-# 5. Render Kustomize overlays
+# 6. Render Kustomize overlays
 koncept render kustomize       # kustomization.yaml + manifest files
 
-# 6. Render Timoni CUE module (experimental)
+# 7. Render Timoni CUE module (experimental)
 koncept render timoni          # Timoni module structure
 
-# 7. Generate Kusion spec
+# 8. Generate Kusion spec
 koncept render kusion          # Kusion spec YAML
 ```
 
@@ -397,6 +400,29 @@ rm kcl.mod.lock && kcl run main.k
 
 Concrete recipes for common tasks. All commands assume the `koncept` CLI is installed (see
 [TOOLING_SETUP.md](./TOOLING_SETUP.md)).
+
+## Planning with Dry-Run (Helmfile + Crossplane)
+
+### When to Use
+Preview merged configuration and dependency orchestration before producing deployable output.
+
+### Steps
+
+1. Navigate to a release or pre-release factory directory.
+
+2. Run dry-run:
+```bash
+koncept dry-run
+```
+
+3. Inspect `output/dry_run_plan.yaml`:
+   - `spec.mergedConfigurations`: final merged kernel/profile/tenant/site values.
+   - `spec.dependencies`: explicit dependency edges between modules.
+   - `spec.outputs.helmfile.releases[*].needs`: Helmfile orchestration view.
+   - `spec.outputs.crossplane.sequencerRules`: Crossplane V2 ordering contract.
+
+### Why this matters
+This is the recommended first gate for Helmfile/Crossplane changes: verify dependency identity and ordering here before `koncept render helmfile` or `koncept render crossplane`.
 
 ## 4. Rendering Plain YAML (ArgoCD/GitOps)
 

@@ -288,7 +288,7 @@ No other tool in this landscape offers **9 output formats from a single KCL sour
 - [ ] Publish framework to OCI registry for versioned consumption
 - [ ] Add `fleet` output format (`koncept render fleet`)
 - [ ] Add template version compatibility metadata to Stack schemas
-- [ ] Add `koncept dry-run` command that shows merged configs without rendering
+- [x] Add `koncept dry-run` command that shows merged configs and Helmfile/Crossplane orchestration previews without rendering deployable manifests
 - [ ] Evaluate Go CLI with KCL Go SDK for single-binary distribution
 
 ### Long-term (Strategic)
@@ -322,4 +322,12 @@ Updated execution order for strategic work:
 1. Keep hardening Helmfile and Crossplane output contracts (dependency identity, metadata parity, deterministic ordering, pinning, tests).
 2. Add CLI ergonomics that increase safe adoption (`koncept dry-run`, scaffold improvements) once output contracts are stable.
 3. Re-evaluate new strategic surfaces (Score/Fleet/TemplateChain-enforced upgrades) only after existing high-priority outputs satisfy production coherence checks.
+
+### Strategic implementation learning (2026-06-02B)
+
+To keep implementation speed steady without sacrificing control-plane safety, the CLI now adds a governance-first planning layer:
+
+- `koncept dry-run` emits `output/dry_run_plan.yaml` from the same factory stack path and includes merged configs, module inventory, dependency edges, Helmfile release projection (`needs` included), and Crossplane V2 sequencing metadata.
+- The command intentionally prioritizes Helmfile/Crossplane orchestration visibility so teams can detect dependency identity drift before generating or applying deployable artifacts.
+- This shifts the near-term operating model: every strategic output hardening slice should include both renderer changes and dry-run observability updates to keep operators aligned with real generated behavior.
 

@@ -93,6 +93,9 @@ cd projects/erp_back/pre_releases/manifests/dev/
 # Render plain YAML (ArgoCD-ready)
 koncept render argocd
 
+# Preview merged config + Helmfile/Crossplane orchestration plan first
+koncept dry-run
+
 # Or any other format
 koncept render helmfile
 koncept render kusion
@@ -124,6 +127,7 @@ koncept policy check --factory <factory-dir>
 #   temporary waivers: --exemptions policy-exemptions.yaml
 
 # Other helpers
+koncept dry-run           # merged config + dependency graph + Helmfile/Crossplane plan
 koncept doctor            # dependency, version, path, and factory checks
 koncept golden check      # detect render drift against committed golden files
 koncept changelog check   # validate release-note fragments in .changes/unreleased

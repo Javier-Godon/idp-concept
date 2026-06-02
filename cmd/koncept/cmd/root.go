@@ -48,6 +48,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&metricsFile, "metrics-file", "", "telemetry JSONL path (default: user config dir or KONCEPT_METRICS_FILE)")
 
 	rootCmd.AddCommand(renderCmd)
+	rootCmd.AddCommand(dryRunCmd)
 	rootCmd.AddCommand(validateCmd)
 	rootCmd.AddCommand(initCmd)
 	rootCmd.AddCommand(testCmd)
