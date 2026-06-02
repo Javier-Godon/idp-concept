@@ -110,6 +110,43 @@ type RuntimeOptions struct {
 	CleanupPrerequisites bool
 }
 
+// RuntimeStep is a resolved runtime execution step.
+type RuntimeStep struct {
+	Profile string
+	Options RuntimeOptions
+}
+
+// PlanRuntimeSequence resolves a runtime profile and optional matrix boundaries
+// into concrete runtime execution steps.
+func PlanRuntimeSequence(profile string, matrixFrom string, matrixStopOn string, base RuntimeOptions) ([]RuntimeStep, error) {
+	profiles, err := ExpandRuntimeProfiles(profile)
+	if err != nil {
+		return nil, err
+	}
+	if (matrixFrom != "" || matrixStopOn != "") && profile != RuntimeProfileMatrix {
+		return nil, fmt.Errorf("--runtime-matrix-from/--runtime-matrix-stop-on require --runtime-profile matrix")
+	}
+	if profile == RuntimeProfileMatrix {
+		profiles, err = SelectMatrixProfiles(profiles, matrixFrom, matrixStopOn)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	steps := []RuntimeStep{}
+	for _, p := range profiles {
+		runtimeOpts, err := ResolveRuntimeOptions(p, base)
+		if err != nil {
+			return nil, err
+		}
+		if runtimeOpts.Mode == RuntimeModeNone {
+			continue
+		}
+		steps = append(steps, RuntimeStep{Profile: p, Options: runtimeOpts})
+	}
+	return steps, nil
+}
+
 // ResolveRuntimeOptions merges a runtime profile into explicit runtime options.
 // Profiles are mutually exclusive with an explicit non-none mode.
 func ResolveRuntimeOptions(profile string, opts RuntimeOptions) (RuntimeOptions, error) {

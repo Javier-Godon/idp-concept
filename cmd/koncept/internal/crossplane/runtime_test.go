@@ -140,3 +140,36 @@ func TestSelectMatrixProfilesInvalidBoundary(t *testing.T) {
 		t.Fatalf("expected invalid from-step error")
 	}
 }
+
+func TestPlanRuntimeSequenceSmoke(t *testing.T) {
+	steps, err := PlanRuntimeSequence(RuntimeProfileSmoke, "", "", RuntimeOptions{Mode: RuntimeModeNone})
+	if err != nil {
+		t.Fatalf("PlanRuntimeSequence(smoke) error = %v", err)
+	}
+	if len(steps) != 1 {
+		t.Fatalf("expected one step, got %d", len(steps))
+	}
+	if steps[0].Profile != RuntimeProfileSmoke || steps[0].Options.Mode != RuntimeModeServerDryRun {
+		t.Fatalf("unexpected smoke step: %#v", steps[0])
+	}
+}
+
+func TestPlanRuntimeSequenceMatrixSubset(t *testing.T) {
+	steps, err := PlanRuntimeSequence(RuntimeProfileMatrix, RuntimeProfileCatalog, RuntimeProfileAPILifecycle, RuntimeOptions{Mode: RuntimeModeNone})
+	if err != nil {
+		t.Fatalf("PlanRuntimeSequence(matrix subset) error = %v", err)
+	}
+	if len(steps) != 2 {
+		t.Fatalf("expected two matrix subset steps, got %d", len(steps))
+	}
+	if steps[0].Profile != RuntimeProfileCatalog || steps[1].Profile != RuntimeProfileAPILifecycle {
+		t.Fatalf("unexpected matrix subset sequence: %#v", steps)
+	}
+}
+
+func TestPlanRuntimeSequenceMatrixBoundaryWithoutMatrixProfile(t *testing.T) {
+	_, err := PlanRuntimeSequence(RuntimeProfileSmoke, RuntimeProfileSmoke, "", RuntimeOptions{Mode: RuntimeModeNone})
+	if err == nil {
+		t.Fatalf("expected matrix boundary misuse error")
+	}
+}

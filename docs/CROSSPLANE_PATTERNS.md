@@ -455,6 +455,7 @@ koncept crossplane test --runtime-profile api-lifecycle
 koncept crossplane test --runtime-profile matrix
 koncept crossplane test --runtime-profile matrix --runtime-matrix-stop-on catalog
 koncept crossplane test --runtime-profile matrix --runtime-matrix-from catalog
+koncept crossplane test --runtime-profile matrix --runtime-plan
 koncept crossplane test --require-cli --keep-artifacts
 koncept crossplane test --skip-render
 koncept crossplane test --runtime-mode server-dry-run
@@ -473,6 +474,7 @@ Current command scope:
   - `--runtime-profile api-lifecycle`: preset for XR/composition/XRD apply/wait/delete checks with a longer default timeout.
   - `--runtime-profile matrix`: ordered progression `smoke -> catalog -> api-lifecycle` to run increasing-confidence checks in one command.
   - `--runtime-matrix-from` / `--runtime-matrix-stop-on`: optional inclusive boundaries for matrix runs (for example PR = stop at `catalog`, nightly = full matrix).
+  - `--runtime-plan`: prints resolved runtime step sequence/options without executing `kubectl` checks.
   - `--runtime-mode server-dry-run`: server-side apply validation for generated artifacts.
   - `--runtime-mode apply-delete`: apply XR/composition/XRD, wait for Ready on XR, then cleanup (cleanup defaults on; prerequisites excluded unless explicitly requested).
   - `--runtime-profile` and an explicit non-`none` `--runtime-mode` are mutually exclusive to avoid ambiguous execution intent.

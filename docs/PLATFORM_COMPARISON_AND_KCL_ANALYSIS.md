@@ -387,3 +387,11 @@ Matrix execution now supports bounded staged runs via `--runtime-matrix-from` an
 - Boundaries are inclusive and validated for order, preventing accidental partial sequences that skip required early checks.
 - The change keeps velocity high while preserving deterministic progression and explicit operator intent.
 
+### Strategic implementation learning (2026-06-02J)
+
+Crossplane runtime workflows now include a non-executing `--runtime-plan` mode.
+
+- Teams can preview resolved runtime sequence/options (including matrix slices) without running kubectl.
+- This reduces configuration mistakes in CI and improves reviewability of staged validation intent.
+- The feature maintains steady delivery speed by separating planning feedback from cluster availability constraints.
+

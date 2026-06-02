@@ -23,6 +23,7 @@ var (
 	crossplaneRuntimePrereqs        bool
 	crossplaneRuntimeCleanup        bool
 	crossplaneRuntimeCleanupPrereqs bool
+	crossplaneRuntimePlan           bool
 )
 
 var crossplaneCmd = &cobra.Command{
@@ -83,19 +84,6 @@ func runCrossplaneTest(cmd *cobra.Command, args []string) error {
 		printInfo("crossplane test: local crossplane render skipped")
 	}
 
-	profiles, err := xptest.ExpandRuntimeProfiles(crossplaneRuntimeProfile)
-	if err != nil {
-		return err
-	}
-	if (crossplaneRuntimeMatrixFrom != "" || crossplaneRuntimeMatrixStopOn != "") && crossplaneRuntimeProfile != xptest.RuntimeProfileMatrix {
-		return fmt.Errorf("--runtime-matrix-from/--runtime-matrix-stop-on require --runtime-profile matrix")
-	}
-	if crossplaneRuntimeProfile == xptest.RuntimeProfileMatrix {
-		profiles, err = xptest.SelectMatrixProfiles(profiles, crossplaneRuntimeMatrixFrom, crossplaneRuntimeMatrixStopOn)
-		if err != nil {
-			return err
-		}
-	}
 	baseRuntimeOpts := xptest.RuntimeOptions{
 		Mode:                 crossplaneRuntimeMode,
 		KubeContext:          crossplaneRuntimeContext,
@@ -104,22 +92,38 @@ func runCrossplaneTest(cmd *cobra.Command, args []string) error {
 		Cleanup:              crossplaneRuntimeCleanup,
 		CleanupPrerequisites: crossplaneRuntimeCleanupPrereqs,
 	}
-	for i, profile := range profiles {
-		runtimeOpts, err := xptest.ResolveRuntimeOptions(profile, baseRuntimeOpts)
-		if err != nil {
-			return err
+	steps, err := xptest.PlanRuntimeSequence(crossplaneRuntimeProfile, crossplaneRuntimeMatrixFrom, crossplaneRuntimeMatrixStopOn, baseRuntimeOpts)
+	if err != nil {
+		return err
+	}
+
+	if crossplaneRuntimePlan {
+		if len(steps) == 0 {
+			printInfo("crossplane test: runtime plan resolved to no executable runtime steps")
+		} else {
+			printInfo("crossplane test: resolved runtime plan")
+			for i, step := range steps {
+				fmt.Printf("  step %d: profile=%s mode=%s includePrerequisites=%t cleanup=%t cleanupPrerequisites=%t timeout=%s\n",
+					i+1, step.Profile, step.Options.Mode, step.Options.IncludePrerequisites, step.Options.Cleanup, step.Options.CleanupPrerequisites, step.Options.Timeout)
+			}
 		}
-		if runtimeOpts.Mode == xptest.RuntimeModeNone {
-			continue
+		if crossplaneTestKeepFiles {
+			printInfo(fmt.Sprintf("crossplane test artifacts kept at %s", report.ArtifactsDir))
+		} else {
+			_ = os.RemoveAll(report.ArtifactsDir)
 		}
+		return nil
+	}
+
+	for i, step := range steps {
 		if crossplaneRuntimeProfile == xptest.RuntimeProfileMatrix {
-			printInfo(fmt.Sprintf("crossplane test: running matrix step %d/%d (%s)", i+1, len(profiles), profile))
+			printInfo(fmt.Sprintf("crossplane test: running matrix step %d/%d (%s)", i+1, len(steps), step.Profile))
 		} else if crossplaneRuntimeProfile != xptest.RuntimeProfileNone {
-			printInfo(fmt.Sprintf("crossplane test: using runtime profile %s", profile))
+			printInfo(fmt.Sprintf("crossplane test: using runtime profile %s", step.Profile))
 		}
-		printInfo(fmt.Sprintf("crossplane test: running runtime mode %s", runtimeOpts.Mode))
-		err = xptest.RunRuntimeChecks(report.ArtifactsDir, runtimeOpts)
-		recorder().Record("crossplane-test", "runtime:"+profile, time.Since(start), err)
+		printInfo(fmt.Sprintf("crossplane test: running runtime mode %s", step.Options.Mode))
+		err = xptest.RunRuntimeChecks(report.ArtifactsDir, step.Options)
+		recorder().Record("crossplane-test", "runtime:"+step.Profile, time.Since(start), err)
 		if err != nil {
 			return err
 		}
@@ -148,6 +152,7 @@ func init() {
 	crossplaneTestCmd.Flags().BoolVar(&crossplaneRuntimePrereqs, "runtime-include-prerequisites", false, "include prerequisites/infrastructure.yaml in runtime checks")
 	crossplaneTestCmd.Flags().BoolVar(&crossplaneRuntimeCleanup, "runtime-cleanup", true, "delete XR/composition/XRD after runtime apply-delete checks")
 	crossplaneTestCmd.Flags().BoolVar(&crossplaneRuntimeCleanupPrereqs, "runtime-cleanup-prerequisites", false, "also delete prerequisites during runtime cleanup (disabled by default for safety)")
+	crossplaneTestCmd.Flags().BoolVar(&crossplaneRuntimePlan, "runtime-plan", false, "print resolved runtime sequence without executing kubectl runtime checks")
 
 	crossplaneCmd.AddCommand(crossplaneTestCmd)
 }
