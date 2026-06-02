@@ -439,10 +439,26 @@ No Crossplane v2 API is considered supported until it has tests at these levels:
 
 Recommended tooling:
 
+- `koncept crossplane test` as the default local wrapper for static contract checks and optional `crossplane render` execution.
 - `crossplane render` for local function pipeline previews.
 - Chainsaw or KUTTL for cluster reconciliation tests.
 - Go tests for any custom composition function written with `function-sdk-go`.
-- A future `koncept crossplane test` command should wrap the repository's standard render, lint, `crossplane render`, and optional cluster reconciliation checks so platform engineers have one supported entrypoint.
+
+Example:
+
+```bash
+koncept crossplane test
+koncept crossplane test --require-cli --keep-artifacts
+koncept crossplane test --skip-render
+```
+
+Current command scope:
+
+- renders Crossplane output from the factory (`output=crossplane`);
+- validates required sections (`xrd`, `composition`, `xr`, `prerequisites`), pipeline shape, and pinned Provider/Function packages;
+- runs `crossplane render ... --include-function-results` when the binary is available (or fails when `--require-cli` is set).
+
+Future scope can extend this same entrypoint with optional cluster reconciliation/update/delete checks.
 
 ---
 

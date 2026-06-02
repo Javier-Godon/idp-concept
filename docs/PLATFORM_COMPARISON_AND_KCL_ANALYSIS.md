@@ -339,3 +339,11 @@ The next adaptation is tightening regression visibility for the same priority su
 - This keeps the strategic gate consistent with implementation priorities: Helmfile dependency orchestration, Crossplane sequencing metadata, and dry-run planning contracts must remain reviewable and deterministic in CI.
 - The approach stays intentionally narrow (single representative factory for these extra formats) to preserve steady velocity and avoid high-maintenance snapshot sprawl.
 
+### Strategic implementation learning (2026-06-02D)
+
+Crossplane V2 now has a dedicated CLI validation entrypoint aligned with the "depth before breadth" strategy:
+
+- `koncept crossplane test` renders factory Crossplane output, validates required output contracts (`xrd`, `composition`, `xr`, `prerequisites`), verifies pipeline shape, and enforces pinned Provider/Function packages.
+- The command runs local `crossplane render --include-function-results` when the CLI is available and can enforce that dependency with `--require-cli`; this gives a safe default path without forcing environment-specific tooling.
+- This closes one tactical gap from the strategic roadmap by making Crossplane verification part of the main Go CLI surface, while leaving runtime reconciliation/update/delete flows as the next explicit maturity increment.
+

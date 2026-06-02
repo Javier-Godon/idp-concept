@@ -62,6 +62,7 @@ func init() {
 	rootCmd.AddCommand(completionCmd)
 	rootCmd.AddCommand(policyCmd)
 	rootCmd.AddCommand(changelogCmd)
+	rootCmd.AddCommand(crossplaneCmd)
 	rootCmd.AddCommand(metricsCmd)
 }
 

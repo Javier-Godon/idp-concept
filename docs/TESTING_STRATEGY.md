@@ -274,7 +274,7 @@ Required levels for supported Crossplane APIs:
 | Management lifecycle | kubectl/Go helper updates and deletes the XR/Claim | Updates propagate to composed resources; deletion cleans up or intentionally orphans resources according to policy. |
 | Upgrade/rollback | composition revisions or pinned `compositionRevisionRef` | Existing XRs can be safely upgraded or rolled back. |
 
-Recommended future Go tooling: add `koncept crossplane test` as the single supported wrapper for static render, policy checks, `crossplane render`, and optional reconciliation/update/delete checks. This keeps Crossplane validation in the same CLI surface as render, policy, golden, and changelog workflows.
+The repository now ships `koncept crossplane test` as the supported wrapper for static render-contract checks and optional local `crossplane render`. Use it as the default local entrypoint before cluster runtime checks. Next maturity steps should extend this command with optional reconciliation/update/delete suites.
 
 ---
 

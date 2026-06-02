@@ -493,7 +493,7 @@ The previous roadmap emphasized many future phases. Given the current state, the
   - update tests that prove changes propagate to composed resources,
   - delete tests that prove cleanup or intentional orphaning,
   - composition revision or `compositionRevisionRef` rollback tests for supported APIs.
-- [ ] Add Go CLI support, likely `koncept crossplane test`, that wraps render, static policy checks, `crossplane render`, and optional kind/runtime reconciliation checks with consistent output.
+- [~] Add Go CLI support, likely `koncept crossplane test`, that wraps render, static policy checks, `crossplane render`, and optional kind/runtime reconciliation checks with consistent output. (Shipped initial wrapper: static Crossplane contract checks + pinned package checks + optional local `crossplane render` execution with `--require-cli`/`--skip-render`/`--keep-artifacts`; runtime reconciliation lifecycle extensions remain.)
 - [ ] Create or refactor at least one serious reference API, such as PostgreSQL or Keycloak+PostgreSQL, using provider-native/operator-managed resources and function-based composition instead of copied nested manifests.
 - [ ] Document the operating runbook for deployed Crossplane APIs: inspect XR/Claim conditions, trace composed resources, read function results, locate connection Secrets, perform safe updates, pin/roll back composition revisions, and clean up resources.
 
@@ -502,6 +502,8 @@ The previous roadmap emphasized many future phases. Given the current state, the
 - A platform engineer can install Crossplane prerequisites, apply one supported API package, create a Claim, update it, observe status/connection outputs, roll back a composition revision, and delete it using documented commands.
 - Supported Crossplane APIs have tests that prove ongoing management, not only initial YAML generation.
 - New Crossplane APIs cannot be marked supported unless they pass the checklist and tests in `docs/CROSSPLANE_PATTERNS.md`.
+
+**Implementation learning (2026-06-02, Crossplane test wrapper):** the first secure step for Crossplane CLI maturity is a deterministic local contract gate, not immediate runtime orchestration in one command. `koncept crossplane test` now renders with the same factory path as production output and validates required sections, pipeline shape, and pinned provider/function packages before optionally running `crossplane render` (auto-skip when binary is missing unless `--require-cli`). This keeps the default path fast and environment-agnostic while still allowing teams with Crossplane tooling installed to exercise function pipelines locally. The next increment should add optional runtime reconciliation suites behind explicit flags/profile selection.
 
 ---
 
