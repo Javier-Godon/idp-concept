@@ -60,14 +60,7 @@ schema KafkaSingleInstanceModule(accessory.Accessory):
                         ]
                     }
                 }
-                zookeeper = {
-                    replicas = 1
-                    storage = {
-                        $type = "persistent-claim"
-                        size = "100Gi"
-                        deleteClaim = False
-                    }
-                }
+                kraftMode = {}
                 entityOperator = {
                     topicOperator = {}
                     userOperator = {}

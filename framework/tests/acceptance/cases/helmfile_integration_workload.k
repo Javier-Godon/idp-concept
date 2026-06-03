@@ -96,7 +96,6 @@ _kafka = kafka.KafkaClusterModule {
     clusterName = "acceptance-helmfile-kafka"
     kafkaVersion = "3.5.0"
     kafkaReplicas = 1
-    zookeeperReplicas = 1
     storageSize = "256Mi"
     topics = [
         {name = "events", partitions = 3, replicas = 1}

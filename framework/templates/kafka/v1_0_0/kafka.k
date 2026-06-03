@@ -24,7 +24,6 @@ schema KafkaClusterModule(accessory.Accessory):
     clusterName: str
     kafkaVersion?: str = "3.8.0"
     kafkaReplicas?: int = 1
-    zookeeperReplicas?: int = 1
     storageSize?: str = "100Gi"
     topics?: [KafkaTopicSpec] = []
     interBrokerProtocolVersion?: str = "3.8"
@@ -81,14 +80,7 @@ schema KafkaClusterModule(accessory.Accessory):
                     }]
                 }
             }
-            zookeeper = {
-                replicas = zookeeperReplicas
-                storage = {
-                    $type = "persistent-claim"
-                    size = storageSize
-                    deleteClaim = False
-                }
-            }
+            kraftMode = {}
             entityOperator = {
                 topicOperator = {}
                 userOperator = {}

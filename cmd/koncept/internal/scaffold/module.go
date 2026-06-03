@@ -459,7 +459,6 @@ func kafkaWiring(spec ModuleSpec) string {
 	return fmt.Sprintf(`    asset = {version = %q}
     clusterName = %q
     kafkaReplicas = 1
-    zookeeperReplicas = 1
     storageSize = %q
 `, spec.Version, spec.K8sName, spec.StorageSize)
 }

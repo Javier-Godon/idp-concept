@@ -50,7 +50,6 @@ _kafka = kafka.KafkaClusterModule {
     dependsOn = []
     clusterName = "acceptance-kafka-stack"
     kafkaReplicas = 1
-    zookeeperReplicas = 1
     storageSize = "1Gi"
     topics = [kafka.KafkaTopicSpec {name = "events", partitions = 1, replicas = 1}]
 }.instance

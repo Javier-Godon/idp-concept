@@ -34,22 +34,15 @@ spec:
           description: Target Kubernetes namespace
 
     - title: Cluster Configuration
-      properties:
-        replicas:
-          title: Kafka Replicas
-          type: integer
-          default: 3
-          minimum: 1
-          maximum: 10
-          description: Number of Kafka broker replicas
-        zookeeperReplicas:
-          title: ZooKeeper Replicas
-          type: integer
-          default: 3
-          minimum: 1
-          maximum: 5
-          description: Number of ZooKeeper replicas
-        storageSize:
+       properties:
+         replicas:
+           title: Kafka Replicas
+           type: integer
+           default: 3
+           minimum: 1
+           maximum: 10
+           description: Number of Kafka broker replicas (KRaft mode - no ZooKeeper)
+         storageSize:
           title: Storage Size
           type: string
           default: "10Gi"

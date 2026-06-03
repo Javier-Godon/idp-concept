@@ -13,7 +13,6 @@ _module = kafka.KafkaClusterModule {
     dependsOn = []
     clusterName = "acceptance-kafka"
     kafkaReplicas = 1
-    zookeeperReplicas = 1
     storageSize = "1Gi"
     topics = [kafka.KafkaTopicSpec {name = "acceptance-topic", partitions = 1, replicas = 1}]
 }.instance
