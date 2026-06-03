@@ -1,0 +1,139 @@
+apiVersion: apiextensions.crossplane.io/v2
+kind: CompositeResourceDefinition
+metadata:
+  name: xopensearchclusters.koncept.bluesolution.es
+  annotations:
+    koncept.io/tier: "2"
+    koncept.io/operator: "opensearch-k8s"
+    koncept.io/operator-version: "2.x"
+    koncept.io/last-reviewed: "2026-06-04"
+spec:
+  scope: Cluster
+  group: koncept.bluesolution.es
+  names:
+    kind: XOpenSearchCluster
+    plural: xopensearchclusters
+  claimNames:
+    kind: OpenSearchCluster
+    plural: opensearchclusters
+  defaultCompositionRef:
+    name: xopensearchcluster-operator-composition
+  versions:
+    - name: v1alpha1
+      served: true
+      referenceable: true
+      additionalPrinterColumns:
+        - name: NAMESPACE
+          type: string
+          jsonPath: .spec.namespace
+        - name: VERSION
+          type: string
+          jsonPath: .spec.version
+        - name: NODES
+          type: integer
+          jsonPath: .spec.nodePoolCount
+          description: Number of data nodes
+        - name: DASHBOARDS
+          type: boolean
+          jsonPath: .spec.includeDashboards
+        - name: READY
+          type: string
+          jsonPath: .status.conditions[?(@.type=="Ready")].status
+        - name: AGE
+          type: date
+          jsonPath: .metadata.creationTimestamp
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              description: OpenSearch cluster configures an OpenSearchCluster via the K8s operator.
+              required:
+                - namespace
+                - version
+              properties:
+                namespace:
+                  type: string
+                  description: Kubernetes namespace where OpenSearch runs.
+                clusterName:
+                  type: string
+                  description: Name of the OpenSearch cluster (Claim name if unset).
+                  default: ""
+                version:
+                  type: string
+                  description: "OpenSearch version to deploy (e.g., 2.13.0, 2.17.0)."
+                  pattern: "^[0-9]+\\.[0-9]+(\\.[0-9]+)?$"
+                nodePoolCount:
+                  type: integer
+                  description: "Number of data nodes per node pool."
+                  default: 3
+                  minimum: 1
+                  maximum: 10
+                diskSize:
+                  type: string
+                  description: Disk size per node (e.g., 30Gi, 100Gi).
+                  default: "30Gi"
+                  pattern: "^[0-9]+(Mi|Gi|Ti)$"
+                storageClass:
+                  type: string
+                  description: StorageClass name. Leave empty for the cluster default.
+                  default: ""
+                includeDashboards:
+                  type: boolean
+                  description: "Whether to deploy OpenSearch Dashboards alongside the cluster."
+                  default: true
+                dashboardReplicas:
+                  type: integer
+                  description: Number of Dashboards replicas (ignored if includeDashboards=false).
+                  default: 1
+                  minimum: 1
+                enableSecurity:
+                  type: boolean
+                  description: "Whether to enable OpenSearch security plugin."
+                  default: true
+                enableMonitoring:
+                  type: boolean
+                  description: "Whether to enable monitoring features."
+                  default: false
+                environment:
+                  type: string
+                  description: "Target environment tier: local, development, staging, production."
+                  default: production
+                  enum:
+                    - local
+                    - development
+                    - staging
+                    - production
+                owner:
+                  type: string
+                  description: "Team or system that owns this cluster (for labeling/RBAC)."
+                  default: ""
+            status:
+              type: object
+              properties:
+                conditions:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      type:
+                        type: string
+                      status:
+                        type: string
+                      reason:
+                        type: string
+                      message:
+                        type: string
+                      lastTransitionTime:
+                        type: string
+                clusterName:
+                  type: string
+                  description: The name of the generated OpenSearchCluster resource.
+                readyNodes:
+                  type: integer
+                  description: Number of data nodes currently Ready.
+                serviceEndpoint:
+                  type: string
+                  description: OpenSearch API endpoint.
+

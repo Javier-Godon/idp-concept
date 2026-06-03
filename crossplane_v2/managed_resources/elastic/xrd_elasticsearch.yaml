@@ -1,0 +1,138 @@
+apiVersion: apiextensions.crossplane.io/v2
+kind: CompositeResourceDefinition
+metadata:
+  name: xelasticsearchclusters.koncept.bluesolution.es
+  annotations:
+    koncept.io/tier: "2"
+    koncept.io/operator: "eck"
+    koncept.io/operator-version: "2.x"
+    koncept.io/last-reviewed: "2026-06-04"
+    koncept.io/note: "Elastic 9+ uses ECK (Elastic Cloud on Kubernetes). For v7 legacy, see CROSSPLANE_PATTERNS.md"
+spec:
+  scope: Cluster
+  group: koncept.bluesolution.es
+  names:
+    kind: XElasticsearchCluster
+    plural: xelasticsearchclusters
+  claimNames:
+    kind: ElasticsearchCluster
+    plural: elasticsearchclusters
+  defaultCompositionRef:
+    name: xelasticsearchcluster-eck-composition
+  versions:
+    - name: v1alpha1
+      served: true
+      referenceable: true
+      additionalPrinterColumns:
+        - name: NAMESPACE
+          type: string
+          jsonPath: .spec.namespace
+        - name: VERSION
+          type: string
+          jsonPath: .spec.version
+        - name: NODES
+          type: integer
+          jsonPath: .spec.nodeCount
+        - name: STORAGE
+          type: string
+          jsonPath: .spec.storageSize
+        - name: READY
+          type: string
+          jsonPath: .status.conditions[?(@.type=="Ready")].status
+        - name: AGE
+          type: date
+          jsonPath: .metadata.creationTimestamp
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              description: Elasticsearch cluster configures Elasticsearch via ECK (Elastic Cloud on Kubernetes).
+              required:
+                - namespace
+                - version
+              properties:
+                namespace:
+                  type: string
+                  description: Kubernetes namespace where Elasticsearch runs.
+                clusterName:
+                  type: string
+                  description: Name of the Elasticsearch cluster (Claim name if unset).
+                  default: ""
+                version:
+                  type: string
+                  description: "Elasticsearch version (9.0.0 or later for ECK; 7.10.2 for legacy native)."
+                  pattern: "^[0-9]+\\.[0-9]+(\\.[0-9]+)?$"
+                nodeCount:
+                  type: integer
+                  description: "Number of data nodes."
+                  default: 3
+                  minimum: 1
+                  maximum: 10
+                storageSize:
+                  type: string
+                  description: Storage size per node.
+                  default: "30Gi"
+                  pattern: "^[0-9]+(Mi|Gi|Ti)$"
+                storageClass:
+                  type: string
+                  description: StorageClass name (optional).
+                  default: ""
+                resourceCpuRequest:
+                  type: string
+                  description: CPU request per node.
+                  default: "500m"
+                resourceMemoryRequest:
+                  type: string
+                  description: Memory request per node.
+                  default: "2Gi"
+                resourceCpuLimit:
+                  type: string
+                  description: CPU limit per node.
+                  default: "2"
+                resourceMemoryLimit:
+                  type: string
+                  description: Memory limit per node.
+                  default: "4Gi"
+                environment:
+                  type: string
+                  description: "Target environment tier: local, development, staging, production."
+                  default: production
+                  enum:
+                    - local
+                    - development
+                    - staging
+                    - production
+                owner:
+                  type: string
+                  description: "Team or system that owns this cluster (for labeling/RBAC)."
+                  default: ""
+            status:
+              type: object
+              properties:
+                conditions:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      type:
+                        type: string
+                      status:
+                        type: string
+                      reason:
+                        type: string
+                      message:
+                        type: string
+                      lastTransitionTime:
+                        type: string
+                clusterName:
+                  type: string
+                  description: The name of the generated Elasticsearch cluster.
+                readyNodes:
+                  type: integer
+                  description: Number of data nodes currently Ready.
+                endpoint:
+                  type: string
+                  description: Elasticsearch API endpoint.
+

@@ -1,0 +1,295 @@
+## Redis Composition — OT-CONTAINER-KIT Redis Operator pattern
+##
+## Prerequisite: OT-CONTAINER-KIT Redis Operator must be installed on the cluster.
+## Install via Helm: helm repo add opstree-charts https://charts.opstree.io
+##                  helm install redis-operator opstree-charts/redis-operator -n redis-operator --create-namespace
+##
+## This composition uses:
+##   - provider-kubernetes Object for the Namespace (small cluster glue, acceptable per patterns)
+##   - provider-kubernetes Object for Redis/RedisCluster CRD (operator-native resources)
+##   - FromCompositeFieldPath patches to inject all XR spec fields
+##   - function-sequencer to ensure namespace is ready before Redis resources are created
+##   - function-auto-ready for composite readiness detection
+
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: xredisinstance-operator-composition
+  annotations:
+    koncept.io/operator: "ot-redis"
+    koncept.io/pattern: "operator-native-crd"
+    koncept.io/bridge-pattern: "false"
+spec:
+  compositeTypeRef:
+    apiVersion: koncept.bluesolution.es/v1alpha1
+    kind: XRedisInstance
+  mode: Pipeline
+  pipeline:
+
+    # Step 1: Create all composed resources (namespace + Redis/RedisCluster)
+    - step: render-resources
+      functionRef:
+        name: function-patch-and-transform
+      input:
+        apiVersion: pt.fn.crossplane.io/v1beta1
+        kind: Resources
+        resources:
+
+          # --- Namespace (small cluster glue: allowed provider-kubernetes Object) ---
+          - name: ns-redis
+            base:
+              apiVersion: kubernetes.crossplane.io/v1alpha2
+              kind: Object
+              spec:
+                providerConfigRef:
+                  name: provider-kubernetes
+                forProvider:
+                  manifest:
+                    apiVersion: v1
+                    kind: Namespace
+                    metadata:
+                      name: redis  # overridden by patch
+                      labels:
+                        koncept.io/managed-by: crossplane
+            patches:
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.namespace
+                toFieldPath: spec.forProvider.manifest.metadata.name
+                policy:
+                  fromFieldPath: Required
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.owner
+                toFieldPath: spec.forProvider.manifest.metadata.labels["koncept.io/owner"]
+
+          # --- Standalone Redis ---
+          - name: redis-standalone
+            base:
+              apiVersion: kubernetes.crossplane.io/v1alpha2
+              kind: Object
+              spec:
+                providerConfigRef:
+                  name: provider-kubernetes
+                forProvider:
+                  manifest:
+                    apiVersion: redis.redis.opstreelabs.in/v1beta2
+                    kind: Redis
+                    metadata:
+                      name: redis  # overridden by patch
+                      namespace: redis  # overridden by patch
+                      labels:
+                        koncept.io/managed-by: crossplane
+                    spec:
+                      image: "quay.io/opstree/redis:v7.0.12"  # overridden by patch
+                      storage:
+                        image:
+                          tag: latest
+                      volumeClaimTemplate:
+                        spec:
+                          accessModes:
+                            - ReadWriteOnce
+                          resources:
+                            requests:
+                              storage: 10Gi  # overridden by patch
+                      resources:
+                        requests:
+                          cpu: "100m"  # overridden by patch
+                          memory: "256Mi"  # overridden by patch
+                        limits:
+                          cpu: "1"  # overridden by patch
+                          memory: "2Gi"  # overridden by patch
+            patches:
+              # Only create if mode == "standalone"
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.mode
+                toFieldPath: metadata.name
+                transforms:
+                  - type: match
+                    match:
+                      patterns:
+                        - type: literal
+                          literal: standalone
+                          result: create
+                  - type: map
+                    map:
+                      standalone: "create"
+                      "": ignore
+              # Target namespace
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.namespace
+                toFieldPath: spec.forProvider.manifest.metadata.namespace
+                policy:
+                  fromFieldPath: Required
+              # Cluster name
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.clusterName
+                toFieldPath: spec.forProvider.manifest.metadata.name
+                policy:
+                  fromFieldPath: Optional
+              # Fallback: use metadata.name
+              - type: FromCompositeFieldPath
+                fromFieldPath: metadata.name
+                toFieldPath: spec.forProvider.manifest.metadata.name
+                policy:
+                  fromFieldPath: Optional
+              # Image
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.image
+                toFieldPath: spec.forProvider.manifest.spec.image
+              # Storage size
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.storageSize
+                toFieldPath: spec.forProvider.manifest.spec.volumeClaimTemplate.spec.resources.requests.storage
+              # Storage class (optional)
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.storageClass
+                toFieldPath: spec.forProvider.manifest.spec.volumeClaimTemplate.spec.storageClassName
+                policy:
+                  fromFieldPath: Optional
+              # Resource requests and limits
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.resourceCpuRequest
+                toFieldPath: spec.forProvider.manifest.spec.resources.requests.cpu
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.resourceMemoryRequest
+                toFieldPath: spec.forProvider.manifest.spec.resources.requests.memory
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.resourceCpuLimit
+                toFieldPath: spec.forProvider.manifest.spec.resources.limits.cpu
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.resourceMemoryLimit
+                toFieldPath: spec.forProvider.manifest.spec.resources.limits.memory
+              # Owner label
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.owner
+                toFieldPath: spec.forProvider.manifest.metadata.labels["koncept.io/owner"]
+
+          # --- Cluster Redis ---
+          - name: redis-cluster
+            base:
+              apiVersion: kubernetes.crossplane.io/v1alpha2
+              kind: Object
+              spec:
+                providerConfigRef:
+                  name: provider-kubernetes
+                forProvider:
+                  manifest:
+                    apiVersion: redis.redis.opstreelabs.in/v1beta2
+                    kind: RedisCluster
+                    metadata:
+                      name: redis-cluster  # overridden by patch
+                      namespace: redis  # overridden by patch
+                      labels:
+                        koncept.io/managed-by: crossplane
+                    spec:
+                      image: "quay.io/opstree/redis:v7.0.12"  # overridden by patch
+                      clusterSize: 3  # overridden by patch
+                      volumeClaimTemplate:
+                        spec:
+                          accessModes:
+                            - ReadWriteOnce
+                          resources:
+                            requests:
+                              storage: 10Gi  # overridden by patch
+                      resources:
+                        requests:
+                          cpu: "100m"  # overridden by patch
+                          memory: "256Mi"  # overridden by patch
+                        limits:
+                          cpu: "1"  # overridden by patch
+                          memory: "2Gi"  # overridden by patch
+            patches:
+              # Only create if mode == "cluster"
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.mode
+                toFieldPath: metadata.name
+                transforms:
+                  - type: match
+                    match:
+                      patterns:
+                        - type: literal
+                          literal: cluster
+                          result: create
+                  - type: map
+                    map:
+                      cluster: "create"
+                      "": ignore
+              # Target namespace
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.namespace
+                toFieldPath: spec.forProvider.manifest.metadata.namespace
+                policy:
+                  fromFieldPath: Required
+              # Cluster name
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.clusterName
+                toFieldPath: spec.forProvider.manifest.metadata.name
+                transforms:
+                  - type: string
+                    string:
+                      fmt: "%s-cluster"
+                policy:
+                  fromFieldPath: Optional
+              # Fallback: use metadata.name
+              - type: FromCompositeFieldPath
+                fromFieldPath: metadata.name
+                toFieldPath: spec.forProvider.manifest.metadata.name
+                transforms:
+                  - type: string
+                    string:
+                      fmt: "%s-cluster"
+                policy:
+                  fromFieldPath: Optional
+              # Image
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.image
+                toFieldPath: spec.forProvider.manifest.spec.image
+              # Cluster size (node count)
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.nodeCount
+                toFieldPath: spec.forProvider.manifest.spec.clusterSize
+              # Storage size
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.storageSize
+                toFieldPath: spec.forProvider.manifest.spec.volumeClaimTemplate.spec.resources.requests.storage
+              # Storage class (optional)
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.storageClass
+                toFieldPath: spec.forProvider.manifest.spec.volumeClaimTemplate.spec.storageClassName
+                policy:
+                  fromFieldPath: Optional
+              # Resource requests and limits
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.resourceCpuRequest
+                toFieldPath: spec.forProvider.manifest.spec.resources.requests.cpu
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.resourceMemoryRequest
+                toFieldPath: spec.forProvider.manifest.spec.resources.requests.memory
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.resourceCpuLimit
+                toFieldPath: spec.forProvider.manifest.spec.resources.limits.cpu
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.resourceMemoryLimit
+                toFieldPath: spec.forProvider.manifest.spec.resources.limits.memory
+              # Owner label
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.owner
+                toFieldPath: spec.forProvider.manifest.metadata.labels["koncept.io/owner"]
+
+    # Step 2: Enforce namespace-before-redis creation order
+    - step: sequence-creation
+      functionRef:
+        name: function-sequencer
+      input:
+        apiVersion: sequencer.fn.crossplane.io/v1beta1
+        kind: Input
+        rules:
+          - sequence:
+              - ns-redis
+              - redis-standalone
+              - redis-cluster
+
+    # Step 3: Detect readiness from composed resources
+    - step: automatically-detect-readiness
+      functionRef:
+        name: function-auto-ready
+

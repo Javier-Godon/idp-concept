@@ -1,0 +1,154 @@
+apiVersion: apiextensions.crossplane.io/v2
+kind: CompositeResourceDefinition
+metadata:
+  name: xfluentbitinstances.koncept.bluesolution.es
+  annotations:
+    koncept.io/tier: "2"
+    koncept.io/deployment-method: "kubernetes-native"
+    koncept.io/last-reviewed: "2026-06-04"
+spec:
+  scope: Cluster
+  group: koncept.bluesolution.es
+  names:
+    kind: XFluentBitInstance
+    plural: xfluentbitinstances
+  claimNames:
+    kind: FluentBitInstance
+    plural: fluentbitinstances
+  defaultCompositionRef:
+    name: xfluentbitinstance-native-composition
+  versions:
+    - name: v1alpha1
+      served: true
+      referenceable: true
+      additionalPrinterColumns:
+        - name: NAMESPACE
+          type: string
+          jsonPath: .spec.namespace
+        - name: MODE
+          type: string
+          jsonPath: .spec.mode
+          description: Deployment or DaemonSet mode
+        - name: IMAGE
+          type: string
+          jsonPath: .spec.image
+        - name: READY
+          type: string
+          jsonPath: .status.conditions[?(@.type=="Ready")].status
+        - name: AGE
+          type: date
+          jsonPath: .metadata.creationTimestamp
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              description: Fluent Bit instance for log collection and forwarding.
+              required:
+                - namespace
+              properties:
+                namespace:
+                  type: string
+                  description: Kubernetes namespace where Fluent Bit runs.
+                clusterName:
+                  type: string
+                  description: Instance name (Claim name if unset).
+                  default: ""
+                mode:
+                  type: string
+                  description: "Deployment mode: deployment (single) or daemonset (per-node)."
+                  enum:
+                    - deployment
+                    - daemonset
+                  default: deployment
+                image:
+                  type: string
+                  description: Fluent Bit Docker image.
+                  default: "cr.fluentbit.io/fluent/fluent-bit"
+                version:
+                  type: string
+                  description: "Fluent Bit version (must not be 'latest')."
+                  default: "3.2.10"
+                  pattern: "^[0-9]+(\\.[0-9]+)*(\\-[a-z0-9]+)?$"
+                replicas:
+                  type: integer
+                  description: "Number of deployment replicas (ignored for daemonset)."
+                  default: 1
+                  minimum: 1
+                  maximum: 10
+                metricsPort:
+                  type: integer
+                  description: "HTTP metrics/stats port."
+                  default: 2020
+                  minimum: 1
+                  maximum: 65535
+                serviceType:
+                  type: string
+                  description: "Service type for metrics exposure."
+                  enum:
+                    - ClusterIP
+                    - NodePort
+                  default: ClusterIP
+                configData:
+                  type: string
+                  description: "Fluent Bit configuration (fluent-bit.conf format)."
+                  default: ""
+                pipelineType:
+                  type: string
+                  description: "Pipeline type: simple (stdout) or custom."
+                  enum:
+                    - simple
+                    - custom
+                  default: simple
+                resourceCpuRequest:
+                  type: string
+                  description: CPU request.
+                  default: "100m"
+                resourceMemoryRequest:
+                  type: string
+                  description: Memory request.
+                  default: "128Mi"
+                resourceCpuLimit:
+                  type: string
+                  description: CPU limit.
+                  default: "500m"
+                resourceMemoryLimit:
+                  type: string
+                  description: Memory limit.
+                  default: "512Mi"
+                environment:
+                  type: string
+                  description: "Target environment tier: local, development, staging, production."
+                  default: production
+                  enum:
+                    - local
+                    - development
+                    - staging
+                    - production
+                owner:
+                  type: string
+                  description: "Team or system that owns this instance."
+                  default: ""
+            status:
+              type: object
+              properties:
+                conditions:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      type:
+                        type: string
+                      status:
+                        type: string
+                      reason:
+                        type: string
+                      message:
+                        type: string
+                      lastTransitionTime:
+                        type: string
+                readyInstances:
+                  type: integer
+                  description: Number of Fluent Bit instances currently Ready.
+

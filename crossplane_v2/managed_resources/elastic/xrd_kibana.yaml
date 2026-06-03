@@ -1,0 +1,120 @@
+apiVersion: apiextensions.crossplane.io/v2
+kind: CompositeResourceDefinition
+metadata:
+  name: xkibanaintances.koncept.bluesolution.es
+  annotations:
+    koncept.io/tier: "2"
+    koncept.io/operator: "eck"
+    koncept.io/operator-version: "2.x"
+    koncept.io/last-reviewed: "2026-06-04"
+spec:
+  scope: Cluster
+  group: koncept.bluesolution.es
+  names:
+    kind: XKibanaInstance
+    plural: xkibanainstances
+  claimNames:
+    kind: KibanaInstance
+    plural: kibanainstances
+  defaultCompositionRef:
+    name: xkibanainstance-eck-composition
+  versions:
+    - name: v1alpha1
+      served: true
+      referenceable: true
+      additionalPrinterColumns:
+        - name: NAMESPACE
+          type: string
+          jsonPath: .spec.namespace
+        - name: VERSION
+          type: string
+          jsonPath: .spec.version
+        - name: REPLICAS
+          type: integer
+          jsonPath: .spec.replicas
+        - name: READY
+          type: string
+          jsonPath: .status.conditions[?(@.type=="Ready")].status
+        - name: AGE
+          type: date
+          jsonPath: .metadata.creationTimestamp
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              description: Kibana instance configures Kibana via ECK.
+              required:
+                - namespace
+                - version
+                - elasticsearchRef
+              properties:
+                namespace:
+                  type: string
+                  description: Kubernetes namespace where Kibana runs.
+                clusterName:
+                  type: string
+                  description: Name of the Kibana instance (Claim name if unset).
+                  default: ""
+                version:
+                  type: string
+                  description: "Kibana version (must match Elasticsearch version)."
+                  pattern: "^[0-9]+\\.[0-9]+(\\.[0-9]+)?$"
+                elasticsearchRef:
+                  type: string
+                  description: "Reference to Elasticsearch cluster name in same namespace."
+                replicas:
+                  type: integer
+                  description: "Number of Kibana replicas."
+                  default: 1
+                  minimum: 1
+                  maximum: 5
+                resourceCpuRequest:
+                  type: string
+                  description: CPU request.
+                  default: "250m"
+                resourceMemoryRequest:
+                  type: string
+                  description: Memory request.
+                  default: "512Mi"
+                resourceCpuLimit:
+                  type: string
+                  description: CPU limit.
+                  default: "1"
+                resourceMemoryLimit:
+                  type: string
+                  description: Memory limit.
+                  default: "2Gi"
+                environment:
+                  type: string
+                  description: "Target environment tier: local, development, staging, production."
+                  default: production
+                  enum:
+                    - local
+                    - development
+                    - staging
+                    - production
+                owner:
+                  type: string
+                  description: "Team or system that owns this instance."
+                  default: ""
+            status:
+              type: object
+              properties:
+                conditions:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      type:
+                        type: string
+                      status:
+                        type: string
+                      reason:
+                        type: string
+                      message:
+                        type: string
+                      lastTransitionTime:
+                        type: string
+

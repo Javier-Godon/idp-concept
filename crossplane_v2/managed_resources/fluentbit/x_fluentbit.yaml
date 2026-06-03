@@ -1,0 +1,325 @@
+## Fluent Bit Composition — Kubernetes-native Deployment/DaemonSet pattern
+##
+## Fluent Bit has no operator; we deploy it as native K8s resources.
+## Supports both single-instance (Deployment) and node-wide (DaemonSet) modes.
+
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: xfluentbitinstance-native-composition
+  annotations:
+    koncept.io/deployment-method: "kubernetes-native"
+    koncept.io/pattern: "deployment-native"
+spec:
+  compositeTypeRef:
+    apiVersion: koncept.bluesolution.es/v1alpha1
+    kind: XFluentBitInstance
+  mode: Pipeline
+  pipeline:
+
+    - step: render-resources
+      functionRef:
+        name: function-patch-and-transform
+      input:
+        apiVersion: pt.fn.crossplane.io/v1beta1
+        kind: Resources
+        resources:
+
+          - name: ns-fluentbit
+            base:
+              apiVersion: kubernetes.crossplane.io/v1alpha2
+              kind: Object
+              spec:
+                providerConfigRef:
+                  name: provider-kubernetes
+                forProvider:
+                  manifest:
+                    apiVersion: v1
+                    kind: Namespace
+                    metadata:
+                      name: fluentbit
+                      labels:
+                        koncept.io/managed-by: crossplane
+            patches:
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.namespace
+                toFieldPath: spec.forProvider.manifest.metadata.name
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.owner
+                toFieldPath: spec.forProvider.manifest.metadata.labels["koncept.io/owner"]
+
+          - name: fluentbit-configmap
+            base:
+              apiVersion: kubernetes.crossplane.io/v1alpha2
+              kind: Object
+              spec:
+                providerConfigRef:
+                  name: provider-kubernetes
+                forProvider:
+                  manifest:
+                    apiVersion: v1
+                    kind: ConfigMap
+                    metadata:
+                      name: fluentbit-config
+                      namespace: fluentbit
+                      labels:
+                        koncept.io/managed-by: crossplane
+                    data:
+                      fluent-bit.conf: |
+                        [SERVICE]
+                            Daemon              Off
+                            Flush               5
+                            Log_Level           info
+                            Parsers_File        parsers.conf
+                            HTTP_Server         On
+                            HTTP_Listen         0.0.0.0
+                            HTTP_Port           2020
+                            HC_Errors           On
+                            HC_Period           60
+                        
+                        [INPUT]
+                            Name                systemd
+                            Tag                 host.*
+                            Path                /var/log/journal
+                            Read_From_Tail      On
+                        
+                        [OUTPUT]
+                            Name                stdout
+                            Match               *
+            patches:
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.namespace
+                toFieldPath: spec.forProvider.manifest.metadata.namespace
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.configData
+                toFieldPath: spec.forProvider.manifest.data["fluent-bit.conf"]
+                policy:
+                  fromFieldPath: Optional
+
+          - name: fluentbit-deployment
+            base:
+              apiVersion: kubernetes.crossplane.io/v1alpha2
+              kind: Object
+              spec:
+                providerConfigRef:
+                  name: provider-kubernetes
+                forProvider:
+                  manifest:
+                    apiVersion: apps/v1
+                    kind: Deployment
+                    metadata:
+                      name: fluentbit
+                      namespace: fluentbit
+                      labels:
+                        app: fluentbit
+                        koncept.io/managed-by: crossplane
+                    spec:
+                      replicas: 1
+                      selector:
+                        matchLabels:
+                          app: fluentbit
+                      template:
+                        metadata:
+                          labels:
+                            app: fluentbit
+                        spec:
+                          containers:
+                            - name: fluent-bit
+                              image: cr.fluentbit.io/fluent/fluent-bit:3.2.10
+                              imagePullPolicy: IfNotPresent
+                              ports:
+                                - containerPort: 2020
+                                  name: metrics
+                              volumeMounts:
+                                - name: config
+                                  mountPath: /fluent-bit/etc/
+                              resources:
+                                requests:
+                                  cpu: "100m"
+                                  memory: "128Mi"
+                                limits:
+                                  cpu: "500m"
+                                  memory: "512Mi"
+                          volumes:
+                            - name: config
+                              configMap:
+                                name: fluentbit-config
+            patches:
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.namespace
+                toFieldPath: spec.forProvider.manifest.metadata.namespace
+              - type: FromCompositeFieldPath
+                fromFieldPath: metadata.name
+                toFieldPath: spec.forProvider.manifest.metadata.name
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.replicas
+                toFieldPath: spec.forProvider.manifest.spec.replicas
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.image
+                toFieldPath: spec.forProvider.manifest.spec.template.spec.containers[0].image
+                transforms:
+                  - type: string
+                    string:
+                      fmt: "%s:%s"
+                      args:
+                        - spec.image
+                        - spec.version
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.metricsPort
+                toFieldPath: spec.forProvider.manifest.spec.template.spec.containers[0].ports[0].containerPort
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.resourceCpuRequest
+                toFieldPath: spec.forProvider.manifest.spec.template.spec.containers[0].resources.requests.cpu
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.resourceMemoryRequest
+                toFieldPath: spec.forProvider.manifest.spec.template.spec.containers[0].resources.requests.memory
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.resourceCpuLimit
+                toFieldPath: spec.forProvider.manifest.spec.template.spec.containers[0].resources.limits.cpu
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.resourceMemoryLimit
+                toFieldPath: spec.forProvider.manifest.spec.template.spec.containers[0].resources.limits.memory
+
+          - name: fluentbit-daemonset
+            base:
+              apiVersion: kubernetes.crossplane.io/v1alpha2
+              kind: Object
+              spec:
+                providerConfigRef:
+                  name: provider-kubernetes
+                forProvider:
+                  manifest:
+                    apiVersion: apps/v1
+                    kind: DaemonSet
+                    metadata:
+                      name: fluentbit
+                      namespace: fluentbit
+                      labels:
+                        app: fluentbit
+                        koncept.io/managed-by: crossplane
+                    spec:
+                      selector:
+                        matchLabels:
+                          app: fluentbit
+                      template:
+                        metadata:
+                          labels:
+                            app: fluentbit
+                        spec:
+                          containers:
+                            - name: fluent-bit
+                              image: cr.fluentbit.io/fluent/fluent-bit:3.2.10
+                              imagePullPolicy: IfNotPresent
+                              ports:
+                                - containerPort: 2020
+                                  name: metrics
+                              volumeMounts:
+                                - name: config
+                                  mountPath: /fluent-bit/etc/
+                                - name: varlog
+                                  mountPath: /var/log
+                                  readOnly: true
+                                - name: varlibdockercontainers
+                                  mountPath: /var/lib/docker/containers
+                                  readOnly: true
+                              resources:
+                                requests:
+                                  cpu: "100m"
+                                  memory: "128Mi"
+                                limits:
+                                  cpu: "500m"
+                                  memory: "512Mi"
+                          volumes:
+                            - name: config
+                              configMap:
+                                name: fluentbit-config
+                            - name: varlog
+                              hostPath:
+                                path: /var/log
+                            - name: varlibdockercontainers
+                              hostPath:
+                                path: /var/lib/docker/containers
+            patches:
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.namespace
+                toFieldPath: spec.forProvider.manifest.metadata.namespace
+              - type: FromCompositeFieldPath
+                fromFieldPath: metadata.name
+                toFieldPath: spec.forProvider.manifest.metadata.name
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.image
+                toFieldPath: spec.forProvider.manifest.spec.template.spec.containers[0].image
+                transforms:
+                  - type: string
+                    string:
+                      fmt: "%s:%s"
+                      args:
+                        - spec.image
+                        - spec.version
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.metricsPort
+                toFieldPath: spec.forProvider.manifest.spec.template.spec.containers[0].ports[0].containerPort
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.resourceCpuRequest
+                toFieldPath: spec.forProvider.manifest.spec.template.spec.containers[0].resources.requests.cpu
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.resourceMemoryRequest
+                toFieldPath: spec.forProvider.manifest.spec.template.spec.containers[0].resources.requests.memory
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.resourceCpuLimit
+                toFieldPath: spec.forProvider.manifest.spec.template.spec.containers[0].resources.limits.cpu
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.resourceMemoryLimit
+                toFieldPath: spec.forProvider.manifest.spec.template.spec.containers[0].resources.limits.memory
+
+          - name: fluentbit-service
+            base:
+              apiVersion: kubernetes.crossplane.io/v1alpha2
+              kind: Object
+              spec:
+                providerConfigRef:
+                  name: provider-kubernetes
+                forProvider:
+                  manifest:
+                    apiVersion: v1
+                    kind: Service
+                    metadata:
+                      name: fluentbit
+                      namespace: fluentbit
+                      labels:
+                        app: fluentbit
+                        koncept.io/managed-by: crossplane
+                    spec:
+                      type: ClusterIP
+                      selector:
+                        app: fluentbit
+                      ports:
+                        - port: 2020
+                          targetPort: 2020
+                          name: metrics
+            patches:
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.namespace
+                toFieldPath: spec.forProvider.manifest.metadata.namespace
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.serviceType
+                toFieldPath: spec.forProvider.manifest.spec.type
+
+    - step: sequence-creation
+      functionRef:
+        name: function-sequencer
+      input:
+        apiVersion: sequencer.fn.crossplane.io/v1beta1
+        kind: Input
+        rules:
+          - sequence:
+              - ns-fluentbit
+              - fluentbit-configmap
+              - fluentbit-deployment
+              - fluentbit-daemonset
+              - fluentbit-service
+
+    - step: automatically-detect-readiness
+      functionRef:
+        name: function-auto-ready
+

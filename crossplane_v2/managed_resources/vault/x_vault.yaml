@@ -1,0 +1,172 @@
+## Vault Composition — Vault Secrets Operator (VSO) pattern
+##
+## Note: VSO is licensed under BUSL-1.1 (not fully open-source).
+## For Apache-2.0 alternative, consider External Secrets Operator.
+##
+## Prerequisite: Vault Secrets Operator must be installed on the cluster.
+## Install via Helm: helm repo add hashicorp https://helm.releases.hashicorp.com
+##                  helm install vault-secrets-operator hashicorp/vault-secrets-operator -n vault --create-namespace
+
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: xvaultinstance-vso-composition
+  annotations:
+    koncept.io/operator: "vault-vso"
+    koncept.io/pattern: "operator-native-crd"
+    koncept.io/bridge-pattern: "false"
+    koncept.io/license: "BUSL-1.1"
+spec:
+  compositeTypeRef:
+    apiVersion: koncept.bluesolution.es/v1alpha1
+    kind: XVaultInstance
+  mode: Pipeline
+  pipeline:
+
+    - step: render-resources
+      functionRef:
+        name: function-patch-and-transform
+      input:
+        apiVersion: pt.fn.crossplane.io/v1beta1
+        kind: Resources
+        resources:
+
+          - name: ns-vault
+            base:
+              apiVersion: kubernetes.crossplane.io/v1alpha2
+              kind: Object
+              spec:
+                providerConfigRef:
+                  name: provider-kubernetes
+                forProvider:
+                  manifest:
+                    apiVersion: v1
+                    kind: Namespace
+                    metadata:
+                      name: vault
+                      labels:
+                        koncept.io/managed-by: crossplane
+            patches:
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.namespace
+                toFieldPath: spec.forProvider.manifest.metadata.name
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.owner
+                toFieldPath: spec.forProvider.manifest.metadata.labels["koncept.io/owner"]
+
+          - name: vault-connection
+            base:
+              apiVersion: kubernetes.crossplane.io/v1alpha2
+              kind: Object
+              spec:
+                providerConfigRef:
+                  name: provider-kubernetes
+                forProvider:
+                  manifest:
+                    apiVersion: secrets.hashicorp.com/v1beta1
+                    kind: VaultConnection
+                    metadata:
+                      name: vault-connection
+                      namespace: vault
+                      labels:
+                        koncept.io/managed-by: crossplane
+                    spec:
+                      address: "https://vault.example.com:8200"
+                      skipTLSVerify: false
+            patches:
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.namespace
+                toFieldPath: spec.forProvider.manifest.metadata.namespace
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.vaultAddress
+                toFieldPath: spec.forProvider.manifest.spec.address
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.skipTlsVerify
+                toFieldPath: spec.forProvider.manifest.spec.skipTLSVerify
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.caCertSecretRef
+                toFieldPath: spec.forProvider.manifest.spec.caCertSecretRef
+                policy:
+                  fromFieldPath: Optional
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.owner
+                toFieldPath: spec.forProvider.manifest.metadata.labels["koncept.io/owner"]
+
+          - name: vault-auth
+            base:
+              apiVersion: kubernetes.crossplane.io/v1alpha2
+              kind: Object
+              spec:
+                providerConfigRef:
+                  name: provider-kubernetes
+                forProvider:
+                  manifest:
+                    apiVersion: secrets.hashicorp.com/v1beta1
+                    kind: VaultAuth
+                    metadata:
+                      name: vault-auth
+                      namespace: vault
+                      labels:
+                        koncept.io/managed-by: crossplane
+                    spec:
+                      vaultConnectionRef: vault-connection
+                      method: kubernetes
+                      mount: kubernetes
+                      kubernetes:
+                        role: my-role
+                        serviceAccount: default
+            patches:
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.namespace
+                toFieldPath: spec.forProvider.manifest.metadata.namespace
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.authMethod
+                toFieldPath: spec.forProvider.manifest.spec.method
+              # Kubernetes auth config
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.kubeAuthMount
+                toFieldPath: spec.forProvider.manifest.spec.mount
+                policy:
+                  fromFieldPath: Optional
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.kubernetesRole
+                toFieldPath: spec.forProvider.manifest.spec.kubernetes.role
+                policy:
+                  fromFieldPath: Optional
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.kubernetesServiceAccount
+                toFieldPath: spec.forProvider.manifest.spec.kubernetes.serviceAccount
+                policy:
+                  fromFieldPath: Optional
+              # JWT auth config
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.jwtAuthMount
+                toFieldPath: spec.forProvider.manifest.spec.mount
+                policy:
+                  fromFieldPath: Optional
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.jwtRole
+                toFieldPath: spec.forProvider.manifest.spec.jwt.role
+                policy:
+                  fromFieldPath: Optional
+              # Owner label
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.owner
+                toFieldPath: spec.forProvider.manifest.metadata.labels["koncept.io/owner"]
+
+    - step: sequence-creation
+      functionRef:
+        name: function-sequencer
+      input:
+        apiVersion: sequencer.fn.crossplane.io/v1beta1
+        kind: Input
+        rules:
+          - sequence:
+              - ns-vault
+              - vault-connection
+              - vault-auth
+
+    - step: automatically-detect-readiness
+      functionRef:
+        name: function-auto-ready
+

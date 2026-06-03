@@ -1,0 +1,199 @@
+## MongoDB Composition — MongoDB Community Kubernetes Operator pattern
+##
+## Prerequisite: MongoDB Community Kubernetes Operator must be installed on the cluster.
+## Install via Helm: helm repo add mongodb https://mongodb.github.io/helm-charts
+##                  helm install mongodb mongodb/community-operator -n mongodb --create-namespace
+##
+## This composition uses:
+##   - provider-kubernetes Object for the Namespace (small cluster glue, acceptable per patterns)
+##   - provider-kubernetes Object for the MongoDBCommunity CRD (operator-native resource)
+##   - FromCompositeFieldPath patches to inject all XR spec fields
+##   - function-sequencer to ensure namespace is ready before the cluster is created
+##   - function-auto-ready for composite readiness detection
+##
+## The MongoDB operator manages Pods, Services, PVCs, and Secrets automatically.
+
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: xmongodbinstance-community-composition
+  annotations:
+    koncept.io/operator: "mongodb-community"
+    koncept.io/pattern: "operator-native-crd"
+    koncept.io/bridge-pattern: "false"
+spec:
+  compositeTypeRef:
+    apiVersion: koncept.bluesolution.es/v1alpha1
+    kind: XMongoDBInstance
+  mode: Pipeline
+  pipeline:
+
+    # Step 1: Create all composed resources (namespace + MongoDBCommunity)
+    - step: render-resources
+      functionRef:
+        name: function-patch-and-transform
+      input:
+        apiVersion: pt.fn.crossplane.io/v1beta1
+        kind: Resources
+        resources:
+
+          # --- Namespace (small cluster glue: allowed provider-kubernetes Object) ---
+          - name: ns-mongodb
+            base:
+              apiVersion: kubernetes.crossplane.io/v1alpha2
+              kind: Object
+              spec:
+                providerConfigRef:
+                  name: provider-kubernetes
+                forProvider:
+                  manifest:
+                    apiVersion: v1
+                    kind: Namespace
+                    metadata:
+                      name: mongodb  # overridden by patch
+                      labels:
+                        koncept.io/managed-by: crossplane
+            patches:
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.namespace
+                toFieldPath: spec.forProvider.manifest.metadata.name
+                policy:
+                  fromFieldPath: Required
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.owner
+                toFieldPath: spec.forProvider.manifest.metadata.labels["koncept.io/owner"]
+
+          # --- MongoDBCommunity (operator-native CRD — not a raw Deployment wrapper) ---
+          # MongoDB operator reconciles this CRD into Pods, Services, PVCs, and Secrets.
+          - name: mongodb-cluster
+            base:
+              apiVersion: kubernetes.crossplane.io/v1alpha2
+              kind: Object
+              spec:
+                providerConfigRef:
+                  name: provider-kubernetes
+                forProvider:
+                  manifest:
+                    apiVersion: mongodbcommunity.mongodb.com/v1
+                    kind: MongoDBCommunity
+                    metadata:
+                      name: mongodb-cluster  # overridden by patch
+                      namespace: mongodb      # overridden by patch
+                      labels:
+                        koncept.io/managed-by: crossplane
+                    spec:
+                      members: 3             # overridden by patch
+                      version: "7.0.12"      # overridden by patch
+                      security:
+                        tls:
+                          enabled: false
+                      users:
+                        - name: admin
+                          db: admin
+                          passwordSecretRef:
+                            name: mongodb-admin-password
+                          roles:
+                            - name: root
+                              db: admin
+                      statefulSet:
+                        spec:
+                          template:
+                            spec:
+                              containers:
+                                - name: mongod
+                                  resources:
+                                    requests:
+                                      cpu: "250m"
+                                      memory: "512Mi"
+                                    limits:
+                                      cpu: "1"
+                                      memory: "2Gi"
+                          volumeClaimTemplates:
+                            - metadata:
+                                name: logs
+                              spec:
+                                accessModes: ["ReadWriteOnce"]
+                                resources:
+                                  requests:
+                                    storage: "10Gi"
+                            - metadata:
+                                name: data
+                              spec:
+                                accessModes: ["ReadWriteOnce"]
+                                resources:
+                                  requests:
+                                    storage: "10Gi"
+            patches:
+              # Target namespace
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.namespace
+                toFieldPath: spec.forProvider.manifest.metadata.namespace
+                policy:
+                  fromFieldPath: Required
+              # Cluster name derived from XR name or explicit clusterName
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.clusterName
+                toFieldPath: spec.forProvider.manifest.metadata.name
+                policy:
+                  fromFieldPath: Optional
+              # Fallback: use metadata.name if clusterName not set
+              - type: FromCompositeFieldPath
+                fromFieldPath: metadata.name
+                toFieldPath: spec.forProvider.manifest.metadata.name
+                transforms:
+                  - type: string
+                    string:
+                      fmt: "%s-cluster"
+                policy:
+                  fromFieldPath: Optional
+              # Member count
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.members
+                toFieldPath: spec.forProvider.manifest.spec.members
+              # MongoDB version
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.mongodbVersion
+                toFieldPath: spec.forProvider.manifest.spec.version
+                policy:
+                  fromFieldPath: Required
+              # Storage size for data volume
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.storageSize
+                toFieldPath: spec.forProvider.manifest.spec.statefulSet.spec.volumeClaimTemplates[1].spec.resources.requests.storage
+              # Storage size for logs volume
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.storageSize
+                toFieldPath: spec.forProvider.manifest.spec.statefulSet.spec.volumeClaimTemplates[0].spec.resources.requests.storage
+              # Storage class (optional — leave unset to use cluster default)
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.storageClass
+                toFieldPath: spec.forProvider.manifest.spec.statefulSet.spec.volumeClaimTemplates[0].spec.storageClassName
+                policy:
+                  fromFieldPath: Optional
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.storageClass
+                toFieldPath: spec.forProvider.manifest.spec.statefulSet.spec.volumeClaimTemplates[1].spec.storageClassName
+                policy:
+                  fromFieldPath: Optional
+              # Owner label
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.owner
+                toFieldPath: spec.forProvider.manifest.metadata.labels["koncept.io/owner"]
+
+    # Step 2: Enforce namespace-before-cluster creation order
+    - step: sequence-creation
+      functionRef:
+        name: function-sequencer
+      input:
+        apiVersion: sequencer.fn.crossplane.io/v1beta1
+        kind: Input
+        rules:
+          - sequence:
+              - ns-mongodb
+              - mongodb-cluster
+
+    # Step 3: Detect readiness from composed resources
+    - step: automatically-detect-readiness
+      functionRef:
+        name: function-auto-ready
+

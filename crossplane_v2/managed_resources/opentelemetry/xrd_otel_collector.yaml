@@ -1,0 +1,146 @@
+apiVersion: apiextensions.crossplane.io/v2
+kind: CompositeResourceDefinition
+metadata:
+  name: xopentelemetrycollectors.koncept.bluesolution.es
+  annotations:
+    koncept.io/tier: "2"
+    koncept.io/operator: "opentelemetry"
+    koncept.io/operator-version: "0.100.x"
+    koncept.io/last-reviewed: "2026-06-04"
+spec:
+  scope: Cluster
+  group: koncept.bluesolution.es
+  names:
+    kind: XOpenTelemetryCollector
+    plural: xopentelemetrycollectors
+  claimNames:
+    kind: OpenTelemetryCollector
+    plural: opentelemetrycollectors
+  defaultCompositionRef:
+    name: xopentelemetrycollector-helm-composition
+  versions:
+    - name: v1alpha1
+      served: true
+      referenceable: true
+      additionalPrinterColumns:
+        - name: NAMESPACE
+          type: string
+          jsonPath: .spec.namespace
+        - name: MODE
+          type: string
+          jsonPath: .spec.mode
+          description: Deployment mode (deployment/daemonset/statefulset)
+        - name: REPLICAS
+          type: integer
+          jsonPath: .spec.replicas
+        - name: READY
+          type: string
+          jsonPath: .status.conditions[?(@.type=="Ready")].status
+        - name: AGE
+          type: date
+          jsonPath: .metadata.creationTimestamp
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              description: OpenTelemetry Collector instance for observability pipelines.
+              required:
+                - namespace
+                - mode
+              properties:
+                namespace:
+                  type: string
+                  description: Kubernetes namespace where OpenTelemetry Collector runs.
+                clusterName:
+                  type: string
+                  description: Release name / cluster identifier (Claim name if unset).
+                  default: ""
+                chartVersion:
+                  type: string
+                  description: "OpenTelemetry Operator Helm chart version (e.g., 0.100.0)."
+                  default: "0.100.0"
+                mode:
+                  type: string
+                  description: "Deployment mode: deployment, daemonset, or statefulset."
+                  enum:
+                    - deployment
+                    - daemonset
+                    - statefulset
+                  default: deployment
+                replicas:
+                  type: integer
+                  description: "Number of replicas (ignored for daemonset)."
+                  default: 1
+                  minimum: 1
+                  maximum: 10
+                receivers:
+                  type: array
+                  description: "Receiver types (otlp, prometheus, jaeger, zipkin, etc.)."
+                  items:
+                    type: string
+                  default: ["otlp"]
+                exporters:
+                  type: array
+                  description: "Exporter types (jaeger, prometheus, otlp, etc.)."
+                  items:
+                    type: string
+                  default: ["jaeger"]
+                processors:
+                  type: array
+                  description: "Processor types (batch, memory_limiter, tail_sampling, etc.)."
+                  items:
+                    type: string
+                  default: ["batch"]
+                resourceCpuRequest:
+                  type: string
+                  description: CPU request per collector.
+                  default: "200m"
+                resourceMemoryRequest:
+                  type: string
+                  description: Memory request per collector.
+                  default: "400Mi"
+                resourceCpuLimit:
+                  type: string
+                  description: CPU limit per collector.
+                  default: "1"
+                resourceMemoryLimit:
+                  type: string
+                  description: Memory limit per collector.
+                  default: "2Gi"
+                environment:
+                  type: string
+                  description: "Target environment tier: local, development, staging, production."
+                  default: production
+                  enum:
+                    - local
+                    - development
+                    - staging
+                    - production
+                owner:
+                  type: string
+                  description: "Team or system that owns this collector."
+                  default: ""
+            status:
+              type: object
+              properties:
+                conditions:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      type:
+                        type: string
+                      status:
+                        type: string
+                      reason:
+                        type: string
+                      message:
+                        type: string
+                      lastTransitionTime:
+                        type: string
+                releaseName:
+                  type: string
+                  description: The name of the generated Helm Release.
+

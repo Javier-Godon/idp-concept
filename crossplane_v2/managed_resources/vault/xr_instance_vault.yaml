@@ -1,0 +1,34 @@
+## Vault XR/Claim instance examples
+---
+apiVersion: koncept.bluesolution.es/v1alpha1
+kind: XVaultInstance
+metadata:
+  name: prod-vault
+spec:
+  namespace: vault-system
+  vaultAddress: "https://vault.prod.internal:8200"
+  authMethod: kubernetes
+  kubernetesRole: platform-apps
+  kubernetesServiceAccount: vault-auth
+  kubeAuthMount: kubernetes
+  skipTlsVerify: false
+  caCertSecretRef: vc-root-token
+  environment: production
+  owner: vault-team
+---
+apiVersion: koncept.bluesolution.es/v1alpha1
+kind: VaultInstance
+metadata:
+  name: dev-vault
+  namespace: dev-secrets
+spec:
+  namespace: dev-secrets
+  vaultAddress: "https://vault.dev.internal:8200"
+  authMethod: kubernetes
+  kubernetesRole: dev-apps
+  kubernetesServiceAccount: vault-auth
+  kubeAuthMount: kubernetes
+  skipTlsVerify: true
+  environment: development
+  owner: dev-team
+

@@ -1,0 +1,38 @@
+## OpenBao XR/Claim instance examples
+---
+apiVersion: koncept.bluesolution.es/v1alpha1
+kind: XOpenBaoInstance
+metadata:
+  name: prod-openbao
+spec:
+  namespace: security-system
+  clusterName: prod-openbao
+  chartVersion: "0.8.1"
+  mode: ha
+  replicas: 3
+  storageSize: "50Gi"
+  storageClass: "fast-nvme"
+  uiEnabled: true
+  serviceType: ClusterIP
+  tlsDisable: false
+  environment: production
+  owner: security-team
+---
+## Standalone mode (simpler, development)
+apiVersion: koncept.bluesolution.es/v1alpha1
+kind: OpenBaoInstance
+metadata:
+  name: dev-openbao
+  namespace: dev-security
+spec:
+  namespace: dev-security
+  chartVersion: "0.8.1"
+  mode: standalone
+  replicas: 1
+  storageSize: "10Gi"
+  uiEnabled: true
+  serviceType: ClusterIP
+  tlsDisable: true
+  environment: development
+  owner: dev-team
+

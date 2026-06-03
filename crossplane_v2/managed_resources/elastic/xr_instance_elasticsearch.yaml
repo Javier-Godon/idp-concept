@@ -1,0 +1,33 @@
+## Elasticsearch XR/Claim instance examples
+---
+apiVersion: koncept.bluesolution.es/v1alpha1
+kind: XElasticsearchCluster
+metadata:
+  name: logs-elasticsearch
+spec:
+  namespace: logging-system
+  clusterName: logs-es
+  version: "9.4.1"
+  nodeCount: 3
+  storageSize: "100Gi"
+  storageClass: "fast-nvme"
+  resourceCpuRequest: "1"
+  resourceMemoryRequest: "2Gi"
+  resourceCpuLimit: "2"
+  resourceMemoryLimit: "4Gi"
+  environment: production
+  owner: logging-team
+---
+apiVersion: koncept.bluesolution.es/v1alpha1
+kind: ElasticsearchCluster
+metadata:
+  name: dev-elasticsearch
+  namespace: dev-logging
+spec:
+  namespace: dev-logging
+  version: "9.4.1"
+  nodeCount: 1
+  storageSize: "20Gi"
+  environment: development
+  owner: dev-team
+

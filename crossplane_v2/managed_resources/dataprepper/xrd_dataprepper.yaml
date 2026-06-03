@@ -1,0 +1,149 @@
+apiVersion: apiextensions.crossplane.io/v2
+kind: CompositeResourceDefinition
+metadata:
+  name: xdataprepperpipelines.koncept.bluesolution.es
+  annotations:
+    koncept.io/tier: "2"
+    koncept.io/deployment-method: "kubernetes-native"
+    koncept.io/last-reviewed: "2026-06-04"
+spec:
+  scope: Cluster
+  group: koncept.bluesolution.es
+  names:
+    kind: XDataPrepperPipeline
+    plural: xdataprepperpipelines
+  claimNames:
+    kind: DataPrepperPipeline
+    plural: dataprepperpipelines
+  defaultCompositionRef:
+    name: xdataprepperpipeline-native-composition
+  versions:
+    - name: v1alpha1
+      served: true
+      referenceable: true
+      additionalPrinterColumns:
+        - name: NAMESPACE
+          type: string
+          jsonPath: .spec.namespace
+        - name: REPLICAS
+          type: integer
+          jsonPath: .spec.replicas
+        - name: PORT
+          type: integer
+          jsonPath: .spec.servicePort
+          description: Service port
+        - name: READY
+          type: string
+          jsonPath: .status.conditions[?(@.type=="Ready")].status
+        - name: AGE
+          type: date
+          jsonPath: .metadata.creationTimestamp
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              description: Data Prepper pipeline for centralized log processing (OpenSearch/Elasticsearch).
+              required:
+                - namespace
+              properties:
+                namespace:
+                  type: string
+                  description: Kubernetes namespace where Data Prepper runs.
+                clusterName:
+                  type: string
+                  description: Release name / cluster identifier (Claim name if unset).
+                  default: ""
+                replicas:
+                  type: integer
+                  description: "Number of Data Prepper replicas."
+                  default: 1
+                  minimum: 1
+                  maximum: 5
+                image:
+                  type: string
+                  description: "Data Prepper container image."
+                  default: "opensearchproject/data-prepper:latest"
+                imageTag:
+                  type: string
+                  description: "Image tag."
+                  default: "2.2.0"
+                sourcePort:
+                  type: integer
+                  description: "Source port for receiving logs."
+                  default: 21890
+                  minimum: 1
+                  maximum: 65535
+                servicePort:
+                  type: integer
+                  description: "Service port."
+                  default: 21890
+                  minimum: 1
+                  maximum: 65535
+                opensearchHost:
+                  type: string
+                  description: "OpenSearch/Elasticsearch hostname."
+                  default: "elasticsearch.logging-system.svc.cluster.local"
+                opensearchPort:
+                  type: integer
+                  description: "OpenSearch/Elasticsearch port."
+                  default: 9200
+                pipelineConfig:
+                  type: string
+                  description: "Data Prepper pipeline configuration (YAML)."
+                  default: ""
+                resourceCpuRequest:
+                  type: string
+                  description: CPU request.
+                  default: "500m"
+                resourceMemoryRequest:
+                  type: string
+                  description: Memory request.
+                  default: "1Gi"
+                resourceCpuLimit:
+                  type: string
+                  description: CPU limit.
+                  default: "2"
+                resourceMemoryLimit:
+                  type: string
+                  description: Memory limit.
+                  default: "4Gi"
+                environment:
+                  type: string
+                  description: "Target environment tier: local, development, staging, production."
+                  default: production
+                  enum:
+                    - local
+                    - development
+                    - staging
+                    - production
+                owner:
+                  type: string
+                  description: "Team or system that owns this pipeline."
+                  default: ""
+            status:
+              type: object
+              properties:
+                conditions:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      type:
+                        type: string
+                      status:
+                        type: string
+                      reason:
+                        type: string
+                      message:
+                        type: string
+                      lastTransitionTime:
+                        type: string
+                readyReplicas:
+                  type: integer
+                  description: Number of replicas currently Ready.
+                serviceEndpoint:
+                  type: string
+                  description: Service endpoint for log ingestion.
+

@@ -1,0 +1,154 @@
+apiVersion: apiextensions.crossplane.io/v2
+kind: CompositeResourceDefinition
+metadata:
+  name: xvaultinstances.koncept.bluesolution.es
+  annotations:
+    koncept.io/tier: "2"
+    koncept.io/operator: "vault-vso"
+    koncept.io/operator-version: "0.7.x"
+    koncept.io/last-reviewed: "2026-06-04"
+    koncept.io/note: "Uses HashiCorp Vault Secrets Operator (BUSL-1.1). For Apache-2.0 alternative, consider External Secrets Operator."
+spec:
+  scope: Cluster
+  group: koncept.bluesolution.es
+  names:
+    kind: XVaultInstance
+    plural: xvaultinstances
+  claimNames:
+    kind: VaultInstance
+    plural: vaultinstances
+  defaultCompositionRef:
+    name: xvaultinstance-vso-composition
+  versions:
+    - name: v1alpha1
+      served: true
+      referenceable: true
+      additionalPrinterColumns:
+        - name: NAMESPACE
+          type: string
+          jsonPath: .spec.namespace
+        - name: ADDRESS
+          type: string
+          jsonPath: .spec.vaultAddress
+          description: Vault API address
+        - name: AUTH-METHOD
+          type: string
+          jsonPath: .spec.authMethod
+          description: Authentication method (e.g., kubernetes, jwt)
+        - name: READY
+          type: string
+          jsonPath: .status.conditions[?(@.type=="Ready")].status
+        - name: AGE
+          type: date
+          jsonPath: .metadata.creationTimestamp
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              description: Vault instance configures Vault Secrets Operator (VSO) for sealed secrets management.
+              required:
+                - namespace
+                - vaultAddress
+                - authMethod
+              properties:
+                namespace:
+                  type: string
+                  description: "Kubernetes namespace where VSO VaultConnection and VaultAuth resources run."
+                vaultAddress:
+                  type: string
+                  description: "Vault server address (e.g., https://vault.example.com:8200)."
+                  pattern: "^https?://.+$"
+                authMethod:
+                  type: string
+                  description: "Vault authentication method."
+                  enum:
+                    - kubernetes
+                    - jwt
+                    - approle
+                  default: kubernetes
+                kubernetesRole:
+                  type: string
+                  description: "Kubernetes auth role name (required if authMethod=kubernetes)."
+                  default: ""
+                kubernetesServiceAccount:
+                  type: string
+                  description: "Kubernetes service account for auth (required if authMethod=kubernetes)."
+                  default: ""
+                kubeAuthMount:
+                  type: string
+                  description: "Vault Kubernetes auth mount path."
+                  default: "kubernetes"
+                jwtRole:
+                  type: string
+                  description: "JWT auth role name (required if authMethod=jwt)."
+                  default: ""
+                jwtAudience:
+                  type: string
+                  description: "JWT audience (required if authMethod=jwt)."
+                  default: ""
+                jwtAuthMount:
+                  type: string
+                  description: "Vault JWT auth mount path."
+                  default: "jwt"
+                appRoleRoleId:
+                  type: string
+                  description: "AppRole role ID (required if authMethod=approle)."
+                  default: ""
+                appRoleSecretRef:
+                  type: string
+                  description: "Secret name containing AppRole secret ID (required if authMethod=approle)."
+                  default: ""
+                appRoleAuthMount:
+                  type: string
+                  description: "Vault AppRole auth mount path."
+                  default: "approle"
+                skipTlsVerify:
+                  type: boolean
+                  description: "Skip TLS certificate verification (not recommended for production)."
+                  default: false
+                caCertSecretRef:
+                  type: string
+                  description: "Secret name containing Vault CA certificate (optional)."
+                  default: ""
+                environment:
+                  type: string
+                  description: "Target environment tier: development, staging, production."
+                  default: production
+                  enum:
+                    - development
+                    - staging
+                    - production
+                owner:
+                  type: string
+                  description: "Team or system that owns this Vault connection (for labeling/RBAC)."
+                  default: ""
+            status:
+              type: object
+              properties:
+                conditions:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      type:
+                        type: string
+                      status:
+                        type: string
+                      reason:
+                        type: string
+                      message:
+                        type: string
+                      lastTransitionTime:
+                        type: string
+                vaultConnectionRef:
+                  type: string
+                  description: "The name of the generated VaultConnection resource."
+                vaultAuthRef:
+                  type: string
+                  description: "The name of the generated VaultAuth resource."
+                connectionStatus:
+                  type: string
+                  description: "Status of the Vault connection."
+

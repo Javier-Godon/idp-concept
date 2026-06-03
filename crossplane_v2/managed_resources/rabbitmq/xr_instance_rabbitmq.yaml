@@ -1,0 +1,52 @@
+## RabbitMQ XR/Claim instance examples
+##
+## Cluster-scoped XR (platform-owned):
+---
+apiVersion: koncept.bluesolution.es/v1alpha1
+kind: XRabbitMQCluster
+metadata:
+  name: event-bus-rabbitmq
+spec:
+  namespace: event-bus
+  clusterName: event-rmq
+  replicas: 3
+  storageSize: "100Gi"
+  storageClass: "fast-nvme"
+  image: "rabbitmq:3.13-alpine"
+  serviceType: ClusterIP
+  additionalPlugins:
+    - rabbitmq_management
+    - rabbitmq_prometheus
+  environment: production
+  owner: event-team
+---
+## Namespace-scoped Claim (product-team usage — preferred):
+apiVersion: koncept.bluesolution.es/v1alpha1
+kind: RabbitMQCluster
+metadata:
+  name: messaging-rabbitmq
+  namespace: messaging-system
+spec:
+  namespace: messaging-system
+  replicas: 3
+  storageSize: "50Gi"
+  image: "rabbitmq:3.13-alpine"
+  serviceType: ClusterIP
+  environment: production
+  owner: messaging-team
+---
+## Development single-node example:
+apiVersion: koncept.bluesolution.es/v1alpha1
+kind: RabbitMQCluster
+metadata:
+  name: dev-rabbitmq
+  namespace: dev-messaging
+spec:
+  namespace: dev-messaging
+  replicas: 1
+  storageSize: "10Gi"
+  image: "rabbitmq:3.13-alpine"
+  serviceType: ClusterIP
+  environment: development
+  owner: dev-team
+

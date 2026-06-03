@@ -1,0 +1,71 @@
+## OpenTelemetry Collector XR/Claim instance examples
+---
+apiVersion: koncept.bluesolution.es/v1alpha1
+kind: XOpenTelemetryCollector
+metadata:
+  name: prod-otel-collector
+spec:
+  namespace: observability-system
+  clusterName: prod-otel
+  chartVersion: "0.100.0"
+  mode: deployment
+  replicas: 2
+  receivers:
+    - otlp
+    - jaeger
+    - prometheus
+    - zipkin
+  exporters:
+    - jaeger
+    - prometheus
+    - otlp
+  processors:
+    - batch
+    - memory_limiter
+    - tail_sampling
+  resourceCpuRequest: "500m"
+  resourceMemoryRequest: "1Gi"
+  resourceCpuLimit: "2"
+  resourceMemoryLimit: "4Gi"
+  environment: production
+  owner: observability-team
+---
+apiVersion: koncept.bluesolution.es/v1alpha1
+kind: OpenTelemetryCollector
+metadata:
+  name: dev-otel-collector
+  namespace: dev-observability
+spec:
+  namespace: dev-observability
+  chartVersion: "0.100.0"
+  mode: deployment
+  replicas: 1
+  receivers:
+    - otlp
+  exporters:
+    - jaeger
+  processors:
+    - batch
+  environment: development
+  owner: dev-team
+---
+## DaemonSet mode for node-level collection
+apiVersion: koncept.bluesolution.es/v1alpha1
+kind: OpenTelemetryCollector
+metadata:
+  name: prod-otel-daemonset
+  namespace: observability-system
+spec:
+  namespace: observability-system
+  chartVersion: "0.100.0"
+  mode: daemonset
+  receivers:
+    - otlp
+    - prometheus
+  exporters:
+    - prometheus
+  processors:
+    - batch
+  environment: production
+  owner: observability-team
+

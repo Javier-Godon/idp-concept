@@ -1,0 +1,132 @@
+apiVersion: apiextensions.crossplane.io/v2
+kind: CompositeResourceDefinition
+metadata:
+  name: xrabbitmqclusters.koncept.bluesolution.es
+  annotations:
+    koncept.io/tier: "2"
+    koncept.io/operator: "rabbitmq-cluster"
+    koncept.io/operator-version: "4.x"
+    koncept.io/last-reviewed: "2026-06-04"
+spec:
+  scope: Cluster
+  group: koncept.bluesolution.es
+  names:
+    kind: XRabbitMQCluster
+    plural: xrabbitmqclusters
+  claimNames:
+    kind: RabbitMQCluster
+    plural: rabbitmqclusters
+  defaultCompositionRef:
+    name: xrabbitmqcluster-operator-composition
+  versions:
+    - name: v1alpha1
+      served: true
+      referenceable: true
+      additionalPrinterColumns:
+        - name: NAMESPACE
+          type: string
+          jsonPath: .spec.namespace
+        - name: REPLICAS
+          type: integer
+          jsonPath: .spec.replicas
+          description: Number of RabbitMQ nodes
+        - name: STORAGE
+          type: string
+          jsonPath: .spec.storageSize
+        - name: READY
+          type: string
+          jsonPath: .status.conditions[?(@.type=="Ready")].status
+        - name: AGE
+          type: date
+          jsonPath: .metadata.creationTimestamp
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              description: RabbitMQ cluster configures a RabbitmqCluster via the cluster operator.
+              required:
+                - namespace
+                - storageSize
+              properties:
+                namespace:
+                  type: string
+                  description: Kubernetes namespace where RabbitMQ runs.
+                clusterName:
+                  type: string
+                  description: Name of the RabbitMQ cluster (Claim name if unset).
+                  default: ""
+                replicas:
+                  type: integer
+                  description: "Number of RabbitMQ nodes (1 = standalone, 3+ = HA)."
+                  default: 3
+                  minimum: 1
+                  maximum: 10
+                storageSize:
+                  type: string
+                  description: PVC storage size for each node (e.g., 10Gi, 100Gi).
+                  pattern: "^[0-9]+(Mi|Gi|Ti)$"
+                storageClass:
+                  type: string
+                  description: StorageClass name. Leave empty for the cluster default.
+                  default: ""
+                image:
+                  type: string
+                  description: RabbitMQ Docker image to use.
+                  default: "rabbitmq:3.13-alpine"
+                  pattern: "^[a-z0-9/@:._-]+$"
+                serviceType:
+                  type: string
+                  description: Kubernetes Service type for external access.
+                  enum:
+                    - ClusterIP
+                    - NodePort
+                    - LoadBalancer
+                  default: ClusterIP
+                additionalPlugins:
+                  type: array
+                  description: Additional RabbitMQ plugins to enable (e.g., rabbitmq_top, rabbitmq_prometheus).
+                  items:
+                    type: string
+                environment:
+                  type: string
+                  description: "Target environment tier: local, development, staging, production."
+                  default: production
+                  enum:
+                    - local
+                    - development
+                    - staging
+                    - production
+                owner:
+                  type: string
+                  description: "Team or system that owns this cluster (for labeling/RBAC)."
+                  default: ""
+            status:
+              type: object
+              properties:
+                conditions:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      type:
+                        type: string
+                      status:
+                        type: string
+                      reason:
+                        type: string
+                      message:
+                        type: string
+                      lastTransitionTime:
+                        type: string
+                clusterName:
+                  type: string
+                  description: The name of the generated RabbitmqCluster resource.
+                readyReplicas:
+                  type: integer
+                  description: Number of RabbitMQ nodes currently Ready.
+                serviceEndpoint:
+                  type: string
+                  description: Service endpoint for RabbitMQ AMQP connections.
+

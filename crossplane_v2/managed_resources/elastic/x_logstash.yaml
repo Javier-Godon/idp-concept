@@ -1,0 +1,145 @@
+## Logstash Composition — ECK (Elastic Cloud on Kubernetes) pattern
+##
+## Logstash is deployed via ECK operator for centralized log/event processing.
+## Prerequisite: ECK operator must be installed on the cluster.
+
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: xlogstashinstance-eck-composition
+  annotations:
+    koncept.io/operator: "eck"
+    koncept.io/pattern: "operator-native-crd"
+    koncept.io/bridge-pattern: "false"
+spec:
+  compositeTypeRef:
+    apiVersion: koncept.bluesolution.es/v1alpha1
+    kind: XLogstashInstance
+  mode: Pipeline
+  pipeline:
+
+    - step: render-resources
+      functionRef:
+        name: function-patch-and-transform
+      input:
+        apiVersion: pt.fn.crossplane.io/v1beta1
+        kind: Resources
+        resources:
+
+          - name: logstash-instance
+            base:
+              apiVersion: kubernetes.crossplane.io/v1alpha2
+              kind: Object
+              spec:
+                providerConfigRef:
+                  name: provider-kubernetes
+                forProvider:
+                  manifest:
+                    apiVersion: logstash.k8s.elastic.co/v1alpha1
+                    kind: Logstash
+                    metadata:
+                      name: logstash
+                      namespace: logstash
+                      labels:
+                        koncept.io/managed-by: crossplane
+                    spec:
+                      version: "9.4.1"
+                      count: 1
+                      elasticsearchRefs:
+                        - name: elasticsearch-cluster
+                          namespace: logging-system
+                      pipelines:
+                        main.conf: |
+                          input {
+                            beats {
+                              port => 5000
+                            }
+                          }
+                          output {
+                            elasticsearch {
+                              hosts => ["${ELASTICSEARCH_HOSTS}"]
+                              index => "logstash-%{+YYYY.MM.dd}"
+                            }
+                          }
+                      podTemplate:
+                        spec:
+                          containers:
+                            - name: logstash
+                              resources:
+                                requests:
+                                  cpu: "250m"
+                                  memory: "512Mi"
+                                limits:
+                                  cpu: "1"
+                                  memory: "2Gi"
+            patches:
+              # Target namespace
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.namespace
+                toFieldPath: spec.forProvider.manifest.metadata.namespace
+                policy:
+                  fromFieldPath: Required
+              # Logstash instance name
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.clusterName
+                toFieldPath: spec.forProvider.manifest.metadata.name
+                policy:
+                  fromFieldPath: Optional
+              # Fallback: use metadata.name
+              - type: FromCompositeFieldPath
+                fromFieldPath: metadata.name
+                toFieldPath: spec.forProvider.manifest.metadata.name
+                policy:
+                  fromFieldPath: Optional
+              # Version
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.version
+                toFieldPath: spec.forProvider.manifest.spec.version
+              # Replica count
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.replicas
+                toFieldPath: spec.forProvider.manifest.spec.count
+              # Elasticsearch reference
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.elasticsearchRef
+                toFieldPath: spec.forProvider.manifest.spec.elasticsearchRefs[0].name
+              # Beats port (in pipeline config)
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.beatsPort
+                toFieldPath: spec.forProvider.manifest.spec.pipelines["main.conf"]
+                transforms:
+                  - type: string
+                    string:
+                      fmt: |
+                        input {
+                          beats {
+                            port => %d
+                          }
+                        }
+                        output {
+                          elasticsearch {
+                            hosts => ["${ELASTICSEARCH_HOSTS}"]
+                            index => "logstash-%%{+YYYY.MM.dd}"
+                          }
+                        }
+                policy:
+                  fromFieldPath: Optional
+              # Resource requests
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.resourceCpuRequest
+                toFieldPath: spec.forProvider.manifest.spec.podTemplate.spec.containers[0].resources.requests.cpu
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.resourceMemoryRequest
+                toFieldPath: spec.forProvider.manifest.spec.podTemplate.spec.containers[0].resources.requests.memory
+              # Resource limits
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.resourceCpuLimit
+                toFieldPath: spec.forProvider.manifest.spec.podTemplate.spec.containers[0].resources.limits.cpu
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.resourceMemoryLimit
+                toFieldPath: spec.forProvider.manifest.spec.podTemplate.spec.containers[0].resources.limits.memory
+
+    - step: automatically-detect-readiness
+      functionRef:
+        name: function-auto-ready
+

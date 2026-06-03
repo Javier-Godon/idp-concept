@@ -1,0 +1,136 @@
+apiVersion: apiextensions.crossplane.io/v2
+kind: CompositeResourceDefinition
+metadata:
+  name: xopenbaoinstances.koncept.bluesolution.es
+  annotations:
+    koncept.io/tier: "2"
+    koncept.io/deployment-method: "helm"
+    koncept.io/chart: "openbao/openbao"
+    koncept.io/last-reviewed: "2026-06-04"
+    koncept.io/note: "OpenBao is open-source Vault alternative (CNCF)"
+spec:
+  scope: Cluster
+  group: koncept.bluesolution.es
+  names:
+    kind: XOpenBaoInstance
+    plural: xopenbaoinstances
+  claimNames:
+    kind: OpenBaoInstance
+    plural: openbaoinstances
+  defaultCompositionRef:
+    name: xopenbaoinstance-helm-composition
+  versions:
+    - name: v1alpha1
+      served: true
+      referenceable: true
+      additionalPrinterColumns:
+        - name: NAMESPACE
+          type: string
+          jsonPath: .spec.namespace
+        - name: MODE
+          type: string
+          jsonPath: .spec.mode
+          description: Standalone or HA mode
+        - name: REPLICAS
+          type: integer
+          jsonPath: .spec.replicas
+        - name: READY
+          type: string
+          jsonPath: .status.conditions[?(@.type=="Ready")].status
+        - name: AGE
+          type: date
+          jsonPath: .metadata.creationTimestamp
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              description: OpenBao instance (open-source Vault) deployed via Helm chart.
+              required:
+                - namespace
+              properties:
+                namespace:
+                  type: string
+                  description: Kubernetes namespace where OpenBao runs.
+                clusterName:
+                  type: string
+                  description: Release name / cluster identifier (Claim name if unset).
+                  default: ""
+                chartVersion:
+                  type: string
+                  description: "OpenBao Helm chart version (e.g., 0.8.1)."
+                  default: "0.8.1"
+                mode:
+                  type: string
+                  description: "Deployment mode: standalone or ha (high availability)."
+                  enum:
+                    - standalone
+                    - ha
+                  default: ha
+                replicas:
+                  type: integer
+                  description: "Number of replicas (minimum 3 for ha mode)."
+                  default: 3
+                  minimum: 1
+                  maximum: 10
+                storageSize:
+                  type: string
+                  description: PVC storage size for Raft storage (ha mode) or data.
+                  default: "10Gi"
+                  pattern: "^[0-9]+(Mi|Gi|Ti)$"
+                storageClass:
+                  type: string
+                  description: StorageClass name. Leave empty for the cluster default.
+                  default: ""
+                uiEnabled:
+                  type: boolean
+                  description: "Whether to enable the OpenBao UI."
+                  default: true
+                serviceType:
+                  type: string
+                  description: Kubernetes Service type for external access.
+                  enum:
+                    - ClusterIP
+                    - NodePort
+                    - LoadBalancer
+                  default: ClusterIP
+                tlsDisable:
+                  type: boolean
+                  description: "Disable TLS (not recommended for production)."
+                  default: false
+                environment:
+                  type: string
+                  description: "Target environment tier: local, development, staging, production."
+                  default: production
+                  enum:
+                    - local
+                    - development
+                    - staging
+                    - production
+                owner:
+                  type: string
+                  description: "Team or system that owns this instance (for labeling/RBAC)."
+                  default: ""
+            status:
+              type: object
+              properties:
+                conditions:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      type:
+                        type: string
+                      status:
+                        type: string
+                      reason:
+                        type: string
+                      message:
+                        type: string
+                      lastTransitionTime:
+                        type: string
+                releaseName:
+                  type: string
+                  description: The name of the generated Helm Release.
+

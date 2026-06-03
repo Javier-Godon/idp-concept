@@ -1,0 +1,33 @@
+## MinIO XR/Claim instance examples
+---
+apiVersion: koncept.bluesolution.es/v1alpha1
+kind: XMinIOTenant
+metadata:
+  name: data-lake-minio
+spec:
+  namespace: storage-system
+  clusterName: data-lake
+  servers: 4
+  volumesPerServer: 4
+  storageSize: "100Gi"
+  storageClass: "fast-nvme"
+  image: "minio/minio:RELEASE.2025-03-12T18-04-18Z"
+  securityContext: true
+  requestAutoCert: true
+  environment: production
+  owner: storage-team
+---
+apiVersion: koncept.bluesolution.es/v1alpha1
+kind: MinIOTenant
+metadata:
+  name: dev-minio
+  namespace: dev-storage
+spec:
+  namespace: dev-storage
+  servers: 1
+  volumesPerServer: 2
+  storageSize: "20Gi"
+  image: "minio/minio:RELEASE.2025-03-12T18-04-18Z"
+  environment: development
+  owner: dev-team
+

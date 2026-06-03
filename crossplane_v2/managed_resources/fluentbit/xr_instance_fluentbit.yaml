@@ -1,0 +1,57 @@
+## Fluent Bit XR/Claim instance examples
+---
+## Single-instance Deployment mode (log aggregation)
+apiVersion: koncept.bluesolution.es/v1alpha1
+kind: XFluentBitInstance
+metadata:
+  name: prod-fluentbit
+spec:
+  namespace: logging-system
+  clusterName: prod-fluentbit
+  mode: deployment
+  replicas: 2
+  image: "cr.fluentbit.io/fluent/fluent-bit"
+  version: "3.2.10"
+  metricsPort: 2020
+  serviceType: ClusterIP
+  pipelineType: simple
+  resourceCpuRequest: "250m"
+  resourceMemoryRequest: "256Mi"
+  resourceCpuLimit: "500m"
+  resourceMemoryLimit: "512Mi"
+  environment: production
+  owner: logging-team
+---
+## DaemonSet mode (per-node log collection)
+apiVersion: koncept.bluesolution.es/v1alpha1
+kind: FluentBitInstance
+metadata:
+  name: prod-fluentbit-daemonset
+  namespace: logging-system
+spec:
+  namespace: logging-system
+  mode: daemonset
+  image: "cr.fluentbit.io/fluent/fluent-bit"
+  version: "3.2.10"
+  metricsPort: 2020
+  serviceType: ClusterIP
+  pipelineType: simple
+  environment: production
+  owner: logging-team
+---
+## Development single-instance
+apiVersion: koncept.bluesolution.es/v1alpha1
+kind: FluentBitInstance
+metadata:
+  name: dev-fluentbit
+  namespace: dev-logging
+spec:
+  namespace: dev-logging
+  mode: deployment
+  replicas: 1
+  image: "cr.fluentbit.io/fluent/fluent-bit"
+  version: "3.2.10"
+  metricsPort: 2020
+  environment: development
+  owner: dev-team
+

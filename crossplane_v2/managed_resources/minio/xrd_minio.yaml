@@ -1,0 +1,134 @@
+apiVersion: apiextensions.crossplane.io/v2
+kind: CompositeResourceDefinition
+metadata:
+  name: xminiotenants.koncept.bluesolution.es
+  annotations:
+    koncept.io/tier: "2"
+    koncept.io/operator: "minio-operator"
+    koncept.io/operator-version: "5.x"
+    koncept.io/last-reviewed: "2026-06-04"
+    koncept.io/note: "MinIO Operator was archived in March 2026. Use Helm chart for new deployments."
+spec:
+  scope: Cluster
+  group: koncept.bluesolution.es
+  names:
+    kind: XMinIOTenant
+    plural: xminiotenants
+  claimNames:
+    kind: MinIOTenant
+    plural: miniotenants
+  defaultCompositionRef:
+    name: xminiotenant-operator-composition
+  versions:
+    - name: v1alpha1
+      served: true
+      referenceable: true
+      additionalPrinterColumns:
+        - name: NAMESPACE
+          type: string
+          jsonPath: .spec.namespace
+        - name: SERVERS
+          type: integer
+          jsonPath: .spec.servers
+          description: Number of MinIO servers
+        - name: STORAGE
+          type: string
+          jsonPath: .spec.storageSize
+        - name: READY
+          type: string
+          jsonPath: .status.conditions[?(@.type=="Ready")].status
+        - name: AGE
+          type: date
+          jsonPath: .metadata.creationTimestamp
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              description: MinIO tenant configures a MinIO Tenant CRD for object storage.
+              required:
+                - namespace
+                - storageSize
+              properties:
+                namespace:
+                  type: string
+                  description: Kubernetes namespace where MinIO runs.
+                clusterName:
+                  type: string
+                  description: Name of the MinIO tenant (Claim name if unset).
+                  default: ""
+                servers:
+                  type: integer
+                  description: "Number of MinIO server instances."
+                  default: 4
+                  minimum: 1
+                  maximum: 32
+                volumesPerServer:
+                  type: integer
+                  description: "Number of volumes per server."
+                  default: 4
+                  minimum: 1
+                  maximum: 32
+                storageSize:
+                  type: string
+                  description: Storage size per volume (e.g., 10Gi, 100Gi).
+                  pattern: "^[0-9]+(Mi|Gi|Ti)$"
+                storageClass:
+                  type: string
+                  description: StorageClass name. Leave empty for the cluster default.
+                  default: ""
+                image:
+                  type: string
+                  description: MinIO Docker image to use.
+                  default: "minio/minio:RELEASE.2025-03-12T18-04-18Z"
+                  pattern: "^[a-z0-9/@:._-]+$"
+                securityContext:
+                  type: boolean
+                  description: "Whether to apply security context."
+                  default: true
+                requestAutoCert:
+                  type: boolean
+                  description: "Whether to request automatic certificate generation."
+                  default: true
+                environment:
+                  type: string
+                  description: "Target environment tier: local, development, staging, production."
+                  default: production
+                  enum:
+                    - local
+                    - development
+                    - staging
+                    - production
+                owner:
+                  type: string
+                  description: "Team or system that owns this tenant (for labeling/RBAC)."
+                  default: ""
+            status:
+              type: object
+              properties:
+                conditions:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      type:
+                        type: string
+                      status:
+                        type: string
+                      reason:
+                        type: string
+                      message:
+                        type: string
+                      lastTransitionTime:
+                        type: string
+                tenantName:
+                  type: string
+                  description: The name of the generated MinIO Tenant resource.
+                readyServers:
+                  type: integer
+                  description: Number of MinIO servers currently Ready.
+                serviceEndpoint:
+                  type: string
+                  description: MinIO S3 API endpoint.
+

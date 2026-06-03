@@ -1,0 +1,138 @@
+## QuestDB Composition — Helm chart deployment pattern
+##
+## Prerequisites:
+##   - Helm provider is installed and available
+##   - QuestDB Helm repository is added to Helm:
+##     helm repo add questdb https://questdb.github.io/questdb-helm
+##     helm repo update
+
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: xquestdbinstance-helm-composition
+  annotations:
+    koncept.io/deployment-method: "helm"
+    koncept.io/chart: "questdb/questdb"
+    koncept.io/pattern: "helm-release"
+spec:
+  compositeTypeRef:
+    apiVersion: koncept.bluesolution.es/v1alpha1
+    kind: XQuestDBInstance
+  mode: Pipeline
+  pipeline:
+
+    - step: render-resources
+      functionRef:
+        name: function-patch-and-transform
+      input:
+        apiVersion: pt.fn.crossplane.io/v1beta1
+        kind: Resources
+        resources:
+
+          - name: ns-questdb
+            base:
+              apiVersion: kubernetes.crossplane.io/v1alpha2
+              kind: Object
+              spec:
+                providerConfigRef:
+                  name: provider-kubernetes
+                forProvider:
+                  manifest:
+                    apiVersion: v1
+                    kind: Namespace
+                    metadata:
+                      name: questdb
+                      labels:
+                        koncept.io/managed-by: crossplane
+            patches:
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.namespace
+                toFieldPath: spec.forProvider.manifest.metadata.name
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.owner
+                toFieldPath: spec.forProvider.manifest.metadata.labels["koncept.io/owner"]
+
+          - name: questdb-helm-release
+            base:
+              apiVersion: helm.crossplane.io/v1beta1
+              kind: Release
+              spec:
+                forProvider:
+                  namespace: questdb
+                  chart:
+                    name: questdb
+                    repository: https://questdb.github.io/questdb-helm
+                    version: "0.32.0"
+                  values:
+                    persistence:
+                      enabled: true
+                      size: 50Gi
+                    resources:
+                      requests:
+                        cpu: "500m"
+                        memory: "1Gi"
+                      limits:
+                        cpu: "2"
+                        memory: "4Gi"
+                providerConfigRef:
+                  name: provider-helm
+            patches:
+              # Release name
+              - type: FromCompositeFieldPath
+                fromFieldPath: metadata.name
+                toFieldPath: metadata.name
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.clusterName
+                toFieldPath: metadata.name
+                policy:
+                  fromFieldPath: Optional
+              # Target namespace
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.namespace
+                toFieldPath: spec.forProvider.namespace
+              # Chart version
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.chartVersion
+                toFieldPath: spec.forProvider.chart.version
+              # Storage
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.storageSize
+                toFieldPath: spec.forProvider.values.persistence.size
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.storageClass
+                toFieldPath: spec.forProvider.values.persistence.storageClassName
+                policy:
+                  fromFieldPath: Optional
+              # Persistence enabled
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.persistence
+                toFieldPath: spec.forProvider.values.persistence.enabled
+              # Resource requests
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.resourceCpuRequest
+                toFieldPath: spec.forProvider.values.resources.requests.cpu
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.resourceMemoryRequest
+                toFieldPath: spec.forProvider.values.resources.requests.memory
+              # Resource limits
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.resourceCpuLimit
+                toFieldPath: spec.forProvider.values.resources.limits.cpu
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.resourceMemoryLimit
+                toFieldPath: spec.forProvider.values.resources.limits.memory
+              # Ports
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.httpPort
+                toFieldPath: spec.forProvider.values.service.http.port
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.pgPort
+                toFieldPath: spec.forProvider.values.service.postgresql.port
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.ilpPort
+                toFieldPath: spec.forProvider.values.service.ilp.port
+
+    - step: automatically-detect-readiness
+      functionRef:
+        name: function-auto-ready
+

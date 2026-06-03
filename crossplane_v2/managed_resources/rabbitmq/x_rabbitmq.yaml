@@ -1,0 +1,155 @@
+## RabbitMQ Composition — RabbitMQ Cluster Operator pattern
+##
+## Prerequisite: RabbitMQ Cluster Operator must be installed on the cluster.
+## Install via Helm: helm repo add bitnami https://charts.bitnami.com/bitnami
+##                  helm install rabbitmq bitnami/rabbitmq-cluster-operator -n rabbitmq --create-namespace
+##
+## This composition uses:
+##   - provider-kubernetes Object for the Namespace (small cluster glue, acceptable per patterns)
+##   - provider-kubernetes Object for the RabbitmqCluster CRD (operator-native resource)
+##   - FromCompositeFieldPath patches to inject all XR spec fields
+##   - function-sequencer to ensure namespace is ready before the cluster is created
+##   - function-auto-ready for composite readiness detection
+
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: xrabbitmqcluster-operator-composition
+  annotations:
+    koncept.io/operator: "rabbitmq-cluster"
+    koncept.io/pattern: "operator-native-crd"
+    koncept.io/bridge-pattern: "false"
+spec:
+  compositeTypeRef:
+    apiVersion: koncept.bluesolution.es/v1alpha1
+    kind: XRabbitMQCluster
+  mode: Pipeline
+  pipeline:
+
+    # Step 1: Create all composed resources (namespace + RabbitmqCluster)
+    - step: render-resources
+      functionRef:
+        name: function-patch-and-transform
+      input:
+        apiVersion: pt.fn.crossplane.io/v1beta1
+        kind: Resources
+        resources:
+
+          # --- Namespace (small cluster glue: allowed provider-kubernetes Object) ---
+          - name: ns-rabbitmq
+            base:
+              apiVersion: kubernetes.crossplane.io/v1alpha2
+              kind: Object
+              spec:
+                providerConfigRef:
+                  name: provider-kubernetes
+                forProvider:
+                  manifest:
+                    apiVersion: v1
+                    kind: Namespace
+                    metadata:
+                      name: rabbitmq  # overridden by patch
+                      labels:
+                        koncept.io/managed-by: crossplane
+            patches:
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.namespace
+                toFieldPath: spec.forProvider.manifest.metadata.name
+                policy:
+                  fromFieldPath: Required
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.owner
+                toFieldPath: spec.forProvider.manifest.metadata.labels["koncept.io/owner"]
+
+          # --- RabbitmqCluster (operator-native CRD) ---
+          # RabbitMQ operator reconciles this CRD into Pods, Services, and PVCs.
+          - name: rabbitmq-cluster
+            base:
+              apiVersion: kubernetes.crossplane.io/v1alpha2
+              kind: Object
+              spec:
+                providerConfigRef:
+                  name: provider-kubernetes
+                forProvider:
+                  manifest:
+                    apiVersion: rabbitmq.com/v1beta1
+                    kind: RabbitmqCluster
+                    metadata:
+                      name: rabbitmq-cluster  # overridden by patch
+                      namespace: rabbitmq     # overridden by patch
+                      labels:
+                        koncept.io/managed-by: crossplane
+                    spec:
+                      replicas: 3             # overridden by patch
+                      image: "rabbitmq:3.13-alpine"  # overridden by patch
+                      persistence:
+                        storage: 10Gi         # overridden by patch
+                      service:
+                        $type: ClusterIP      # overridden by patch
+            patches:
+              # Target namespace
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.namespace
+                toFieldPath: spec.forProvider.manifest.metadata.namespace
+                policy:
+                  fromFieldPath: Required
+              # Cluster name derived from XR name or explicit clusterName
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.clusterName
+                toFieldPath: spec.forProvider.manifest.metadata.name
+                policy:
+                  fromFieldPath: Optional
+              # Fallback: use metadata.name if clusterName not set
+              - type: FromCompositeFieldPath
+                fromFieldPath: metadata.name
+                toFieldPath: spec.forProvider.manifest.metadata.name
+                transforms:
+                  - type: string
+                    string:
+                      fmt: "%s-cluster"
+                policy:
+                  fromFieldPath: Optional
+              # Replica count
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.replicas
+                toFieldPath: spec.forProvider.manifest.spec.replicas
+              # Image
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.image
+                toFieldPath: spec.forProvider.manifest.spec.image
+              # Storage size
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.storageSize
+                toFieldPath: spec.forProvider.manifest.spec.persistence.storage
+              # Storage class (optional — leave unset to use cluster default)
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.storageClass
+                toFieldPath: spec.forProvider.manifest.spec.persistence.storageClassName
+                policy:
+                  fromFieldPath: Optional
+              # Service type
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.serviceType
+                toFieldPath: spec.forProvider.manifest.spec.service.$type
+              # Owner label
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.owner
+                toFieldPath: spec.forProvider.manifest.metadata.labels["koncept.io/owner"]
+
+    # Step 2: Enforce namespace-before-cluster creation order
+    - step: sequence-creation
+      functionRef:
+        name: function-sequencer
+      input:
+        apiVersion: sequencer.fn.crossplane.io/v1beta1
+        kind: Input
+        rules:
+          - sequence:
+              - ns-rabbitmq
+              - rabbitmq-cluster
+
+    # Step 3: Detect readiness from composed resources
+    - step: automatically-detect-readiness
+      functionRef:
+        name: function-auto-ready
+

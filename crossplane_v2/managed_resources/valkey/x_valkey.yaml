@@ -1,0 +1,235 @@
+## Valkey Composition — OT-CONTAINER-KIT Operator pattern
+##
+## Valkey is Redis-compatible open-source cache (GPL vs Redis SSPL).
+## Uses the same OT-CONTAINER-KIT Redis Operator.
+##
+## Prerequisite: OT-CONTAINER-KIT Redis Operator must be installed on the cluster.
+## Install via Helm: helm repo add opstree-charts https://charts.opstree.io
+##                  helm install redis-operator opstree-charts/redis-operator -n redis-operator
+
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: xvalkeyinstance-operator-composition
+  annotations:
+    koncept.io/operator: "ot-redis"
+    koncept.io/pattern: "operator-native-crd"
+    koncept.io/bridge-pattern: "false"
+    koncept.io/note: "Valkey uses Redis-compatible operator (OT-CONTAINER-KIT)"
+spec:
+  compositeTypeRef:
+    apiVersion: koncept.bluesolution.es/v1alpha1
+    kind: XValkeyInstance
+  mode: Pipeline
+  pipeline:
+
+    - step: render-resources
+      functionRef:
+        name: function-patch-and-transform
+      input:
+        apiVersion: pt.fn.crossplane.io/v1beta1
+        kind: Resources
+        resources:
+
+          - name: ns-valkey
+            base:
+              apiVersion: kubernetes.crossplane.io/v1alpha2
+              kind: Object
+              spec:
+                providerConfigRef:
+                  name: provider-kubernetes
+                forProvider:
+                  manifest:
+                    apiVersion: v1
+                    kind: Namespace
+                    metadata:
+                      name: valkey
+                      labels:
+                        koncept.io/managed-by: crossplane
+            patches:
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.namespace
+                toFieldPath: spec.forProvider.manifest.metadata.name
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.owner
+                toFieldPath: spec.forProvider.manifest.metadata.labels["koncept.io/owner"]
+
+          # --- Standalone Valkey ---
+          - name: valkey-standalone
+            base:
+              apiVersion: kubernetes.crossplane.io/v1alpha2
+              kind: Object
+              spec:
+                providerConfigRef:
+                  name: provider-kubernetes
+                forProvider:
+                  manifest:
+                    apiVersion: redis.redis.opstreelabs.in/v1beta2
+                    kind: Valkey
+                    metadata:
+                      name: valkey
+                      namespace: valkey
+                      labels:
+                        koncept.io/managed-by: crossplane
+                    spec:
+                      image: "valkey/valkey:latest"
+                      storage:
+                        image:
+                          tag: latest
+                      volumeClaimTemplate:
+                        spec:
+                          accessModes:
+                            - ReadWriteOnce
+                          resources:
+                            requests:
+                              storage: 10Gi
+                      resources:
+                        requests:
+                          cpu: "100m"
+                          memory: "256Mi"
+                        limits:
+                          cpu: "1"
+                          memory: "2Gi"
+            patches:
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.namespace
+                toFieldPath: spec.forProvider.manifest.metadata.namespace
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.clusterName
+                toFieldPath: spec.forProvider.manifest.metadata.name
+                policy:
+                  fromFieldPath: Optional
+              - type: FromCompositeFieldPath
+                fromFieldPath: metadata.name
+                toFieldPath: spec.forProvider.manifest.metadata.name
+                policy:
+                  fromFieldPath: Optional
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.image
+                toFieldPath: spec.forProvider.manifest.spec.image
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.storageSize
+                toFieldPath: spec.forProvider.manifest.spec.volumeClaimTemplate.spec.resources.requests.storage
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.storageClass
+                toFieldPath: spec.forProvider.manifest.spec.volumeClaimTemplate.spec.storageClassName
+                policy:
+                  fromFieldPath: Optional
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.resourceCpuRequest
+                toFieldPath: spec.forProvider.manifest.spec.resources.requests.cpu
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.resourceMemoryRequest
+                toFieldPath: spec.forProvider.manifest.spec.resources.requests.memory
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.resourceCpuLimit
+                toFieldPath: spec.forProvider.manifest.spec.resources.limits.cpu
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.resourceMemoryLimit
+                toFieldPath: spec.forProvider.manifest.spec.resources.limits.memory
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.owner
+                toFieldPath: spec.forProvider.manifest.metadata.labels["koncept.io/owner"]
+
+          # --- Cluster Valkey ---
+          - name: valkey-cluster
+            base:
+              apiVersion: kubernetes.crossplane.io/v1alpha2
+              kind: Object
+              spec:
+                providerConfigRef:
+                  name: provider-kubernetes
+                forProvider:
+                  manifest:
+                    apiVersion: redis.redis.opstreelabs.in/v1beta2
+                    kind: ValkeyCluster
+                    metadata:
+                      name: valkey-cluster
+                      namespace: valkey
+                      labels:
+                        koncept.io/managed-by: crossplane
+                    spec:
+                      image: "valkey/valkey:latest"
+                      clusterSize: 3
+                      volumeClaimTemplate:
+                        spec:
+                          accessModes:
+                            - ReadWriteOnce
+                          resources:
+                            requests:
+                              storage: 10Gi
+                      resources:
+                        requests:
+                          cpu: "100m"
+                          memory: "256Mi"
+                        limits:
+                          cpu: "1"
+                          memory: "2Gi"
+            patches:
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.namespace
+                toFieldPath: spec.forProvider.manifest.metadata.namespace
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.clusterName
+                toFieldPath: spec.forProvider.manifest.metadata.name
+                transforms:
+                  - type: string
+                    string:
+                      fmt: "%s-cluster"
+                policy:
+                  fromFieldPath: Optional
+              - type: FromCompositeFieldPath
+                fromFieldPath: metadata.name
+                toFieldPath: spec.forProvider.manifest.metadata.name
+                transforms:
+                  - type: string
+                    string:
+                      fmt: "%s-cluster"
+                policy:
+                  fromFieldPath: Optional
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.image
+                toFieldPath: spec.forProvider.manifest.spec.image
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.nodeCount
+                toFieldPath: spec.forProvider.manifest.spec.clusterSize
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.storageSize
+                toFieldPath: spec.forProvider.manifest.spec.volumeClaimTemplate.spec.resources.requests.storage
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.storageClass
+                toFieldPath: spec.forProvider.manifest.spec.volumeClaimTemplate.spec.storageClassName
+                policy:
+                  fromFieldPath: Optional
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.resourceCpuRequest
+                toFieldPath: spec.forProvider.manifest.spec.resources.requests.cpu
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.resourceMemoryRequest
+                toFieldPath: spec.forProvider.manifest.spec.resources.requests.memory
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.resourceCpuLimit
+                toFieldPath: spec.forProvider.manifest.spec.resources.limits.cpu
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.resourceMemoryLimit
+                toFieldPath: spec.forProvider.manifest.spec.resources.limits.memory
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.owner
+                toFieldPath: spec.forProvider.manifest.metadata.labels["koncept.io/owner"]
+
+    - step: sequence-creation
+      functionRef:
+        name: function-sequencer
+      input:
+        apiVersion: sequencer.fn.crossplane.io/v1beta1
+        kind: Input
+        rules:
+          - sequence:
+              - ns-valkey
+              - valkey-standalone
+              - valkey-cluster
+
+    - step: automatically-detect-readiness
+      functionRef:
+        name: function-auto-ready
+

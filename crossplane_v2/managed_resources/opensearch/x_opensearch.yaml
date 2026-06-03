@@ -1,0 +1,153 @@
+## OpenSearch Composition — OpenSearch K8s Operator pattern
+##
+## Prerequisite: OpenSearch K8s Operator must be installed on the cluster.
+## Install via: kubectl apply -f https://github.com/opensearch-project/opensearch-k8s-operator/releases/download/<version>/opensearch-operator.yaml
+
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: xopensearchcluster-operator-composition
+  annotations:
+    koncept.io/operator: "opensearch-k8s"
+    koncept.io/pattern: "operator-native-crd"
+    koncept.io/bridge-pattern: "false"
+spec:
+  compositeTypeRef:
+    apiVersion: koncept.bluesolution.es/v1alpha1
+    kind: XOpenSearchCluster
+  mode: Pipeline
+  pipeline:
+
+    - step: render-resources
+      functionRef:
+        name: function-patch-and-transform
+      input:
+        apiVersion: pt.fn.crossplane.io/v1beta1
+        kind: Resources
+        resources:
+
+          - name: ns-opensearch
+            base:
+              apiVersion: kubernetes.crossplane.io/v1alpha2
+              kind: Object
+              spec:
+                providerConfigRef:
+                  name: provider-kubernetes
+                forProvider:
+                  manifest:
+                    apiVersion: v1
+                    kind: Namespace
+                    metadata:
+                      name: opensearch
+                      labels:
+                        koncept.io/managed-by: crossplane
+            patches:
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.namespace
+                toFieldPath: spec.forProvider.manifest.metadata.name
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.owner
+                toFieldPath: spec.forProvider.manifest.metadata.labels["koncept.io/owner"]
+
+          - name: opensearch-cluster
+            base:
+              apiVersion: kubernetes.crossplane.io/v1alpha2
+              kind: Object
+              spec:
+                providerConfigRef:
+                  name: provider-kubernetes
+                forProvider:
+                  manifest:
+                    apiVersion: opensearch.org/v1
+                    kind: OpenSearchCluster
+                    metadata:
+                      name: opensearch-cluster
+                      namespace: opensearch
+                      labels:
+                        koncept.io/managed-by: crossplane
+                    spec:
+                      version: "2.13.0"
+                      nodePools:
+                        - component: nodes
+                          replicas: 3
+                          diskSize: "30Gi"
+                          roles:
+                            - cluster_manager
+                            - data
+                          resources:
+                            requests:
+                              cpu: "500m"
+                              memory: "2Gi"
+                            limits:
+                              cpu: "2"
+                              memory: "4Gi"
+                      security:
+                        tls:
+                          transport:
+                            generate: true
+                          http:
+                            generate: true
+                      dashboards:
+                        enable: true
+                        replicas: 1
+                        version: "2.13.0"
+                        resources:
+                          requests:
+                            cpu: "250m"
+                            memory: "512Mi"
+                          limits:
+                            cpu: "1"
+                            memory: "2Gi"
+            patches:
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.namespace
+                toFieldPath: spec.forProvider.manifest.metadata.namespace
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.clusterName
+                toFieldPath: spec.forProvider.manifest.metadata.name
+                policy:
+                  fromFieldPath: Optional
+              - type: FromCompositeFieldPath
+                fromFieldPath: metadata.name
+                toFieldPath: spec.forProvider.manifest.metadata.name
+                policy:
+                  fromFieldPath: Optional
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.version
+                toFieldPath: spec.forProvider.manifest.spec.version
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.nodePoolCount
+                toFieldPath: spec.forProvider.manifest.spec.nodePools[0].replicas
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.diskSize
+                toFieldPath: spec.forProvider.manifest.spec.nodePools[0].diskSize
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.storageClass
+                toFieldPath: spec.forProvider.manifest.spec.nodePools[0].storageClassName
+                policy:
+                  fromFieldPath: Optional
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.includeDashboards
+                toFieldPath: spec.forProvider.manifest.spec.dashboards.enable
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.dashboardReplicas
+                toFieldPath: spec.forProvider.manifest.spec.dashboards.replicas
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.owner
+                toFieldPath: spec.forProvider.manifest.metadata.labels["koncept.io/owner"]
+
+    - step: sequence-creation
+      functionRef:
+        name: function-sequencer
+      input:
+        apiVersion: sequencer.fn.crossplane.io/v1beta1
+        kind: Input
+        rules:
+          - sequence:
+              - ns-opensearch
+              - opensearch-cluster
+
+    - step: automatically-detect-readiness
+      functionRef:
+        name: function-auto-ready
+

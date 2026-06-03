@@ -1,0 +1,222 @@
+## Data Prepper Composition — Kubernetes-native Deployment pattern
+##
+## Data Prepper has no dedicated Kubernetes operator; we deploy it as a native Deployment
+## with ConfigMap for pipeline configuration.
+
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: xdataprepperpipeline-native-composition
+  annotations:
+    koncept.io/deployment-method: "kubernetes-native"
+    koncept.io/pattern: "deployment-native"
+spec:
+  compositeTypeRef:
+    apiVersion: koncept.bluesolution.es/v1alpha1
+    kind: XDataPrepperPipeline
+  mode: Pipeline
+  pipeline:
+
+    - step: render-resources
+      functionRef:
+        name: function-patch-and-transform
+      input:
+        apiVersion: pt.fn.crossplane.io/v1beta1
+        kind: Resources
+        resources:
+
+          - name: ns-dataprepper
+            base:
+              apiVersion: kubernetes.crossplane.io/v1alpha2
+              kind: Object
+              spec:
+                providerConfigRef:
+                  name: provider-kubernetes
+                forProvider:
+                  manifest:
+                    apiVersion: v1
+                    kind: Namespace
+                    metadata:
+                      name: dataprepper
+                      labels:
+                        koncept.io/managed-by: crossplane
+            patches:
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.namespace
+                toFieldPath: spec.forProvider.manifest.metadata.name
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.owner
+                toFieldPath: spec.forProvider.manifest.metadata.labels["koncept.io/owner"]
+
+          - name: dataprepper-configmap
+            base:
+              apiVersion: kubernetes.crossplane.io/v1alpha2
+              kind: Object
+              spec:
+                providerConfigRef:
+                  name: provider-kubernetes
+                forProvider:
+                  manifest:
+                    apiVersion: v1
+                    kind: ConfigMap
+                    metadata:
+                      name: dataprepper-config
+                      namespace: dataprepper
+                      labels:
+                        koncept.io/managed-by: crossplane
+                    data:
+                      pipelines.yaml: |
+                        example-pipeline:
+                          source:
+                            http:
+                              request_timeout: 1000
+                          processor:
+                            - grok:
+                                match:
+                                  log: [ '%{LOGLEVEL:loglevel} %{GREEDYDATA:message}' ]
+                          sink:
+                            - opensearch:
+                                hosts:
+                                  - https://elasticsearch.logging-system.svc.cluster.local:9200
+                                index: dataprepper-%{+YYYY.MM.dd}
+            patches:
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.namespace
+                toFieldPath: spec.forProvider.manifest.metadata.namespace
+
+          - name: dataprepper-deployment
+            base:
+              apiVersion: kubernetes.crossplane.io/v1alpha2
+              kind: Object
+              spec:
+                providerConfigRef:
+                  name: provider-kubernetes
+                forProvider:
+                  manifest:
+                    apiVersion: apps/v1
+                    kind: Deployment
+                    metadata:
+                      name: dataprepper
+                      namespace: dataprepper
+                      labels:
+                        app: dataprepper
+                        koncept.io/managed-by: crossplane
+                    spec:
+                      replicas: 1
+                      selector:
+                        matchLabels:
+                          app: dataprepper
+                      template:
+                        metadata:
+                          labels:
+                            app: dataprepper
+                        spec:
+                          containers:
+                            - name: dataprepper
+                              image: opensearchproject/data-prepper:2.2.0
+                              ports:
+                                - containerPort: 21890
+                                  name: http
+                              env:
+                                - name: JAVA_OPTS
+                                  value: "-Xms512m -Xmx512m"
+                              volumeMounts:
+                                - name: config
+                                  mountPath: /usr/share/data-prepper/pipelines
+                              resources:
+                                requests:
+                                  cpu: "500m"
+                                  memory: "1Gi"
+                                limits:
+                                  cpu: "2"
+                                  memory: "4Gi"
+                          volumes:
+                            - name: config
+                              configMap:
+                                name: dataprepper-config
+            patches:
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.namespace
+                toFieldPath: spec.forProvider.manifest.metadata.namespace
+              - type: FromCompositeFieldPath
+                fromFieldPath: metadata.name
+                toFieldPath: spec.forProvider.manifest.metadata.name
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.replicas
+                toFieldPath: spec.forProvider.manifest.spec.replicas
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.image
+                toFieldPath: spec.forProvider.manifest.spec.template.spec.containers[0].image
+                transforms:
+                  - type: string
+                    string:
+                      fmt: "%s:%s"
+                      args:
+                        - spec.image
+                        - spec.imageTag
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.sourcePort
+                toFieldPath: spec.forProvider.manifest.spec.template.spec.containers[0].ports[0].containerPort
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.resourceCpuRequest
+                toFieldPath: spec.forProvider.manifest.spec.template.spec.containers[0].resources.requests.cpu
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.resourceMemoryRequest
+                toFieldPath: spec.forProvider.manifest.spec.template.spec.containers[0].resources.requests.memory
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.resourceCpuLimit
+                toFieldPath: spec.forProvider.manifest.spec.template.spec.containers[0].resources.limits.cpu
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.resourceMemoryLimit
+                toFieldPath: spec.forProvider.manifest.spec.template.spec.containers[0].resources.limits.memory
+
+          - name: dataprepper-service
+            base:
+              apiVersion: kubernetes.crossplane.io/v1alpha2
+              kind: Object
+              spec:
+                providerConfigRef:
+                  name: provider-kubernetes
+                forProvider:
+                  manifest:
+                    apiVersion: v1
+                    kind: Service
+                    metadata:
+                      name: dataprepper
+                      namespace: dataprepper
+                      labels:
+                        app: dataprepper
+                        koncept.io/managed-by: crossplane
+                    spec:
+                      type: ClusterIP
+                      selector:
+                        app: dataprepper
+                      ports:
+                        - port: 21890
+                          targetPort: 21890
+                          name: http
+            patches:
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.namespace
+                toFieldPath: spec.forProvider.manifest.metadata.namespace
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.servicePort
+                toFieldPath: spec.forProvider.manifest.spec.ports[0].port
+
+    - step: sequence-creation
+      functionRef:
+        name: function-sequencer
+      input:
+        apiVersion: sequencer.fn.crossplane.io/v1beta1
+        kind: Input
+        rules:
+          - sequence:
+              - ns-dataprepper
+              - dataprepper-configmap
+              - dataprepper-deployment
+              - dataprepper-service
+
+    - step: automatically-detect-readiness
+      functionRef:
+        name: function-auto-ready
+

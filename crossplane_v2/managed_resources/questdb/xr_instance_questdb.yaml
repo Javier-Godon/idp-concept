@@ -1,0 +1,36 @@
+## QuestDB XR/Claim instance examples
+---
+apiVersion: koncept.bluesolution.es/v1alpha1
+kind: XQuestDBInstance
+metadata:
+  name: timeseries-questdb
+spec:
+  namespace: timeseries-data
+  clusterName: timeseries-qdb
+  chartVersion: "0.32.0"
+  storageSize: "100Gi"
+  storageClass: "fast-nvme"
+  resourceCpuRequest: "1"
+  resourceMemoryRequest: "2Gi"
+  resourceCpuLimit: "4"
+  resourceMemoryLimit: "8Gi"
+  httpPort: 9000
+  pgPort: 5432
+  ilpPort: 9009
+  persistence: true
+  environment: production
+  owner: analytics-team
+---
+apiVersion: koncept.bluesolution.es/v1alpha1
+kind: QuestDBInstance
+metadata:
+  name: dev-questdb
+  namespace: dev-analytics
+spec:
+  namespace: dev-analytics
+  chartVersion: "0.32.0"
+  storageSize: "10Gi"
+  persistence: true
+  environment: development
+  owner: dev-team
+

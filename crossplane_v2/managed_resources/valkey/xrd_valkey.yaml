@@ -1,0 +1,148 @@
+apiVersion: apiextensions.crossplane.io/v2
+kind: CompositeResourceDefinition
+metadata:
+  name: xvalkeyinstances.koncept.bluesolution.es
+  annotations:
+    koncept.io/tier: "2"
+    koncept.io/operator: "ot-redis"
+    koncept.io/operator-version: "0.15.x"
+    koncept.io/last-reviewed: "2026-06-04"
+    koncept.io/note: "Valkey uses OT-CONTAINER-KIT Redis Operator (compatible with Redis API)"
+spec:
+  scope: Cluster
+  group: koncept.bluesolution.es
+  names:
+    kind: XValkeyInstance
+    plural: xvalkeyinstances
+  claimNames:
+    kind: ValkeyInstance
+    plural: valkeyinstances
+  defaultCompositionRef:
+    name: xvalkeyinstance-operator-composition
+  versions:
+    - name: v1alpha1
+      served: true
+      referenceable: true
+      additionalPrinterColumns:
+        - name: NAMESPACE
+          type: string
+          jsonPath: .spec.namespace
+        - name: MODE
+          type: string
+          jsonPath: .spec.mode
+          description: Standalone or Cluster mode
+        - name: SIZE
+          type: integer
+          jsonPath: .spec.nodeCount
+          description: Number of nodes
+        - name: STORAGE
+          type: string
+          jsonPath: .spec.storageSize
+        - name: READY
+          type: string
+          jsonPath: .status.conditions[?(@.type=="Ready")].status
+        - name: AGE
+          type: date
+          jsonPath: .metadata.creationTimestamp
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              description: Valkey instance (Redis-compatible cache) via OT operator.
+              required:
+                - namespace
+                - mode
+              properties:
+                namespace:
+                  type: string
+                  description: Kubernetes namespace where Valkey runs.
+                clusterName:
+                  type: string
+                  description: Name of the Valkey instance (Claim name if unset).
+                  default: ""
+                mode:
+                  type: string
+                  description: "Valkey deployment mode: standalone or cluster."
+                  enum:
+                    - standalone
+                    - cluster
+                  default: standalone
+                nodeCount:
+                  type: integer
+                  description: "Number of nodes. Cluster requires 3+."
+                  default: 3
+                  minimum: 1
+                  maximum: 32
+                storageSize:
+                  type: string
+                  description: PVC storage size per node (e.g., 10Gi, 100Gi).
+                  default: "10Gi"
+                  pattern: "^[0-9]+(Mi|Gi|Ti)$"
+                storageClass:
+                  type: string
+                  description: StorageClass name. Leave empty for the cluster default.
+                  default: ""
+                image:
+                  type: string
+                  description: Valkey Docker image to use.
+                  default: "valkey/valkey:latest"
+                  pattern: "^[a-z0-9/@:._-]+$"
+                resourceCpuRequest:
+                  type: string
+                  description: CPU request per Valkey pod.
+                  default: "100m"
+                resourceMemoryRequest:
+                  type: string
+                  description: Memory request per Valkey pod.
+                  default: "256Mi"
+                resourceCpuLimit:
+                  type: string
+                  description: CPU limit per Valkey pod.
+                  default: "1"
+                resourceMemoryLimit:
+                  type: string
+                  description: Memory limit per Valkey pod.
+                  default: "2Gi"
+                environment:
+                  type: string
+                  description: "Target environment tier: local, development, staging, production."
+                  default: production
+                  enum:
+                    - local
+                    - development
+                    - staging
+                    - production
+                owner:
+                  type: string
+                  description: "Team or system that owns this instance (for labeling/RBAC)."
+                  default: ""
+            status:
+              type: object
+              properties:
+                conditions:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      type:
+                        type: string
+                      status:
+                        type: string
+                      reason:
+                        type: string
+                      message:
+                        type: string
+                      lastTransitionTime:
+                        type: string
+                clusterName:
+                  type: string
+                  description: The name of the generated Valkey/ValkeyCluster resource.
+                readyNodes:
+                  type: integer
+                  description: Number of Valkey nodes currently Ready.
+                serviceEndpoint:
+                  type: string
+                  description: Service endpoint for Valkey connections.
+

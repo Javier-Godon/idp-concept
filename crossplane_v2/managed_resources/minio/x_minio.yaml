@@ -1,0 +1,146 @@
+## MinIO Composition — MinIO Operator Tenant pattern
+##
+## Note: MinIO Operator was archived in March 2026. This composition is for legacy support.
+## For new deployments, consider using the Helm chart approach.
+
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: xminiotenant-operator-composition
+  annotations:
+    koncept.io/operator: "minio-operator"
+    koncept.io/pattern: "operator-native-crd"
+    koncept.io/bridge-pattern: "false"
+    koncept.io/note: "Legacy support only; MinIO Operator archived March 2026"
+spec:
+  compositeTypeRef:
+    apiVersion: koncept.bluesolution.es/v1alpha1
+    kind: XMinIOTenant
+  mode: Pipeline
+  pipeline:
+
+    - step: render-resources
+      functionRef:
+        name: function-patch-and-transform
+      input:
+        apiVersion: pt.fn.crossplane.io/v1beta1
+        kind: Resources
+        resources:
+
+          - name: ns-minio
+            base:
+              apiVersion: kubernetes.crossplane.io/v1alpha2
+              kind: Object
+              spec:
+                providerConfigRef:
+                  name: provider-kubernetes
+                forProvider:
+                  manifest:
+                    apiVersion: v1
+                    kind: Namespace
+                    metadata:
+                      name: minio
+                      labels:
+                        koncept.io/managed-by: crossplane
+            patches:
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.namespace
+                toFieldPath: spec.forProvider.manifest.metadata.name
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.owner
+                toFieldPath: spec.forProvider.manifest.metadata.labels["koncept.io/owner"]
+
+          - name: minio-tenant
+            base:
+              apiVersion: kubernetes.crossplane.io/v1alpha2
+              kind: Object
+              spec:
+                providerConfigRef:
+                  name: provider-kubernetes
+                forProvider:
+                  manifest:
+                    apiVersion: minio.min.io/v2
+                    kind: Tenant
+                    metadata:
+                      name: minio-tenant
+                      namespace: minio
+                      labels:
+                        koncept.io/managed-by: crossplane
+                    spec:
+                      image: "minio/minio:RELEASE.2025-03-12T18-04-18Z"
+                      imagePullPolicy: IfNotPresent
+                      mountPath: /mnt/data
+                      serviceMetadata:
+                        minioServiceLabels: {}
+                        consoleServiceLabels: {}
+                      credsSecret:
+                        name: minio-creds-secret
+                      pools:
+                        - servers: 4
+                          name: pool-0
+                          volumesPerServer: 4
+                          volumeClaimTemplate:
+                            metadata:
+                              name: data
+                            spec:
+                              accessModes:
+                                - ReadWriteOnce
+                              resources:
+                                requests:
+                                  storage: 10Gi
+                      requestAutoCert: true
+                      console:
+                        replicas: 2
+            patches:
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.namespace
+                toFieldPath: spec.forProvider.manifest.metadata.namespace
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.clusterName
+                toFieldPath: spec.forProvider.manifest.metadata.name
+                policy:
+                  fromFieldPath: Optional
+              - type: FromCompositeFieldPath
+                fromFieldPath: metadata.name
+                toFieldPath: spec.forProvider.manifest.metadata.name
+                policy:
+                  fromFieldPath: Optional
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.image
+                toFieldPath: spec.forProvider.manifest.spec.image
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.servers
+                toFieldPath: spec.forProvider.manifest.spec.pools[0].servers
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.volumesPerServer
+                toFieldPath: spec.forProvider.manifest.spec.pools[0].volumesPerServer
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.storageSize
+                toFieldPath: spec.forProvider.manifest.spec.pools[0].volumeClaimTemplate.spec.resources.requests.storage
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.storageClass
+                toFieldPath: spec.forProvider.manifest.spec.pools[0].volumeClaimTemplate.spec.storageClassName
+                policy:
+                  fromFieldPath: Optional
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.requestAutoCert
+                toFieldPath: spec.forProvider.manifest.spec.requestAutoCert
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.owner
+                toFieldPath: spec.forProvider.manifest.metadata.labels["koncept.io/owner"]
+
+    - step: sequence-creation
+      functionRef:
+        name: function-sequencer
+      input:
+        apiVersion: sequencer.fn.crossplane.io/v1beta1
+        kind: Input
+        rules:
+          - sequence:
+              - ns-minio
+              - minio-tenant
+
+    - step: automatically-detect-readiness
+      functionRef:
+        name: function-auto-ready
+

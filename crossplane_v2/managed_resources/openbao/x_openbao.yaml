@@ -1,0 +1,174 @@
+## OpenBao Composition — Helm chart deployment pattern
+##
+## OpenBao is the open-source Vault alternative (CNCF, not BUSL-licensed like Vault/VSO).
+##
+## Prerequisites:
+##   - Helm provider is installed
+##   - OpenBao Helm repository is added:
+##     helm repo add openbao https://openbao.github.io/openbao-helm
+##     helm repo update
+
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: xopenbaoinstance-helm-composition
+  annotations:
+    koncept.io/deployment-method: "helm"
+    koncept.io/operator: "openbao"
+    koncept.io/license: "CNCF/Open-Source"
+    koncept.io/pattern: "helm-release"
+spec:
+  compositeTypeRef:
+    apiVersion: koncept.bluesolution.es/v1alpha1
+    kind: XOpenBaoInstance
+  mode: Pipeline
+  pipeline:
+
+    - step: render-resources
+      functionRef:
+        name: function-patch-and-transform
+      input:
+        apiVersion: pt.fn.crossplane.io/v1beta1
+        kind: Resources
+        resources:
+
+          - name: ns-openbao
+            base:
+              apiVersion: kubernetes.crossplane.io/v1alpha2
+              kind: Object
+              spec:
+                providerConfigRef:
+                  name: provider-kubernetes
+                forProvider:
+                  manifest:
+                    apiVersion: v1
+                    kind: Namespace
+                    metadata:
+                      name: openbao
+                      labels:
+                        koncept.io/managed-by: crossplane
+            patches:
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.namespace
+                toFieldPath: spec.forProvider.manifest.metadata.name
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.owner
+                toFieldPath: spec.forProvider.manifest.metadata.labels["koncept.io/owner"]
+
+          - name: openbao-helm-release
+            base:
+              apiVersion: helm.crossplane.io/v1beta1
+              kind: Release
+              spec:
+                forProvider:
+                  namespace: openbao
+                  chart:
+                    name: openbao
+                    repository: https://openbao.github.io/openbao-helm
+                    version: "0.8.1"
+                  values:
+                    server:
+                      dev:
+                        enabled: false
+                      standalone:
+                        enabled: true
+                      ha:
+                        enabled: false
+                        replicas: 3
+                        raft:
+                          enabled: true
+                          setNodeId: true
+                      service:
+                        type: ClusterIP
+                      dataStorage:
+                        enabled: true
+                        size: 10Gi
+                    ui:
+                      enabled: true
+                    global:
+                      tlsDisable: false
+                providerConfigRef:
+                  name: provider-helm
+            patches:
+              - type: FromCompositeFieldPath
+                fromFieldPath: metadata.name
+                toFieldPath: metadata.name
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.clusterName
+                toFieldPath: metadata.name
+                policy:
+                  fromFieldPath: Optional
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.namespace
+                toFieldPath: spec.forProvider.namespace
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.chartVersion
+                toFieldPath: spec.forProvider.chart.version
+              # Mode configuration
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.mode
+                toFieldPath: spec.forProvider.values.server.standalone.enabled
+                transforms:
+                  - type: match
+                    match:
+                      patterns:
+                        - type: literal
+                          literal: standalone
+                          result: true
+                        - type: literal
+                          literal: ha
+                          result: false
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.mode
+                toFieldPath: spec.forProvider.values.server.ha.enabled
+                transforms:
+                  - type: match
+                    match:
+                      patterns:
+                        - type: literal
+                          literal: standalone
+                          result: false
+                        - type: literal
+                          literal: ha
+                          result: true
+              # Replica count
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.replicas
+                toFieldPath: spec.forProvider.values.server.ha.replicas
+              # Storage
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.storageSize
+                toFieldPath: spec.forProvider.values.server.dataStorage.size
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.storageClass
+                toFieldPath: spec.forProvider.values.server.dataStorage.storageClass
+                policy:
+                  fromFieldPath: Optional
+              # UI
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.uiEnabled
+                toFieldPath: spec.forProvider.values.ui.enabled
+              # Service type
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.serviceType
+                toFieldPath: spec.forProvider.values.server.service.type
+              # TLS
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.tlsDisable
+                toFieldPath: spec.forProvider.values.global.tlsDisable
+
+    - step: sequence-creation
+      functionRef:
+        name: function-sequencer
+      input:
+        apiVersion: sequencer.fn.crossplane.io/v1beta1
+        kind: Input
+        rules:
+          - sequence:
+              - ns-openbao
+              - openbao-helm-release
+
+    - step: automatically-detect-readiness
+      functionRef:
+        name: function-auto-ready
+

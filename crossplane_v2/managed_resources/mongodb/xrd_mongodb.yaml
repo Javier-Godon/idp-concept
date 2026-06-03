@@ -1,0 +1,122 @@
+apiVersion: apiextensions.crossplane.io/v2
+kind: CompositeResourceDefinition
+metadata:
+  name: xmongodbinstances.koncept.bluesolution.es
+  annotations:
+    koncept.io/tier: "2"
+    koncept.io/operator: "mongodb-community"
+    koncept.io/operator-version: "1.4.x"
+    koncept.io/last-reviewed: "2026-06-04"
+spec:
+  scope: Cluster
+  group: koncept.bluesolution.es
+  names:
+    kind: XMongoDBInstance
+    plural: xmongodbinstances
+  claimNames:
+    kind: MongoDBInstance
+    plural: mongodbinstances
+  defaultCompositionRef:
+    name: xmongodbinstance-community-composition
+  versions:
+    - name: v1alpha1
+      served: true
+      referenceable: true
+      additionalPrinterColumns:
+        - name: NAMESPACE
+          type: string
+          jsonPath: .spec.namespace
+        - name: MEMBERS
+          type: integer
+          jsonPath: .spec.members
+          description: Number of MongoDB replica set members
+        - name: VERSION
+          type: string
+          jsonPath: .spec.mongodbVersion
+        - name: STORAGE
+          type: string
+          jsonPath: .spec.storageSize
+        - name: READY
+          type: string
+          jsonPath: .status.conditions[?(@.type=="Ready")].status
+        - name: AGE
+          type: date
+          jsonPath: .metadata.creationTimestamp
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              description: MongoDB instance configures a MongoDB Community cluster.
+              required:
+                - namespace
+                - mongodbVersion
+              properties:
+                namespace:
+                  type: string
+                  description: Kubernetes namespace where MongoDB runs.
+                clusterName:
+                  type: string
+                  description: Name of the MongoDB cluster (Claim name if unset).
+                  default: ""
+                mongodbVersion:
+                  type: string
+                  description: "MongoDB version to deploy (e.g., 7.0.12, 8.0.0)."
+                  pattern: "^[0-9]+\\.[0-9]+(\\.[0-9]+)?$"
+                members:
+                  type: integer
+                  description: "Number of MongoDB replica set members (1 = standalone, 3+ = HA)."
+                  default: 3
+                  minimum: 1
+                  maximum: 9
+                storageSize:
+                  type: string
+                  description: PVC storage size for each member (e.g., 10Gi, 50Gi).
+                  default: "10Gi"
+                  pattern: "^[0-9]+(Mi|Gi|Ti)$"
+                storageClass:
+                  type: string
+                  description: StorageClass name. Leave empty for the cluster default.
+                  default: ""
+                environment:
+                  type: string
+                  description: "Target environment tier: local, development, staging, production."
+                  default: production
+                  enum:
+                    - local
+                    - development
+                    - staging
+                    - production
+                owner:
+                  type: string
+                  description: "Team or system that owns this database (for labeling/RBAC)."
+                  default: ""
+            status:
+              type: object
+              properties:
+                conditions:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      type:
+                        type: string
+                      status:
+                        type: string
+                      reason:
+                        type: string
+                      message:
+                        type: string
+                      lastTransitionTime:
+                        type: string
+                clusterName:
+                  type: string
+                  description: The name of the generated MongoDBCommunity resource.
+                connectionSecretRef:
+                  type: string
+                  description: The name of the Secret containing MongoDB credentials.
+                readyMembers:
+                  type: integer
+                  description: Number of members currently Ready.
+

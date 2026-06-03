@@ -1,0 +1,155 @@
+## Elasticsearch Composition — ECK (Elastic Cloud on Kubernetes) pattern
+##
+## ECK is the official Kubernetes operator from Elastic (Elastic license v2).
+## Prerequisite: ECK operator must be installed. Install via:
+##   helm repo add elastic https://helm.elastic.co
+##   helm install elastic-operator elastic/eck-operator -n elastic-system --create-namespace
+
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: xelasticsearchcluster-eck-composition
+  annotations:
+    koncept.io/operator: "eck"
+    koncept.io/pattern: "operator-native-crd"
+    koncept.io/bridge-pattern: "false"
+spec:
+  compositeTypeRef:
+    apiVersion: koncept.bluesolution.es/v1alpha1
+    kind: XElasticsearchCluster
+  mode: Pipeline
+  pipeline:
+
+    - step: render-resources
+      functionRef:
+        name: function-patch-and-transform
+      input:
+        apiVersion: pt.fn.crossplane.io/v1beta1
+        kind: Resources
+        resources:
+
+          - name: ns-elasticsearch
+            base:
+              apiVersion: kubernetes.crossplane.io/v1alpha2
+              kind: Object
+              spec:
+                providerConfigRef:
+                  name: provider-kubernetes
+                forProvider:
+                  manifest:
+                    apiVersion: v1
+                    kind: Namespace
+                    metadata:
+                      name: elasticsearch
+                      labels:
+                        koncept.io/managed-by: crossplane
+            patches:
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.namespace
+                toFieldPath: spec.forProvider.manifest.metadata.name
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.owner
+                toFieldPath: spec.forProvider.manifest.metadata.labels["koncept.io/owner"]
+
+          - name: elasticsearch-cluster
+            base:
+              apiVersion: kubernetes.crossplane.io/v1alpha2
+              kind: Object
+              spec:
+                providerConfigRef:
+                  name: provider-kubernetes
+                forProvider:
+                  manifest:
+                    apiVersion: elasticsearch.k8s.elastic.co/v1
+                    kind: Elasticsearch
+                    metadata:
+                      name: elasticsearch-cluster
+                      namespace: elasticsearch
+                      labels:
+                        koncept.io/managed-by: crossplane
+                    spec:
+                      version: "9.0.0"
+                      nodeSets:
+                        - name: default
+                          count: 3
+                          config:
+                            node.roles: ["master", "data"]
+                          volumeClaimTemplates:
+                            - metadata:
+                                name: elasticsearch-data
+                              spec:
+                                accessModes:
+                                  - ReadWriteOnce
+                                resources:
+                                  requests:
+                                    storage: 30Gi
+                          podTemplate:
+                            spec:
+                              containers:
+                                - name: elasticsearch
+                                  resources:
+                                    requests:
+                                      cpu: "500m"
+                                      memory: "2Gi"
+                                    limits:
+                                      cpu: "2"
+                                      memory: "4Gi"
+            patches:
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.namespace
+                toFieldPath: spec.forProvider.manifest.metadata.namespace
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.clusterName
+                toFieldPath: spec.forProvider.manifest.metadata.name
+                policy:
+                  fromFieldPath: Optional
+              - type: FromCompositeFieldPath
+                fromFieldPath: metadata.name
+                toFieldPath: spec.forProvider.manifest.metadata.name
+                policy:
+                  fromFieldPath: Optional
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.version
+                toFieldPath: spec.forProvider.manifest.spec.version
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.nodeCount
+                toFieldPath: spec.forProvider.manifest.spec.nodeSets[0].count
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.storageSize
+                toFieldPath: spec.forProvider.manifest.spec.nodeSets[0].volumeClaimTemplates[0].spec.resources.requests.storage
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.storageClass
+                toFieldPath: spec.forProvider.manifest.spec.nodeSets[0].volumeClaimTemplates[0].spec.storageClassName
+                policy:
+                  fromFieldPath: Optional
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.resourceCpuRequest
+                toFieldPath: spec.forProvider.manifest.spec.nodeSets[0].podTemplate.spec.containers[0].resources.requests.cpu
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.resourceMemoryRequest
+                toFieldPath: spec.forProvider.manifest.spec.nodeSets[0].podTemplate.spec.containers[0].resources.requests.memory
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.resourceCpuLimit
+                toFieldPath: spec.forProvider.manifest.spec.nodeSets[0].podTemplate.spec.containers[0].resources.limits.cpu
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.resourceMemoryLimit
+                toFieldPath: spec.forProvider.manifest.spec.nodeSets[0].podTemplate.spec.containers[0].resources.limits.memory
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.owner
+                toFieldPath: spec.forProvider.manifest.metadata.labels["koncept.io/owner"]
+
+    - step: sequence-creation
+      functionRef:
+        name: function-sequencer
+      input:
+        apiVersion: sequencer.fn.crossplane.io/v1beta1
+        kind: Input
+        rules:
+          - sequence:
+              - ns-elasticsearch
+              - elasticsearch-cluster
+
+    - step: automatically-detect-readiness
+      functionRef:
+        name: function-auto-ready
+

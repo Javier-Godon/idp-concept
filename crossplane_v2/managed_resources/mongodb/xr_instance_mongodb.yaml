@@ -1,0 +1,46 @@
+## MongoDB XR/Claim instance examples
+##
+## Cluster-scoped XR (platform-owned):
+---
+apiVersion: koncept.bluesolution.es/v1alpha1
+kind: XMongoDBInstance
+metadata:
+  name: erp-back-mongodb
+spec:
+  namespace: erp-back-data
+  clusterName: erp-mongo
+  mongodbVersion: "7.0.12"
+  members: 3
+  storageSize: "50Gi"
+  storageClass: "fast-nvme"
+  environment: production
+  owner: erp-back-team
+---
+## Namespace-scoped Claim (product-team usage — preferred):
+apiVersion: koncept.bluesolution.es/v1alpha1
+kind: MongoDBInstance
+metadata:
+  name: app-mongodb
+  namespace: app-data
+spec:
+  namespace: app-data
+  mongodbVersion: "7.0.12"
+  members: 3
+  storageSize: "30Gi"
+  environment: production
+  owner: app-team
+---
+## Development / local single-instance example:
+apiVersion: koncept.bluesolution.es/v1alpha1
+kind: MongoDBInstance
+metadata:
+  name: dev-mongodb
+  namespace: dev-data
+spec:
+  namespace: dev-data
+  mongodbVersion: "7.0.12"
+  members: 1
+  storageSize: "5Gi"
+  environment: development
+  owner: dev-team
+

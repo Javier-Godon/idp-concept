@@ -1,0 +1,32 @@
+## Kibana XR/Claim instance examples
+---
+apiVersion: koncept.bluesolution.es/v1alpha1
+kind: XKibanaInstance
+metadata:
+  name: logs-kibana
+spec:
+  namespace: logging-system
+  clusterName: logs-kibana
+  version: "9.4.1"
+  elasticsearchRef: logs-elasticsearch
+  replicas: 2
+  resourceCpuRequest: "250m"
+  resourceMemoryRequest: "512Mi"
+  resourceCpuLimit: "1"
+  resourceMemoryLimit: "2Gi"
+  environment: production
+  owner: logging-team
+---
+apiVersion: koncept.bluesolution.es/v1alpha1
+kind: KibanaInstance
+metadata:
+  name: dev-kibana
+  namespace: dev-logging
+spec:
+  namespace: dev-logging
+  version: "9.4.1"
+  elasticsearchRef: dev-elasticsearch
+  replicas: 1
+  environment: development
+  owner: dev-team
+

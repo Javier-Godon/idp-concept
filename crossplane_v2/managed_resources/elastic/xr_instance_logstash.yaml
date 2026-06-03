@@ -1,0 +1,34 @@
+## Logstash XR/Claim instance examples
+---
+apiVersion: koncept.bluesolution.es/v1alpha1
+kind: XLogstashInstance
+metadata:
+  name: logs-logstash
+spec:
+  namespace: logging-system
+  clusterName: logs-logstash
+  version: "9.4.1"
+  elasticsearchRef: logs-elasticsearch
+  replicas: 2
+  beatsPort: 5000
+  resourceCpuRequest: "500m"
+  resourceMemoryRequest: "1Gi"
+  resourceCpuLimit: "2"
+  resourceMemoryLimit: "4Gi"
+  environment: production
+  owner: logging-team
+---
+apiVersion: koncept.bluesolution.es/v1alpha1
+kind: LogstashInstance
+metadata:
+  name: dev-logstash
+  namespace: dev-logging
+spec:
+  namespace: dev-logging
+  version: "9.4.1"
+  elasticsearchRef: dev-elasticsearch
+  replicas: 1
+  beatsPort: 5000
+  environment: development
+  owner: dev-team
+

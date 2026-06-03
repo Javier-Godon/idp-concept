@@ -1,0 +1,58 @@
+## Redis XR/Claim instance examples
+##
+## Cluster-scoped XR (platform-owned) — Standalone:
+---
+apiVersion: koncept.bluesolution.es/v1alpha1
+kind: XRedisInstance
+metadata:
+  name: app-cache-redis
+spec:
+  namespace: app-cache
+  clusterName: app-cache
+  mode: standalone
+  nodeCount: 1
+  storageSize: "50Gi"
+  storageClass: "fast-nvme"
+  image: "quay.io/opstree/redis:v7.0.12"
+  resourceCpuRequest: "250m"
+  resourceMemoryRequest: "512Mi"
+  resourceCpuLimit: "1"
+  resourceMemoryLimit: "2Gi"
+  environment: production
+  owner: app-team
+---
+## Cluster-scoped XR (platform-owned) — Cluster mode:
+apiVersion: koncept.bluesolution.es/v1alpha1
+kind: XRedisInstance
+metadata:
+  name: distributed-cache-redis
+spec:
+  namespace: cache-system
+  clusterName: distributed-cache
+  mode: cluster
+  nodeCount: 6
+  storageSize: "100Gi"
+  storageClass: "fast-nvme"
+  image: "quay.io/opstree/redis:v7.0.12"
+  resourceCpuRequest: "500m"
+  resourceMemoryRequest: "1Gi"
+  resourceCpuLimit: "2"
+  resourceMemoryLimit: "4Gi"
+  environment: production
+  owner: cache-team
+---
+## Namespace-scoped Claim (product-team usage — preferred) — Development:
+apiVersion: koncept.bluesolution.es/v1alpha1
+kind: RedisInstance
+metadata:
+  name: dev-cache
+  namespace: dev-apps
+spec:
+  namespace: dev-apps
+  mode: standalone
+  nodeCount: 1
+  storageSize: "5Gi"
+  image: "quay.io/opstree/redis:v7.0.12"
+  environment: development
+  owner: dev-team
+
