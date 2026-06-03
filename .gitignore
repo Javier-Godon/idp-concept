@@ -535,3 +535,7 @@ fabric.properties
 .idea/
 **/output/
 cmd/koncept/bin/
+
+# Auto-generated KCL test files (kcl test tool)
+**/_kcl_test.k
+

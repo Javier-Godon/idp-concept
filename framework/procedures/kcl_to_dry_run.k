@@ -50,10 +50,47 @@ _helmfile_release_projection = lambda release: any -> any {
     }
 }
 
+# Calculate resource footprint from manifests
+_extract_resource_requests = lambda module: any -> any {
+    _leaders = module.leaders if module.leaders else []
+    _manifest_count = len(module.manifests) if module.manifests else 0
+    {
+        moduleCount = 1
+        manifestCount = _manifest_count
+        estimatedReplicas = 1  # placeholder; actual replicas come from deployment/statefulset specs
+        storage = {
+            pvcCount = len([m for m in (module.manifests if module.manifests else []) if m.kind == "PersistentVolumeClaim"])
+        }
+    }
+}
+
+_resource_footprint = lambda modules: [any] -> any {
+    _all_manifests = [m for mod in (modules if modules else []) for m in (mod.manifests if mod.manifests else [])]
+    _pvc_count = len([m for m in _all_manifests if m.kind == "PersistentVolumeClaim"])
+    _deploy_count = len([m for m in _all_manifests if m.kind == "Deployment"])
+    _statefulset_count = len([m for m in _all_manifests if m.kind == "StatefulSet"])
+    _daemonset_count = len([m for m in _all_manifests if m.kind == "DaemonSet"])
+
+    {
+        manifestCount = len(_all_manifests)
+        deploymentCount = _deploy_count
+        statefulsetCount = _statefulset_count
+        daemonsetCount = _daemonset_count
+        persistentVolumeClaimCount = _pvc_count
+        estimatedWorkloads = _deploy_count + _statefulset_count + _daemonset_count
+        storageInfo = {
+            pvcCount = _pvc_count
+            if _pvc_count > 0:
+                warning = "Storage class availability should be verified before deployment"
+        }
+    }
+}
+
 generate_dry_run_from_stack = lambda input_stack: any, project_name: str, version: str = "1.0.0" -> any {
     _helmfile = helmfile_proc.generate_helmfile_from_stack(input_stack, "./charts")
     _crossplane = crossplane_proc.generate_crossplane_from_render_stack(input_stack, project_name, version)
     _all_modules = (input_stack.components if input_stack.components else []) + (input_stack.accessories if input_stack.accessories else [])
+    _footprint = _resource_footprint(_all_modules)
 
     {
         apiVersion = "koncept.bluesolution.es/v1alpha1"
@@ -73,6 +110,7 @@ generate_dry_run_from_stack = lambda input_stack: any, project_name: str, versio
                 accessories = [_module_summary("accessory", a) for a in (input_stack.accessories if input_stack.accessories else [])]
             }
             dependencies = _dependencies(_all_modules)
+            resourceFootprint = _footprint
             outputs = {
                 helmfile = {
                     releaseCount = len(_helmfile.releases) if _helmfile.releases else 0
