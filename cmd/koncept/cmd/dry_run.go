@@ -47,6 +47,7 @@ func runDryRun(cmd *cobra.Command, args []string) error {
 	displayDryRunSummary(result)
 
 	return nil
+}
 
 func displayDryRunSummary(plan interface{}) {
 	planMap, ok := plan.(map[string]interface{})
@@ -80,9 +81,38 @@ func displayDryRunSummary(plan interface{}) {
 			fmt.Printf("  - Total manifests to deploy: %d\n", int(manifests))
 		}
 
+		// Display resource requests
+		if cpuReq, ok := footprint["cpuRequest"].(map[string]interface{}); ok {
+			if cpu, ok := cpuReq["millis"].(float64); ok && cpu > 0 {
+				fmt.Printf("  - Estimated CPU request: %dm (%.1f cores)\n", int(cpu), cpu/1000)
+				if estNodes, ok := cpuReq["estimatedNodes"].(float64); ok {
+					fmt.Printf("    Estimated nodes (small 2-core): %.1f\n", estNodes)
+				}
+			}
+		}
+		if memReq, ok := footprint["memoryRequest"].(map[string]interface{}); ok {
+			if mem, ok := memReq["mb"].(float64); ok && mem > 0 {
+				fmt.Printf("  - Estimated memory request: %dMi (%.1f Gi)\n", int(mem), mem/1024)
+			}
+		}
+
+		// Storage information
 		if storage, ok := footprint["storageInfo"].(map[string]interface{}); ok {
+			if storageGb, ok := storage["estimatedGb"].(float64); ok && storageGb > 0 {
+				fmt.Printf("  - Estimated persistent storage: %dGi\n", int(storageGb))
+			}
 			if warning, ok := storage["warning"].(string); ok && warning != "" {
 				fmt.Printf("  [warn] %s\n", warning)
+			}
+		}
+
+		// Show warnings if any
+		if warnings, ok := footprint["warnings"].([]interface{}); ok && len(warnings) > 0 {
+			fmt.Println("  [⚠️  Resource Warnings]")
+			for _, w := range warnings {
+				if wStr, ok := w.(string); ok {
+					fmt.Printf("    - %s\n", wStr)
+				}
 			}
 		}
 	}
@@ -105,5 +135,11 @@ func displayDryRunSummary(plan interface{}) {
 			}
 		}
 	}
+
+	fmt.Println()
+	printInfo("[Planning] Next Steps:")
+	fmt.Println("  1. Review merged configurations in dry_run_plan.yaml")
+	fmt.Println("  2. Verify dependency orchestration and resource footprint")
+	fmt.Println("  3. Run 'koncept render' with desired format (yaml|helmfile|crossplane|argocd)")
 }
 

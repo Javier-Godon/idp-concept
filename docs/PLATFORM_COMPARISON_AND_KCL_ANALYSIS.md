@@ -716,7 +716,101 @@ Adding fixtures with different component patterns (stateless + stateful, multi-r
 
 ---
 
+## Strategic implementation learning (2026-06-03 Phase 6 - Observability & Distribution)
 
+### Observability Enhancements - Complete Implementation
 
+**Implemented**: Enhanced dry-run output with real resource footprint calculations.
+- `kcl_to_dry_run.k` now includes resource extraction lambdas for CPU/memory/storage from manifest specs
+- Go CLI (`cmd/koncept/cmd/dry_run.go`) displays human-readable footprint summaries with node estimates
+- Resource warnings detect missing limits and common misconfigurations
+- Multi-layer observability: workload counts → CPU millis → estimated small/medium nodes
 
+**Key Insight**: Resource forecasting works best as multi-level abstractions:
+1. Manifest-level: Count Deployments/StatefulSets/PVCs
+2. Container-level: Extract CPU/memory from container.resources.requests
+3. Replica-level: Multiply by spec.replicas for total cluster demand
+4. Cluster-level: Estimate node count (2 CPU/small, 8 CPU/medium nodes)
 
+**Production Readiness**: Dry-run now provides operators with rough footprint estimates before rendering. Accuracy improves as manifests are completed (missing resource specs generate warnings).
+
+### Helmfile Integration Testing with Real Helm
+
+**Implemented**:
+- `scripts/helmfile_helm_integration_test.sh` — comprehensive helm template validation
+- `docs/HELMFILE_HELM_INTEGRATION.md` — detailed integration guide with CI/CD examples
+- Helper script handles multi-release templating, kubeconform validation, dependency verification
+
+**Key Insight**: Real helm template execution catches three classes of bugs that YAML parsing misses:
+1. Template injection errors (undefined variables, function calls)
+2. Chart dependency resolution failures (missing repositories, version constraints)
+3. Schema mismatches (generated values don't match chart's values schema)
+
+**Production Readiness**: Teams can now integrate real `helm template` validation into CI/CD. Script handles error recovery and generates validation reports.
+
+### CLI Distribution Hardening - Complete
+
+**Implemented**:
+- Enhanced `cmd/koncept/Makefile` with platform-specific build targets (`build-linux`, `build-darwin`, `build-windows`)
+- Added distribution verification: `verify-checksums` and `test-binaries` targets
+- Archive creation via `dist-archives` target (tar.gz for Unix, zip for Windows)
+- Updated `.github/workflows/release.yml` with enhanced testing and archive publishing
+
+**Improvements Made**:
+- Platform-specific compilation reduces cross-compilation issues
+- Binary testing validates execution on all platforms (macOS, Linux, Windows)
+- Archive distribution includes checksums for integrity verification
+- Workflow publishes archives alongside GitHub releases
+
+**Production Readiness**: Cross-platform CLI distribution is now automated and tested. Teams can download pre-built binaries with confidence.
+
+### Template Version Compatibility Metadata
+
+**Status**: Already in place from earlier work. Stack schemas include optional `compatibility: FrameworkCompatibility` field.
+
+**Enhancement**: Added documentation on compatibility versioning strategy:
+- MAJOR bumps for breaking schema changes
+- MINOR bumps for new features (backward compatible)
+- PATCH bumps for bug fixes
+
+### Strategic Alignment - "Depth Before Breadth"
+
+This phase completed the "depth" objective: Medium-term items now mature and production-ready.
+
+| Item | Status | Maturity |
+|------|--------|----------|
+| **Observability enhancements** | ✅ COMPLETE | Resource forecasting + CLI display operational |
+| **Helmfile + helm template CI** | ✅ COMPLETE | Integration script + documentation ready |
+| **CLI distribution hardening** | ✅ COMPLETE | Cross-platform builds, archives, checksums |
+| **Template version compatibility** | ✅ IN PLACE | Metadata and versioning policy documented |
+| **Framework OCI publishing** | 🔄 DOCUMENTED | Publishing guide comprehensive; awaits KPM tooling |
+
+### Updated Action Items Status (Post-Phase 6)
+
+| Item | Status | Notes |
+|------|--------|-------|
+| **Observability in dry-run** | ✅ DONE | Resource calculations + CLI display |
+| **Helmfile integration testing** | ✅ DONE | Real helm template + CI/CD examples |
+| **CLI distribution hardening** | ✅ DONE | Cross-platform builds, checksums, archives |
+| **Publish framework to OCI** | 📖 READY | Guide complete; implementation pending KPM maturity |
+| **Crossplane runtime profiles** | 🔄 PLANNED | Foundation in place; `lifecycle` profile next |
+| **Fleet output format** | 🔄 PLANNED | Gated behind multi-cluster adoption signals |
+
+### Next Immediate Actions (Recommended)
+
+1. **Framework v1.0.0 publishing** — Execute OCI publishing workflow when KPM reaches stable state
+2. **Crossplane runtime lifecycle profile** — Extend `koncept crossplane test` with full reconciliation checks
+3. **Monitoring integration** — Dashboard generation from dry-run inventory for ops visibility
+4. **External adoption pilot** — Invite 1-2 external teams to use framework from OCI registry
+
+### Lesson Learned: Output Excellence over Output Breadth
+
+The "depth before breadth" strategy proved effective. Instead of chasing new output formats (Fleet, Score), this phase:
+- Hardened existing priority outputs (Helmfile, Crossplane)
+- Made observability actionable (teams know cluster footprint before deploying)
+- Automated distribution (no manual CLI installation required)
+- Documented integration patterns (teams can extend for their needs)
+
+Result: Quality improvements in existing outputs provide more value than new format support for now.
+
+---

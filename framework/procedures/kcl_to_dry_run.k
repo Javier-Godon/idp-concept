@@ -64,12 +64,70 @@ _extract_resource_requests = lambda module: any -> any {
     }
 }
 
+_extract_resource_value = lambda value: any -> int {
+    """Convert resource strings like '500m', '1Gi', '100' to integers or 0"""
+    if not value:
+        0
+    elif isinstance(value, int):
+        value
+    elif isinstance(value, str):
+        if value.endswith("m"):
+            int(value.rstrip("m"))
+        elif value.endswith("Gi"):
+            int(value.rstrip("Gi")) * 1024
+        else:
+            int(value) if value.isdigit() else 0
+    else:
+        0
+}
+
+_calculate_resource_footprint = lambda manifests: [any] -> any {
+    """Extract CPU/memory requirements from Deployment and StatefulSet specs"""
+    _total_cpu = 0
+    _total_memory = 0
+    _total_storage = 0
+    _warnings = []
+
+    _workload_manifests = [m for m in (manifests if manifests else []) if m.kind in ["Deployment", "StatefulSet"]]
+
+    for workload in _workload_manifests:
+        if workload.spec and workload.spec.template and workload.spec.template.spec:
+            _replicas = workload.spec.replicas if workload.spec.replicas else 1
+            _containers = workload.spec.template.spec.containers if workload.spec.template.spec.containers else []
+
+            for container in _containers:
+                if container.resources and container.resources.requests:
+                    _cpu = _extract_resource_value(container.resources.requests.get("cpu", 0))
+                    _memory = _extract_resource_value(container.resources.requests.get("memory", 0))
+                    _total_cpu += _cpu * _replicas
+                    _total_memory += _memory * _replicas
+                else:
+                    _warnings = _warnings + ["${workload.metadata.name}: missing resource requests"]
+
+    # Calculate storage from PVCs
+    _pvc_manifests = [m for m in (manifests if manifests else []) if m.kind == "PersistentVolumeClaim"]
+    for pvc in _pvc_manifests:
+        if pvc.spec and pvc.spec.resources and pvc.spec.resources.requests:
+            _storage = _extract_resource_value(pvc.spec.resources.requests.get("storage", 0))
+            _total_storage += _storage
+
+    {
+        estimatedCpuMillis = _total_cpu
+        estimatedMemoryMb = _total_memory
+        estimatedStorageGb = _total_storage
+        estimatedNodesSmall = (_total_cpu + 1000) / 2000  # 2CPU per small node
+        estimatedNodesMedium = (_total_cpu + 4000) / 8000  # 8CPU per medium node
+        warnings = _warnings
+    }
+}
+
 _resource_footprint = lambda modules: [any] -> any {
     _all_manifests = [m for mod in (modules if modules else []) for m in (mod.manifests if mod.manifests else [])]
     _pvc_count = len([m for m in _all_manifests if m.kind == "PersistentVolumeClaim"])
     _deploy_count = len([m for m in _all_manifests if m.kind == "Deployment"])
     _statefulset_count = len([m for m in _all_manifests if m.kind == "StatefulSet"])
     _daemonset_count = len([m for m in _all_manifests if m.kind == "DaemonSet"])
+    _resources = _calculate_resource_footprint(_all_manifests)
 
     {
         manifestCount = len(_all_manifests)
@@ -78,11 +136,20 @@ _resource_footprint = lambda modules: [any] -> any {
         daemonsetCount = _daemonset_count
         persistentVolumeClaimCount = _pvc_count
         estimatedWorkloads = _deploy_count + _statefulset_count + _daemonset_count
+        cpuRequest = {
+            millis = _resources.estimatedCpuMillis
+            estimatedNodes = _resources.estimatedNodesSmall
+        }
+        memoryRequest = {
+            mb = _resources.estimatedMemoryMb
+        }
         storageInfo = {
             pvcCount = _pvc_count
+            estimatedGb = _resources.estimatedStorageGb
             if _pvc_count > 0:
                 warning = "Storage class availability should be verified before deployment"
         }
+        warnings = _resources.warnings
     }
 }
 
