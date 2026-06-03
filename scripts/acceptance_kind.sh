@@ -14,10 +14,11 @@ APPLY_CASES=("basic" "webapp" "database" "webapp-service-account-rollout" "webap
 SEARCH_CASES=("opensearch" "opensearch-dashboards" "elasticsearch" "kibana" "logstash" "elasticsearch-v9" "kibana-v9" "logstash-v9")
 DATA_CASES=("database" "postgresql" "mongodb" "rabbitmq" "redis" "redis-cluster" "kafka" "minio-tenant" "minio-helm" "questdb" "valkey" "data-admin")
 PLATFORM_CASES=("backstage" "observability" "opentelemetry" "fluentbit-native" "fluentbit-helm" "fluentbit-operator" "vault" "keycloak" "ceph" "longhorn" "openbao")
-INTEGRATION_CASES=("dataprepper-opensearch" "keycloak-postgresql" "persistence-longhorn" "persistence-ceph" "webapp-postgresql-stack" "webapp-kafka-stack" "webapp-rabbitmq-stack" "webapp-redis-stack" "webapp-mongodb-stack")
+INTEGRATION_CASES=("dataprepper-opensearch" "keycloak-postgresql" "persistence-longhorn" "persistence-ceph" "webapp-postgresql-stack" "webapp-kafka-stack" "webapp-rabbitmq-stack" "webapp-redis-stack" "webapp-mongodb-stack" "helmfile-integration")
 ROLLOUT_CASES=("dataprepper-rollout" "opensearch-dashboards-rollout" "elasticsearch-rollout" "kibana-rollout" "logstash-rollout" "webapp-probes-rollout" "webapp-service-account-rollout" "webapp-database-stack-rollout" "elasticsearch-kibana-stack-rollout" "elk-stack-rollout" "webapp-dataprepper-stack-rollout" "webapp-opensearch-dashboards-stack-rollout" "webapp-elk-stack-rollout" "dataprepper-elk-stack-rollout" "webapp-dataprepper-elk-stack-rollout" "webapp-database-dataprepper-stack-rollout" "fluentbit-native-rollout")
+RUNTIME_CASES=("crossplane-lifecycle")
 TEMPLATE_CASES=("webapp" "database" "dataprepper" "fluentbit-native" "fluentbit-helm" "fluentbit-operator" "opensearch" "opensearch-dashboards" "elasticsearch" "kibana" "logstash" "elasticsearch-v9" "kibana-v9" "logstash-v9" "kafka" "postgresql" "mongodb" "rabbitmq" "redis" "redis-cluster" "keycloak" "backstage" "questdb" "minio-tenant" "minio-helm" "observability" "opentelemetry" "vault" "ceph" "longhorn" "valkey" "data-admin" "release-notes" "openbao")
-ALL_CASES=("basic" "${TEMPLATE_CASES[@]}" "${INTEGRATION_CASES[@]}" "${ROLLOUT_CASES[@]}")
+ALL_CASES=("basic" "${TEMPLATE_CASES[@]}" "${INTEGRATION_CASES[@]}" "${ROLLOUT_CASES[@]}" "${RUNTIME_CASES[@]}")
 
 usage() {
   cat <<'EOF_USAGE'
@@ -25,29 +26,31 @@ Usage: ./scripts/acceptance_kind.sh [options]
 
 Options:
   --case <name>        Run one case/group. Supported groups: basic, search,
-                       data, platform, templates, integrations, rollouts, all.
+                       data, platform, templates, integrations, rollouts,
+                       runtime, all.
                        Individual cases can be any fixture name such as webapp,
                        kafka, postgresql, minio-helm, opentelemetry,
                        fluentbit-native, fluentbit-helm, fluentbit-operator,
                        elasticsearch-v9, dataprepper-opensearch,
-                        dataprepper-rollout, webapp-probes-rollout,
-                        webapp-service-account-rollout,
-                        webapp-database-stack-rollout,
-                        elasticsearch-kibana-stack-rollout,
-                        elk-stack-rollout,
-                        webapp-dataprepper-stack-rollout,
-                        webapp-opensearch-dashboards-stack-rollout,
-                        webapp-elk-stack-rollout,
-                        dataprepper-elk-stack-rollout,
-                         fluentbit-native-rollout,
-                        webapp-dataprepper-elk-stack-rollout,
-                        webapp-database-dataprepper-stack-rollout,
-                        webapp-postgresql-stack,
-                        webapp-kafka-stack,
-                        webapp-rabbitmq-stack,
-                        webapp-redis-stack,
-                        webapp-mongodb-stack,
-                        or persistence-longhorn.
+                       helmfile-integration, crossplane-lifecycle,
+                       dataprepper-rollout, webapp-probes-rollout,
+                       webapp-service-account-rollout,
+                       webapp-database-stack-rollout,
+                       elasticsearch-kibana-stack-rollout,
+                       elk-stack-rollout,
+                       webapp-dataprepper-stack-rollout,
+                       webapp-opensearch-dashboards-stack-rollout,
+                       webapp-elk-stack-rollout,
+                       dataprepper-elk-stack-rollout,
+                       fluentbit-native-rollout,
+                       webapp-dataprepper-elk-stack-rollout,
+                       webapp-database-dataprepper-stack-rollout,
+                       webapp-postgresql-stack,
+                       webapp-kafka-stack,
+                       webapp-rabbitmq-stack,
+                       webapp-redis-stack,
+                       webapp-mongodb-stack,
+                       or persistence-longhorn.
                        Can be repeated.
   --cluster-name <n>   Kind cluster name (default: idp-concept-acceptance)
   --kind-image <img>   Kind node image (default: kindest/node:v1.33.0)
@@ -95,6 +98,7 @@ set_cases() {
     templates) CASES+=("${TEMPLATE_CASES[@]}") ;;
     integrations) CASES+=("${INTEGRATION_CASES[@]}") ;;
     rollouts) CASES+=("${ROLLOUT_CASES[@]}") ;;
+    runtime) CASES+=("${RUNTIME_CASES[@]}") ;;
     all) CASES+=("${ALL_CASES[@]}") ;;
     *) add_case "$selected" ;;
   esac
