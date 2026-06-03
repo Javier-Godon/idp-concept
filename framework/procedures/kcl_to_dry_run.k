@@ -66,57 +66,57 @@ _extract_resource_requests = lambda module: any -> any {
 
 _extract_resource_value = lambda value: any -> int {
     """Convert resource strings like '500m', '1Gi', '100' to integers or 0"""
-    if not value:
-        0
-    elif isinstance(value, int):
-        value
-    elif isinstance(value, str):
-        if value.endswith("m"):
-            int(value.rstrip("m"))
-        elif value.endswith("Gi"):
-            int(value.rstrip("Gi")) * 1024
-        else:
-            int(value) if value.isdigit() else 0
-    else:
-        0
+    # Simple approach: convert to string, then parse using conditional expressions
+    _str = str(value) if value else "0"
+    _m_val = _str.rstrip("m")
+    _gi_val = _str.rstrip("Gi")
+    int(_m_val) if (_str.endswith("m") and _m_val) else (int(_gi_val) * 1024 if (_str.endswith("Gi") and _gi_val) else (int(_str) if _str.isdigit() else 0))
 }
 
 _calculate_resource_footprint = lambda manifests: [any] -> any {
-    """Extract CPU/memory requirements from Deployment and StatefulSet specs"""
-    _total_cpu = 0
-    _total_memory = 0
-    _total_storage = 0
-    _warnings = []
-
+    """Extract CPU/memory requirements from Deployment and StatefulSet specs - simplified functional approach"""
     _workload_manifests = [m for m in (manifests if manifests else []) if m.kind in ["Deployment", "StatefulSet"]]
 
-    for workload in _workload_manifests:
-        if workload.spec and workload.spec.template and workload.spec.template.spec:
-            _replicas = workload.spec.replicas if workload.spec.replicas else 1
-            _containers = workload.spec.template.spec.containers if workload.spec.template.spec.containers else []
+    # Helper to get all containers - using conditional expression
+    _get_containers = lambda wl: any -> [any] {
+        wl.spec.template.spec.containers if (wl.spec and wl.spec.template and wl.spec.template.spec and wl.spec.template.spec.containers) else []
+    }
 
-            for container in _containers:
-                if container.resources and container.resources.requests:
-                    _cpu = _extract_resource_value(container.resources.requests.get("cpu", 0))
-                    _memory = _extract_resource_value(container.resources.requests.get("memory", 0))
-                    _total_cpu += _cpu * _replicas
-                    _total_memory += _memory * _replicas
-                else:
-                    _warnings = _warnings + ["${workload.metadata.name}: missing resource requests"]
+    _get_replicas = lambda wl: any -> int {
+        wl.spec.replicas if (wl.spec and wl.spec.replicas) else 1
+    }
+
+    # Collect all resources
+    _all_container_data = [
+        {
+            cpu = _extract_resource_value(c.resources.requests.get("cpu", 0)) * _get_replicas(_w) if (c.resources and c.resources.requests) else 0
+            memory = _extract_resource_value(c.resources.requests.get("memory", 0)) * _get_replicas(_w) if (c.resources and c.resources.requests) else 0
+            hasMissing = not (c.resources and c.resources.requests)
+            workloadName = _w.metadata.name if _w.metadata else "unknown"
+        }
+        for _w in _workload_manifests
+        for c in _get_containers(_w)
+    ]
+
+    _total_cpu = sum([c.cpu for c in _all_container_data])
+    _total_memory = sum([c.memory for c in _all_container_data])
+    _warnings = ["${c.workloadName}: missing resource requests" for c in _all_container_data if c.hasMissing]
 
     # Calculate storage from PVCs
     _pvc_manifests = [m for m in (manifests if manifests else []) if m.kind == "PersistentVolumeClaim"]
-    for pvc in _pvc_manifests:
-        if pvc.spec and pvc.spec.resources and pvc.spec.resources.requests:
-            _storage = _extract_resource_value(pvc.spec.resources.requests.get("storage", 0))
-            _total_storage += _storage
+    _storage_values = [
+        _extract_resource_value(pvc.spec.resources.requests.get("storage", 0))
+        for pvc in _pvc_manifests
+        if pvc.spec and pvc.spec.resources and pvc.spec.resources.requests
+    ]
+    _total_storage = sum(_storage_values) if _storage_values else 0
 
     {
         estimatedCpuMillis = _total_cpu
         estimatedMemoryMb = _total_memory
         estimatedStorageGb = _total_storage
-        estimatedNodesSmall = (_total_cpu + 1000) / 2000  # 2CPU per small node
-        estimatedNodesMedium = (_total_cpu + 4000) / 8000  # 8CPU per medium node
+        estimatedNodesSmall = int((_total_cpu + 1000) / 2000) if _total_cpu > 0 else 0
+        estimatedNodesMedium = int((_total_cpu + 4000) / 8000) if _total_cpu > 0 else 0
         warnings = _warnings
     }
 }

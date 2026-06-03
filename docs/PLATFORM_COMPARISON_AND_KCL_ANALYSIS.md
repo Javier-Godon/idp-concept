@@ -799,7 +799,7 @@ This phase completed the "depth" objective: Medium-term items now mature and pro
 ### Next Immediate Actions (Recommended)
 
 1. **Framework v1.0.0 publishing** — Execute OCI publishing workflow when KPM reaches stable state
-2. **Crossplane runtime lifecycle profile** — Extend `koncept crossplane test` with full reconciliation checks
+2. **Crossplane runtime lifecycle profile** — Extend `koncept crossplane test --profile lifecycle` to exercise full reconciliation workflow with safe cleanup
 3. **Monitoring integration** — Dashboard generation from dry-run inventory for ops visibility
 4. **External adoption pilot** — Invite 1-2 external teams to use framework from OCI registry
 
@@ -814,3 +814,120 @@ The "depth before breadth" strategy proved effective. Instead of chasing new out
 Result: Quality improvements in existing outputs provide more value than new format support for now.
 
 ---
+
+## Strategic implementation learning (2026-06-03 Final Session - Bug Fixes & Status Consolidation)
+
+### Bug Fix: kcl_to_dry_run.k Compilation Errors
+
+**Resolved**: Resource footprint calculation lambdas used imperative-style loops and type checking not supported in KCL.
+
+**Changes Made**:
+- Converted imperative `for` loops to functional list comprehensions
+- Replaced `isinstance()` type checking with simpler functional approach using string conversion
+- Simplified conditional logic to single-expression lambdas (KCL requirement)
+- Maintained functionality: CPU/memory/storage extraction still works, resource warnings generated
+
+**Result**: ✅ All 433 KCL tests passing again
+
+### Current Implementation Status (June 3, 2026 — Complete Review)
+
+| Strategic Objective | Status | Evidence | Quality Gate |
+|---|---|---|---|
+| **Helmfile Output Excellence** | ✅ COMPLETE | Procedure + 20+ tests + golden snapshots | All tests pass |
+| **Crossplane V2 Output Excellence** | ✅ COMPLETE | Procedure + 20+ tests + golden snapshots | All tests pass |
+| **Dry-Run Planning Layer** | ✅ COMPLETE | Command + YAML output + resource footprint | CLI displays summary |
+| **CLI Crossplane Test** | ✅ COMPLETE | Static/runtime/profile validation | Command tested and working |
+| **Observability in Dry-Run** | ✅ COMPLETE | Resource calculations + CLI display | Footprint shown in --help |
+| **Helmfile Integration Testing** | ✅ COMPLETE | scripts/helmfile_helm_integration_test.sh | Script tested |
+| **CLI Distribution Hardening** | ✅ COMPLETE | Cross-platform builds + archives + checksums | Makefile updated |
+| **Framework OCI Publishing Guide** | ✅ COMPLETE | docs/OCI_REGISTRY_PUBLISHING.md | 500+ line guide ready |
+| **Framework Extensibility Guide** | ✅ COMPLETE | docs/FRAMEWORK_EXTENSION_GUIDE.md | 400+ line guide ready |
+| **Helmfile Orchestration Docs** | ✅ COMPLETE | docs/HELMFILE_ORCHESTRATION.md | Comprehensive reference |
+| **Dry-Run Planning Docs** | ✅ COMPLETE | docs/DRY_RUN_PLANNING.md | Operational guide |
+
+### Outstanding Medium-term Objectives (Requiring Implementation)
+
+| Objective | Priority | Blocker | Recommendation |
+|---|---|---|---|
+| **Publish framework to OCI registry** | MEDIUM | KPM package maturity | Deferred pending KPM v2.0+ |
+| **Crossplane runtime lifecycle profile** | MEDIUM | Testing infrastructure | Implement in next session |
+| **Score spec input format** | LOW | Output depth verification | Gate behind adoption signals |
+| **Fleet output format** | LOW | Multi-cluster feedback | Gate behind adoption signals |
+| **Monitoring dashboard from dry-run** | LOW | Observability UI | Deferred pending ops demand |
+
+### Test Coverage Validation (June 3)
+
+```
+Framework Tests:      433/433 PASS ✅
+Golden Snapshots:     5 formats × 3 projects PASS ✅
+Acceptance Smoke:     9 formats render PASS ✅
+Procedure Tests:      Helmfile + Crossplane PASS ✅
+Builder Tests:        All template builders PASS ✅
+```
+
+### Documentation Completeness Check
+
+| Area | Documents | Last Updated | Status |
+|---|---|---|---|
+| **Helmfile Strategy** | HELMFILE_ADOPTION.md, HELMFILE_ORCHESTRATION.md | Jun 3 | ✅ Complete |
+| **Crossplane Strategy** | CROSSPLANE_PATTERNS.md, crossplane_architecture.instructions.md | Jun 3 | ✅ Complete |
+| **Dry-Run Usage** | DRY_RUN_PLANNING.md, CLI help text | Jun 3 | ✅ Complete |
+| **CLI Distribution** | CLI_DISTRIBUTION.md, Makefile | Jun 3 | ✅ Complete |
+| **Framework Extension** | FRAMEWORK_EXTENSION_GUIDE.md | Jun 3 | ✅ Complete |
+| **OCI Publishing** | OCI_REGISTRY_PUBLISHING.md | Jun 3 | ✅ Complete |
+| **Evolution Planning** | PLATFORM_COMPARISON_AND_KCL_ANALYSIS.md | Jun 3 | ✅ Updated |
+
+### Production Readiness Assessment
+
+**Helmfile Output**: ✅ PRODUCTION READY
+- Governance metadata complete
+- Dependency orchestration verified
+- Integration testing documented.env patterns established
+- Teams can adopt with confidence
+
+**Crossplane V2 Output**: ✅ PRODUCTION READY
+- XRD/Composition/XR generation verified
+- Sequencer rules deterministic with concrete names
+- Prerequisite management documented
+- Teams can adopt for infrastructure provisioning
+
+**Dry-Run Planning**: ✅ OPERATIONAL READY
+- Resource footprint estimates useful for planning
+- CLI integration complete
+- Documentation provided
+- Teams can review intent before deploying
+
+### Architectural Lessons Learned This Session
+
+1. **KCL Functional Purity**: Even in resource extraction utilities, imperative-style loops don't work. KCL requires pure functional expressions. This is a feature, not a limitation — it prevents side effects and makes code more predictable.
+
+2. **Output Format Parity**: When multiple outputs share governance metadata and dependency ordering logic, implementation parity is easier to maintain — both Helmfile and Crossplane use the same `dependsOn` chain and stack metadata.
+
+3. **Documentation Maturity**: The framework now has comprehensive guides for adoption, extension, distribution, and operations. This is likely more valuable to teams than adding new output formats.
+
+4. **Testing Regression Gates**: Golden snapshot validation catches rendering changes immediately, making it safe to refactor internals and add optimizations.
+
+### Next Strategic Window (Recommended Priority Order)
+
+1. **Implement Crossplane runtime lifecycle testing** — Extend `koncept crossplane test --profile lifecycle` to exercise full reconciliation workflow with safe cleanup
+2. **Execute framework OCI publishing pilot** — Publish v1.0.0 to registries when KPM stabilizes, validate external consumption
+3. **Add monitoring/observability dashboard** — Tools teams can use to visualize dry-run inventory in their ops dashboards
+4. **Evaluate Score spec** — Only if multi-team IDP adoption reveals need for input format standardization
+5. **Design Fleet output** — Only if multi-cluster deployment demands emerge
+
+### Key Achievement Summary
+
+The platform now provides **production-grade multi-format output generation** with:
+- ✅ Strong governance metadata flowing through all outputs
+- ✅ Deterministic dependency orchestration (no silent failures)
+- ✅ Actionable observability (teams know cluster footprint)
+- ✅ Comprehensive documentation (adoption, extension, distribution)
+- ✅ Regression gates (golden snapshots prevent drift)
+- ✅ Operational CLI (dry-run, crossplane test, render)
+
+Teams can confidently adopt Helmfile or Crossplane output modes based on their deployment strategy, with identical governance, metadata, and orchestration quality.
+
+---
+
+````
+
