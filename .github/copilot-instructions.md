@@ -41,11 +41,11 @@ This is **idp-concept**, an Internal Developer Platform (IDP) that uses **KCL** 
 ### 3. Crossplane
 - **Official docs**: https://docs.crossplane.io/
 - Used in `crossplane_v2/` for Kubernetes-native infrastructure provisioning
-- **XRDs** (CompositeResourceDefinitions): Define custom API types under `koncept.bluesolution.es` and `gitops.bluesolution.es`
+- **XRDs** (CompositeResourceDefinitions): Define intent-level custom API types under `koncept.bluesolution.es` (apiextensions.crossplane.io/v2)
 - **Compositions**: Pipeline mode using functions (patch-and-transform, auto-ready, go-templating, KCL, sequencer)
 - **Providers**: Helm provider and Kubernetes provider with `InjectedIdentity` credentials
-- Managed resources: cert-manager, Kafka (Strimzi), PostgreSQL, Keycloak
-- All compositions use `kubernetes.crossplane.io/v1alpha2 Object` to create raw K8s manifests
+- Managed resources: cert-manager, Kafka (Strimzi), PostgreSQL (CNPG-native), Keycloak
+- Prefer provider-native managed resources / operator CRDs / Helm `Release`; use `kubernetes.crossplane.io/v1alpha2 Object` only for namespaces and small cluster glue, never to wrap full application manifests
 
 ### 4. ArgoCD
 - Used as GitOps deployment target
@@ -188,10 +188,13 @@ Later values override earlier ones.
 
 ## When Working with Crossplane
 
-- XRDs define the API at `koncept.bluesolution.es/v1alpha1`
-- Compositions use `mode: Pipeline` with function steps
-- Always reference `provider-kubernetes` or `helm-provider` in `providerConfigRef`
-- Use `patches` for dynamic value injection from composite fields
+- **First read** `.github/skills/crossplane-architecture/SKILL.md` and `.github/instructions/crossplane-architecture.instructions.md`. They define the two-track model and the rules below.
+- There are **two distinct tracks**: the *generated* `crossplane` output (`framework/procedures/kcl_to_crossplane.k`) and the *hand-authored* `crossplane_v2/` directory (cluster prerequisites + curated reference APIs). Do not conflate them.
+- `crossplane_v2/managed_resources/` is a **curated subset** of `framework/templates/`, not a 1:1 mirror. Only platform/infrastructure services (DB, queue, identity, certs, storage, secrets) get a Crossplane API; application workloads (webapp, generic database) stay on Tier-1 GitOps YAML.
+- **No legacy, no retro-compat, no two versions of anything.** When replacing a resource, delete the predecessor in the same change. Never create `*_legacy`/`*_v2`/`*_old` files or `LEGACY_MIGRATION.md`. One canonical set per resource: `xrd_<name>.yaml`, `x_<name>.yaml`, `xr_instance_<name>.yaml`.
+- XRDs use `apiextensions.crossplane.io/v2` and model intent (no raw `manifest` inputs).
+- Compositions use `mode: Pipeline`, prefer provider-native/operator/Helm resources, use `provider-kubernetes` `Object` only for namespaces/small glue, end with `function-auto-ready`, and pin every Provider/Function version.
+- Use `patches` for dynamic value injection from composite fields; never hardcode credentials.
 
 ## Security Rules — Non-Negotiable
 

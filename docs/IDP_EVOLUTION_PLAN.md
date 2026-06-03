@@ -33,10 +33,26 @@
 > Update 2026-06-01 (Helmfile/Crossplane V2 ordering parity): implementation learning showed that metadata parity is necessary but not sufficient for production coherence. Helmfile generated releases now derive `needs` from framework component/accessory `dependsOn` relationships while allowing `releaseOverrides` to replace those values when operators need exact Helmfile orchestration. Crossplane V2 namespace dependency rules now point at the actual generated `ns-*` resources consumed by `function-sequencer`, aligning the rendered composition with the IDP dependency graph.
 >
 > Update 2026-06-01 (Crossplane V2 maturity research): the current Crossplane V2 output is now classified as a bridge, not the professional target architecture, when it wraps finalized Kubernetes manifests in `provider-kubernetes` Objects. Research against official Crossplane docs, crossplane-contrib functions, `vfarcic/crossplane-kubernetes`, and Upbound reference platforms sets a higher bar: typed intent-level XRDs/Claims, provider-native managed resources where available, versioned `function-kcl`/`function-go-templating` or custom Go functions for composition logic, explicit connection/status contracts, composition revision rollout strategy, and reconciliation/update/delete tests before support.
+>
+> Update 2026-06-03 (doc consolidation + Crossplane vs. templates clarification): consolidated the standalone root planning notes (`EVOLUTION_IMPLEMENTATION_2026_06_03.md`, `EVOLUTION_PHASE_5_2026_06_03.md`, `IMPLEMENTATION_PLAN_2026_06.md`) into this single roadmap and deleted them so this document remains the one source of truth for maturity state (Section 5.5). Their substance now lives in Sections 12.2 (delivered Helmfile/observability/distribution work) and 12.1 (Crossplane runtime fixtures). Also added Section 5.7 to answer a recurring architecture question: what `crossplane_v2/` is for, why Crossplane output is *generated* yet the directory is still *hand-authored*, and why `crossplane_v2/managed_resources/` is a curated subset of `framework/templates/` rather than a 1:1 mirror. Phase E2 gained explicit deliverables to close the template↔managed-resource parity gap and document the selection policy.
+>
+> Update 2026-06-03 (experimental no-legacy policy): formalized that this is a **first experimental IDP that keeps no legacy, no backward-compatibility shims, and no two versions of the same thing** (Section 1, Project Principles). Applied it immediately by **deleting** the superseded manifest-wrapping PostgreSQL Crossplane bridge (`*_legacy.yaml`, `LEGACY_MIGRATION.md`, the unused `postgres_init.sql`) and renaming the CNPG files to the single canonical set (`xrd_postgres.yaml`, `x_postgres.yaml`, `xr_instance_postgres.yaml`, API `xpostgresinstances.koncept.bluesolution.es`). Stale `docs/WORKFLOWS.md` paths were corrected, and a new AI resource (`.github/skills/crossplane-architecture/SKILL.md` + `.github/instructions/crossplane-architecture.instructions.md`) captures the two-track model so future automated changes do not reintroduce legacy or a `provider-kubernetes` Object wrapper for application workloads.
 
 ---
 
 ## 1. Executive Assessment
+
+### Project Principles (read first)
+
+> **This is a first experimental version of an IDP.** It deliberately keeps the surface area minimal:
+>
+> - **No legacy.** Superseded code, schemas, and manifests are **deleted**, not deprecated-in-place.
+> - **No backward-compatibility shims.** Breaking changes are made cleanly; consumers update with the framework.
+> - **No two versions of the same thing.** Every template, procedure, and managed resource has exactly one
+>   canonical implementation. We do not keep `*_legacy`, `*_v2`, or parallel "old/new" variants side by side.
+>
+> These rules apply to all human and AI changes. When something is replaced, remove the predecessor in the
+> same change. AI agents must not reintroduce compatibility layers or alternate versions "just in case".
 
 ### Is this IDP useful for a medium company?
 
@@ -279,6 +295,36 @@ KCL is a strong fit for typed configuration, but it is niche. A medium company s
 
 **Recommendation:** centralize KCL expertise in the platform team, provide generated examples, and use Backstage/CLI workflows for most users.
 
+### 5.7 Crossplane: "generated output" vs. the hand-authored `crossplane_v2/` directory
+
+A recurring and legitimate question is: *if Crossplane manifests are supposed to be **generated** from the single source of truth, what is the `crossplane_v2/` folder for, and shouldn't `managed_resources/` mirror `framework/templates/` one-for-one?*
+
+The short answer: there are **two different Crossplane concerns**, and conflating them is the source of the confusion.
+
+| Concern | Location | Authored how | Purpose |
+|---|---|---|---|
+| **Generated Crossplane output** | `framework/procedures/kcl_to_crossplane.k` (+ `koncept render crossplane`) | **Generated** from any stack | One of the 9 output formats. Turns a rendered stack into XRD + Composition + XR + prerequisites. Today it is a **bridge**: it wraps finalized K8s manifests in `provider-kubernetes` `Object`s (see Section 5.1 anti-pattern note and `docs/CROSSPLANE_PATTERNS.md` §12). |
+| **Hand-authored Crossplane platform** | `crossplane_v2/` | **Hand-authored, not generated** | Cluster prerequisites + curated, professional reference platform APIs. This is the *maturity target* the generated path should converge toward. |
+
+`crossplane_v2/` itself has two sub-roles, and only one of them is even a candidate for mirroring templates:
+
+1. **`crossplane_v2/providers/` and `crossplane_v2/functions/`** — pinned Provider installs (`provider-kubernetes`, `provider-helm`) and Composition Function installs (`function-kcl`, `function-patch-and-transform`, `function-sequencer`, `function-auto-ready`, `function-go-templating`). These are **cluster-level bootstrap**, installed once per cluster. They are *not derivable from a stack* and have no relationship to `framework/templates/`.
+2. **`crossplane_v2/managed_resources/`** — hand-authored, intent-level XRD/Composition/XR examples (cert-manager, Kafka/Strimzi, Keycloak, PostgreSQL/CNPG). These are the **professional reference APIs**: provider-native resources and operator CRDs instead of manifest-wrapping. They demonstrate the bar from `docs/CROSSPLANE_PATTERNS.md`.
+
+> **Experimental, single-version policy.** This is a first experimental IDP. The repository keeps **no legacy,
+> no backward-compatibility shims, and no two versions of the same thing**. When a resource is superseded
+> (e.g. the earlier manifest-wrapping PostgreSQL bridge that used `provider-kubernetes` Objects), the old
+> version is **deleted outright** rather than parked behind a `*_legacy` suffix. Each managed resource has a
+> single canonical file set (`xrd_<name>.yaml`, `x_<name>.yaml`, `xr_instance_<name>.yaml`). See the project
+> principle in Section 1 / 5.5.
+
+**Is the intuition "`managed_resources/` should contain the same elements as `framework/templates/`" correct?** *Partially.* It correctly identifies a coverage gap and an inconsistency, but the **target is a curated subset, not a 1:1 mirror**, for two reasons:
+
+- **Not every template should become a Crossplane API.** Per `docs/CROSSPLANE_PATTERNS.md` §4 (Pattern 4) and §7, *application workloads* (e.g. `WebAppModule`, generic `SingleDatabaseModule`) belong to Tier-1 GitOps YAML/ArgoCD, **not** to Crossplane wrapping every Deployment/Service. Crossplane earns its place only for **platform/infrastructure control-plane services** where a typed self-service API plus ongoing reconciliation/lifecycle management adds real value (databases, messaging, identity, certificates, object storage, secrets).
+- **The two tracks must converge, not duplicate.** Today a template like PostgreSQL can produce Crossplane two unrelated ways: (a) the generated *bridge* via `kcl_to_crossplane`, and (b) the hand-authored *professional* `managed_resources/postgres` (CNPG). They are currently disconnected. The fix is to define a **selection policy** (which templates warrant a Crossplane API), publish a **parity matrix**, close the gaps, and make the generated path emit/reference the professional APIs instead of opaque `Object` blobs.
+
+So `crossplane_v2/` is genuinely necessary (prerequisites can never be "generated away", and the reference APIs define the quality bar), but `managed_resources/` should track a **documented, curated subset** of `framework/templates/` — the infrastructure/middleware ones — with explicit parity tracking. The concrete work to resolve this is in **Phase E2** (Section 12.1) and the policy/matrix is documented in `docs/CROSSPLANE_PATTERNS.md`.
+
 ---
 
 ## 6. Missing or Underdeveloped Features
@@ -483,6 +529,19 @@ The previous roadmap emphasized many future phases. Given the current state, the
 ### Deliverables
 
 - [ ] Reclassify current manifest-wrapping `kcl_to_crossplane` output as a compatibility bridge and document it as non-final for production Crossplane APIs.
+- [ ] **Define the template→Crossplane-API selection policy** (which `framework/templates/` modules warrant a hand-authored `crossplane_v2/managed_resources/` API vs. which stay Tier-1 GitOps-only). Application workloads (`WebAppModule`, generic `SingleDatabaseModule`) stay Tier-1 GitOps/YAML; only platform/infrastructure services (databases, messaging, identity, certificates, object storage, secrets) become Crossplane APIs. Document the rule in `docs/CROSSPLANE_PATTERNS.md`.
+- [ ] **Publish and maintain a template↔managed-resource parity matrix** so the coverage relationship between `framework/templates/` and `crossplane_v2/managed_resources/` is explicit and reviewable. Current state below; close the gaps deliberately, do not blanket-mirror.
+
+  | Infra template (`framework/templates/`) | Curated Crossplane API (`crossplane_v2/managed_resources/`) | Status |
+  |---|---|---|
+  | `postgresql` (CNPG) | `postgres/*` (CNPG-native) | ✅ professional (CNPG-native) |
+  | `kafka` (Strimzi) | `kafka_strimzi/*` | ✅ Helm/operator-based |
+  | `keycloak` | `keycloak/*` | ✅ operator CRD + glue |
+  | (no template — cluster infra) | `cert_manager/*` | ✅ Helm Release |
+  | `mongodb`, `rabbitmq`, `redis`/`valkey`, `opensearch`, `minio`, `vault`/`openbao`, `questdb`, `elastic`, `opentelemetry` | — | ⬜ gap: decide per selection policy, add only where a control-plane API adds value |
+  | `webapp`, generic `database` | — | 🚫 intentionally excluded (Tier-1 GitOps/YAML) |
+
+- [ ] **Converge the two tracks**: make the generated `kcl_to_crossplane` path emit/reference the curated professional APIs (provider-native/operator CRDs) for templates that have one, instead of opaque `Object` wrappers, and fall back to the bridge only for unmodeled resources. Keep `crossplane_v2/providers/` and `crossplane_v2/functions/` as cluster prerequisites independent of any stack.
 - [ ] Define an XRD design checklist for every supported Crossplane API: intent-level fields, OpenAPI validation, defaults/enums, descriptions, status fields, printer columns, claim scope, connection-secret contract, and versioning policy.
 - [ ] Prefer provider-native managed resources and operator CRDs over `provider-kubernetes` Objects. Allow `Object` only for namespaces, small RBAC/bootstrap glue, or temporary migration bridges with an owner and removal path.
 - [ ] Move advanced composition logic into pinned, reviewed packages using `function-kcl`, `function-go-templating`, or custom functions built with `function-sdk-go`; inline functions remain limited to examples/prototypes.
@@ -504,6 +563,38 @@ The previous roadmap emphasized many future phases. Given the current state, the
 - New Crossplane APIs cannot be marked supported unless they pass the checklist and tests in `docs/CROSSPLANE_PATTERNS.md`.
 
 **Implementation learning (2026-06-02, Crossplane test wrapper):** the first secure step for Crossplane CLI maturity is a deterministic local contract gate, not immediate runtime orchestration in one command. `koncept crossplane test` now renders with the same factory path as production output and validates required sections, pipeline shape, and pinned provider/function packages before optionally running `crossplane render` (auto-skip when binary is missing unless `--require-cli`). Runtime checks now support both explicit modes and named profile presets (`smoke`, `lifecycle`, `catalog`, `api-lifecycle`, `matrix`) with conflict protection against ambiguous mode+profile combinations, safety defaults (no prerequisites unless requested, cleanup enabled, prerequisite cleanup disabled), and opt-in execution so teams can progressively validate behavior without making heavyweight checks mandatory in every environment. The `matrix` profile standardizes staged validation order (`smoke -> catalog -> api-lifecycle`) and supports inclusive boundaries (`--runtime-matrix-from` / `--runtime-matrix-stop-on`) so PR and nightly pipelines can share one command with different confidence depth. The new `--runtime-plan` mode lets teams preview resolved runtime execution intent without touching a cluster, which reduces CI/operator misconfiguration risk. Remaining work is full API-specific lifecycle/revision validation.
+
+**Implementation learning (2026-06-03, Crossplane vs. templates clarification):** the architecture ambiguity called out in Section 5.7 was traced to conflating the *generated* `kcl_to_crossplane` output with the *hand-authored* `crossplane_v2/` directory. The resolution is policy, not more code: (1) cluster prerequisites (`providers/`, `functions/`) are never generated and stay independent of stacks; (2) `managed_resources/` is a deliberately curated subset of `framework/templates/` — only platform/infrastructure services earn a Crossplane control-plane API, application workloads stay Tier-1 GitOps; (3) the generated bridge and the curated professional APIs must *converge* (generate/reference provider-native resources), not duplicate. The parity matrix above makes the coverage relationship reviewable so contributors stop assuming a 1:1 mirror is the goal.
+
+---
+
+## 12.2 Phase E3 — Delivered Output-Depth Work (Helmfile, Observability, Distribution) (P1)
+
+> This section consolidates three standalone June 2026 planning notes that previously lived at the repository root
+> (`EVOLUTION_IMPLEMENTATION_2026_06_03.md`, `EVOLUTION_PHASE_5_2026_06_03.md`, `IMPLEMENTATION_PLAN_2026_06.md`).
+> They were merged here and deleted so this roadmap stays the single source of truth (Section 5.5).
+
+**Goal:** deepen the highest-priority existing outputs (Helmfile, Crossplane V2) and harden CLI distribution before adding new breadth.
+
+### Delivered
+
+- [x] **Helmfile integration testing fixtures.** Added a `helmfile-integration` case to `INTEGRATION_CASES` in `scripts/acceptance_kind.sh` with a realistic multi-release scenario (Redis + PostgreSQL + WebApp 3-tier plus independent Kafka). It exercises `needs` generation derived from `dependsOn` chains, multi-repository setup, and per-release `releaseOverrides`. Prepared for real `helm template` validation in CI. See `docs/HELMFILE_ADOPTION.md`.
+- [x] **Crossplane runtime/lifecycle fixture.** Added a full-lifecycle Crossplane fixture (XRD → Composition → XR → Prerequisites → Readiness → Cleanup) using a stacked database + app workload, registered for runtime-only execution. Validates dependency ordering via concrete sequencer rule names and governance-metadata propagation through the composition pipeline.
+- [x] **Dry-run observability foundation.** Expanded the dry-run YAML structure to support a resource-footprint section and prepared the Go CLI handlers to display cluster-footprint summaries. Heavy resource-total calculation is intentionally deferred to the Go layer (KCL stays declarative), with full computation/display the remaining step.
+- [x] **CLI distribution hardening (docs).** Published `docs/CLI_DISTRIBUTION.md` covering Linux/macOS/Windows installation, checksum verification, container-image usage, and CI/CD integration, complementing the shipped `make build-all`/`make checksums`/`make docker` targets and `.github/workflows/release.yml`.
+
+### Key learnings (preserved from the merged notes)
+
+- **KCL is declarative by design.** Heavy calculations (resource footprint totals, node estimates) belong in the imperative Go layer after rendering, not inside KCL lambdas. This is a feature, not a limitation.
+- **Dependency identity parity is a coherence signal.** Helmfile effective release names (after `releaseDefaults`/`releaseOverrides`) and Crossplane concrete sequencer resource names both derive from the same framework `dependsOn` graph; when they line up, the multi-format model is internally consistent.
+- **Governance metadata flows uniformly.** Stack metadata reaches Helmfile (`labels`/`commonLabels`/per-release labels) and Crossplane (annotations on XRD/Composition/XR/prerequisites/wrapped Objects) from one contract, validating the schema design.
+- **Documentation-first drives adoption.** Teams need workflows and storage-class patterns as much as schemas; adoption guides moved the needle more than additional features.
+
+### Remaining
+
+- [ ] Pair the Helmfile fixture with real `helm template` execution in CI.
+- [ ] Finish dry-run resource-footprint computation and human-readable display in the Go CLI.
+- [ ] Wire the Crossplane lifecycle fixture into `scripts/acceptance_runtime.sh` with full Ready waits (tracked under Phase E2).
 
 ---
 

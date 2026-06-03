@@ -591,7 +591,7 @@ Following the strategic action items, this phase focused on consolidating helmfi
 2. **CLI_DISTRIBUTION.md** — How to obtain/verify/use cross-platform binaries and container images
 3. **FRAMEWORK_EXTENSION_GUIDE.md** — Complete patterns for creating custom modules, templates, and accessories
 4. **OCI_REGISTRY_PUBLISHING.md** — Publishing framework and modules to registries for versioned distribution
-5. **IMPLEMENTATION_PLAN_2026_06.md** — Phased implementation strategy for medium-term objectives
+5. **IDP_EVOLUTION_PLAN.md** (Phase E3, Section 12.2) — Phased implementation strategy for medium-term objectives (consolidated from the former root planning notes)
 
 **Learning**: Adoption is not just feature delivery; it's enablement through clear, practical guidance. Teams need workflows, not just schemas.
 

@@ -1,9 +1,0 @@
-apiVersion: gitops.bluesolution.es/v1alpha1
-kind: PostgresCompositeWorkload
-metadata:
-  name: postgres-workload
-  #amespace: default
-spec:
-  #amespace: postgres
-  label:
-    postgresNamespace: postgres

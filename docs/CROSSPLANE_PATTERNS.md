@@ -13,7 +13,7 @@ The Crossplane layer provides **Kubernetes-native platform APIs** for infrastruc
 ┌──────────────────────────────────────────────────┐
 │              Platform APIs (XRDs + Claims)        │
 │  ┌──────────────┐  ┌──────────────────────────┐  │
-│  │ XCertManager │  │ PostgresCompositeWorkload │  │
+│  │ XCertManager │  │ XPostgresInstance         │  │
 │  │ XKafkaStrimzi│  │ XKeycloak                 │  │
 │  └──────┬───────┘  └──────────┬───────────────┘  │
 │         │  Compositions       │                   │
@@ -33,12 +33,55 @@ The Crossplane layer provides **Kubernetes-native platform APIs** for infrastruc
 
 ---
 
+## 1.1 Two Crossplane Tracks: Generated Output vs. Hand-Authored `crossplane_v2/`
+
+A common question is: *Crossplane manifests are supposed to be **generated** from the single source of truth — so what is the `crossplane_v2/` directory for, and shouldn't `managed_resources/` mirror `framework/templates/` one-for-one?*
+
+There are **two distinct Crossplane concerns** in this repository. Keeping them separate removes the confusion.
+
+| Concern | Location | Authored how | Role |
+|---|---|---|---|
+| **Generated output** | `framework/procedures/kcl_to_crossplane.k` (`koncept render crossplane`) | **Generated** from any stack | One of the 9 output formats. Currently a **bridge** that wraps finalized K8s manifests in `provider-kubernetes` `Object`s (see §4 Pattern 4 and §12). |
+| **Hand-authored platform** | `crossplane_v2/` | **Hand-authored, not generated** | Cluster prerequisites + curated professional reference APIs — the maturity target the generated path should converge toward. |
+
+`crossplane_v2/` has two sub-roles:
+
+1. **`providers/` and `functions/`** — pinned Provider and Composition Function installs. Cluster-level bootstrap, installed once per cluster, **not derivable from a stack**, no relationship to `framework/templates/`.
+2. **`managed_resources/`** — hand-authored intent-level XRD/Composition/XR examples (cert-manager, Kafka/Strimzi, Keycloak, PostgreSQL/CNPG). These are the **professional reference APIs** that follow the rules in this document.
+
+> **Experimental, single-version policy.** This is a first experimental IDP. There is **no legacy, no
+> backward-compatibility shim, and no "two versions of the same thing"** kept in the repository. When a
+> resource is superseded (for example the earlier manifest-wrapping PostgreSQL bridge), the old version is
+> **deleted**, not parked behind a `*_legacy` suffix. Each managed resource has exactly one canonical set of
+> files (`xrd_<name>.yaml`, `x_<name>.yaml`, `xr_instance_<name>.yaml`).
+
+### Selection policy: not every template becomes a Crossplane API
+
+`managed_resources/` is a **curated subset** of `framework/templates/`, **not a 1:1 mirror**:
+
+- **Include** platform/infrastructure control-plane services where a typed self-service API plus ongoing reconciliation/lifecycle management adds real value: databases, messaging, identity, certificates, object storage, secrets.
+- **Exclude** application workloads. `WebAppModule` and the generic `SingleDatabaseModule` belong to Tier-1 GitOps YAML/ArgoCD. Wrapping every Deployment/Service in Crossplane `Object`s is an anti-pattern (§4 Pattern 4, §7).
+
+### Template ↔ managed-resource parity matrix
+
+| Infra template (`framework/templates/`) | Curated API (`crossplane_v2/managed_resources/`) | Status |
+|---|---|---|
+| `postgresql` (CNPG) | `postgres/*` (CNPG-native) | ✅ professional (CNPG-native) |
+| `kafka` (Strimzi) | `kafka_strimzi/*` | ✅ Helm/operator-based |
+| `keycloak` | `keycloak/*` | ✅ operator CRD + glue |
+| (cluster infra, no template) | `cert_manager/*` | ✅ Helm Release |
+| `mongodb`, `rabbitmq`, `redis`/`valkey`, `opensearch`, `minio`, `vault`/`openbao`, `questdb`, `elastic`, `opentelemetry` | — | ⬜ gap: add only where the selection policy justifies a control-plane API |
+| `webapp`, generic `database` | — | 🚫 intentionally excluded (Tier-1 GitOps/YAML) |
+
+The two tracks must **converge, not duplicate**: the generated path should emit/reference the curated provider-native/operator APIs for templates that have one, falling back to the bridge only for unmodeled resources. This work and its checklist are tracked in `docs/IDP_EVOLUTION_PLAN.md` Section 5.7 and Phase E2.
+
+---
+
 ## 2. API Groups
 
 | Group | Purpose | Resources |
 |---|---|---|
-| `koncept.bluesolution.es` | Platform infrastructure | XCertManager, XKafkaStrimzi, XKeycloak |
-| `gitops.bluesolution.es` | GitOps-oriented infrastructure | PostgresCompositeWorkload |
+| `koncept.bluesolution.es` | Platform infrastructure | XCertManager, XKafkaStrimzi, XKeycloak, XPostgresInstance |
 
 ---
 
@@ -119,18 +162,34 @@ spec:
     - hostname
 ```
 
-**PostgreSQL XRD** (`xrd_postgres.yaml`):
+**PostgreSQL XRD** (`xrd_postgres.yaml`) — CNPG-native, intent-level (the current reference target):
 ```yaml
 spec:
-  properties:
-    namespace:
-      type: string
-    label:
-      type: object
-      properties:
-        postgresNamespace:
-          type: string
+  scope: Cluster
+  group: koncept.bluesolution.es
+  names:
+    kind: XPostgresInstance
+  claimNames:
+    kind: PostgresInstance
+  versions:
+    - name: v1alpha1
+      additionalPrinterColumns: [NAMESPACE, INSTANCES, STORAGE, PG-VERSION, READY, AGE]
+      schema:
+        openAPIV3Schema:
+          properties:
+            spec:
+              required: [namespace, dbName]
+              properties:
+                namespace: { type: string }
+                dbName: { type: string, pattern: "^[a-z][a-z0-9_]{0,62}$" }
+                instances: { type: integer, default: 1, minimum: 1, maximum: 9 }
+                storageSize: { type: string, default: "10Gi" }
+                postgresVersion: { type: string }
 ```
+
+This XRD models intent (database name, instance count, storage, version) with defaults, enums,
+printer columns, and a status-backed `READY` column. It is the quality bar for promoting any new
+Crossplane API.
 
 These examples are useful as early XRD sketches, but the target is richer typed APIs with defaults, enums, status, printer columns, and connection-secret contracts before any resource is promoted as a supported platform API.
 
@@ -490,7 +549,7 @@ Future scope can extend this same entrypoint with optional cluster reconciliatio
 | **cert-manager** | `xcertmanagers.koncept.bluesolution.es` | Namespace + Helm Release | Jetstack cert-manager v1.17.2 |
 | **Kafka (Strimzi)** | `xkafkastrimzis.koncept.bluesolution.es` | Helm Release (Strimzi operator) | Strimzi 0.46.0 OCI chart |
 | **Keycloak** | `xkeycloaks.koncept.bluesolution.es` | Namespace + Auto-ready + CRD instance | Keycloak CRD (keycloak-operator 26.4.0) |
-| **PostgreSQL** | `postgrescompositeworkloads.gitops.bluesolution.es` | Namespace + PVC + ConfigMaps + Deployment + Service | postgres:18-alpine3.22 |
+| **PostgreSQL** | `xpostgresinstances.koncept.bluesolution.es` | Namespace + CNPG `Cluster` (provider-native via operator CRD) | CloudNativePG operator 1.24.x |
 
 ---
 

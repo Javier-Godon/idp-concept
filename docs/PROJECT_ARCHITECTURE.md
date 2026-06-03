@@ -325,15 +325,29 @@ packaged and how teams share rendered output through Git/GitOps.
 
 ## 8. Crossplane Layer
 
-The `crossplane_v2/` directory contains Kubernetes-native infrastructure definitions for
-provisioning managed resources via Crossplane.
+There are **two distinct Crossplane tracks**, and they should not be confused:
+
+1. **Generated output** — `framework/procedures/kcl_to_crossplane.k` (`koncept render crossplane`)
+   turns any stack into XRD + Composition + XR + prerequisites. This is one of the 9 output
+   formats and is currently a *bridge* (it wraps finalized manifests in `provider-kubernetes`
+   `Object`s).
+2. **Hand-authored platform** — the `crossplane_v2/` directory. This is **not generated**. It holds
+   cluster bootstrap (`providers/`, `functions/`) plus a *curated subset* of professional reference
+   APIs in `managed_resources/`. It is the maturity target the generated path should converge toward.
+
+`crossplane_v2/managed_resources/` deliberately tracks only **infrastructure/middleware** templates
+(databases, messaging, identity, certificates), **not** application workloads — those stay on the
+Tier-1 GitOps/YAML path. See `docs/CROSSPLANE_PATTERNS.md` §1.1 (selection policy + parity matrix)
+and `docs/IDP_EVOLUTION_PLAN.md` §5.7 for the full explanation.
+
+The curated reference APIs in `crossplane_v2/managed_resources/`:
 
 | Kind | API Group | Provisions |
 |---|---|---|
 | `XCertManager` | `koncept.bluesolution.es/v1alpha1` | cert-manager via Helm |
 | `XKafkaStrimzi` | `koncept.bluesolution.es/v1alpha1` | Strimzi Kafka operator |
 | `XKeycloak` | `koncept.bluesolution.es/v1alpha1` | Keycloak identity server |
-| `PostgresCompositeWorkload` | `gitops.bluesolution.es/v1alpha1` | PostgreSQL deployment |
+| `XPostgresInstance` | `koncept.bluesolution.es/v1alpha1` | PostgreSQL (CNPG-native, operator CRD) |
 
 All compositions use `mode: Pipeline` with function steps (patch-and-transform, auto-ready,
 go-templating, KCL, sequencer). Providers: `provider-kubernetes` and `provider-helm`
