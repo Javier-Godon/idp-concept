@@ -16,10 +16,47 @@ var validFormats = []string{
 	"kusion", "kustomize", "timoni", "crossplane", "backstage",
 }
 
+// OutputTier defines support levels for each output format.
+//   - Tier 1: production-ready, fully tested, golden snapshots, documented workflows
+//   - Tier 2: maintained for infrastructure/platform teams, real adoption emerging
+//   - Tier 3: experimental or transitional, gated behind adoption signals
+var outputTiers = map[string]struct {
+	tier        string
+	description string
+}{
+	"yaml":       {"Tier 1", "Plain Kubernetes YAML (GitOps standard)"},
+	"argocd":     {"Tier 1", "ArgoCD Application CRDs (GitOps standard)"},
+	"helmfile":   {"Tier 1", "Helmfile +orchestration (Helm orchestration standard)"},
+	"backstage":  {"Tier 1", "Backstage catalog entities (developer portal standard)"},
+	"helm":       {"Tier 2", "Helm Chart structure (output for helm/helmfile; hand-author Chart.yaml)"},
+	"crossplane": {"Tier 2", "Crossplane XRD/Composition/XR (infrastructure-as-code for cloud services)"},
+	"kustomize":  {"Tier 2", "Kustomization overlays (emerging alternative to Helm)"},
+	"kusion":     {"Tier 3", "Kusion spec format (experimental; no active internal consumer)"},
+	"timoni":     {"Tier 3", "Timoni CUE modules (experimental; no active internal consumer)"},
+}
+
 var renderCmd = &cobra.Command{
 	Use:       "render [format]",
 	Short:     "Render KCL configurations to the specified output format",
-	Long:      `Render generates Kubernetes manifests from KCL factory configurations.`,
+	Long: fmt.Sprintf(`Render generates Kubernetes manifests from KCL factory configurations.
+
+Supported formats by tier:
+
+TIER 1 (production-ready, fully tested):
+  yaml       – Plain Kubernetes YAML (GitOps standard)
+  argocd     – ArgoCD Application CRDs (GitOps standard)
+  helmfile   – Helmfile + orchestration (Helm orchestration standard)
+  backstage  – Backstage catalog entities (developer portal standard)
+
+TIER 2 (maintained for platform/infrastructure teams):
+  helm       – Helm Chart structure (use for Helmfile or custom delivery)
+  crossplane – Crossplane XRD/Composition/XR (infrastructure-as-code)
+  kustomize  – Kustomization overlays (Helm alternative)
+
+TIER 3 (experimental, gated behind adoption signals):
+  kusion     – Kusion spec format (no active consumer)
+  timoni     – Timoni CUE modules (no active consumer)
+`),
 	ValidArgs: validFormats,
 	Args:      cobra.MaximumNArgs(1),
 	RunE:      runRender,
@@ -30,6 +67,12 @@ func runRender(cmd *cobra.Command, args []string) error {
 	format := cfg.Spec.DefaultOutput
 	if len(args) > 0 {
 		format = args[0]
+	}
+
+	// Warn on Tier-3 formats
+	if tierInfo, ok := outputTiers[format]; ok && tierInfo.tier == "Tier 3" {
+		fmt.Printf("⚠️  Warning: %s is %s (experimental, no active consumer).\n", format, tierInfo.tier)
+		fmt.Printf("   For production use, prefer Tier-1 outputs: yaml, argocd, helmfile, backstage\n\n")
 	}
 
 	start := time.Now()

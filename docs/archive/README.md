@@ -1,0 +1,1 @@
+Status reports and working notes from the evolution have been archived here for historical reference. Active documentation lives in docs/. The forward-looking assessment and actions are in docs/IDP_ASSESSMENT_2026H2.md.

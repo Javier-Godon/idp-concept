@@ -1,0 +1,108 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:base",
+    ":semanticCommits"
+  ],
+  "schedule": [
+    "before 3am on Monday in UTC"
+  ],
+  "rangeStrategy": "bump",
+  "automerge": false,
+  "labels": [
+    "dependencies",
+    "renovate"
+  ],
+  "assignees": [
+    "@Javier-Godon"
+  ],
+  "reviewers": [
+    "@Javier-Godon"
+  ],
+  "go": {
+    "rangeStrategy": "auto"
+  },
+  "kcl": {
+    "rangeStrategy": "pinned",
+    "pinDigests": true
+  },
+  "docker": {
+    "automerge": false,
+    "pinDigests": true
+  },
+  "github-actions": {
+    "automerge": false
+  },
+  "grouping": {
+    "definitions": [
+      {
+        "name": "all non-major",
+        "description": "All non-major updates",
+        "matches": [
+          "!major"
+        ]
+      },
+      {
+        "name": "major versions",
+        "description": "Major version updates",
+        "matches": [
+          "major"
+        ]
+      }
+    ],
+    "groups": {
+      "allNonMajor": "all non-major",
+      "allMajor": "major versions"
+    }
+  },
+  "packageRules": [
+    {
+      "description": "Automatically merge patch and minor updates to dependencies",
+      "matchUpdateTypes": [
+        "patch",
+        "minor"
+      ],
+      "matchDatasources": [
+        "go",
+        "github-releases"
+      ],
+      "automerge": true,
+      "automergeType": "squash",
+      "minimumReleaseAge": "3 days"
+    },
+    {
+      "description": "KCL and k8s dependencies: require manual review",
+      "matchDatasources": [
+        "kcl",
+        "k8s"
+      ],
+      "automerge": false,
+      "groupName": "KCL and Kubernetes"
+    },
+    {
+      "description": "CVE/security updates: fast-track review",
+      "matchDatasources": [
+        "npm",
+        "docker",
+        "go",
+        "github-releases"
+      ],
+      "groupName": "security",
+      "labels": [
+        "security",
+        "high-priority"
+      ],
+      "automerge": true,
+      "minimumReleaseAge": "0 days"
+    },
+    {
+      "description": "GitHub Actions: require manual review",
+      "matchDatasources": [
+        "github-actions"
+      ],
+      "automerge": false,
+      "groupName": "GitHub Actions"
+    }
+  ]
+}
+

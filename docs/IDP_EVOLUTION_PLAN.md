@@ -1,5 +1,11 @@
 # IDP Assessment & Evolution Plan
 
+> ⚠️ **This document is now the HISTORICAL EVOLUTION RECORD.** As of 2026-06-07 most of its open
+> phases have been implemented and its "what to do next" sections are superseded. For the
+> **current-state assessment and forward actions**, read
+> [`docs/IDP_ASSESSMENT_2026H2.md`](./IDP_ASSESSMENT_2026H2.md). Keep this file for the history of
+> how the platform evolved and the rationale/learnings captured along the way.
+>
 > Current-state assessment and roadmap for **idp-concept** as a practical Internal Developer Platform for a medium-sized company with several products.
 >
 > Last reviewed: 2026-05-31. Repository verification at review time: `./scripts/verify.sh`, golden drift checks, Go CLI package tests, and the policy gate passed.

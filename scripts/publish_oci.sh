@@ -90,9 +90,10 @@ publish_framework() {
   tar --exclude='.git' --exclude='*.lock' --exclude='output' \
       --exclude='node_modules' --exclude='**/test_to_delete' \
       -czf "${tarball}" -C "${REPO_ROOT}" framework/
-  log "Pushing ${FRAMEWORK_PACKAGE}:${version}"
-  oras push "${FRAMEWORK_PACKAGE}:${version}" \
-    "${tarball}:${FRAMEWORK_MEDIA_TYPE}"
+   log "Pushing ${FRAMEWORK_PACKAGE}:${version}"
+   oras push "${FRAMEWORK_PACKAGE}:${version}" \
+     --disable-path-validation \
+     "${tarball}:${FRAMEWORK_MEDIA_TYPE}"
   log "Published framework package: ${FRAMEWORK_PACKAGE}:${version}"
   log "Consume with: framework = \"oras://${FRAMEWORK_PACKAGE}:${version}\""
 }
