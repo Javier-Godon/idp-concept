@@ -1,0 +1,161 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: xlonghorninstance-helm-composition
+  labels:
+    koncept.io/version: "v1alpha1"
+    koncept.io/pattern: "helm-release"
+spec:
+  compositeTypeRef:
+    apiVersion: koncept.bluesolution.es/v1alpha1
+    kind: XLonghornInstance
+  mode: Pipeline
+  pipeline:
+    - step: setup-namespace
+      functionRef:
+        name: function-patch-and-transform
+      input:
+        apiVersion: pt.crossplane.io/v1beta1
+        kind: Resources
+        metadata:
+          name: setup-namespace
+        spec:
+          resources:
+            - name: namespace
+              base:
+                apiVersion: v1
+                kind: Namespace
+                metadata:
+                  labels:
+                    app.kubernetes.io/managed-by: crossplane
+                    app.kubernetes.io/component: storage-infrastructure
+              patches:
+                - fromFieldPath: spec.namespace
+                  toFieldPath: metadata.name
+    - step: deploy-longhorn-helm-release
+      functionRef:
+        name: function-patch-and-transform
+      input:
+        apiVersion: pt.crossplane.io/v1beta1
+        kind: Resources
+        metadata:
+          name: deploy-longhorn-helm-release
+        spec:
+          resources:
+            - name: longhorn-release
+              base:
+                apiVersion: helm.toolkit.fluxcd.io/v2beta1
+                kind: HelmRelease
+                metadata:
+                  labels:
+                    app.kubernetes.io/managed-by: crossplane
+                spec:
+                  interval: 5m
+                  chart:
+                    spec:
+                      chart: longhorn
+                      sourceRef:
+                        kind: HelmRepository
+                        name: longhorn
+                        namespace: crossplane-system
+                      version: "1.7.2"
+                  values:
+                    persistence:
+                      defaultClass: false
+                      defaultClassReplicaCount: 2
+                      reclaimPolicy: Delete
+                    defaultSettings:
+                      defaultDataPath: /var/lib/longhorn
+                      defaultReplicaCount: 2
+                      backupstorePollInterval: 0
+                      backupTarget: ""
+                      backupTargetCredentialSecret: ""
+                      allowRecurringJobWhileVolumePending: "false"
+                      createDefaultDiskLabeledNodes: "false"
+                      defaultLonghornStaticStorageClass: ""
+                      systemManagedComponentsNodeSelector: "{}"
+                      storageMinimalSchedulingQuotaPercentage: 0
+                      storageOverProvisioning Percentage: 200
+                      storageReservedPercentageForDefaultDisk: 25
+                      storageTagDefault: ""
+                      repoDeletionConfirmed: "false"
+                    resources:
+                      limits:
+                        cpu: 500m
+                        memory: 512Mi
+                      requests:
+                        cpu: 250m
+                        memory: 256Mi
+              patches:
+                - fromFieldPath: spec.namespace
+                  toFieldPath: metadata.namespace
+                - fromFieldPath: spec.releaseName
+                  toFieldPath: metadata.name
+                  transforms:
+                    - type: string
+                      string:
+                        type: Regexp
+                        regexp:
+                          match: '^$'
+                          replaceWith: longhorn
+                - fromFieldPath: spec.chartVersion
+                  toFieldPath: spec.chart.spec.version
+                - fromFieldPath: spec.defaultReplicaCount
+                  toFieldPath: spec.values.defaultSettings.defaultReplicaCount
+                - fromFieldPath: spec.defaultDataPath
+                  toFieldPath: spec.values.defaultSettings.defaultDataPath
+                - fromFieldPath: spec.reclaimPolicy
+                  toFieldPath: spec.values.persistence.reclaimPolicy
+                - fromFieldPath: spec.makeStorageClassDefault
+                  toFieldPath: spec.values.persistence.defaultClass
+    - step: create-storage-class
+      functionRef:
+        name: function-patch-and-transform
+      input:
+        apiVersion: pt.crossplane.io/v1beta1
+        kind: Resources
+        metadata:
+          name: create-storage-class
+        spec:
+          resources:
+            - name: longhorn-storage-class
+              base:
+                apiVersion: storage.k8s.io/v1
+                kind: StorageClass
+                metadata:
+                  labels:
+                    app.kubernetes.io/name: longhorn
+                    app.kubernetes.io/managed-by: crossplane
+                provisioner: driver.longhorn.io
+                allowVolumeExpansion: true
+                reclaimPolicy: Delete
+                volumeBindingMode: Immediate
+                parameters:
+                  numberOfReplicas: "2"
+                  staleReplicaTimeout: "2880"
+                  fromBackup: ""
+                  fstype: ext4
+              patches:
+                - fromFieldPath: spec.storageClassName
+                  toFieldPath: metadata.name
+                - fromFieldPath: spec.makeStorageClassDefault
+                  toFieldPath: metadata.annotations['storageclass.kubernetes.io/is-default-class']
+                  transforms:
+                    - type: convert
+                      convert:
+                        toType: string
+                - fromFieldPath: spec.defaultReplicaCount
+                  toFieldPath: parameters.numberOfReplicas
+                  transforms:
+                    - type: convert
+                      convert:
+                        toType: string
+                - fromFieldPath: spec.reclaimPolicy
+                  toFieldPath: reclaimPolicy
+    - step: status-and-ready
+      functionRef:
+        name: function-auto-ready
+      input:
+        apiVersion: autoready.crossplane.io/v1alpha1
+        kind: AutoReadyConfig
+

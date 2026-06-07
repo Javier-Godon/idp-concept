@@ -1,0 +1,218 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: xobservabilityprovisioner-helm-composition
+  labels:
+    koncept.io/version: "v1alpha1"
+    koncept.io/pattern: "helm-composite"
+spec:
+  compositeTypeRef:
+    apiVersion: koncept.bluesolution.es/v1alpha1
+    kind: XObservabilityProvisioner
+  mode: Pipeline
+  pipeline:
+    - step: setup-namespace
+      functionRef:
+        name: function-patch-and-transform
+      input:
+        apiVersion: pt.crossplane.io/v1beta1
+        kind: Resources
+        metadata:
+          name: setup-namespace
+        spec:
+          resources:
+            - name: namespace
+              base:
+                apiVersion: v1
+                kind: Namespace
+                metadata:
+                  labels:
+                    app.kubernetes.io/managed-by: crossplane
+                    app.kubernetes.io/component: observability-infrastructure
+              patches:
+                - fromFieldPath: spec.namespace
+                  toFieldPath: metadata.name
+    - step: deploy-prometheus
+      functionRef:
+        name: function-patch-and-transform
+      input:
+        apiVersion: pt.crossplane.io/v1beta1
+        kind: Resources
+        metadata:
+          name: deploy-prometheus
+        spec:
+          resources:
+            - name: prometheus-release
+              base:
+                apiVersion: helm.toolkit.fluxcd.io/v2beta1
+                kind: HelmRelease
+                metadata:
+                  labels:
+                    app.kubernetes.io/component: prometheus
+                    app.kubernetes.io/managed-by: crossplane
+                spec:
+                  interval: 5m
+                  chart:
+                    spec:
+                      chart: kube-prometheus
+                      sourceRef:
+                        kind: HelmRepository
+                        name: bitnami
+                        namespace: crossplane-system
+                      version: "10.2.0"
+                  values:
+                    prometheus:
+                      persistence:
+                        enabled: true
+                        size: 50Gi
+                        storageClassName: rook-ceph-block
+                      retention: 15d
+                      replicas: 1
+                      resources:
+                        requests:
+                          cpu: 500m
+                          memory: 512Mi
+                        limits:
+                          cpu: 1000m
+                          memory: 1Gi
+                    nodeExporter:
+                      enabled: true
+                    alertmanager:
+                      enabled: false
+                    kubeStateMetrics:
+                      enabled: true
+              patches:
+                - fromFieldPath: spec.namespace
+                  toFieldPath: metadata.namespace
+                - fromFieldPath: spec.prometheusChartVersion
+                  toFieldPath: spec.chart.spec.version
+                - fromFieldPath: spec.prometheusStorageSize
+                  toFieldPath: spec.values.prometheus.persistence.size
+                - fromFieldPath: spec.prometheusRetentionDays
+                  toFieldPath: spec.values.prometheus.retention
+                  transforms:
+                    - type: string
+                      string:
+                        fmt: "%dd"
+                - fromFieldPath: spec.nodeExporterEnabled
+                  toFieldPath: spec.values.nodeExporter.enabled
+    - step: deploy-grafana
+      functionRef:
+        name: function-patch-and-transform
+      input:
+        apiVersion: pt.crossplane.io/v1beta1
+        kind: Resources
+        metadata:
+          name: deploy-grafana
+        spec:
+          resources:
+            - name: grafana-release
+              base:
+                apiVersion: helm.toolkit.fluxcd.io/v2beta1
+                kind: HelmRelease
+                metadata:
+                  labels:
+                    app.kubernetes.io/component: grafana
+                    app.kubernetes.io/managed-by: crossplane
+                spec:
+                  interval: 5m
+                  chart:
+                    spec:
+                      chart: grafana
+                      sourceRef:
+                        kind: HelmRepository
+                        name: bitnami
+                        namespace: crossplane-system
+                      version: "12.0.0"
+                  values:
+                    admin:
+                      password: admin
+                    persistence:
+                      enabled: true
+                      size: 10Gi
+                      storageClassName: rook-ceph-block
+                    datasources:
+                      prometheus:
+                        enabled: true
+                        url: http://prometheus-kube-prometheus-prometheus:9090
+                    ingress:
+                      enabled: false
+                    resources:
+                      requests:
+                        cpu: 250m
+                        memory: 256Mi
+                      limits:
+                        cpu: 500m
+                        memory: 512Mi
+              patches:
+                - fromFieldPath: spec.namespace
+                  toFieldPath: metadata.namespace
+                - fromFieldPath: spec.grafanaChartVersion
+                  toFieldPath: spec.chart.spec.version
+                - fromFieldPath: spec.grafanaAdminPassword
+                  toFieldPath: spec.values.admin.password
+                - fromFieldPath: spec.grafanaIngressEnabled
+                  toFieldPath: spec.values.ingress.enabled
+                - fromFieldPath: spec.grafanaIngressHost
+                  toFieldPath: spec.values.ingress.hosts[0]
+                  transforms:
+                    - type: string
+                      string:
+                        type: Regexp
+                        regexp:
+                          match: '^$'
+                          replaceWith: grafana.local
+    - step: deploy-alertmanager
+      functionRef:
+        name: function-patch-and-transform
+      input:
+        apiVersion: pt.crossplane.io/v1beta1
+        kind: Resources
+        metadata:
+          name: deploy-alertmanager
+        spec:
+          resources:
+            - name: alertmanager-release
+              base:
+                apiVersion: helm.toolkit.fluxcd.io/v2beta1
+                kind: HelmRelease
+                metadata:
+                  labels:
+                    app.kubernetes.io/component: alertmanager
+                    app.kubernetes.io/managed-by: crossplane
+                spec:
+                  interval: 5m
+                  chart:
+                    spec:
+                      chart: alertmanager
+                      sourceRef:
+                        kind: HelmRepository
+                        name: bitnami
+                        namespace: crossplane-system
+                      version: "1.8.0"
+                  values:
+                    replicaCount: 1
+                    persistence:
+                      enabled: true
+                      size: 5Gi
+                      storageClassName: rook-ceph-block
+              patches:
+                - fromFieldPath: spec.namespace
+                  toFieldPath: metadata.namespace
+                - fromFieldPath: spec.alertmanagerEnabled
+                  toFieldPath: spec.suspend
+                  transforms:
+                    - type: math
+                      math:
+                        type: Convert
+                        convert:
+                          toType: bool
+                - fromFieldPath: spec.alertmanagerReplicas
+                  toFieldPath: spec.values.replicaCount
+    - step: status-and-ready
+      functionRef:
+        name: function-auto-ready
+      input:
+        apiVersion: autoready.crossplane.io/v1alpha1
+        kind: AutoReadyConfig
+

@@ -1,0 +1,133 @@
+apiVersion: koncept.bluesolution.es/v1alpha1
+kind: CephCluster
+metadata:
+  name: production-storage
+  namespace: storage
+  labels:
+    environment: production
+spec:
+  # Cluster basics
+  clusterName: prod-ceph
+  namespace: rook-ceph
+
+  # Rook Ceph versions
+  chartVersion: "1.15.2"
+  cephVersion: "v19.2.3"
+  cephImage: "quay.io/ceph/ceph:v19.2.3"
+
+  # Cluster sizing
+  monCount: 3
+  mgrCount: 2
+
+  # Device configuration
+  storageUseAllNodes: true
+  storageUseAllDevices: true
+  storageDeviceFilter: ""  # Use all devices
+
+  # Block pool configuration
+  blockPoolName: replicapool
+  blockPoolReplicatedSize: 3
+  blockPoolFailureDomain: host
+
+  # StorageClass for RBD provisioning
+  storageClassName: rook-ceph-block
+  reclaimPolicy: Delete
+
+  # Create block pool + StorageClass automatically
+  createBlockPoolAndStorageClass: true
+
+  # Dashboard & monitoring
+  enableDashboard: true
+  enableMonitoring: true
+
+  # Container Storage Interface
+  csiEnabled: true
+  discoveryEnabled: true
+
+  # Pod Security Policy (legacy)
+  pspEnabled: false
+
+---
+apiVersion: koncept.bluesolution.es/v1alpha1
+kind: CephCluster
+metadata:
+  name: dev-storage
+  namespace: storage-dev
+  labels:
+    environment: development
+spec:
+  # Development footprint = smaller, simpler
+  clusterName: dev-ceph
+  namespace: rook-ceph-dev
+
+  chartVersion: "1.15.2"
+  cephVersion: "v19.2.3"
+  cephImage: "quay.io/ceph/ceph:v19.2.3"
+
+  # Minimal sizing for dev
+  monCount: 1
+  mgrCount: 1
+
+  # More flexible device selection
+  storageUseAllNodes: false
+  storageUseAllDevices: false
+  storageDeviceFilter: "vd[a-z]|sd[a-z]"
+
+  # Single replica for cost saving
+  blockPoolName: devpool
+  blockPoolReplicatedSize: 1
+  blockPoolFailureDomain: osd
+
+  # StorageClass
+  storageClassName: rook-ceph-block-dev
+  reclaimPolicy: Retain
+
+  # Features
+  createBlockPoolAndStorageClass: true
+  enableDashboard: false
+  enableMonitoring: false
+  csiEnabled: true
+  discoveryEnabled: false
+  pspEnabled: false
+
+---
+apiVersion: koncept.bluesolution.es/v1alpha1
+kind: XCephCluster
+metadata:
+  name: infrastructure-ceph
+  namespace: crossplane-system
+  labels:
+    tier: platform-infrastructure
+spec:
+  # Cluster-scoped (platform team)
+  clusterName: infrastructure-ceph
+  namespace: ceph-infrastructure
+
+  chartVersion: "1.15.2"
+  cephVersion: "v19.2.3"
+  cephImage: "quay.io/ceph/ceph:v19.2.3"
+
+  # HA setup
+  monCount: 5
+  mgrCount: 3
+
+  # Full device support
+  storageUseAllNodes: true
+  storageUseAllDevices: true
+
+  # Triple replication for availability
+  blockPoolName: infrastructure-pool
+  blockPoolReplicatedSize: 3
+  blockPoolFailureDomain: host
+
+  storageClassName: rook-ceph-block
+  reclaimPolicy: Retain
+
+  # Full monitoring & dashboarding
+  createBlockPoolAndStorageClass: true
+  enableDashboard: true
+  enableMonitoring: true
+  csiEnabled: true
+  discoveryEnabled: true
+  pspEnabled: false
+

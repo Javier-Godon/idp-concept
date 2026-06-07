@@ -1,0 +1,165 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: xtimescaledbinstance-cnpg-composition
+  labels:
+    koncept.io/version: "v1alpha1"
+    koncept.io/pattern: "operator-native"
+spec:
+  compositeTypeRef:
+    apiVersion: koncept.bluesolution.es/v1alpha1
+    kind: XTimescaleDBInstance
+  mode: Pipeline
+  pipeline:
+    - step: setup-namespace
+      functionRef:
+        name: function-patch-and-transform
+      input:
+        apiVersion: pt.crossplane.io/v1beta1
+        kind: Resources
+        metadata:
+          name: setup-namespace
+        spec:
+          resources:
+            - name: namespace
+              base:
+                apiVersion: v1
+                kind: Namespace
+                metadata:
+                  labels:
+                    app.kubernetes.io/managed-by: crossplane
+                    app.kubernetes.io/component: timescaledb-infrastructure
+              patches:
+                - fromFieldPath: spec.namespace
+                  toFieldPath: metadata.name
+    - step: create-timescaledb-cluster
+      functionRef:
+        name: function-patch-and-transform
+      input:
+        apiVersion: pt.crossplane.io/v1beta1
+        kind: Resources
+        metadata:
+          name: create-timescaledb-cluster
+        spec:
+          resources:
+            - name: timescaledb-cluster
+              base:
+                apiVersion: postgresql.cnpg.io/v1
+                kind: Cluster
+                metadata:
+                  labels:
+                    app.kubernetes.io/name: timescaledb
+                    app.kubernetes.io/component: database
+                    app.kubernetes.io/managed-by: crossplane
+                  annotations:
+                    timescaledb.io/managed-by: konzept-platform
+                spec:
+                  # Default cluster configuration
+                  instances: 3
+                  imageName: ghcr.io/cloudnative-pg/postgresql:17.2-1
+                  bootstrap:
+                    initdb:
+                      database: timescaledb
+                      owner: timescale_user
+                      postInitApplicationSQL:
+                        - "CREATE EXTENSION IF NOT EXISTS timescaledb CASCADE;"
+                  postgresql:
+                    parameters:
+                      max_locks_per_transaction: "64"
+                      shared_preload_libraries: "timescaledb"
+                      log_min_duration_statement: "1000"
+                  storage:
+                    size: 50Gi
+                    storageClass: rook-ceph-block
+                  walStorage:
+                    size: 10Gi
+                    storageClass: rook-ceph-block
+                  monitoring:
+                    enabled: false
+                  podDisruptionBudget:
+                    maxUnavailable: 1
+                  primaryUpdateStrategy: unsupervised
+              patches:
+                # Namespace
+                - fromFieldPath: spec.namespace
+                  toFieldPath: metadata.namespace
+                - fromFieldPath: spec.clusterName
+                  toFieldPath: metadata.name
+                  transforms:
+                    - type: string
+                      string:
+                        type: Regexp
+                        regexp:
+                          match: '^$'
+                          replaceWith: timescaledb
+                # Spec fields
+                - fromFieldPath: spec.instances
+                  toFieldPath: spec.instances
+                  transforms:
+                    - type: math
+                      math:
+                        type: Clamp
+                        clamp:
+                          min: 1
+                          max: 32
+                - fromFieldPath: spec.storageSize
+                  toFieldPath: spec.storage.size
+                - fromFieldPath: spec.storageClass
+                  toFieldPath: spec.storage.storageClass
+                  transforms:
+                    - type: string
+                      string:
+                        type: Regexp
+                        regexp:
+                          match: '^$'
+                          replaceWith: rook-ceph-block
+                - fromFieldPath: spec.imageName
+                  toFieldPath: spec.imageName
+                - fromFieldPath: spec.databaseName
+                  toFieldPath: spec.bootstrap.initdb.database
+                - fromFieldPath: spec.databaseOwner
+                  toFieldPath: spec.bootstrap.initdb.owner
+                - fromFieldPath: spec.timescaleVersion
+                  toFieldPath: spec.bootstrap.initdb.postInitApplicationSQL[0]
+                  transforms:
+                    - type: string
+                      string:
+                        fmt: "CREATE EXTENSION IF NOT EXISTS timescaledb VERSION '%s' CASCADE;"
+                - fromFieldPath: spec.walStorageSize
+                  toFieldPath: spec.walStorage.size
+                - fromFieldPath: spec.walStorageClass
+                  toFieldPath: spec.walStorage.storageClass
+                - fromFieldPath: spec.enablePodMonitor
+                  toFieldPath: spec.monitoring.enabled
+                - fromFieldPath: spec.logLevel
+                  toFieldPath: spec.postgresql.parameters.log_min_level_statement
+                  transforms:
+                    - type: map
+                      map:
+                        debug: DEBUG
+                        info: INFO
+                        warning: WARNING
+                        error: ERROR
+                - fromFieldPath: spec.primaryUpdateStrategy
+                  toFieldPath: spec.primaryUpdateStrategy
+                - fromFieldPath: spec.enablePDB
+                  toFieldPath: spec.podDisruptionBudget.maxUnavailable
+                  transforms:
+                    - type: math
+                      math:
+                        type: Convert
+                        convert:
+                          toType: int
+                - type: ToJsonString
+                  fromFieldPath: spec.postgresqlParameters
+                  toFieldPath: spec.postgresql.parameters
+                  policy:
+                    mergeOptions:
+                      keepMapValues: true
+    - step: status-and-ready
+      functionRef:
+        name: function-auto-ready
+      input:
+        apiVersion: autoready.crossplane.io/v1alpha1
+        kind: AutoReadyConfig
+

@@ -1,0 +1,153 @@
+apiVersion: apiextensions.crossplane.io/v2
+kind: CompositeResourceDefinition
+metadata:
+  name: xobservabilityprovisioners.koncept.bluesolution.es
+  annotations:
+    koncept.io/tier: "2"
+    koncept.io/components: "prometheus,grafana,alertmanager"
+    koncept.io/last-reviewed: "2026-06-07"
+spec:
+  scope: Cluster
+  group: koncept.bluesolution.es
+  names:
+    kind: XObservabilityProvisioner
+    plural: xobservabilityprovisioners
+  claimNames:
+    kind: ObservabilityProvisioner
+    plural: observabilityprovisioners
+  defaultCompositionRef:
+    name: xobservabilityprovisioner-helm-composition
+  versions:
+    - name: v1alpha1
+      served: true
+      referenceable: true
+      additionalPrinterColumns:
+        - name: NAMESPACE
+          type: string
+          jsonPath: .spec.namespace
+        - name: PROMETHEUS
+          type: string
+          jsonPath: .spec.prometheusEnabled
+        - name: GRAFANA
+          type: string
+          jsonPath: .spec.grafanaEnabled
+        - name: ALERTMANAGER
+          type: string
+          jsonPath: .spec.alertmanagerEnabled
+        - name: READY
+          type: string
+          jsonPath: .status.conditions[?(@.type=="Ready")].status
+        - name: AGE
+          type: date
+          jsonPath: .metadata.creationTimestamp
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              description: ObservabilityProvisioner configures observability infrastructure (Prometheus, Grafana, Alertmanager) for monitoring Kubernetes clusters and applications.
+              required:
+                - namespace
+              properties:
+                namespace:
+                  type: string
+                  description: Kubernetes namespace where monitoring components run (typically monitoring or observability).
+                releaseName:
+                  type: string
+                  description: Helm release name (Claim name if unset).
+                  default: ""
+                promotheusEnabled:
+                  type: boolean
+                  description: Deploy Prometheus (metrics collection and storage).
+                  default: true
+                prometheusCha rtVersion:
+                  type: string
+                  description: Bitnami kube-prometheus chart version.
+                  default: "10.2.0"
+                prometheusStorageSize:
+                  type: string
+                  description: Prometheus TSDB persistence size.
+                  default: "50Gi"
+                prometheusRetentionDays:
+                  type: integer
+                  description: Metrics retention period in days.
+                  minimum: 1
+                  default: 15
+                prometheusFootprint:
+                  type: string
+                  enum: ["local", "development", "staging", "production"]
+                  description: Resource footprint for Prometheus (affects storage, retention, replicas).
+                  default: "production"
+                nodeExporterEnabled:
+                  type: boolean
+                  description: Enable node-exporter for node metrics.
+                  default: true
+                grafanaEnabled:
+                  type: boolean
+                  description: Deploy Grafana (dashboards and alerting UI).
+                  default: true
+                grafanaChartVersion:
+                  type: string
+                  description: Bitnami Grafana chart version.
+                  default: "12.0.0"
+                grafanaAdminPassword:
+                  type: string
+                  description: Grafana admin password (use SecretRef reference in production, not hardcoded).
+                  default: "admin"
+                grafanaIngressEnabled:
+                  type: boolean
+                  description: Expose Grafana via Ingress.
+                  default: false
+                grafanaIngressHost:
+                  type: string
+                  description: FQDN for Grafana Ingress (e.g., grafana.example.com).
+                alertmanagerEnabled:
+                  type: boolean
+                  description: Deploy Alertmanager (alert routing and management).
+                  default: false
+                alertmanagerReplicas:
+                  type: integer
+                  description: Number of Alertmanager replicas.
+                  minimum: 1
+                  default: 1
+            status:
+              type: object
+              description: Observed observability infrastructure status.
+              properties:
+                prometheusPods:
+                  type: integer
+                  description: Number of Prometheus Pods running.
+                grafanaPods:
+                  type: integer
+                  description: Number of Grafana Pods running.
+                alertmanagerPods:
+                  type: integer
+                  description: Number of Alertmanager Pods running.
+                prometheus Url:
+                  type: string
+                  description: Internal Prometheus service URL.
+                grafanaUrl:
+                  type: string
+                  description: Grafana service URL or Ingress endpoint.
+                monitoredNamespaces:
+                  type: integer
+                  description: Number of namespaces with ServiceMonitors.
+                activeAlerts:
+                  type: integer
+                  description: Active firing alerts.
+                conditions:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      type:
+                        type: string
+                      status:
+                        type: string
+                      reason:
+                        type: string
+                      message:
+                        type: string
+                  description: Resource conditions (Ready, Synced, etc.).
+

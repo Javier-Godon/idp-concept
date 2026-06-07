@@ -1,0 +1,154 @@
+apiVersion: apiextensions.crossplane.io/v2
+kind: CompositeResourceDefinition
+metadata:
+  name: xlonghorninstances.koncept.bluesolution.es
+  annotations:
+    koncept.io/tier: "1"
+    koncept.io/operator: "longhorn"
+    koncept.io/operator-version: "1.7.x"
+    koncept.io/infrastructure: "block-storage"
+    koncept.io/last-reviewed: "2026-06-07"
+spec:
+  scope: Cluster
+  group: koncept.bluesolution.es
+  names:
+    kind: XLonghornInstance
+    plural: xlonghorninstances
+  claimNames:
+    kind: LonghornInstance
+    plural: longhorninstances
+  defaultCompositionRef:
+    name: xlonghorninstance-helm-composition
+  versions:
+    - name: v1alpha1
+      served: true
+      referenceable: true
+      additionalPrinterColumns:
+        - name: NAMESPACE
+          type: string
+          jsonPath: .spec.namespace
+        - name: VERSION
+          type: string
+          jsonPath: .spec.chartVersion
+        - name: REPLICAS
+          type: integer
+          jsonPath: .spec.defaultReplicaCount
+        - name: READY
+          type: string
+          jsonPath: .status.conditions[?(@.type=="Ready")].status
+        - name: AGE
+          type: date
+          jsonPath: .metadata.creationTimestamp
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              description: LonghornInstance configures a Longhorn distributed block storage system for dynamic PVC provisioning.
+              required:
+                - namespace
+              properties:
+                namespace:
+                  type: string
+                  description: Kubernetes namespace where Longhorn manager components run.
+                releaseName:
+                  type: string
+                  description: Helm release name (Claim name if unset).
+                  default: ""
+                chartVersion:
+                  type: string
+                  description: Longhorn Helm chart version.
+                  default: "1.7.2"
+                storageClassName:
+                  type: string
+                  description: Kubernetes StorageClass name for Longhorn volume provisioning.
+                  default: "longhorn"
+                createStorageClass:
+                  type: boolean
+                  description: Auto-create Longhorn StorageClass (recommended true).
+                  default: true
+                makeStorageClassDefault:
+                  type: boolean
+                  description: Make this StorageClass the cluster default.
+                  default: false
+                defaultReplicaCount:
+                  type: integer
+                  description: Default number of replicas for volumes.
+                  minimum: 1
+                  maximum: 20
+                  default: 2
+                defaultDataPath:
+                  type: string
+                  description: Host path where Longhorn stores data (usually /var/lib/longhorn).
+                  default: "/var/lib/longhorn"
+                reclaimPolicy:
+                  type: string
+                  enum: ["Delete", "Retain"]
+                  description: Reclaim policy for PVCs using this StorageClass.
+                  default: "Delete"
+                allowVolumeExpansion:
+                  type: boolean
+                  description: Allow PVC resize operations.
+                  default: true
+                fastFailover:
+                  type: boolean
+                  description: Enable faster replica failover (experimental).
+                  default: false
+                priorityClassEnabled:
+                  type: boolean
+                  description: Enable PriorityClass for Longhorn components.
+                  default: false
+                rbacEnabled:
+                  type: boolean
+                  description: Create RBAC resources (ServiceAccount, ClusterRole).
+                  default: true
+            status:
+              type: object
+              description: Observed Longhorn deployment status.
+              properties:
+                releaseName:
+                  type: string
+                  description: Effective Helm release name.
+                namespace:
+                  type: string
+                  description: Namespace where Longhorn was deployed.
+                managerPods:
+                  type: integer
+                  description: Number of Longhorn Manager pods running.
+                uiReady:
+                  type: boolean
+                  description: Longhorn UI component is ready.
+                totalVolumes:
+                  type: integer
+                  description: Total Longhorn volumes in cluster.
+                healthyVolumes:
+                  type: integer
+                  description: Number of healthy volumes.
+                degradedVolumes:
+                  type: integer
+                  description: Number of degraded volumes requiring attention.
+                totalNodes:
+                  type: integer
+                  description: Total nodes participating in Longhorn.
+                readyNodes:
+                  type: integer
+                  description: Number of ready Longhorn nodes.
+                storageCapacity:
+                  type: string
+                  description: Total available storage capacity.
+                conditions:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      type:
+                        type: string
+                      status:
+                        type: string
+                      reason:
+                        type: string
+                      message:
+                        type: string
+                  description: Resource conditions (Ready, Synced, etc.).
+

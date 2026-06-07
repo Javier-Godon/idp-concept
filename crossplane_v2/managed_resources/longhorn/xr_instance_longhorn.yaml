@@ -1,0 +1,87 @@
+apiVersion: koncept.bluesolution.es/v1alpha1
+kind: LonghornInstance
+metadata:
+  name: production-longhorn
+  namespace: storage
+  labels:
+    environment: production
+spec:
+  # Helm release
+  releaseName: longhorn
+  namespace: longhorn-system
+  chartVersion: "1.7.2"
+
+  # Storage class configuration
+  storageClassName: longhorn
+  createStorageClass: true
+  makeStorageClassDefault: false
+
+  # Longhorn defaults
+  defaultReplicaCount: 2
+  defaultDataPath: "/var/lib/longhorn"
+  reclaimPolicy: Delete
+
+  # Features
+  allowVolumeExpansion: true
+  fastFailover: false
+  rbacEnabled: true
+  priorityClassEnabled: false
+
+---
+apiVersion: koncept.bluesolution.es/v1alpha1
+kind: LonghornInstance
+metadata:
+  name: dev-longhorn
+  namespace: storage-dev
+  labels:
+    environment: development
+spec:
+  # Development setup
+  releaseName: longhorn
+  namespace: longhorn-system-dev
+  chartVersion: "1.7.2"
+
+  # Single replica for dev cost savings
+  storageClassName: longhorn-dev
+  createStorageClass: true
+  makeStorageClassDefault: true  # Make default for dev
+
+  # Dev-friendly defaults
+  defaultReplicaCount: 1
+  defaultDataPath: "/var/lib/longhorn"
+  reclaimPolicy: Retain
+
+  allowVolumeExpansion: true
+  fastFailover: false
+  rbacEnabled: true
+  priorityClassEnabled: false
+
+---
+apiVersion: koncept.bluesolution.es/v1alpha1
+kind: XLonghornInstance
+metadata:
+  name: infrastructure-longhorn
+  namespace: crossplane-system
+  labels:
+    tier: platform-infrastructure
+spec:
+  # Platform infrastructure (cluster-scoped)
+  releaseName: longhorn
+  namespace: longhorn-infrastructure
+  chartVersion: "1.7.2"
+
+  # High-availability setup
+  storageClassName: longhorn-infrastructure
+  createStorageClass: true
+  makeStorageClassDefault: false
+
+  # HA replication
+  defaultReplicaCount: 3
+  defaultDataPath: "/var/lib/longhorn"
+  reclaimPolicy: Retain
+
+  allowVolumeExpansion: true
+  fastFailover: true
+  rbacEnabled: true
+  priorityClassEnabled: true
+

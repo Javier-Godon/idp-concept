@@ -1,0 +1,135 @@
+apiVersion: konzept.bluesolution.es/v1alpha1
+kind: TimescaleDBInstance
+metadata:
+  name: example-timescale
+  namespace: data
+  labels:
+    environment: production
+spec:
+  # Cluster basics
+  clusterName: my-timescale
+  namespace: data
+
+  # Deployment sizing (via footprint pattern)
+  footprint: production
+  instances: 3
+  storageSize: "100Gi"
+  storageClass: rook-ceph-block
+
+  # WAL storage for performance
+  walStorageSize: "10Gi"
+  walStorageClass: rook-ceph-block
+
+  # Database setup
+  databaseName: timescaledb
+  databaseOwner: timescale_user
+
+  # TimescaleDB version
+  timescaleVersion: "2.15.0"
+  postgresVersion: "17"
+
+  # Image (CloudNativePG + PostgreSQL 17)
+  imageName: "ghcr.io/cloudnative-pg/postgresql:17.2-1"
+
+  # HA & reliability
+  enableSuperuserAccess: false     # Managed by operator, not exposed to users
+  enablePDB: true                  # Pod Disruption Budget for cluster resilience
+
+  # Monitoring
+  enablePodMonitor: true           # Prometheus scraping via CloudNativePG exporter
+
+  # PostgreSQL tuning for time-series workloads
+  postgresqlParameters:
+    max_connections: "200"
+    shared_buffers: "256MB"
+    effective_cache_size: "1GB"
+    work_mem: "16MB"
+    maintenance_work_mem: "64MB"
+    random_page_cost: "1.1"
+    effective_io_concurrency: "200"
+    wal_buffers: "16MB"
+    default_statistics_target: "100"
+    checkpoint_completion_target: "0.9"
+    wal_compression: "on"
+    max_wal_size: "4GB"
+    bgwriter_delay: "200"
+    bgwriter_lru_maxpages: "100"
+
+---
+apiVersion: konzept.bluesolution.es/v1alpha1
+kind: TimescaleDBInstance
+metadata:
+  name: example-timescale-dev
+  namespace: data
+  labels:
+    environment: development
+spec:
+  # Development footprint = smaller, cost-optimized
+  clusterName: dev-timescale
+  namespace: data
+  footprint: development
+  instances: 1
+  storageSize: "20Gi"
+  storageClass: local-path
+
+  databaseName: timescaledb_dev
+  databaseOwner: dev_user
+
+  timescaleVersion: "2.15.0"
+  postgresVersion: "17"
+  imageName: "ghcr.io/cloudnative-pg/postgresql:17.2-1"
+
+  enablePDB: false
+  enablePodMonitor: false
+
+  # Dev-friendly parameters: lower resource usage
+  postgresqlParameters:
+    max_connections: "50"
+    shared_buffers: "128MB"
+    effective_cache_size: "512MB"
+    work_mem: "4MB"
+    maintenance_work_mem: "32MB"
+
+---
+apiVersion: koncept.bluesolution.es/v1alpha1
+kind: XTimescaleDBInstance
+metadata:
+  name: infrastructure-timescale-production
+  namespace: crossplane-system
+  labels:
+    tier: platform-infrastructure
+spec:
+  # Cluster-scoped XR for platform team (not a Claim)
+  clusterName: platform-timescale
+  namespace: timescaledb-system
+
+  footprint: production
+  instances: 5
+  storageSize: "500Gi"
+  storageClass: rook-ceph-block
+
+  walStorageSize: "20Gi"
+  walStorageClass: rook-ceph-block
+
+  databaseName: timescaledb
+  databaseOwner: platform_admin
+
+  timescaleVersion: "2.15.0"
+  postgresVersion: "17"
+  imageName: "ghcr.io/cloudnative-pg/postgresql:17.2-1"
+
+  enableSuperuserAccess: true
+  enablePDB: true
+  enablePodMonitor: true
+  backupRetentionPolicy: "30d"
+
+  postgresqlParameters:
+    max_connections: "500"
+    shared_buffers: "512MB"
+    effective_cache_size: "2GB"
+    work_mem: "32MB"
+    maintenance_work_mem: "128MB"
+    wal_compression: "on"
+    max_wal_size: "8GB"
+    checkpoint_completion_target: "0.95"
+

@@ -1,0 +1,190 @@
+apiVersion: apiextensions.crossplane.io/v2
+kind: CompositeResourceDefinition
+metadata:
+  name: xtimescaledbinstances.koncept.bluesolution.es
+  annotations:
+    koncept.io/tier: "2"
+    koncept.io/operator: "cloudnative-pg"
+    koncept.io/operator-version: "1.24.x"
+    koncept.io/extension: "timescaledb"
+    koncept.io/last-reviewed: "2026-06-07"
+spec:
+  scope: Cluster
+  group: koncept.bluesolution.es
+  names:
+    kind: XTimescaleDBInstance
+    plural: xtimescaledbinstances
+  # Namespace-scoped Claims for product teams
+  claimNames:
+    kind: TimescaleDBInstance
+    plural: timescaledbinstances
+  defaultCompositionRef:
+    name: xtimescaledbinstance-cnpg-composition
+  versions:
+    - name: v1alpha1
+      served: true
+      referenceable: true
+      additionalPrinterColumns:
+        - name: NAMESPACE
+          type: string
+          jsonPath: .spec.namespace
+        - name: INSTANCES
+          type: integer
+          jsonPath: .spec.instances
+          description: Number of TimescaleDB instances
+        - name: STORAGE
+          type: string
+          jsonPath: .spec.storageSize
+        - name: TIMESCALE-VERSION
+          type: string
+          jsonPath: .spec.timescaleVersion
+        - name: READY
+          type: string
+          jsonPath: .status.conditions[?(@.type=="Ready")].status
+        - name: AGE
+          type: date
+          jsonPath: .metadata.creationTimestamp
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              description: TimescaleDBInstance configures a TimescaleDB time-series database, built on CloudNativePG-managed PostgreSQL with TimescaleDB extension.
+              required:
+                - namespace
+              properties:
+                namespace:
+                  type: string
+                  description: Kubernetes namespace where the TimescaleDB cluster runs.
+                clusterName:
+                  type: string
+                  description: Release name / cluster identifier (Claim name if unset).
+                  default: ""
+                instances:
+                  type: integer
+                  description: Number of PostgreSQL instances in the cluster (HA replicas).
+                  minimum: 1
+                  default: 3
+                storageSize:
+                  type: string
+                  description: Primary storage size (e.g., 50Gi). Supports local, Ceph, Longhorn.
+                  default: "50Gi"
+                storageClass:
+                  type: string
+                  description: StorageClass for main data PVC (rook-ceph-block, longhorn, local-path default).
+                footprint:
+                  type: string
+                  enum: ["local", "development", "staging", "production"]
+                  description: Infrastructure footprint (affects replicas, resources, retention).
+                  default: "production"
+                timescaleVersion:
+                  type: string
+                  description: TimescaleDB extension version.
+                  default: "2.15.0"
+                postgresVersion:
+                  type: string
+                  description: PostgreSQL major version (e.g., 17, 16).
+                  default: "17"
+                imageName:
+                  type: string
+                  description: CloudNativePG PostgreSQL image (default 17 with TimescaleDB).
+                  default: "ghcr.io/cloudnative-pg/postgresql:17.2-1"
+                databaseName:
+                  type: string
+                  description: Initial database name.
+                  default: "timescaledb"
+                databaseOwner:
+                  type: string
+                  description: Initial database owner (user).
+                  default: "timescale_user"
+                walStorageSize:
+                  type: string
+                  description: WAL storage size (separate from main PVC for performance).
+                walStorageClass:
+                  type: string
+                  description: StorageClass for WAL storage.
+                enableSuperuserAccess:
+                  type: boolean
+                  description: Enable superuser Secret generation for postgres account.
+                  default: false
+                enablePDB:
+                  type: boolean
+                  description: Enable Pod Disruption Budget (recommended for production).
+                  default: true
+                enablePodMonitor:
+                  type: boolean
+                  description: Enable prometheus pod monitoring via CloudNativePG exporter.
+                  default: false
+                backupRetentionPolicy:
+                  type: string
+                  description: "Backup retention window (e.g., '30d'). Requires backup trigger setup."
+                logLevel:
+                  type: string
+                  enum: ["debug", "info", "warning", "error"]
+                  description: PostgreSQL log level.
+                  default: "info"
+                primaryUpdateStrategy:
+                  type: string
+                  enum: ["unsupervised", "supervised"]
+                  description: Primary update strategy during version upgrades.
+                  default: "unsupervised"
+                postgresqlParameters:
+                  type: object
+                  additionalProperties:
+                    type: string
+                  description: Custom PostgreSQL parameters (postgresql.conf overrides).
+                resources:
+                  type: object
+                  description: Container resource requests/limits as JSON object.
+            status:
+              type: object
+              description: Observed state of the TimescaleDB cluster.
+              properties:
+                clusterName:
+                  type: string
+                  description: Effective CloudNativePG cluster name.
+                namespace:
+                  type: string
+                  description: Namespace where resources were created.
+                podNames:
+                  type: array
+                  items:
+                    type: string
+                  description: Pod names of the TimescaleDB cluster.
+                readyPods:
+                  type: integer
+                  description: Number of ready replicas.
+                totalPods:
+                  type: integer
+                  description: Total number of expected replicas.
+                primaryPod:
+                  type: string
+                  description: Name of the elected primary Pod.
+                connectionString:
+                  type: string
+                  description: "Service DNS for connections: timescale-cluster-rw.namespace.svc.cluster.local"
+                operatorVersion:
+                  type: string
+                  description: CloudNativePG operator version managing this cluster.
+                pgVersion:
+                  type: string
+                  description: Running PostgreSQL version.
+                timescaleExtensionVersion:
+                  type: string
+                  description: Installed TimescaleDB extension version.
+                conditions:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      type:
+                        type: string
+                      status:
+                        type: string
+                      reason:
+                        type: string
+                      message:
+                        type: string
+                  description: Resource conditions (Ready, Synced, etc.).
+

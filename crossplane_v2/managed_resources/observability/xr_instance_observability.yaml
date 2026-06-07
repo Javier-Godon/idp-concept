@@ -1,0 +1,95 @@
+apiVersion: koncept.bluesolution.es/v1alpha1
+kind: ObservabilityProvisioner
+metadata:
+  name: production-observability
+  namespace: monitoring
+  labels:
+    environment: production
+spec:
+  # Namespace
+  namespace: monitoring
+  releaseName: observability
+
+  # Prometheus
+  prometheusEnabled: true
+  prometheusCha rtVersion: "10.2.0"
+  prometheusStorageSize: "100Gi"
+  prometheusRetentionDays: 30
+  prometheusFootprint: production
+  nodeExporterEnabled: true
+
+  # Grafana
+  grafanaEnabled: true
+  grafanaChartVersion: "12.0.0"
+  grafanaAdminPassword: ""  # Use SecretRef in production
+  grafanaIngressEnabled: true
+  grafanaIngressHost: "grafana.example.com"
+
+  # Alertmanager
+  alertmanagerEnabled: true
+  alertmanagerReplicas: 2
+
+---
+apiVersion: koncept.bluesolution.es/v1alpha1
+kind: ObservabilityProvisioner
+metadata:
+  name: dev-observability
+  namespace: monitoring-dev
+  labels:
+    environment: development
+spec:
+  # Development observability
+  namespace: monitoring-dev
+  releaseName: observability
+
+  # Prometheus: smaller retention
+  prometheusEnabled: true
+  prometheusCha rtVersion: "10.2.0"
+  prometheusStorageSize: "10Gi"
+  prometheusRetentionDays: 7
+  prometheusFootprint: development
+  nodeExporterEnabled: false
+
+  # Grafana
+  grafanaEnabled: true
+  grafanaChartVersion: "12.0.0"
+  grafanaAdminPassword: "changeme"
+  grafanaIngressEnabled: false
+  grafanaIngressHost: ""
+
+  # Alertmanager
+  alertmanagerEnabled: false
+  alertmanagerReplicas: 1
+
+---
+apiVersion: koncept.bluesolution.es/v1alpha1
+kind: XObservabilityProvisioner
+metadata:
+  name: infrastructure-observability
+  namespace: crossplane-system
+  labels:
+    tier: platform-infrastructure
+spec:
+  # Platform infrastructure observability
+  namespace: observability-infrastructure
+  releaseName: observability
+
+  # Prometheus: enterprise retention
+  prometheusEnabled: true
+  prometheusCha rtVersion: "10.2.0"
+  prometheusStorageSize: "500Gi"
+  prometheusRetentionDays: 90
+  prometheusFootprint: production
+  nodeExporterEnabled: true
+
+  # Grafana
+  grafanaEnabled: true
+  grafanaChartVersion: "12.0.0"
+  grafanaAdminPassword: ""  # Must use SecretRef
+  grafanaIngressEnabled: true
+  grafanaIngressHost: "observability.infrastructure.example.com"
+
+  # Alertmanager: HA
+  alertmanagerEnabled: true
+  alertmanagerReplicas: 3
+

@@ -44,11 +44,12 @@ This document tracks the implementation of the **Long-term (Strategic) objective
 
 | Item | Status | Evidence | Quality |
 |------|--------|----------|---------|
-| **Procedure Implementation** | ✅ DONE | `framework/procedures/kcl_to_crossplane.k` (398 lines) | Full XRD/Composition/XR generation |
+| **Procedure Implementation** | ✅ DONE | `framework/procedures/kcl_to_crossplane.k` (470 lines) | Full XRD/Composition/XR generation + convergence |
 | **Metadata Propagation** | ✅ DONE | Stack metadata → XRD/Composition/XR labels + annotations | koncept.io/* annotations |
 | **Dependency Orchestration** | ✅ DONE | Framework `dependsOn` → Crossplane sequencer rules | Concrete resource names (ns-*) |
-| **Managed Resources** | ✅ DONE | 12 infrastructure APIs in `crossplane_v2/managed_resources/` | MongoDB, RabbitMQ, Redis, OpenSearch, MinIO, Vault, QuestDB, Elasticsearch, Kibana, Logstash, OTel, Data Prepper |
+| **Managed Resources** | ✅ DONE | 23 infrastructure APIs in `crossplane_v2/managed_resources/` | All infrastructure templates: PostgreSQL, Timescale, Kafka, Keycloak, MongoDB, RabbitMQ, Redis, Valkey, OpenSearch, MinIO, Vault, OpenBao, QuestDB, Elasticsearch, Kibana, Logstash, OTel, Data Prepper, Fluent Bit, Ceph, Longhorn, Observability |
 | **Two-Track Model** | ✅ DONE | Generated bridge + hand-authored curated APIs | Clear selection policy (infrastructure only) |
+| **Convergence Layer (E2.1)** | ✅ DONE (June 7 continuation) | `_CURATED_SERVICES` mapping + convergence helpers + two-track output | Track 1 emits Claim instances; Track 2 wraps Objects |
 | **No-Legacy Policy** | ✅ DONE | Superseded resources deleted immediately | Single canonical set per resource |
 | **Integration Testing** | ✅ DONE | `crossplane-lifecycle` + `crossplane-integration` acceptance fixtures | MultiRelease + orchestration scenarios |
 | **Documentation** | ✅ DONE | `docs/CROSSPLANE_*.md` + `IMPLEMENTATION_STATUS.md` + `QUICK_REFERENCE.md` | Architecture + API reference + troubleshooting |
@@ -105,12 +106,13 @@ Golden Snapshots:        5 formats × 3 projects ✅ PASS
 
 ### 3.1 IMMEDIATE (Next 1-2 weeks)
 
-| Priority | Item | Effort | Blocker | Recommendation |
-|----------|------|--------|---------|-----------------|
-| **P0** | **Helmfile + real Helm validation CI** | Medium | None | Integrate `helmfile_helm_integration_test.sh` into PR validation |
-| **P0** | **Crossplane runtime lifecycle tests** | Medium | Test infra | Extend `koncept crossplane test` with more profile support |
-| **P0** | **DRY-RUN observability completeness** | Low | None | Verify resource calculations and warnings are accurate |
-| **P0** | **Documentation review** | Low | None | Ensure helmfile + crossplane docs reflect current implementation |
+| Priority | Item | Effort | Status | Recommendation |
+|----------|------|--------|--------|-----------------|
+| **P0** | **Helmfile + real Helm validation CI** | Medium | ✅ DONE | Integrate `helmfile_helm_integration_test.sh` into PR validation |
+| **P0** | **Crossplane E2.1 Convergence Layer** | Medium | ✅ DONE (June 7) | Two-track architecture; curated services emit Claims |
+| **P0** | **Crossplane E2.2 acceptance tests** | High | ⏳ NEXT | Lifecycle, update, delete, revision rollback validation |
+| **P0** | **DRY-RUN observability completeness** | Low | ✅ DONE | Verify resource calculations and warnings are accurate |
+| **P0** | **Documentation review** | Low | ✅ DONE | Ensure helmfile + crossplane docs reflect current implementation |
 
 ### 3.2 SHORT-TERM (1-4 weeks)
 

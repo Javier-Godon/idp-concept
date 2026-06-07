@@ -1,0 +1,198 @@
+apiVersion: apiextensions.crossplane.io/v2
+kind: CompositeResourceDefinition
+metadata:
+  name: xcephphylaxes.koncept.bluesolution.es
+  annotations:
+    koncept.io/tier: "0"
+    koncept.io/operator: "rook-ceph"
+    koncept.io/operator-version: "1.15.x"
+    koncept.io/infrastructure: "block-storage"
+    koncept.io/last-reviewed: "2026-06-07"
+spec:
+  scope: Cluster
+  group: koncept.bluesolution.es
+  names:
+    kind: XCephCluster
+    plural: xcephphylaxes
+  claimNames:
+    kind: CephCluster
+    plural: cephclusters
+  defaultCompositionRef:
+    name: xcephphylax-helm-composition
+  versions:
+    - name: v1alpha1
+      served: true
+      referenceable: true
+      additionalPrinterColumns:
+        - name: NAMESPACE
+          type: string
+          jsonPath: .spec.namespace
+        - name: STATE
+          type: string
+          jsonPath: .status.clusterState
+          description: Ceph cluster health state
+        - name: OSDs
+          type: integer
+          jsonPath: .status.osdCount
+        - name: STORAGE-CAPACITY
+          type: string
+          jsonPath: .status.storageCapacity
+        - name: READY
+          type: string
+          jsonPath: .status.conditions[?(@.type=="Ready")].status
+        - name: AGE
+          type: date
+          jsonPath: .metadata.creationTimestamp
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              description: CephCluster defines a Rook Ceph storage cluster for block/file/object storage provisioning.
+              required:
+                - namespace
+              properties:
+                namespace:
+                  type: string
+                  description: Kubernetes namespace where Rook Ceph operator and cluster resources run.
+                clusterName:
+                  type: string
+                  description: Ceph cluster name (Claim name if unset).
+                  default: ""
+                chartVersion:
+                  type: string
+                  description: Rook Ceph Helm chart version.
+                  default: "1.15.2"
+                cephVersion:
+                  type: string
+                  description: Ceph daemon image version (e.g., v19.2.3).
+                  default: "v19.2.3"
+                cephImage:
+                  type: string
+                  description: Full Ceph image URI.
+                  default: "quay.io/ceph/ceph:v19.2.3"
+                monCount:
+                  type: integer
+                  description: Number of Ceph Monitor daemons.
+                  minimum: 1
+                  default: 3
+                mgrCount:
+                  type: integer
+                  description: Number of Ceph Manager daemons for HA.
+                  minimum: 1
+                  default: 2
+                storageUseAllNodes:
+                  type: boolean
+                  description: Use all cluster nodes as OSDs (true) or filter (false).
+                  default: true
+                storageUseAllDevices:
+                  type: boolean
+                  description: Use all block devices on storage nodes (true) or filter (false).
+                  default: true
+                storageDeviceFilter:
+                  type: string
+                  description: Device name regex filter (e.g., 'sdb|sdc') when storageUseAllDevices=false.
+                blockPoolName:
+                  type: string
+                  description: Block pool name for RBD (RADOS Block Device).
+                  default: "replicapool"
+                blockPoolReplicatedSize:
+                  type: integer
+                  description: Number of Ceph replicas for block pool.
+                  minimum: 1
+                  enum: [1, 2, 3]
+                  default: 3
+                blockPoolFailureDomain:
+                  type: string
+                  description: Failure domain (osd, host, rack, region).
+                  default: "host"
+                storageClassName:
+                  type: string
+                  description: Kubernetes StorageClass name (for RBD provisioning).
+                  default: "rook-ceph-block"
+                reclaimPolicy:
+                  type: string
+                  enum: ["Delete", "Retain"]
+                  description: PVC reclaim policy when StorageClass is used.
+                  default: "Delete"
+                createBlockPoolAndStorageClass:
+                  type: boolean
+                  description: Auto-create CephBlockPool + StorageClass (recommended true).
+                  default: true
+                enableDashboard:
+                  type: boolean
+                  description: Deploy Ceph Dashboard (Grafana-based UI).
+                  default: true
+                enableMonitoring:
+                  type: boolean
+                  description: Enable Prometheus monitoring of Ceph cluster.
+                  default: false
+                csiEnabled:
+                  type: boolean
+                  description: Enable Container Storage Interface drivers for K8s PVC support.
+                  default: true
+                discoveryEnabled:
+                  type: boolean
+                  description: Auto-discover new storage devices as they appear.
+                  default: true
+                pspEnabled:
+                  type: boolean
+                  description: Enable Pod Security Policy (legacy; ignored on K8s 1.25+).
+                  default: false
+            status:
+              type: object
+              description: Observed Ceph cluster status.
+              properties:
+                clusterState:
+                  type: string
+                  enum: ["creating", "created", "updating", "connected", "error"]
+                  description: Current cluster state.
+                clusterName:
+                  type: string
+                  description: Effective Ceph cluster name.
+                namespace:
+                  type: string
+                  description: Namespace where cluster was created.
+                osdCount:
+                  type: integer
+                  description: Number of active Ceph OSD (Object Storage Daemon) nodes.
+                monCount:
+                  type: integer
+                  description: Number of active Monitor daemons.
+                mgrCount:
+                  type: integer
+                  description: Number of active Manager daemons.
+                storageCapacity:
+                  type: string
+                  description: Total usable cluster capacity (e.g., 1.5Ti).
+                health:
+                  type: string
+                  enum: ["HEALTH_OK", "HEALTH_WARN", "HEALTH_ERR"]
+                  description: Ceph cluster health status.
+                pgCount:
+                  type: integer
+                  description: Total number of placement groups.
+                poolNames:
+                  type: array
+                  items:
+                    type: string
+                  description: Names of created Ceph pools.
+                operatorVersion:
+                  type: string
+                  description: Rook operator version managing this cluster.
+                conditions:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      type:
+                        type: string
+                      status:
+                        type: string
+                      reason:
+                        type: string
+                      message:
+                        type: string
+                  description: Cluster conditions (Ready, Synced, etc.).
+

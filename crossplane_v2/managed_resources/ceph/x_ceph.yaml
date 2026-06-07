@@ -1,0 +1,267 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: xcephphylax-helm-composition
+  labels:
+    koncept.io/version: "v1alpha1"
+    koncept.io/pattern: "helm-release"
+spec:
+  compositeTypeRef:
+    apiVersion: koncept.bluesolution.es/v1alpha1
+    kind: XCephCluster
+  mode: Pipeline
+  pipeline:
+    - step: setup-namespace
+      functionRef:
+        name: function-patch-and-transform
+      input:
+        apiVersion: pt.crossplane.io/v1beta1
+        kind: Resources
+        metadata:
+          name: setup-namespace
+        spec:
+          resources:
+            - name: namespace
+              base:
+                apiVersion: v1
+                kind: Namespace
+                metadata:
+                  labels:
+                    app.kubernetes.io/managed-by: crossplane
+                    app.kubernetes.io/component: storage-infrastructure
+              patches:
+                - fromFieldPath: spec.namespace
+                  toFieldPath: metadata.name
+    - step: deploy-rook-ceph-operator
+      functionRef:
+        name: function-patch-and-transform
+      input:
+        apiVersion: pt.crossplane.io/v1beta1
+        kind: Resources
+        metadata:
+          name: deploy-rook-ceph-operator
+        spec:
+          resources:
+            - name: rook-ceph-release
+              base:
+                apiVersion: helm.toolkit.fluxcd.io/v2beta1
+                kind: HelmRelease
+                metadata:
+                  labels:
+                    app.kubernetes.io/managed-by: crossplane
+                spec:
+                  interval: 5m
+                  chart:
+                    spec:
+                      chart: rook-ceph
+                      sourceRef:
+                        kind: HelmRepository
+                        name: rook-release
+                        namespace: crossplane-system
+                      version: "1.15.2"
+                  values:
+                    crds:
+                      enabled: true
+                    operatorNamespace: rook-ceph
+                    monitoring:
+                      enabled: false
+                    resources:
+                      limits:
+                        cpu: 500m
+                        memory: 512Mi
+                      requests:
+                        cpu: 200m
+                        memory: 256Mi
+              patches:
+                - fromFieldPath: spec.namespace
+                  toFieldPath: metadata.namespace
+                - fromFieldPath: spec.chartVersion
+                  toFieldPath: spec.chart.spec.version
+                - fromFieldPath: spec.chartVersion
+                  toFieldPath: metadata.annotations['koncept.io/chart-version']
+                - fromFieldPath: spec.enableMonitoring
+                  toFieldPath: spec.values.monitoring.enabled
+    - step: create-ceph-cluster
+      functionRef:
+        name: function-patch-and-transform
+      input:
+        apiVersion: pt.crossplane.io/v1beta1
+        kind: Resources
+        metadata:
+          name: create-ceph-cluster
+        spec:
+          resources:
+            - name: ceph-cluster
+              base:
+                apiVersion: ceph.rook.io/v1
+                kind: CephCluster
+                metadata:
+                  labels:
+                    app.kubernetes.io/name: ceph
+                    app.kubernetes.io/managed-by: crossplane
+                  annotations:
+                    ceph.io/managed-by: koncept-platform
+                spec:
+                  cephVersion:
+                    image: quay.io/ceph/ceph:v19.2.3
+                    allowUnsupported: false
+                  dataDirHostPath: /var/lib/rook
+                  skipUpgradeChecks: false
+                  continueUpgradeAfterChecksEvenIfNotHealthy: false
+                  waitTimeoutForHealthyOSD: 10m
+                  mon:
+                    count: 3
+                    allowMultiplePerNode: false
+                    volumeClaimTemplate:
+                      spec:
+                        storageClassName: rook-ceph-block
+                        accessModes: ["ReadWriteOnce"]
+                        resources:
+                          requests:
+                            storage: 10Gi
+                  mgr:
+                    count: 2
+                    allowMultiplePerNode: false
+                    modules:
+                      - name: pg_autoscaler
+                        enabled: true
+                      - name: dashboard
+                        enabled: true
+                  storage:
+                    useAllNodes: true
+                    useAllDevices: true
+                    osdsPerDevice: 1
+                  healthCheck:
+                    daemonHealth:
+                      mon:
+                        disabled: false
+                        interval: 45s
+                      osd:
+                        disabled: false
+                        interval: 60s
+                      status:
+                        disabled: false
+                        interval: 60s
+                  dashboard:
+                    enabled: true
+                    ssl: true
+                  monitoring:
+                    enabled: false
+                  network:
+                    connections:
+                      encryption:
+                        enabled: false
+                  crashCollector:
+                    disable: false
+                  logCollector:
+                    enabled: false
+                  cleanupPolicy:
+                    deleteDataDirOnHosts: ""
+              patches:
+                - fromFieldPath: spec.namespace
+                  toFieldPath: metadata.namespace
+                - fromFieldPath: spec.clusterName
+                  toFieldPath: metadata.name
+                  transforms:
+                    - type: string
+                      string:
+                        type: Regexp
+                        regexp:
+                          match: '^$'
+                          replaceWith: rook-ceph
+                - fromFieldPath: spec.cephImage
+                  toFieldPath: spec.cephVersion.image
+                - fromFieldPath: spec.monCount
+                  toFieldPath: spec.mon.count
+                - fromFieldPath: spec.mgrCount
+                  toFieldPath: spec.mgr.count
+                - fromFieldPath: spec.storageUseAllNodes
+                  toFieldPath: spec.storage.useAllNodes
+                - fromFieldPath: spec.storageUseAllDevices
+                  toFieldPath: spec.storage.useAllDevices
+                - fromFieldPath: spec.storageDeviceFilter
+                  toFieldPath: spec.storage.deviceFilter
+                - fromFieldPath: spec.enableDashboard
+                  toFieldPath: spec.dashboard.enabled
+                - fromFieldPath: spec.enableMonitoring
+                  toFieldPath: spec.monitoring.enabled
+                - fromFieldPath: spec.discoveryEnabled
+                  toFieldPath: spec.storage.onlyApplyOSDPlacement
+                  transforms:
+                    - type: math
+                      math:
+                        type: Convert
+                        convert:
+                          toType: bool
+    - step: create-block-pool
+      functionRef:
+        name: function-patch-and-transform
+      input:
+        apiVersion: pt.crossplane.io/v1beta1
+        kind: Resources
+        metadata:
+          name: create-block-pool
+        spec:
+          resources:
+            - name: ceph-block-pool
+              base:
+                apiVersion: ceph.rook.io/v1
+                kind: CephBlockPool
+                metadata:
+                  labels:
+                    app.kubernetes.io/name: ceph-block-pool
+                    app.kubernetes.io/managed-by: crossplane
+                spec:
+                  failureDomain: host
+                  replicated:
+                    size: 3
+              patches:
+                - fromFieldPath: spec.namespace
+                  toFieldPath: metadata.namespace
+                - fromFieldPath: spec.blockPoolName
+                  toFieldPath: metadata.name
+                - fromFieldPath: spec.blockPoolFailureDomain
+                  toFieldPath: spec.failureDomain
+                - fromFieldPath: spec.blockPoolReplicatedSize
+                  toFieldPath: spec.replicated.size
+    - step: create-storage-class
+      functionRef:
+        name: function-patch-and-transform
+      input:
+        apiVersion: pt.crossplane.io/v1beta1
+        kind: Resources
+        metadata:
+          name: create-storage-class
+        spec:
+          resources:
+            - name: rook-ceph-block-storage-class
+              base:
+                apiVersion: storage.k8s.io/v1
+                kind: StorageClass
+                metadata:
+                  labels:
+                    app.kubernetes.io/name: rook-ceph-block
+                    app.kubernetes.io/managed-by: crossplane
+                provisioner: rook-ceph.rbd.csi.ceph.com
+                parameters:
+                  clusterID: rook-ceph
+                  pool: replicapool
+                  imageFormat: "2"
+                  imageFeatures: layering
+                  fstype: ext4
+                reclaimPolicy: Delete
+                allowVolumeExpansion: true
+              patches:
+                - fromFieldPath: spec.storageClassName
+                  toFieldPath: metadata.name
+                - fromFieldPath: spec.blockPoolName
+                  toFieldPath: parameters.pool
+                - fromFieldPath: spec.reclaimPolicy
+                  toFieldPath: reclaimPolicy
+    - step: status-and-ready
+      functionRef:
+        name: function-auto-ready
+      input:
+        apiVersion: autoready.crossplane.io/v1alpha1
+        kind: AutoReadyConfig
+
