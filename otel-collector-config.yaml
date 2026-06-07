@@ -1,0 +1,115 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+        max_recv_msg_size_mib: 16
+      http:
+        endpoint: 0.0.0.0:4318
+        cors:
+          allowed_origins:
+            - '*'
+        max_request_body_size: 20971520
+
+  jaeger:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:14250
+      thrift_http:
+        endpoint: 0.0.0.0:14268
+      thrift_compact:
+        endpoint: 0.0.0.0:6831
+
+  prometheus:
+    config:
+      scrape_configs:
+        - job_name: 'otel-collector'
+          scrape_interval: 10s
+          static_configs:
+            - targets: ['localhost:8888']
+
+  zipkin:
+    endpoint: 0.0.0.0:9411
+
+processors:
+  batch:
+    send_batch_size: 100
+    timeout: 10s
+
+  memory_limiter:
+    check_interval: 5s
+    limit_mib: 512
+    spike_limit_mib: 256
+
+  # Normalize trace service names
+  attributes:
+    actions:
+      - key: service.name
+        value: koncept
+        action: upsert
+      - key: service.version
+        from_attribute: version
+        action: upsert
+
+  # Batch sampling for traces (reduce volume)
+  sampling:
+    sampling_percentage: 100  # Change to 10 for production
+
+exporters:
+  # Export traces to Jaeger
+  jaeger:
+    endpoint: "jaeger:14250"
+    tls:
+      insecure: true
+
+  # Export metrics to Prometheus
+  prometheus:
+    endpoint: "0.0.0.0:8888"
+    namespace: "platform"
+    const_labels:
+      environment: "local"
+      collector: "koncept"
+
+  # Export traces to OTLP (for forwarding to cloud)
+  otlp:
+    endpoint: "${OTLP_EXPORTER_OTLP_ENDPOINT:-localhost:4317}"
+    headers:
+      "Authorization": "${OTLP_EXPORTER_AUTH_HEADER:-Bearer dummy}"
+    tls:
+      insecure: true
+
+  # Optional: Export to Datadog
+  datadog:
+    api:
+      key: "${DD_API_KEY:-}"
+      site: datadoghq.com
+
+connectors:
+  spanmetrics:
+    namespace: traces.span
+    dimensions:
+      - service.name
+      - span.name
+      - span.kind
+      - otel.status_code
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp, jaeger, zipkin]
+      processors: [memory_limiter, attributes, sampling, batch]
+      exporters: [jaeger, otlp]
+
+    metrics:
+      receivers: [otlp, prometheus]
+      processors: [memory_limiter, batch]
+      exporters: [prometheus]
+
+    spans_metrics:
+      receivers: [spanmetrics]
+      processors: [memory_limiter, batch]
+      exporters: [prometheus]
+
+logging:
+  loglevel: info
+

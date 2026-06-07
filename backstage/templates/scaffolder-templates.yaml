@@ -1,0 +1,621 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: create-web-application
+  title: Create New Web Application
+  description: Scaffold a new web application with KCL configuration
+  tags:
+    - web-app
+    - application
+    - idp-concept
+  links:
+    - url: https://github.com/company/idp-concept
+      title: IDP Concept Repository
+    - url: /docs/developer-guide
+      title: Developer Guide
+spec:
+  owner: platform-engineering
+  type: service
+
+  parameters:
+    - title: Application Details
+      required:
+        - appName
+        - team
+        - runtime
+      properties:
+        appName:
+          title: Application Name
+          type: string
+          description: Name of your new application (e.g., 'user-service')
+          pattern: '^[a-z0-9-]+$'
+          minLength: 3
+          maxLength: 30
+
+        team:
+          title: Team
+          type: string
+          description: Team that owns this application
+          enum:
+            - backend
+            - frontend
+            - platform
+            - data-engineering
+
+        runtime:
+          title: Runtime/Language
+          type: string
+          description: Programming language and runtime
+          enum:
+            - python:3.12
+            - go:1.21
+            - nodejs:20
+            - java:21
+
+        description:
+          title: Description
+          type: string
+          description: Brief description of the application
+          default: New application powered by IDP Concept
+
+    - title: Deployment Configuration
+      required:
+        - port
+      properties:
+        port:
+          title: Application Port
+          type: integer
+          description: Port where your application listens
+          default: 8080
+          minimum: 1024
+          maximum: 65535
+
+        replicas:
+          title: Initial Replicas
+          type: integer
+          description: Number of Pod replicas to deploy
+          default: 1
+          minimum: 1
+          maximum: 10
+
+        resources:
+          title: Resource Requests
+          type: object
+          properties:
+            cpuRequest:
+              title: CPU Request
+              type: string
+              default: 250m
+              enum: ['100m', '250m', '500m', '1000m']
+
+            memoryRequest:
+              title: Memory Request
+              type: string
+              default: 512Mi
+              enum: ['256Mi', '512Mi', '1Gi', '2Gi']
+
+steps:
+  - id: generate-scaffold
+    name: Generate Application Scaffold
+    action: fetch:template
+    input:
+      url: https://github.com/company/app-template/tree/main/skeleton
+      values:
+        appName: ${{ parameters.appName }}
+        team: ${{ parameters.team }}
+        runtime: ${{ parameters.runtime }}
+        port: ${{ parameters.port }}
+        replicas: ${{ parameters.replicas }}
+        cpuRequest: ${{ parameters.resources.cpuRequest }}
+        memoryRequest: ${{ parameters.resources.memoryRequest }}
+
+  - id: publish-to-github
+    name: Publish to GitHub
+    action: publish:github
+    input:
+      allowedHosts: ['github.com']
+      description: 'New application: ${{ parameters.appName }}'
+      repoUrl: 'github.com?owner=company&repo=${{ parameters.appName }}&visibility=private'
+      repoVisibility: private
+      defaultBranch: main
+
+  - id: initialize-koncept-stack
+    name: Initialize KCL Stack
+    action: backstage:scaffolder:execute
+    input:
+      command: koncept
+      args:
+        - init
+        - project
+        - ${{ steps['publish-to-github'].output.repoUrl }}
+        - --name=${{ parameters.appName }}
+        - --type=webapp
+
+  - id: render-initial-manifests
+    name: Render Initial Manifests
+    action: backstage:scaffolder:execute
+    input:
+      command: koncept
+      args:
+        - render
+        - yaml
+        - --factory=projects/${{ parameters.appName }}/pre_releases/dev
+
+  - id: register-in-catalog
+    name: Register Component in Catalog
+    action: catalog:register
+    input:
+      repoUrl: ${{ steps['publish-to-github'].output.repoUrl }}
+      catalogInfoPath: /catalog-info.yaml
+
+  - id: notify-slack
+    name: Notify Team
+    action: slack:message:send
+    input:
+      webhookUrl: ${{ secrets.SLACK_WEBHOOK }}
+      message: |
+        🚀 New Application Created!
+        
+        **App**: ${{ parameters.appName }}
+        **Team**: ${{ parameters.team }}
+        **Runtime**: ${{ parameters.runtime }}
+        **Port**: ${{ parameters.port }}
+        
+        Repository: ${{ steps['publish-to-github'].output.repoUrl }}
+        Cluster Ready: Ready for dev deployment
+        
+        See: /docs/quickstart
+
+output:
+  links:
+    - title: Repository
+      url: ${{ steps['publish-to-github'].output.repoUrl }}
+    - title: Catalog Entry
+      url: ${{ steps['register-in-catalog'].output.catalogUrl }}
+  text:
+    - title: Application Created
+      content: |
+        Your application **${{ parameters.appName }}** has been created!
+        
+        Next steps:
+        1. Clone your repository
+        2. Configure your application code
+        3. Update KCL stack configuration in `projects/${{ parameters.appName }}/`
+        4. Run `koncept render yaml/helm/crossplane` to generate manifests
+        5. Deploy via ArgoCD or kubectl
+        
+        Learn more: /docs/developer-guide
+
+---
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: create-database-instance
+  title: Create New Database
+  description: Provision and configure a managed database instance
+  tags:
+    - database
+    - infrastructure
+    - data-persistence
+    - idp-concept
+spec:
+  owner: platform-engineering
+  type: resource
+
+  parameters:
+    - title: Database Configuration
+      required:
+        - dbName
+        - dbType
+        - environment
+      properties:
+        dbName:
+          title: Database Name
+          type: string
+          description: Unique name for this database instance
+          pattern: '^[a-z0-9-]+$'
+
+        dbType:
+          title: Database Type
+          type: string
+          description: Which database engine to provision
+          enum:
+            - postgresql
+            - mongodb
+            - redis
+            - mysql
+
+        environment:
+          title: Target Environment
+          type: string
+          description: Where to deploy this database
+          enum:
+            - dev
+            - staging
+            - production
+
+        storageSize:
+          title: Storage Size
+          type: string
+          description: Storage allocation for the database
+          default: 10Gi
+          enum:
+            - 5Gi
+            - 10Gi
+            - 50Gi
+            - 100Gi
+            - 500Gi
+
+        backupEnabled:
+          title: Enable Backups
+          type: boolean
+          description: Automated backup configuration
+          default: true
+
+        highAvailability:
+          title: High Availability
+          type: boolean
+          description: Multi-replica setup for HA
+          default: false
+
+steps:
+  - id: create-module-definition
+    name: Create KCL Module Definition
+    action: backstage:scaffolder:template-generator
+    input:
+      templateType: database-module
+      moduleName: ${{ parameters.dbName }}
+      databaseType: ${{ parameters.dbType }}
+      specification:
+        storageSize: ${{ parameters.storageSize }}
+        backup: ${{ parameters.backupEnabled }}
+        highAvailability: ${{ parameters.highAvailability }}
+
+  - id: add-to-stack
+    name: Add Database to Stack
+    action: backstage:scaffolder:execute
+    input:
+      command: koncept
+      args:
+        - init
+        - module
+        - accessory
+        - --type=${{ parameters.dbType }}
+        - --name=${{ parameters.dbName }}
+        - --environment=${{ parameters.environment }}
+
+  - id: generate-manifests
+    name: Generate Kubernetes Manifests
+    action: backstage:scaffolder:execute
+    input:
+      command: koncept
+      args:
+        - render
+        - yaml
+        - --output=output/${{ parameters.dbType }}-${{ parameters.dbName }}.yaml
+
+  - id: create-secret
+    name: Create Database Secret
+    action: kubernetes:create-resource
+    input:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: ${{ parameters.dbName }}-credentials
+        namespace: default
+      type: Opaque
+      stringData:
+        username: admin
+        password: $(shell: openssl rand -base64 32)
+
+  - id: deploy-to-cluster
+    name: Deploy to Kubernetes
+    action: kubernetes:apply
+    input:
+      manifestPath: output/${{ parameters.dbType }}-${{ parameters.dbName }}.yaml
+      namespace: default
+
+  - id: document-endpoint
+    name: Document Connection Details
+    action: backstage:documentation:create
+    input:
+      title: "Database: ${{ parameters.dbName }}"
+      path: "docs/databases/${{ parameters.dbName }}.md"
+
+output:
+  text:
+    - title: Database Provisioned
+      content: |
+        Database **${{ parameters.dbName }}** is being provisioned!
+        
+        **Type**: ${{ parameters.dbType }}
+        **Storage**: ${{ parameters.storageSize }}
+        **Environment**: ${{ parameters.environment }}
+        
+        Connection Secret: `${{ parameters.dbName }}-credentials`
+        
+        Monitor deployment:
+        ```
+        kubectl get pod -l app=${{ parameters.dbName }}
+        kubectl logs -f pod/${{ parameters.dbName }}-0
+        ```
+
+---
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: create-environment
+  title: Create New Environment
+  description: Bootstrap a new deployment environment (staging, production, etc.)
+  tags:
+    - environment
+    - infrastructure
+    - cluster
+    - idp-concept
+spec:
+  owner: platform-engineering
+  type: resource
+
+  parameters:
+    - title: Environment Details
+      required:
+        - envName
+        - envTier
+      properties:
+        envName:
+          title: Environment Name
+          type: string
+          description: Name for this environment (e.g., 'staging-us1')
+          pattern: '^[a-z0-9-]+$'
+
+        envTier:
+          title: Environment Tier
+          type: string
+          description: Classification level
+          enum:
+            - development
+            - staging
+            - production
+
+        cluster:
+          title: Target Kubernetes Cluster
+          type: string
+          description: Which cluster to deploy to
+          enum:
+            - kind-local
+            - staging-cluster
+            - prod-us-east-1
+            - prod-eu-west-1
+
+        footprint:
+          title: Infrastructure Footprint
+          type: string
+          description: Resource sizing profile
+          enum:
+            - local
+            - development
+            - staging
+            - production
+
+        enableMonitoring:
+          title: Enable Observability
+          type: boolean
+          description: Deploy Prometheus, Grafana, Alertmanager
+          default: true
+
+        enableIngress:
+          title: Enable Ingress Controller
+          type: boolean
+          description: Setup Nginx ingress for routing
+          default: true
+
+steps:
+  - id: create-site-config
+    name: Create Site Configuration
+    action: backstage:scaffolder:execute
+    input:
+      command: koncept
+      args:
+        - init
+        - env
+        - --name=${{ parameters.envName }}
+        - --tier=${{ parameters.envTier }}
+        - --footprint=${{ parameters.footprint }}
+        - --cluster=${{ parameters.cluster }}
+
+  - id: render-environment
+    name: Render Environment Manifests
+    action: backstage:scaffolder:execute
+    input:
+      command: koncept
+      args:
+        - render
+        - yaml
+        - --factory=sites/${{ parameters.envName }}
+
+  - id: setup-argocd
+    name: Configure ArgoCD
+    action: argocd:app:create
+    input:
+      appName: ${{ parameters.envName }}
+      repoUrl: https://github.com/company/platform-config
+      path: sites/${{ parameters.envName }}
+      cluster: ${{ parameters.cluster }}
+
+  - id: deploy-base-services
+    name: Deploy Base Services
+    action: kubectl:apply
+    input:
+      manifest: sites/${{ parameters.envName }}/base-services.yaml
+      cluster: ${{ parameters.cluster }}
+
+  - id: verify-deployment
+    name: Verify Environment
+    action: backstage:scaffolder:execute
+    input:
+      command: kubectl
+      args:
+        - get
+        - nodes
+        - --kubeconfig=/path/to/${{ parameters.cluster }}.conf
+
+output:
+  links:
+    - title: ArgoCD Application
+      url: https://argocd.company.com/applications/${{ parameters.envName }}
+  text:
+    - title: Environment Created
+      content: |
+        Environment **${{ parameters.envName }}** is ready!
+        
+        **Tier**: ${{ parameters.envTier }}
+        **Cluster**: ${{ parameters.cluster }}
+        **Footprint**: ${{ parameters.footprint }}
+        
+        Next steps:
+        1. Deploy your applications via ArgoCD
+        2. Configure DNS: `*.{{ parameters.envName }}.company.com`
+        3. Set up GitOps sync: `git push origin sites/${{ parameters.envName }}`
+
+---
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: promote-stack
+  title: Promote Stack to Environment
+  description: Promote an application from one environment to another
+  tags:
+    - promotion
+    - deployment
+    - gitops
+    - idp-concept
+spec:
+  owner: platform-engineering
+  type: service
+
+  parameters:
+    - title: Promotion Details
+      required:
+        - application
+        - sourceEnv
+        - targetEnv
+      properties:
+        application:
+          title: Application
+          type: string
+          description: Application to promote
+
+        sourceEnv:
+          title: Source Environment
+          type: string
+          enum:
+            - dev
+            - staging
+            - production
+
+        targetEnv:
+          title: Target Environment
+          type: string
+          enum:
+            - dev
+            - staging
+            - production
+
+        version:
+          title: Version
+          type: string
+          description: Application version (or 'latest')
+          default: latest
+
+        changelog:
+          title: Change Log
+          type: string
+          description: What is changing?
+          ui.widget: textarea
+
+        requiresApproval:
+          title: Requires Approval
+          type: boolean
+          description: Manual approval before deploying
+          default: true
+
+steps:
+  - id: fetch-stack
+    name: Fetch Source Stack
+    action: backstage:scaffolder:execute
+    input:
+      command: koncept
+      args:
+        - doctor
+        - --project=${{ parameters.application }}
+
+  - id: validate-promotion
+    name: Validate Promotion
+    action: backstage:scaffolder:execute
+    input:
+      command: koncept
+      args:
+        - policy
+        - check
+        - --source=${{ parameters.sourceEnv }}
+        - --target=${{ parameters.targetEnv }}
+
+  - id: render-for-target
+    name: Render for Target Environment
+    action: backstage:scaffolder:execute
+    input:
+      command: koncept
+      args:
+        - render
+        - yaml
+        - --environment=${{ parameters.targetEnv }}
+
+  - id: create-promotion-pr
+    name: Create Promotion Pull Request
+    action: publish:github:pull-request
+    input:
+      title: "Promote ${{ parameters.application }} → ${{ parameters.targetEnv }}"
+      description: |
+        ## Promotion
+        **App**: ${{ parameters.application }}
+        **From**: ${{ parameters.sourceEnv }}
+        **To**: ${{ parameters.targetEnv }}
+        **Version**: ${{ parameters.version }}
+        
+        ## Changes
+        ${{ parameters.changelog }}
+        
+        ## Checklist
+        - [ ] Code reviewed
+        - [ ] Tests passing
+        - [ ] Configuration validated
+        - [ ] Ready for deployment
+      repoUrl: github.com?owner=company&repo=platform-config
+      requiresApproval: ${{ parameters.requiresApproval }}
+
+  - id: notify-team
+    name: Notify Team
+    action: slack:message:send
+    input:
+      webhookUrl: ${{ secrets.SLACK_WEBHOOK }}
+      message: |
+        📦 Stack Promotion Ready
+        
+        **Application**: ${{ parameters.application }}
+        **${{ parameters.sourceEnv}}** → **${{ parameters.targetEnv }}**
+        **Version**: ${{ parameters.version }}
+        
+        Pull Request: ${{ steps['create-promotion-pr'].output.url }}
+
+output:
+  links:
+    - title: Review Promotion
+      url: ${{ steps['create-promotion-pr'].output.url }}
+  text:
+    - title: Promotion in Progress
+      content: |
+        Promotion of **${{ parameters.application }}** to **${{ parameters.targetEnv }}** is ready for review!
+        
+        A pull request has been created with all configuration changes.
+        Review, approve, and merge to deploy.
+
