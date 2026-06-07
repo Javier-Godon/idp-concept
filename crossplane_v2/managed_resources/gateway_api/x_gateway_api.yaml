@@ -1,0 +1,36 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: x_gateway_api
+  namespace: crossplane-system
+spec:
+  compositeTypeRef:
+    apiVersion: koncept.bluesolution.es/v1alpha1
+    kind: XGateway
+  mode: Pipeline
+  pipeline:
+    - step: deploy-gateway-controller
+      functionRef:
+        name: function-helm
+      input:
+        apiVersion: helm.fn.crossplane.io/v1beta1
+        kind: Release
+        metadata:
+          name: gateway-controller
+        spec:
+          chart:
+            name: gateway
+            repository:
+              url: "oci://registry-1.docker.io"
+          namespace:
+            name: "gateway-system"  # or from XR spec
+          values:
+            provider: "envoy"  # patch from XR
+            replicaCount: 2
+            service:
+              type: "LoadBalancer"
+
+    - step: ready
+      functionRef:
+        name: function-auto-ready
+

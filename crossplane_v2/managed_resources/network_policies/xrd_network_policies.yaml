@@ -1,0 +1,56 @@
+apiVersion: apiextensions.crossplane.io/v2
+kind: CompositeResourceDefinition
+metadata:
+  name: xnetworkpolicies.koncept.bluesolution.es
+spec:
+  group: koncept.bluesolution.es
+  names:
+    kind: XNetworkPolicies
+    plural: xnetworkpolicies
+  scope: Cluster
+  versions:
+    - name: v1alpha1
+      served: true
+      referenceable: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                namespace:
+                  type: string
+                  description: "Target namespace for network policies"
+                denyAllIngress:
+                  type: boolean
+                  default: true
+                  description: "Deny all ingress by default"
+                denyAllEgress:
+                  type: boolean
+                  default: false
+                  description: "Deny all egress by default"
+                allowFromMonitoring:
+                  type: boolean
+                  default: true
+                  description: "Allow Prometheus scraping"
+                allowDNSEgress:
+                  type: boolean
+                  default: true
+                  description: "Allow DNS queries (UDP 53)"
+                whitelistCIDRs:
+                  type: array
+                  items:
+                    type: string
+                  description: "List of CIDRs to whitelist for egress"
+            status:
+              type: object
+              properties:
+                ready:
+                  type: boolean
+                policiesApplied:
+                  type: integer
+                lastApplied:
+                  type: string
+                  format: date-time
+

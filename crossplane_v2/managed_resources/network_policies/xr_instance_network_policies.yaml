@@ -1,0 +1,14 @@
+apiVersion: koncept.bluesolution.es/v1alpha1
+kind: XNetworkPolicies
+metadata:
+  name: example-network-policies
+  namespace: crossplane-system
+spec:
+  namespace: apps
+  denyAllIngress: true
+  denyAllEgress: false
+  allowFromMonitoring: true
+  allowDNSEgress: true
+  whitelistCIDRs:
+    - "10.0.0.0/8"
+

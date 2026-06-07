@@ -53,6 +53,10 @@
 | **Ceph (Rook)** | `framework/templates/ceph/v1_0_0/ceph.k` | `XCephCluster` | `crossplane_v2/managed_resources/ceph/` | ✅ New | Distributed storage; Rook+Helm; June 7, 2026 |
 | **Longhorn** | `framework/templates/longhorn/v1_0_0/longhorn.k` | `XLonghornInstance` | `crossplane_v2/managed_resources/longhorn/` | ✅ New | Block storage; Helm; June 7, 2026 |
 | **Observability Stack** | `framework/templates/observability/v1_0_0/observability.k` | `XObservabilityProvisioner` | `crossplane_v2/managed_resources/observability/` | ✅ New | Prometheus + Grafana + Alertmanager; Helm composite; June 7, 2026 |
+| **Cert-Manager** | `framework/templates/cert_manager/v1_0_0/cert_manager.k` | `XCertManager` | `crossplane_v2/managed_resources/cert_manager/` | ✅ Complete | Certificate management; ACME; June 7, 2026 |
+| **External-DNS** | `framework/templates/external_dns/v1_0_0/external_dns.k` | `XExternalDNS` | `crossplane_v2/managed_resources/external_dns/` | ✅ New | Automatic DNS management; June 7, 2026 |
+| **Gateway API** | `framework/templates/gateway_api/v1_0_0/gateway_api.k` | `XGateway` | `crossplane_v2/managed_resources/gateway_api/` | ✅ New | Modern API Gateway (Envoy/NGINX/Istio); June 7, 2026 |
+| **Network Policies** | `framework/templates/network_policies/v1_0_0/network_policies.k` | `XNetworkPolicies` | `crossplane_v2/managed_resources/network_policies/` | ✅ New | Kubernetes network isolation; June 7, 2026 |
 
 ### ✅ Phase 3 Implementations (NEW — June 7, 2026)
 
@@ -64,6 +68,10 @@
 | **Ceph (Rook)** | `framework/templates/ceph/v1_0_0/ceph.k` | `XCephCluster` | `crossplane_v2/managed_resources/ceph/` | ✅ Complete | Distributed block storage; Tier 0 infrastructure |
 | **Longhorn** | `framework/templates/longhorn/v1_0_0/longhorn.k` | `XLonghornInstance` | `crossplane_v2/managed_resources/longhorn/` | ✅ Complete | Lightweight distributed storage; Tier 1 |
 | **Observability** | `framework/templates/observability/v1_0_0/observability.k` | `XObservabilityProvisioner` | `crossplane_v2/managed_resources/observability/` | ✅ Complete | Prometheus + Grafana + Alertmanager composite |
+| **Cert-Manager** | `framework/templates/cert_manager/v1_0_0/cert_manager.k` | `XCertManager` | `crossplane_v2/managed_resources/cert_manager/` | ✅ Complete | ACME certificate provisioning and renewal |
+| **External-DNS** | `framework/templates/external_dns/v1_0_0/external_dns.k` | `XExternalDNS` | `crossplane_v2/managed_resources/external_dns/` | ✅ Complete | Automatic DNS record management (AWS/Azure/GCP/Cloudflare) |
+| **Gateway API** | `framework/templates/gateway_api/v1_0_0/gateway_api.k` | `XGateway` | `crossplane_v2/managed_resources/gateway_api/` | ✅ Complete | Modern API Gateway controller (Envoy/NGINX/Istio) instead of legacy Ingress |
+| **Network Policies** | `framework/templates/network_policies/v1_0_0/network_policies.k` | `XNetworkPolicies` | `crossplane_v2/managed_resources/network_policies/` | ✅ Complete | Zero-trust networking with Kubernetes NetworkPolicy |
 
 ### 🚫 Intentionally Unmapped (Stay on Tier-1 GitOps)
 

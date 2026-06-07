@@ -1,0 +1,108 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: x_network_policies
+  namespace: crossplane-system
+spec:
+  compositeTypeRef:
+    apiVersion: koncept.bluesolution.es/v1alpha1
+    kind: XNetworkPolicies
+  mode: Pipeline
+  pipeline:
+    - step: apply-network-policies
+      functionRef:
+        name: function-kcl
+      input:
+        apiVersion: kcl.fn.crossplane.io/v1beta1
+        kind: KCLRun
+        metadata:
+          name: network-policies
+        spec:
+          source: |
+            _ox = option("params").oxr.spec
+            
+            # Deny all ingress policy
+            deny_ingress = {
+                apiVersion: "networking.k8s.io/v1"
+                kind: "NetworkPolicy"
+                metadata: {
+                    name: "deny-all-ingress"
+                    namespace: _ox.namespace
+                }
+                spec: {
+                    podSelector: {}
+                    policyTypes: ["Ingress"]
+                }
+            } if _ox.denyAllIngress else None
+            
+            # Deny all egress policy
+            deny_egress = {
+                apiVersion: "networking.k8s.io/v1"
+                kind: "NetworkPolicy"
+                metadata: {
+                    name: "deny-all-egress"
+                    namespace: _ox.namespace
+                }
+                spec: {
+                    podSelector: {}
+                    policyTypes: ["Egress"]
+                }
+            } if _ox.denyAllEgress else None
+            
+            # Allow Prometheus scraping
+            allow_monitoring = {
+                apiVersion: "networking.k8s.io/v1"
+                kind: "NetworkPolicy"
+                metadata: {
+                    name: "allow-from-monitoring"
+                    namespace: _ox.namespace
+                }
+                spec: {
+                    podSelector: {}
+                    policyTypes: ["Ingress"]
+                    ingress: [{
+                        from: [{
+                            namespaceSelector: {
+                                matchLabels: {"kubernetes.io/metadata.name": "monitoring"}
+                            }
+                        }]
+                        ports: [{
+                            protocol: "TCP"
+                            port: 9090
+                        }]
+                    }]
+                }
+            } if _ox.allowFromMonitoring else None
+            
+            # Allow DNS egress
+            allow_dns = {
+                apiVersion: "networking.k8s.io/v1"
+                kind: "NetworkPolicy"
+                metadata: {
+                    name: "allow-dns-egress"
+                    namespace: _ox.namespace
+                }
+                spec: {
+                    podSelector: {}
+                    policyTypes: ["Egress"]
+                    egress: [{
+                        to: [{
+                            ipBlock: {
+                                cidr: "0.0.0.0/0"
+                            }
+                        }]
+                        ports: [{
+                            protocol: "UDP"
+                            port: 53
+                        }]
+                    }]
+                }
+            } if _ox.allowDNSEgress else None
+            
+            _ocds = [r for r in [deny_ingress, deny_egress, allow_monitoring, allow_dns] if r is not None]
+            option("params").ocds = _ocds
+
+    - step: ready
+      functionRef:
+        name: function-auto-ready
+

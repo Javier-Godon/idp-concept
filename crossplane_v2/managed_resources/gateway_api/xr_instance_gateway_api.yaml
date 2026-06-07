@@ -1,0 +1,14 @@
+apiVersion: koncept.bluesolution.es/v1alpha1
+kind: XGateway
+metadata:
+  name: example-envoy-gateway
+  namespace: crossplane-system
+spec:
+  provider: envoy
+  port: 80
+  namespace: gateway-system
+  replicas: 2
+  protocol: HTTP
+  hostname: "*.example.com"
+  serviceType: LoadBalancer
+

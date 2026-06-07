@@ -1,0 +1,37 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: x_external_dns
+  namespace: crossplane-system
+spec:
+  compositeTypeRef:
+    apiVersion: koncept.bluesolution.es/v1alpha1
+    kind: XExternalDNS
+  mode: Pipeline
+  pipeline:
+    - step: deploy-via-helm
+      functionRef:
+        name: function-helm
+      input:
+        apiVersion: helm.fn.crossplane.io/v1beta1
+        kind: Release
+        metadata:
+          name: external-dns
+        spec:
+          chart:
+            name: external-dns
+            repository:
+              url: "oci://registry-1.docker.io/bitnamicharts"
+          namespace:
+            name: "external-dns"  # or from XR spec
+          values:
+            provider: "aws"  # patch from XR
+            policy: "sync"
+            registry: "txt"
+            txtOwnerId: "external-dns"
+            replicaCount: 2
+
+    - step: ready
+      functionRef:
+        name: function-auto-ready
+

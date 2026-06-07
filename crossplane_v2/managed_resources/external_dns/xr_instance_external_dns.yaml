@@ -1,0 +1,15 @@
+apiVersion: koncept.bluesolution.es/v1alpha1
+kind: XExternalDNS
+metadata:
+  name: example-external-dns
+  namespace: crossplane-system
+spec:
+  provider: aws
+  namespace: external-dns
+  policy: sync
+  replicas: 2
+  awsZoneType: public
+  # Optional AWS-specific credentials managed by Crossplane
+  # credentialsRef:
+  #   name: aws-credentials
+

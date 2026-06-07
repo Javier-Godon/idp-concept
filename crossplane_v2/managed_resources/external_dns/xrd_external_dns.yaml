@@ -1,0 +1,61 @@
+apiVersion: apiextensions.crossplane.io/v2
+kind: CompositeResourceDefinition
+metadata:
+  name: xexternaldnses.koncept.bluesolution.es
+spec:
+  group: koncept.bluesolution.es
+  names:
+    kind: XExternalDNS
+    plural: xexternaldnses
+  scope: Cluster
+  versions:
+    - name: v1alpha1
+      served: true
+      referenceable: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              required:
+                - provider
+              properties:
+                provider:
+                  type: string
+                  enum: [aws, azure, google, cloudflare, digitalocean]
+                  description: "DNS provider (aws, azure, google, cloudflare, digitalocean)"
+                namespace:
+                  type: string
+                  default: "external-dns"
+                policy:
+                  type: string
+                  enum: [sync, upsert-only]
+                  default: "sync"
+                replicas:
+                  type: integer
+                  minimum: 1
+                  default: 2
+                awsZoneType:
+                  type: string
+                  enum: [public, private]
+                  default: "public"
+                googleProjectId:
+                  type: string
+                azureResourceGroup:
+                  type: string
+            status:
+              type: object
+              properties:
+                ready:
+                  type: boolean
+                addresses:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      ip:
+                        type: string
+                      hostname:
+                        type: string
+

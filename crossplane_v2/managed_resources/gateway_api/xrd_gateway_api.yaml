@@ -1,0 +1,67 @@
+apiVersion: apiextensions.crossplane.io/v2
+kind: CompositeResourceDefinition
+metadata:
+  name: xgateways.koncept.bluesolution.es
+spec:
+  group: koncept.bluesolution.es
+  names:
+    kind: XGateway
+    plural: xgateways
+  scope: Cluster
+  versions:
+    - name: v1alpha1
+      served: true
+      referenceable: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              required:
+                - provider
+                - port
+              properties:
+                provider:
+                  type: string
+                  enum: [envoy, nginx, istio]
+                  description: "Gateway controller provider"
+                port:
+                  type: integer
+                  minimum: 1
+                  maximum: 65535
+                namespace:
+                  type: string
+                  default: "gateway-system"
+                replicas:
+                  type: integer
+                  minimum: 1
+                  default: 2
+                protocol:
+                  type: string
+                  enum: [HTTP, HTTPS]
+                  default: "HTTP"
+                hostname:
+                  type: string
+                  description: "Hostname for the gateway (wildcard allowed)"
+                serviceType:
+                  type: string
+                  enum: [LoadBalancer, NodePort, ClusterIP]
+                  default: "LoadBalancer"
+            status:
+              type: object
+              properties:
+                ready:
+                  type: boolean
+                gatewayClass:
+                  type: string
+                addresses:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      ip:
+                        type: string
+                      hostname:
+                        type: string
+
