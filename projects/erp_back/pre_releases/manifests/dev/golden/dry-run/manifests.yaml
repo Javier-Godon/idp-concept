@@ -62,6 +62,22 @@ spec:
   - from: erp-postgres/erp-postgres
     to: cluster/erp-postgres
     dependencyKind: Namespace
+  resourceFootprint:
+    manifestCount: 5
+    deploymentCount: 1
+    statefulsetCount: 0
+    daemonsetCount: 0
+    persistentVolumeClaimCount: 0
+    estimatedWorkloads: 1
+    cpuRequest:
+      millis: 0
+      estimatedNodes: 0
+    memoryRequest:
+      mb: 0
+    storageInfo:
+      pvcCount: 0
+      estimatedGb: 0
+    warnings: []
   outputs:
     helmfile:
       releaseCount: 2

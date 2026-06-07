@@ -18,11 +18,11 @@ versus experimental (see the [evolution plan](docs/IDP_EVOLUTION_PLAN.md#51-outp
 | Tier | Format | Command | Use Case |
 |---|---|---|---|
 | **Tier 1** | **ArgoCD/YAML** | `koncept render argocd` / `koncept render yaml` | Plain YAML for GitOps deployment — company default |
-| **Tier 1** | **Helmfile** | `koncept render helmfile` | Helm charts + helmfile.yaml |
+| **Tier 1** | **Helmfile** 🌟 | `koncept render helmfile` | Helm charts + orchestration — recommended for Helm-native teams |
 | **Tier 1** | **Backstage** | `koncept render backstage` | Backstage catalog entities |
+| **Tier 2** | **Crossplane** 🌟 | `koncept render crossplane` | Infrastructure-as-code + Kubernetes APIs — recommended for infrastructure provisioning |
 | **Tier 2** | **Helm** | `koncept render helm` | Standard Helm charts |
 | **Tier 2** | **Kustomize** | `koncept render kustomize` | Kustomize bases |
-| **Tier 2** | **Crossplane** | `koncept render crossplane` | Crossplane managed resources |
 | **Tier 3** | **Timoni** | `koncept render timoni` | CUE-based Timoni bundles (experimental) |
 | **Tier 3** | **Kusion** | `koncept render kusion` | Kusion spec with dependency ordering (experimental) |
 
@@ -32,6 +32,14 @@ by a real product team. Stack governance metadata is propagated through the supp
 native surfaces: Kubernetes annotations/labels for YAML/ArgoCD and Crossplane V2,
 Helmfile labels/commonLabels/release labels for Helmfile, and catalog annotations for
 Backstage.
+
+### 🚀 Helmfile & Crossplane: Production-Grade Multi-Format Output (June 2026)
+
+**NEW**: Helmfile and Crossplane V2 outputs are now **production-ready** with full governance metadata, deterministic orchestration, and comprehensive acceptance testing. See the **[Helmfile & Crossplane Adoption Guide](docs/HELMFILE_CROSSPLANE_ADOPTION.md)** for detailed adoption patterns.
+
+**When to use each:**
+- **Helmfile** (`koncept render helmfile`): Multi-Helm-chart orchestration with dependency management and per-release customization. Ideal for applications already packaged as Helm charts.
+- **Crossplane** (`koncept render crossplane`): Infrastructure-as-code via Kubernetes APIs with typed self-service provisioning. Ideal for infrastructure services (databases, message queues, object storage, identity). Includes 12+ curated managed resource APIs.
 
 ## How It Works
 
