@@ -529,7 +529,13 @@ fabric.properties
 
 # End of https://www.toptal.com/developers/gitignore/api/intellij
 
+# Credentials — NEVER commit. Local-only registry/OCI tokens live here.
+# The OCI publishing scripts read tokens from ./credentials (see docs/GHCR_PUBLISHING_GUIDE.md).
+/credentials/
+credentials/
+**/credentials/
 *credentials
+*.credentials
 
 # idp-concept
 .idea/

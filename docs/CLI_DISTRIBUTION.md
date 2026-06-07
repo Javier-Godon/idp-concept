@@ -14,11 +14,11 @@
 
 ```bash
 # Download latest release
-curl -L https://github.com/idp-concept/releases/latest/download/koncept-linux-amd64 -o koncept
+curl -L https://github.com/Javier-Godon/idp-concept/releases/latest/download/koncept-linux-amd64 -o koncept
 chmod +x koncept
 
 # Verify checksum
-curl -L https://github.com/idp-concept/releases/latest/download/CHECKSUMS -o CHECKSUMS
+curl -L https://github.com/Javier-Godon/idp-concept/releases/latest/download/CHECKSUMS -o CHECKSUMS
 sha256sum --check CHECKSUMS
 
 # Use it
@@ -28,7 +28,7 @@ sha256sum --check CHECKSUMS
 ### Option 2: Container Image
 
 ```bash
-docker run ghcr.io/idp-concept:latest \
+docker run ghcr.io/javier-godon/idp-concept/koncept:latest \
   --factory /workspace/factory \
   render helmfile
 ```
@@ -36,7 +36,7 @@ docker run ghcr.io/idp-concept:latest \
 ### Option 3: Install from Source
 
 ```bash
-git clone https://github.com/idp-concept/idp-concept
+git clone https://github.com/Javier-Godon/idp-concept
 cd idp-concept/cmd/koncept
 go build -o koncept .
 ./koncept render yaml
@@ -49,7 +49,7 @@ go build -o koncept .
 ### Linux (amd64)
 
 ```bash
-wget https://github.com/idp-concept/releases/latest/download/koncept-linux-amd64
+wget https://github.com/Javier-Godon/idp-concept/releases/latest/download/koncept-linux-amd64
 chmod +x koncept-linux-amd64
 sudo mv koncept-linux-amd64 /usr/local/bin/koncept
 koncept --version
@@ -58,7 +58,7 @@ koncept --version
 ### macOS (Intel)
 
 ```bash
-curl -L https://github.com/idp-concept/releases/latest/download/koncept-darwin-amd64 -o koncept
+curl -L https://github.com/Javier-Godon/idp-concept/releases/latest/download/koncept-darwin-amd64 -o koncept
 chmod +x koncept
 sudo mv koncept /usr/local/bin/koncept
 koncept --version
@@ -67,7 +67,7 @@ koncept --version
 ### macOS (Apple Silicon / M1/M2/M3)
 
 ```bash
-curl -L https://github.com/idp-concept/releases/latest/download/koncept-darwin-arm64 -o koncept
+curl -L https://github.com/Javier-Godon/idp-concept/releases/latest/download/koncept-darwin-arm64 -o koncept
 chmod +x koncept
 sudo mv koncept /usr/local/bin/koncept
 koncept --version
@@ -77,7 +77,7 @@ koncept --version
 
 ```powershell
 # Download the binary
-$url = "https://github.com/idp-concept/releases/latest/download/koncept-windows-amd64.exe"
+$url = "https://github.com/Javier-Godon/idp-concept/releases/latest/download/koncept-windows-amd64.exe"
 Invoke-WebRequest -Uri $url -OutFile koncept.exe
 
 # Add to PATH or use full path
@@ -92,8 +92,8 @@ All releases include `CHECKSUMS` files signed with GPG. To verify:
 
 ```bash
 # Download binary and checksums
-curl -L https://github.com/idp-concept/releases/latest/download/koncept-linux-amd64 -o koncept-linux-amd64
-curl -L https://github.com/idp-concept/releases/latest/download/CHECKSUMS -o CHECKSUMS
+curl -L https://github.com/Javier-Godon/idp-concept/releases/latest/download/koncept-linux-amd64 -o koncept-linux-amd64
+curl -L https://github.com/Javier-Godon/idp-concept/releases/latest/download/CHECKSUMS -o CHECKSUMS
 
 # Verify SHA256 (all platforms)
 sha256sum --check CHECKSUMS
@@ -133,7 +133,7 @@ $hash -eq $expectedHash
 
 ```bash
 # Render YAML from mounted factory directory
-docker run -v /path/to/factory:/workspace ghcr.io/idp-concept:latest \
+docker run -v /path/to/factory:/workspace ghcr.io/javier-godon/idp-concept/koncept:latest \
   --factory /workspace \
   render yaml
 
@@ -141,7 +141,7 @@ docker run -v /path/to/factory:/workspace ghcr.io/idp-concept:latest \
 docker run \
   -v /path/to/factory:/workspace \
   -v /path/to/output:/output \
-  ghcr.io/idp-concept:latest \
+  ghcr.io/javier-godon/idp-concept/koncept:latest \
   --factory /workspace \
   --output /output \
   render helmfile
@@ -151,7 +151,7 @@ docker run \
 
 ```yaml
 - name: Render with koncept
-  uses: docker://ghcr.io/idp-concept:latest
+  uses: docker://ghcr.io/javier-godon/idp-concept/koncept:latest
   with:
     args: >
       --factory projects/erp_back/pre_releases/manifests/dev/factory
@@ -160,13 +160,51 @@ docker run \
 
 ### Image Tags
 
-- `ghcr.io/idp-concept:latest` — Most recent release
-- `ghcr.io/idp-concept:v1.0.0` — Specific release version
-- `ghcr.io/idp-concept:main` — Built from main branch (development)
+- `ghcr.io/javier-godon/idp-concept/koncept:latest` — Most recent release
+- `ghcr.io/javier-godon/idp-concept/koncept:v1.0.0` — Specific release version
+- `ghcr.io/javier-godon/idp-concept/koncept:main` — Built from main branch (development)
+
+### Building & Publishing the Image (maintainers)
+
+Publishing reads its GHCR token from the local, git-ignored `credentials/` folder —
+**you are never prompted for a token and must never pass one on the command line**.
+
+```bash
+# One-time: create credentials/ghcr.env (git-ignored — see .gitignore)
+#   GHCR_USERNAME=javier-godon
+#   CR_PAT=<github_pat_with_write:packages>
+
+# Build + push the CLI container image (version defaults to `git describe --tags`)
+./scripts/publish_oci.sh image            # ghcr.io/javier-godon/idp-concept/koncept:<version> + :latest
+./scripts/publish_oci.sh image v1.0.1     # explicit version
+```
+
+In CI the same image is published automatically on `v*` tags by
+`.github/workflows/release.yml` using the workflow's `GITHUB_TOKEN` (no `credentials/`
+folder is involved on CI — that folder is for local maintainer publishing only).
 
 ---
 
-## Pinned KCL Toolchain
+## What This Project Publishes
+
+This repository publishes **two consumable artifacts** to
+`https://github.com/Javier-Godon/idp-concept` / `ghcr.io/javier-godon`:
+
+| Artifact | Reference | Purpose |
+|---|---|---|
+| `koncept` CLI binaries + checksums | GitHub Releases assets | Installable cross-platform CLI |
+| `koncept` CLI container image | `ghcr.io/javier-godon/idp-concept/koncept` | Pinned CI/runtime image (kcl bundled) |
+| Framework KCL module (OCI) | `oras://ghcr.io/javier-godon/idp-concept-framework` | The reusable `framework/` package — see `docs/GHCR_PUBLISHING_GUIDE.md` |
+
+The `projects/` directory (`video_streaming`, `erp_back`, `pokedex`) is **not** a
+published artifact. Those are **reference example usages** of the framework that
+demonstrate the recommended project layout and templates. Likewise the hand-authored
+`crossplane_v2/` cluster prerequisites and reference APIs are applied per-cluster, not
+published as a package.
+
+---
+
+
 
 The `koncept` CLI includes a pinned version of the KCL toolchain to ensure reproducible renders across all platforms and environments.
 
@@ -239,7 +277,7 @@ jobs:
       - name: Render YAML
         run: |
           # Download and verify CLI
-          curl -L https://github.com/idp-concept/releases/latest/download/koncept-linux-amd64 \
+          curl -L https://github.com/Javier-Godon/idp-concept/releases/latest/download/koncept-linux-amd64 \
             -o /use/local/bin/koncept
           chmod +x /usr/local/bin/koncept
           sha256sum --check CHECKSUMS
@@ -259,7 +297,7 @@ jobs:
 
 ```yaml
 render-manifests:
-  image: ghcr.io/idp-concept:latest
+  image: ghcr.io/javier-godon/idp-concept/koncept:latest
   script:
     - koncept --factory projects/erp_back/releases/v1_0_0_production/factory
                render yaml helmfile crossplane
@@ -292,8 +330,8 @@ sudo mv koncept /usr/local/bin/
 **Solution**: Verify you downloaded both the binary AND checksums file:
 ```bash
 # Redownload both
-curl -L https://github.com/idp-concept/releases/latest/download/koncept-linux-amd64 -o koncept-linux-amd64
-curl -L https://github.com/idp-concept/releases/latest/download/CHECKSUMS -o CHECKSUMS
+curl -L https://github.com/Javier-Godon/idp-concept/releases/latest/download/koncept-linux-amd64 -o koncept-linux-amd64
+curl -L https://github.com/Javier-Godon/idp-concept/releases/latest/download/CHECKSUMS -o CHECKSUMS
 
 # Try verification again
 sha256sum --check CHECKSUMS
@@ -315,7 +353,7 @@ sha256sum --check CHECKSUMS
 ```bash
 # Run FROM the repository root
 docker run -v $(pwd):/workspace \
-  ghcr.io/idp-concept:latest \
+  ghcr.io/javier-godon/idp-concept/koncept:latest \
   --factory /workspace/projects/erp_back/pre_releases/manifests/dev/factory \
   render yaml
 ```

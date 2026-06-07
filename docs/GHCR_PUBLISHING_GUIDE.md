@@ -20,25 +20,63 @@ framework = "oras://ghcr.io/javier-godon/idp-concept-framework:v1.0.0"
 
 ## 2. Prerequisites
 
-### 2.1 GitHub Authentication for GHCR
+### 2.1 GitHub Authentication for GHCR (credentials come from `./credentials`)
+
+Publishing **never prompts for a token**. The publish tooling reads the GHCR token
+from the local, git-ignored `credentials/` folder. You set the token up once:
 
 ```bash
-# 1. Create Personal Access Token (PAT) on GitHub
+# 1. Create a Personal Access Token (PAT) on GitHub (one-time)
 # - Visit: https://github.com/settings/tokens/new
 # - Select scopes:
 #   - write:packages    # Push to GHCR
 #   - read:packages     # Pull from GHCR
 #   - delete:packages   # Cleanup old versions
-# - Copy the token (save securely)
 
-# 2. Authenticate with GHCR locally
-export CR_PAT=<your_github_pat_token>
-echo $CR_PAT | docker login ghcr.io -u javier-godon --password-stdin
+# 2. Store it in the git-ignored credentials folder (NEVER committed — see .gitignore)
+#    File: credentials/ghcr.env
+cat > credentials/ghcr.env << 'EOF'
+GHCR_USERNAME=javier-godon
+CR_PAT=<your_github_pat_token>
+EOF
 
-# 3. Verify authentication
-docker pull ghcr.io/javier-godon/test:latest 2>&1 | head -3
-# Expected: "Error response from daemon: manifest not found" (auth worked, image doesn't exist)
+# 3. Verify the folder is ignored (must print a .gitignore match, and list nothing tracked)
+git check-ignore -v credentials/
+git ls-files credentials/   # expected: empty
 ```
+
+> ⚠️ Never paste the token into a shell command, a doc, or a commit. The only place it
+> lives is `credentials/ghcr.env`, which is ignored by Git. `scripts/publish_oci.sh`
+> reads it with `--password-stdin` and never echoes it.
+
+### 2.1.1 Quick publish (recommended)
+
+```bash
+# Authenticates from credentials/ghcr.env and publishes the framework OCI package.
+./scripts/publish_oci.sh framework            # version defaults to `git describe --tags`
+./scripts/publish_oci.sh framework v1.0.0     # explicit version
+
+# Also available:
+./scripts/publish_oci.sh image                # the koncept CLI container image
+./scripts/publish_oci.sh all                  # both
+```
+
+The manual `oras`/`docker` steps in Section 3 are kept as a reference for what the
+script does under the hood; day-to-day publishing should use `scripts/publish_oci.sh`.
+
+### 2.1.2 What gets published (and what does NOT)
+
+| Published artifact | Reference |
+|---|---|
+| Framework KCL module (OCI) | `oras://ghcr.io/javier-godon/idp-concept-framework:<version>` |
+| `koncept` CLI container image | `ghcr.io/javier-godon/idp-concept/koncept:<version>` |
+| `koncept` CLI binaries + checksums | GitHub Releases assets |
+
+**Not published:** the `projects/` directory (`video_streaming`, `erp_back`, `pokedex`)
+is a set of **reference example usages** of the framework, not a shipped package. The
+`crossplane_v2/` cluster prerequisites and curated reference APIs are applied per cluster,
+not published as an artifact.
+
 
 ### 2.2 Install ORAS CLI
 
@@ -107,9 +145,9 @@ REPO="idp-concept-framework"
 TAG="v1.0.0"
 IMAGE="$REGISTRY/$NAMESPACE/$REPO:$TAG"
 
-# Authenticate (if not already done)
-export CR_PAT=<github_pat_token>
-echo $CR_PAT | oras login ghcr.io -u javier-godon --password-stdin
+# Authenticate (if not already done) — token comes from credentials/ghcr.env
+set -a; source credentials/ghcr.env; set +a
+printf '%s' "$CR_PAT" | oras login ghcr.io -u "${GHCR_USERNAME:-javier-godon}" --password-stdin
 
 # Push framework package to GHCR
 oras push "$IMAGE" \

@@ -37,6 +37,9 @@
 > Update 2026-06-03 (doc consolidation + Crossplane vs. templates clarification): consolidated the standalone root planning notes (`EVOLUTION_IMPLEMENTATION_2026_06_03.md`, `EVOLUTION_PHASE_5_2026_06_03.md`, `IMPLEMENTATION_PLAN_2026_06.md`) into this single roadmap and deleted them so this document remains the one source of truth for maturity state (Section 5.5). Their substance now lives in Sections 12.2 (delivered Helmfile/observability/distribution work) and 12.1 (Crossplane runtime fixtures). Also added Section 5.7 to answer a recurring architecture question: what `crossplane_v2/` is for, why Crossplane output is *generated* yet the directory is still *hand-authored*, and why `crossplane_v2/managed_resources/` is a curated subset of `framework/templates/` rather than a 1:1 mirror. Phase E2 gained explicit deliverables to close the template↔managed-resource parity gap and document the selection policy.
 >
 > Update 2026-06-03 (experimental no-legacy policy): formalized that this is a **first experimental IDP that keeps no legacy, no backward-compatibility shims, and no two versions of the same thing** (Section 1, Project Principles). Applied it immediately by **deleting** the superseded manifest-wrapping PostgreSQL Crossplane bridge (`*_legacy.yaml`, `LEGACY_MIGRATION.md`, the unused `postgres_init.sql`) and renaming the CNPG files to the single canonical set (`xrd_postgres.yaml`, `x_postgres.yaml`, `xr_instance_postgres.yaml`, API `xpostgresinstances.koncept.bluesolution.es`). Stale `docs/WORKFLOWS.md` paths were corrected, and a new AI resource (`.github/skills/crossplane-architecture/SKILL.md` + `.github/instructions/crossplane-architecture.instructions.md`) captures the two-track model so future automated changes do not reintroduce legacy or a `provider-kubernetes` Object wrapper for application workloads.
+>
+> Update 2026-06-07 (credentials, identity, and publishing-scope hardening): (1) **Credentials never leave the machine.** The git-ignored `credentials/` folder is the single source for the GHCR token (`credentials/ghcr.env`); `.gitignore` was made explicit (`/credentials/`, `**/credentials/`, `*credentials`, `*.credentials`) and verified untracked. (2) **Publishing reads the token from that folder** — added `scripts/publish_oci.sh {image|framework|all}` which authenticates with `--password-stdin` and never prompts for, echoes, or accepts a token on the command line. `docs/GHCR_PUBLISHING_GUIDE.md`, `docs/CLI_DISTRIBUTION.md`, and `docs/EVOLUTION_IMPLEMENTATION_CHECKLIST.md` were rewritten to use this flow instead of `export CR_PAT=...`. (3) **Corrected wrong identity URLs.** Documentation that referenced `https://github.com/idp-concept/...` and `ghcr.io/idp-concept:...` now uses the real owner: repo `https://github.com/Javier-Godon/idp-concept`, GHCR namespace `ghcr.io/javier-godon`, CLI image `ghcr.io/javier-godon/idp-concept/koncept`, framework package `oras://ghcr.io/javier-godon/idp-concept-framework`. (The `github.com/idp-concept/koncept` strings in `cmd/koncept/**` are the Go *module path* — code identity — and are intentionally left unchanged.) (4) **Clarified what is published vs. what is an example.** The published artifacts are the framework OCI module, the `koncept` CLI image, and the CLI binaries. The `projects/` directory (`video_streaming`, `erp_back`, `pokedex`) is explicitly documented as **reference example usage**, not a shipped artifact (see Section 6a). (5) **Crossplane location question recorded.** The recurring "should `crossplane_v2/` live under `framework/templates/`?" question is addressed in Section 5.7 with the decision and rationale.
+
 
 ---
 
@@ -325,6 +328,37 @@ The short answer: there are **two different Crossplane concerns**, and conflatin
 
 So `crossplane_v2/` is genuinely necessary (prerequisites can never be "generated away", and the reference APIs define the quality bar), but `managed_resources/` should track a **documented, curated subset** of `framework/templates/` — the infrastructure/middleware ones — with explicit parity tracking. The concrete work to resolve this is in **Phase E2** (Section 12.1) and the policy/matrix is documented in `docs/CROSSPLANE_PATTERNS.md`.
 
+### 5.7.1 "Should `crossplane_v2/` just live under `framework/templates/`?"
+
+This is a fair question — `managed_resources/` really is "the same infrastructure, expressed
+in Crossplane form", so co-locating it with `framework/templates/` is intuitive. The decision
+is to **keep `crossplane_v2/` as its own top-level track, not fold it into `framework/templates/`**,
+for three concrete reasons:
+
+1. **Two of its three contents are not templates at all.** `crossplane_v2/providers/` and
+   `crossplane_v2/functions/` are **cluster bootstrap** (pinned Provider/Function installs applied
+   once per cluster). They are not derivable from a stack, are not imported by any KCL package, and
+   have no analogue under `framework/templates/`. Moving them under `templates/` would mislabel
+   cluster prerequisites as reusable module templates.
+2. **Different authoring and lifecycle model.** `framework/templates/` are KCL schemas consumed by
+   the render path and packaged into the published framework OCI module. `crossplane_v2/` is
+   hand-authored YAML applied directly to a cluster and is **not** part of the published framework
+   package. Mixing them would force one of them to change packaging/versioning model.
+3. **The intended end-state is convergence, not relocation.** Per Phase E2, the *generated*
+   `kcl_to_crossplane` path should eventually emit/reference the curated `managed_resources/` APIs.
+   That convergence is about the **render procedure** referencing the curated APIs, which works
+   regardless of directory location; physically nesting the YAML under `templates/` does not advance
+   it and would churn the Go CLI (`internal/crossplane`), scripts, and the acceptance matrix.
+
+What *did* change to address the underlying confusion: the published-vs-example boundary is now
+explicit (Section 6a), `crossplane_v2/` is documented as an applied-per-cluster, non-published track,
+and the parity matrix (Section 12.1) keeps the `templates/` ↔ `managed_resources/` relationship
+reviewable. If a future decision still wants relocation, the cleanest target would be a top-level
+`framework/crossplane/` (NOT `framework/templates/`), keeping prerequisites and curated APIs together
+but clearly separate from KCL templates — and it must update the CLI, scripts, skill, and instructions
+in the same change.
+
+
 ---
 
 ## 6. Missing or Underdeveloped Features
@@ -366,7 +400,28 @@ So `crossplane_v2/` is genuinely necessary (prerequisites can never be "generate
 
 ---
 
-## 7. Adapted Roadmap
+## 6a. What This Project Publishes vs. What Is an Example
+
+A recurring adoption question is *"what exactly do consumers install, and what is just a demo?"*
+The answer keeps the surface area small and explicit:
+
+| Item | Role | Published? | Reference |
+|---|---|---|---|
+| `framework/` | The reusable platform (schemas, builders, templates, procedures) | **Yes** — versioned OCI module | `oras://ghcr.io/javier-godon/idp-concept-framework:<version>` |
+| `cmd/koncept/` | The single CLI interface | **Yes** — binaries + container image | `ghcr.io/javier-godon/idp-concept/koncept:<version>` + GitHub Release assets |
+| `projects/video_streaming`, `projects/erp_back`, `projects/pokedex` | **Reference example usages** of the framework | **No** | Copy-as-starting-point; `erp_back` is the recommended template-first layout |
+| `crossplane_v2/` | Hand-authored cluster prerequisites + curated reference Crossplane APIs | **No** (applied per cluster) | See Section 5.7 |
+| `backstage/` | Catalog + scaffolder assets | **No** (deployed into a Backstage instance) | `docs/BACKSTAGE_PLUGIN_GUIDE.md` |
+
+So the **only two consumable, versioned artifacts are the framework OCI module and the
+`koncept` CLI**. Everything under `projects/` is intentionally an example: it exists to
+demonstrate the framework and to back golden/acceptance tests, not to be pulled as a
+dependency. Publishing tooling (`scripts/publish_oci.sh`) therefore only ever packages
+`framework/` and the CLI image — never `projects/`.
+
+---
+
+
 
 The previous roadmap emphasized many future phases. Given the current state, the next work should be more focused: **productize the golden path before expanding the framework**.
 
@@ -480,7 +535,7 @@ The previous roadmap emphasized many future phases. Given the current state, the
 
 - [x] Define semantic versioning rules for `framework/`. (Patch/minor/major table in `docs/FRAMEWORK_VERSIONING.md`.)
 - [x] Add framework compatibility metadata to stacks/releases.
-- [ ] Publish framework packages as versioned OCI artifacts or a clearly tagged KCL module distribution.
+- [~] Publish framework packages as versioned OCI artifacts or a clearly tagged KCL module distribution. (Tooling shipped: `scripts/publish_oci.sh framework <version>` packages `framework/` and pushes `oras://ghcr.io/javier-godon/idp-concept-framework:<version>`, authenticating from the git-ignored `credentials/ghcr.env` so no token is ever prompted/echoed. Remaining: execute the first real publish and switch consuming projects to the pinned reference. See `docs/GHCR_PUBLISHING_GUIDE.md`.)
 - [x] Provide migration docs from local path dependencies to version-pinned dependencies. (Worked `kcl.mod` before/after example in `docs/FRAMEWORK_VERSIONING.md`.)
 - [x] Add `koncept deps` output suitable for troubleshooting module resolution.
 - [x] Define support windows and deprecation policy for templates and output procedures.

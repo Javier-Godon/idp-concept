@@ -52,17 +52,24 @@ This document tracks completion of 5 strategic evolution steps to establish idp-
 **Document**: docs/GHCR_PUBLISHING_GUIDE.md ✅ CREATED
 
 **Actions Required**:
-- [ ] **2.a.1** Create GitHub PAT token
+- [ ] **2.a.1** Create GitHub PAT token and store it in `credentials/ghcr.env`
   - Navigate: https://github.com/settings/tokens/new
   - Scopes: write:packages, read:packages, delete:packages
-  - Save token securely (will not be shown again)
+  - Save it ONLY in the git-ignored `credentials/ghcr.env` (never in a commit/command):
+    ```bash
+    cat > credentials/ghcr.env << 'EOF'
+    GHCR_USERNAME=javier-godon
+    CR_PAT=<github_pat_token>
+    EOF
+    git check-ignore -v credentials/   # must show a .gitignore match
+    ```
   - Time: <5 minutes
 
-- [ ] **2.a.2** Authenticate locally with GHCR
+- [ ] **2.a.2** (No manual login needed) — `scripts/publish_oci.sh` authenticates from
+  `credentials/ghcr.env` automatically. To verify manually:
   ```bash
-  export CR_PAT=<github_pat_token>
-  echo $CR_PAT | docker login ghcr.io -u javier-godon --password-stdin
-  # Verify: docker pull ghcr.io/javier-godon/test 2>&1 | grep -E "Error|Pulling"
+  set -a; source credentials/ghcr.env; set +a
+  printf '%s' "$CR_PAT" | docker login ghcr.io -u "${GHCR_USERNAME:-javier-godon}" --password-stdin
   ```
   - Time: <5 minutes
 
@@ -78,37 +85,27 @@ This document tracks completion of 5 strategic evolution steps to establish idp-
   ```
   - Time: <10 minutes
 
-- [ ] **2.a.4** Package framework v1.0.0
+- [ ] **2.a.4** Package + push framework v1.0.0 (one command, credentials from folder)
   ```bash
   cd /path/to/idp-concept
-  mkdir -p /tmp/idp-publish
-  tar --exclude='.git' \
-      --exclude='*.lock' \
-      --exclude='output' \
-      --exclude='node_modules' \
-      --exclude='**/test_to_delete' \
-      -czf /tmp/idp-publish/framework-v1.0.0.tar.gz \
-      framework/
+  # Authenticates from credentials/ghcr.env, packages framework/, and pushes via oras.
+  ./scripts/publish_oci.sh framework v1.0.0
   # Verify
-  tar tzf /tmp/idp-publish/framework-v1.0.0.tar.gz | wc -l
-  # Expected: 200+ files
+  oras ls ghcr.io/javier-godon/idp-concept-framework
+  # Expected: v1.0.0 listed
   ```
   - Time: <5 minutes
 
-- [ ] **2.a.5** Push to GHCR via ORAS
+- [ ] **2.a.5** (Manual fallback) Push to GHCR via ORAS
   ```bash
-  export REGISTRY="ghcr.io"
-  export NAMESPACE="javier-godon"
-  export REPO="idp-concept-framework"
-  export TAG="v1.0.0"
-  export IMAGE="$REGISTRY/$NAMESPACE/$REPO:$TAG"
-  
+  # Only needed if NOT using scripts/publish_oci.sh. Auth comes from credentials/ghcr.env:
+  set -a; source credentials/ghcr.env; set +a
+  printf '%s' "$CR_PAT" | oras login ghcr.io -u "${GHCR_USERNAME:-javier-godon}" --password-stdin
+
+  export IMAGE="ghcr.io/javier-godon/idp-concept-framework:v1.0.0"
   oras push "$IMAGE" \
       /tmp/idp-publish/framework-v1.0.0.tar.gz:application/vnd.idp-concept.framework.v1+gzip
-  
-  # Verify upload
-  oras ls "$REGISTRY/$NAMESPACE/$REPO"
-  # Expected: v1.0.0 listed
+  oras ls ghcr.io/javier-godon/idp-concept-framework
   ```
   - Time: <5 minutes
 
