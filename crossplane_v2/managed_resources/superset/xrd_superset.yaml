@@ -1,0 +1,183 @@
+apiVersion: apiextensions.crossplane.io/v2
+kind: CompositeResourceDefinition
+metadata:
+  name: xsupersets.koncept.bluesolution.es
+  annotations:
+    koncept.io/tier: "2"
+    koncept.io/deployment-method: "helm"
+    koncept.io/chart: "superset/superset"
+    koncept.io/last-reviewed: "2026-06-07"
+spec:
+  scope: Cluster
+  group: koncept.bluesolution.es
+  names:
+    kind: XSuperset
+    plural: xsupersets
+  claimNames:
+    kind: Superset
+    plural: supersets
+  defaultCompositionRef:
+    name: xsuperset-helm-composition
+  versions:
+    - name: v1alpha1
+      served: true
+      referenceable: true
+      additionalPrinterColumns:
+        - name: NAMESPACE
+          type: string
+          jsonPath: .spec.namespace
+        - name: FOOTPRINT
+          type: string
+          jsonPath: .spec.environment
+        - name: WEB_PORT
+          type: integer
+          jsonPath: .spec.webPort
+        - name: READY
+          type: string
+          jsonPath: .status.conditions[?(@.type=="Ready")].status
+        - name: AGE
+          type: date
+          jsonPath: .metadata.creationTimestamp
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              description: Apache Superset instance configures a data visualization platform via Helm chart.
+              required:
+                - namespace
+                - databaseUri
+              properties:
+                namespace:
+                  type: string
+                  description: Kubernetes namespace where Superset runs.
+                clusterName:
+                  type: string
+                  description: Release name / cluster identifier (Claim name if unset).
+                  default: ""
+                chartVersion:
+                  type: string
+                  description: "Superset Helm chart version (e.g., 0.14.1)."
+                  default: "0.14.1"
+                databaseUri:
+                  type: string
+                  description: Backend database connection URI (e.g., postgresql://user:pass@host/superset).
+                redisUri:
+                  type: string
+                  description: Redis cache/broker URI. Defaults to local deployment.
+                  default: "redis://localhost:6379/0"
+                webPort:
+                  type: integer
+                  description: Web UI port.
+                  default: 8088
+                  minimum: 1
+                  maximum: 65535
+                webReplicas:
+                  type: integer
+                  description: Number of web server replicas. Leave unset to auto-select based on footprint.
+                workerReplicas:
+                  type: integer
+                  description: Number of Celery worker replicas. Leave unset to auto-select based on footprint.
+                adminUsername:
+                  type: string
+                  description: Admin user username.
+                  default: admin
+                adminFirstName:
+                  type: string
+                  description: Admin user first name.
+                  default: Admin
+                adminLastName:
+                  type: string
+                  description: Admin user last name.
+                  default: User
+                persistenceEnabled:
+                  type: boolean
+                  description: Enable persistent storage for uploads/cache.
+                  default: true
+                persistenceSize:
+                  type: string
+                  description: PVC storage size (e.g., 20Gi). Leave unset for footprint-based default.
+                  pattern: "^[0-9]+(Mi|Gi|Ti)$"
+                persistenceStorageClass:
+                  type: string
+                  description: StorageClass name. Leave empty for cluster default.
+                  default: ""
+                webCpuRequest:
+                  type: string
+                  description: Web server CPU request.
+                  default: "100m"
+                webMemoryRequest:
+                  type: string
+                  description: Web server memory request.
+                  default: "256Mi"
+                webCpuLimit:
+                  type: string
+                  description: Web server CPU limit.
+                  default: "500m"
+                webMemoryLimit:
+                  type: string
+                  description: Web server memory limit.
+                  default: "1Gi"
+                workerCpuRequest:
+                  type: string
+                  description: Worker CPU request.
+                  default: "100m"
+                workerMemoryRequest:
+                  type: string
+                  description: Worker memory request.
+                  default: "256Mi"
+                workerCpuLimit:
+                  type: string
+                  description: Worker CPU limit.
+                  default: "500m"
+                workerMemoryLimit:
+                  type: string
+                  description: Worker memory limit.
+                  default: "1Gi"
+                serviceType:
+                  type: string
+                  description: Service type (NodePort for non-prod, LoadBalancer for prod).
+                  default: LoadBalancer
+                  enum:
+                    - NodePort
+                    - LoadBalancer
+                    - ClusterIP
+                environment:
+                  type: string
+                  description: "Target environment tier: local, development, staging, production."
+                  default: production
+                  enum:
+                    - local
+                    - development
+                    - staging
+                    - production
+                owner:
+                  type: string
+                  description: "Team or system that owns this instance (for labeling/RBAC)."
+                  default: ""
+            status:
+              type: object
+              properties:
+                conditions:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      type:
+                        type: string
+                      status:
+                        type: string
+                      reason:
+                        type: string
+                      message:
+                        type: string
+                      lastTransitionTime:
+                        type: string
+                releaseName:
+                  type: string
+                  description: The name of the generated Helm Release.
+                webEndpoint:
+                  type: string
+                  description: Superset web UI endpoint.
+

@@ -1,0 +1,71 @@
+## Example Power BI Connector Claim (XR Consumer)
+##
+## Usage: kubectl apply -f xr_instance_powerbi.yaml
+## This creates configuration maps that operations can use to configure Power BI
+## to connect to QuestDB, Superset, and PostgreSQL.
+
+apiVersion: koncept.bluesolution.es/v1alpha1
+kind: PowerBIConnector
+metadata:
+  name: prod-analytics-connector
+spec:
+  namespace: powerbi-connectors-prod
+  description: Production Power BI connector for analytics platform
+  dataSources:
+    - questdb
+    - superset
+    - postgres
+  questdbHost: questdb.infra.svc.cluster.local
+  questdbPort: 5432
+  questdbDatabase: qdb
+  questdbUsername: admin
+  supersetHost: superset.analytics.svc.cluster.local
+  supersetPort: 8088
+  postgresHost: postgres.infra.svc.cluster.local
+  postgresPort: 5432
+  postgresDatabase: warehouse
+  postgresUsername: powerbi_user
+  environment: production
+  owner: analytics-platform-team
+
+---
+## Example: Development analytics connector
+apiVersion: koncept.bluesolution.es/v1alpha1
+kind: PowerBIConnector
+metadata:
+  name: dev-analytics-connector
+spec:
+  namespace: powerbi-connectors-dev
+  description: Development Power BI connector
+  dataSources:
+    - questdb
+    - postgres
+  questdbHost: questdb-dev.default.svc.cluster.local
+  questdbPort: 5432
+  questdbDatabase: qdb_dev
+  questdbUsername: dev_user
+  postgresHost: postgres-dev.default.svc.cluster.local
+  postgresPort: 5432
+  postgresDatabase: dev_warehouse
+  postgresUsername: dev_powerbi
+  environment: development
+  owner: dev-analytics-team
+
+---
+## Example: Local/testing connector
+apiVersion: koncept.bluesolution.es/v1alpha1
+kind: PowerBIConnector
+metadata:
+  name: local-analytics-connector
+spec:
+  namespace: powerbi-connectors-local
+  description: Local testing Power BI connector
+  dataSources:
+    - questdb
+  questdbHost: localhost
+  questdbPort: 5432
+  questdbDatabase: qdb
+  questdbUsername: admin
+  environment: local
+  owner: dev-team
+

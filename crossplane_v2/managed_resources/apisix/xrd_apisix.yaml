@@ -1,0 +1,165 @@
+apiVersion: apiextensions.crossplane.io/v2
+kind: CompositeResourceDefinition
+metadata:
+  name: xapigateways.koncept.bluesolution.es
+  annotations:
+    koncept.io/tier: "2"
+    koncept.io/deployment-method: "helm"
+    koncept.io/chart: "apisix/apisix"
+    koncept.io/last-reviewed: "2026-06-07"
+spec:
+  scope: Cluster
+  group: koncept.bluesolution.es
+  names:
+    kind: XAPIGateway
+    plural: xapigateways
+  claimNames:
+    kind: APIGateway
+    plural: apigateways
+  defaultCompositionRef:
+    name: xapigateway-helm-composition
+  versions:
+    - name: v1alpha1
+      served: true
+      referenceable: true
+      additionalPrinterColumns:
+        - name: NAMESPACE
+          type: string
+          jsonPath: .spec.namespace
+        - name: ADMIN
+          type: string
+          jsonPath: .spec.adminPort
+        - name: GATEWAY
+          type: string
+          jsonPath: .spec.gatewayHttpPort
+        - name: READY
+          type: string
+          jsonPath: .status.conditions[?(@.type=="Ready")].status
+        - name: AGE
+          type: date
+          jsonPath: .metadata.creationTimestamp
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              description: Apache APISIX API Gateway instance configures a cloud-native API gateway via Helm chart.
+              required:
+                - namespace
+              properties:
+                namespace:
+                  type: string
+                  description: Kubernetes namespace where APISIX runs.
+                clusterName:
+                  type: string
+                  description: Release name / cluster identifier (Claim name if unset).
+                  default: ""
+                chartVersion:
+                  type: string
+                  description: "APISIX Helm chart version (e.g., 2.4.0)."
+                  default: "2.4.0"
+                adminPort:
+                  type: integer
+                  description: Admin API port.
+                  default: 9180
+                  minimum: 1
+                  maximum: 65535
+                gatewayHttpPort:
+                  type: integer
+                  description: Gateway HTTP port.
+                  default: 80
+                  minimum: 1
+                  maximum: 65535
+                gatewayHttpsPort:
+                  type: integer
+                  description: Gateway HTTPS port.
+                  default: 443
+                  minimum: 1
+                  maximum: 65535
+                dashboardPort:
+                  type: integer
+                  description: Dashboard (Web UI) port.
+                  default: 3000
+                  minimum: 1
+                  maximum: 65535
+                adminEnabled:
+                  type: boolean
+                  description: Enable Admin API.
+                  default: true
+                dashboardEnabled:
+                  type: boolean
+                  description: Enable embedded dashboard.
+                  default: true
+                etcdReplicas:
+                  type: integer
+                  description: etcd replica count (embedded). Leave unset to auto-select based on footprint.
+                etcdStorageSize:
+                  type: string
+                  description: etcd persistent storage size (e.g., 5Gi). Leave unset for default.
+                  pattern: "^[0-9]+(Mi|Gi|Ti)$"
+                resourceCpuRequest:
+                  type: string
+                  description: CPU request.
+                  default: "100m"
+                resourceMemoryRequest:
+                  type: string
+                  description: Memory request.
+                  default: "128Mi"
+                resourceCpuLimit:
+                  type: string
+                  description: CPU limit.
+                  default: "500m"
+                resourceMemoryLimit:
+                  type: string
+                  description: Memory limit.
+                  default: "512Mi"
+                gatewayType:
+                  type: string
+                  description: Service type (NodePort for non-prod, LoadBalancer for prod).
+                  default: LoadBalancer
+                  enum:
+                    - NodePort
+                    - LoadBalancer
+                    - ClusterIP
+                environment:
+                  type: string
+                  description: "Target environment tier: local, development, staging, production."
+                  default: production
+                  enum:
+                    - local
+                    - development
+                    - staging
+                    - production
+                owner:
+                  type: string
+                  description: "Team or system that owns this instance (for labeling/RBAC)."
+                  default: ""
+            status:
+              type: object
+              properties:
+                conditions:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      type:
+                        type: string
+                      status:
+                        type: string
+                      reason:
+                        type: string
+                      message:
+                        type: string
+                      lastTransitionTime:
+                        type: string
+                releaseName:
+                  type: string
+                  description: The name of the generated Helm Release.
+                adminEndpoint:
+                  type: string
+                  description: APISIX Admin API endpoint.
+                gatewayEndpoint:
+                  type: string
+                  description: APISIX Gateway endpoint (HTTP).
+

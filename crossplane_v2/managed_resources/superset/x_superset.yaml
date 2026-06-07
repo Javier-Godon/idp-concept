@@ -1,0 +1,187 @@
+## Superset Composition — Helm-based data visualization deployment
+##
+## Prerequisites:
+##   - Helm provider is installed and available
+##   - Superset Helm repository is added to Helm:
+##     helm repo add superset https://apache.github.io/superset
+##     helm repo update
+##   - Backend database must be running and accessible
+
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: xsuperset-helm-composition
+  annotations:
+    koncept.io/deployment-method: "helm"
+    koncept.io/chart: "superset/superset"
+    koncept.io/pattern: "helm-release"
+spec:
+  compositeTypeRef:
+    apiVersion: koncept.bluesolution.es/v1alpha1
+    kind: XSuperset
+  mode: Pipeline
+  pipeline:
+
+    - step: render-resources
+      functionRef:
+        name: function-patch-and-transform
+      input:
+        apiVersion: pt.fn.crossplane.io/v1beta1
+        kind: Resources
+        resources:
+
+          - name: ns-superset
+            base:
+              apiVersion: kubernetes.crossplane.io/v1alpha2
+              kind: Object
+              spec:
+                providerConfigRef:
+                  name: provider-kubernetes
+                forProvider:
+                  manifest:
+                    apiVersion: v1
+                    kind: Namespace
+                    metadata:
+                      name: superset
+                      labels:
+                        koncept.io/managed-by: crossplane
+            patches:
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.namespace
+                toFieldPath: spec.forProvider.manifest.metadata.name
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.owner
+                toFieldPath: spec.forProvider.manifest.metadata.labels["koncept.io/owner"]
+
+          - name: superset-helm-release
+            base:
+              apiVersion: helm.crossplane.io/v1beta1
+              kind: Release
+              spec:
+                forProvider:
+                  namespace: superset
+                  chart:
+                    name: superset
+                    repository: https://apache.github.io/superset
+                    version: "0.14.1"
+                  values:
+                    supersetDatabaseUri: "postgresql://user:pass@localhost/superset"
+                    supersetNode:
+                      replicaCount: 3
+                      resources:
+                        requests:
+                          cpu: "100m"
+                          memory: "256Mi"
+                        limits:
+                          cpu: "500m"
+                          memory: "1Gi"
+                    supersetWorker:
+                      replicaCount: 1
+                      resources:
+                        requests:
+                          cpu: "100m"
+                          memory: "256Mi"
+                        limits:
+                          cpu: "500m"
+                          memory: "1Gi"
+                    redis:
+                      enabled: true
+                    persistence:
+                      enabled: true
+                      size: 20Gi
+                    service:
+                      port: 8088
+                      type: LoadBalancer
+                providerConfigRef:
+                  name: provider-helm
+            patches:
+              # Release name
+              - type: FromCompositeFieldPath
+                fromFieldPath: metadata.name
+                toFieldPath: metadata.name
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.clusterName
+                toFieldPath: metadata.name
+                policy:
+                  fromFieldPath: Optional
+              # Target namespace
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.namespace
+                toFieldPath: spec.forProvider.namespace
+              # Chart version
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.chartVersion
+                toFieldPath: spec.forProvider.chart.version
+              # Database URI
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.databaseUri
+                toFieldPath: spec.forProvider.values.supersetDatabaseUri
+              # Redis URI
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.redisUri
+                toFieldPath: spec.forProvider.values.supersetCeleryBrokerUrl
+              # Web replicas
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.webReplicas
+                toFieldPath: spec.forProvider.values.supersetNode.replicaCount
+                policy:
+                  fromFieldPath: Optional
+              # Worker replicas
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.workerReplicas
+                toFieldPath: spec.forProvider.values.supersetWorker.replicaCount
+                policy:
+                  fromFieldPath: Optional
+              # Web resources
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.webCpuRequest
+                toFieldPath: spec.forProvider.values.supersetNode.resources.requests.cpu
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.webMemoryRequest
+                toFieldPath: spec.forProvider.values.supersetNode.resources.requests.memory
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.webCpuLimit
+                toFieldPath: spec.forProvider.values.supersetNode.resources.limits.cpu
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.webMemoryLimit
+                toFieldPath: spec.forProvider.values.supersetNode.resources.limits.memory
+              # Worker resources
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.workerCpuRequest
+                toFieldPath: spec.forProvider.values.supersetWorker.resources.requests.cpu
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.workerMemoryRequest
+                toFieldPath: spec.forProvider.values.supersetWorker.resources.requests.memory
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.workerCpuLimit
+                toFieldPath: spec.forProvider.values.supersetWorker.resources.limits.cpu
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.workerMemoryLimit
+                toFieldPath: spec.forProvider.values.supersetWorker.resources.limits.memory
+              # Persistence
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.persistenceEnabled
+                toFieldPath: spec.forProvider.values.persistence.enabled
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.persistenceSize
+                toFieldPath: spec.forProvider.values.persistence.size
+                policy:
+                  fromFieldPath: Optional
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.persistenceStorageClass
+                toFieldPath: spec.forProvider.values.persistence.storageClassName
+                policy:
+                  fromFieldPath: Optional
+              # Web port
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.webPort
+                toFieldPath: spec.forProvider.values.service.port
+              # Service type
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.serviceType
+                toFieldPath: spec.forProvider.values.service.type
+
+    - step: automatically-detect-readiness
+      functionRef:
+        name: function-auto-ready
+

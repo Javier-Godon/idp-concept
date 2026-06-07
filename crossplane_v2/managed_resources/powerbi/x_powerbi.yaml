@@ -1,0 +1,226 @@
+## Power BI Connector Composition — Kubernetes ConfigMap-based integration helper
+##
+## Prerequisites:
+##   - Kubernetes provider is installed and available
+##
+## Note: Power BI itself runs outside the cluster. This composition creates a ConfigMap
+## that exposes connection details, credentials management guidance, and integration
+## helpers that operations teams can use to configure Power BI connections.
+
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: xpowerbiconnector-configmap-composition
+  annotations:
+    koncept.io/deployment-method: "kubernetes-configmap"
+    koncept.io/pattern: "integration-helper"
+spec:
+  compositeTypeRef:
+    apiVersion: koncept.bluesolution.es/v1alpha1
+    kind: XPowerBIConnector
+  mode: Pipeline
+  pipeline:
+
+    - step: render-resources
+      functionRef:
+        name: function-patch-and-transform
+      input:
+        apiVersion: pt.fn.crossplane.io/v1beta1
+        kind: Resources
+        resources:
+
+          - name: ns-powerbi
+            base:
+              apiVersion: kubernetes.crossplane.io/v1alpha2
+              kind: Object
+              spec:
+                providerConfigRef:
+                  name: provider-kubernetes
+                forProvider:
+                  manifest:
+                    apiVersion: v1
+                    kind: Namespace
+                    metadata:
+                      name: powerbi-connectors
+                      labels:
+                        koncept.io/managed-by: crossplane
+            patches:
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.namespace
+                toFieldPath: spec.forProvider.manifest.metadata.name
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.owner
+                toFieldPath: spec.forProvider.manifest.metadata.labels["koncept.io/owner"]
+
+          ## QuestDB Connection ConfigMap
+          - name: powerbi-questdb-connector
+            base:
+              apiVersion: kubernetes.crossplane.io/v1alpha2
+              kind: Object
+              spec:
+                providerConfigRef:
+                  name: provider-kubernetes
+                forProvider:
+                  manifest:
+                    apiVersion: v1
+                    kind: ConfigMap
+                    metadata:
+                      name: powerbi-questdb-connector
+                      namespace: powerbi-connectors
+                      labels:
+                        koncept.io/managed-by: crossplane
+                        koncept.io/datasource: questdb
+                    data:
+                      QUESTDB_HOST: "localhost"
+                      QUESTDB_PORT: "5432"
+                      QUESTDB_DATABASE: "qdb"
+                      QUESTDB_USERNAME: "admin"
+                      QUESTDB_CONNECTION_STRING: "Driver=PostgreSQL Unicode;Server=localhost;Port=5432;Database=qdb;UID=admin"
+                      README: |
+                        # QuestDB Connection for Power BI
+
+                        QuestDB exposes a PostgreSQL-compatible wire protocol on port 5432.
+
+                        ## Power BI Desktop Setup (Windows)
+                        1. Get Data > Postgres
+                        2. Enter Server: <QUESTDB_HOST>
+                        3. Enter Database: qdb
+                        4. Connection mode: DirectQuery (recommended for real-time)
+                        5. Provide credentials: admin/<password>
+
+                        ## Power BI Report Server / Cloud Setup
+                        Use ODBC: Driver=PostgreSQL Unicode;Server=<QUESTDB_HOST>;Port=5432;Database=qdb;UID=admin
+
+                        ## Connection String Reference
+                        Database URI: postgresql://admin:PASSWORD@<QUESTDB_HOST>:5432/qdb
+            patches:
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.namespace
+                toFieldPath: spec.forProvider.manifest.metadata.namespace
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.questdbHost
+                toFieldPath: spec.forProvider.manifest.data.QUESTDB_HOST
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.questdbPort
+                toFieldPath: spec.forProvider.manifest.data.QUESTDB_PORT
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.questdbDatabase
+                toFieldPath: spec.forProvider.manifest.data.QUESTDB_DATABASE
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.questdbUsername
+                toFieldPath: spec.forProvider.manifest.data.QUESTDB_USERNAME
+
+          ## Apache Superset Connection ConfigMap
+          - name: powerbi-superset-connector
+            base:
+              apiVersion: kubernetes.crossplane.io/v1alpha2
+              kind: Object
+              spec:
+                providerConfigRef:
+                  name: provider-kubernetes
+                forProvider:
+                  manifest:
+                    apiVersion: v1
+                    kind: ConfigMap
+                    metadata:
+                      name: powerbi-superset-connector
+                      namespace: powerbi-connectors
+                      labels:
+                        koncept.io/managed-by: crossplane
+                        koncept.io/datasource: superset
+                    data:
+                      SUPERSET_HOST: "localhost"
+                      SUPERSET_PORT: "8088"
+                      SUPERSET_URL: "http://localhost:8088"
+                      README: |
+                        # Superset Integration for Power BI
+
+                        ## Use Case
+                        Apache Superset provides data exploration and visualization.
+                        Use Superset to:
+                        1. Explore QuestDB datasets interactively
+                        2. Create pre-aggregated views/dashboards in Superset
+                        3. Export datasets from Superset for Power BI consumption
+                        4. Use as a shared data catalog
+
+                        ## Access
+                        URL: http://<SUPERSET_HOST>:8088
+                        - Create charts and dashboards in Superset
+                        - Export data via SQL Lab or dataset APIs
+                        - Fine-grained access control via Superset RBAC
+
+                        ## Power BI Integration Options
+                        1. Use Superset as source: Create API connector or use native Superset API
+                        2. Use underlying QuestDB directly: Superset is just for collaboration
+                        3. Export from Superset to CSV/Parquet for import into Power BI
+            patches:
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.namespace
+                toFieldPath: spec.forProvider.manifest.metadata.namespace
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.supersetHost
+                toFieldPath: spec.forProvider.manifest.data.SUPERSET_HOST
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.supersetPort
+                toFieldPath: spec.forProvider.manifest.data.SUPERSET_PORT
+
+          ## PostgreSQL Connection ConfigMap
+          - name: powerbi-postgres-connector
+            base:
+              apiVersion: kubernetes.crossplane.io/v1alpha2
+              kind: Object
+              spec:
+                providerConfigRef:
+                  name: provider-kubernetes
+                forProvider:
+                  manifest:
+                    apiVersion: v1
+                    kind: ConfigMap
+                    metadata:
+                      name: powerbi-postgres-connector
+                      namespace: powerbi-connectors
+                      labels:
+                        koncept.io/managed-by: crossplane
+                        koncept.io/datasource: postgres
+                    data:
+                      POSTGRES_HOST: "localhost"
+                      POSTGRES_PORT: "5432"
+                      POSTGRES_DATABASE: "postgres"
+                      POSTGRES_USERNAME: "postgres"
+                      README: |
+                        # PostgreSQL Connection for Power BI
+
+                        Generic PostgreSQL backend for:
+                        - Data warehouse / staging layer
+                        - Reporting database with pre-aggregated tables
+                        - Custom transformations via stored procedures
+
+                        ## Power BI Desktop Setup
+                        1. Get Data > Postgres
+                        2. Enter Server: <POSTGRES_HOST>
+                        3. Enter Database: <POSTGRES_DATABASE>
+                        4. Provide credentials
+
+                        ## Connection String
+                        postgresql://<POSTGRES_USERNAME>:PASSWORD@<POSTGRES_HOST>:5432/<POSTGRES_DATABASE>
+            patches:
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.namespace
+                toFieldPath: spec.forProvider.manifest.metadata.namespace
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.postgresHost
+                toFieldPath: spec.forProvider.manifest.data.POSTGRES_HOST
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.postgresPort
+                toFieldPath: spec.forProvider.manifest.data.POSTGRES_PORT
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.postgresDatabase
+                toFieldPath: spec.forProvider.manifest.data.POSTGRES_DATABASE
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.postgresUsername
+                toFieldPath: spec.forProvider.manifest.data.POSTGRES_USERNAME
+
+    - step: automatically-detect-readiness
+      functionRef:
+        name: function-auto-ready
+

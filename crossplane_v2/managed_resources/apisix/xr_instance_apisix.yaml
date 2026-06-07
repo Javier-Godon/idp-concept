@@ -1,0 +1,45 @@
+## Example APISIX Claim (XR Consumer)
+##
+## Usage: kubectl apply -f xr_instance_apisix.yaml
+## This creates an APIGateway claim that triggers the XAPIGateway composition.
+
+apiVersion: koncept.bluesolution.es/v1alpha1
+kind: APIGateway
+metadata:
+  name: prod-apisix
+spec:
+  namespace: gateway-prod
+  clusterName: apisix-gateway
+  chartVersion: "2.4.0"
+  adminPort: 9180
+  gatewayHttpPort: 80
+  gatewayHttpsPort: 443
+  dashboardPort: 3000
+  adminEnabled: true
+  dashboardEnabled: true
+  gatewayType: LoadBalancer
+  environment: production
+  owner: platform-team
+
+---
+## Example: Development APISIX cluster
+apiVersion: koncept.bluesolution.es/v1alpha1
+kind: APIGateway
+metadata:
+  name: dev-apisix
+spec:
+  namespace: gateway-dev
+  clusterName: apisix-gateway-dev
+  chartVersion: "2.4.0"
+  adminPort: 9180
+  gatewayHttpPort: 8080
+  gatewayHttpsPort: 8443
+  dashboardPort: 3000
+  adminEnabled: true
+  dashboardEnabled: true
+  gatewayType: NodePort
+  environment: development
+  owner: platform-team
+  etcdReplicas: 1
+  etcdStorageSize: "2Gi"
+

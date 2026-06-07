@@ -1,0 +1,71 @@
+## Example Superset Claim (XR Consumer)
+##
+## Usage: kubectl apply -f xr_instance_superset.yaml
+## Prerequisites:
+##   - A backend PostgreSQL database running and accessible
+##   - Redis instance for caching/Celery broker
+
+apiVersion: koncept.bluesolution.es/v1alpha1
+kind: Superset
+metadata:
+  name: prod-superset
+spec:
+  namespace: analytics-prod
+  clusterName: superset-prod
+  chartVersion: "0.14.1"
+  databaseUri: "postgresql://superset:secretpassword@postgres.infra.svc.cluster.local:5432/superset"
+  redisUri: "redis://redis.infra.svc.cluster.local:6379/1"
+  webPort: 8088
+  webReplicas: 3
+  workerReplicas: 2
+  adminUsername: admin
+  adminFirstName: Platform
+  adminLastName: Admin
+  persistenceEnabled: true
+  persistenceSize: "50Gi"
+  persistenceStorageClass: "rook-ceph-block"
+  serviceType: LoadBalancer
+  environment: production
+  owner: analytics-team
+
+---
+## Example: Development Superset cluster
+apiVersion: koncept.bluesolution.es/v1alpha1
+kind: Superset
+metadata:
+  name: dev-superset
+spec:
+  namespace: analytics-dev
+  clusterName: superset-dev
+  chartVersion: "0.14.1"
+  databaseUri: "postgresql://superset:devpass@postgres-dev.infra.svc.cluster.local:5432/superset"
+  redisUri: "redis://redis-dev.infra.svc.cluster.local:6379/0"
+  webPort: 8088
+  webReplicas: 1
+  workerReplicas: 1
+  adminUsername: admin
+  persistenceEnabled: true
+  persistenceSize: "10Gi"
+  serviceType: NodePort
+  environment: development
+  owner: analytics-team
+
+---
+## Example: Local/testing Superset cluster
+apiVersion: koncept.bluesolution.es/v1alpha1
+kind: Superset
+metadata:
+  name: local-superset
+spec:
+  namespace: analytics-local
+  clusterName: superset-local
+  chartVersion: "0.14.1"
+  databaseUri: "postgresql://superset:localpass@postgres.default.svc.cluster.local:5432/superset"
+  webPort: 8088
+  webReplicas: 1
+  workerReplicas: 1
+  persistenceEnabled: false
+  serviceType: ClusterIP
+  environment: local
+  owner: dev-team
+

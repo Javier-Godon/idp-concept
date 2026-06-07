@@ -1,0 +1,146 @@
+## APISIX Composition — Helm-based API gateway deployment
+##
+## Prerequisites:
+##   - Helm provider is installed and available
+##   - APISIX Helm repository is added to Helm:
+##     helm repo add apisix https://charts.apiseven.com
+##     helm repo update
+
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: xapigateway-helm-composition
+  annotations:
+    koncept.io/deployment-method: "helm"
+    koncept.io/chart: "apisix/apisix"
+    koncept.io/pattern: "helm-release"
+spec:
+  compositeTypeRef:
+    apiVersion: koncept.bluesolution.es/v1alpha1
+    kind: XAPIGateway
+  mode: Pipeline
+  pipeline:
+
+    - step: render-resources
+      functionRef:
+        name: function-patch-and-transform
+      input:
+        apiVersion: pt.fn.crossplane.io/v1beta1
+        kind: Resources
+        resources:
+
+          - name: ns-apisix
+            base:
+              apiVersion: kubernetes.crossplane.io/v1alpha2
+              kind: Object
+              spec:
+                providerConfigRef:
+                  name: provider-kubernetes
+                forProvider:
+                  manifest:
+                    apiVersion: v1
+                    kind: Namespace
+                    metadata:
+                      name: apisix
+                      labels:
+                        koncept.io/managed-by: crossplane
+            patches:
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.namespace
+                toFieldPath: spec.forProvider.manifest.metadata.name
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.owner
+                toFieldPath: spec.forProvider.manifest.metadata.labels["koncept.io/owner"]
+
+          - name: apisix-helm-release
+            base:
+              apiVersion: helm.crossplane.io/v1beta1
+              kind: Release
+              spec:
+                forProvider:
+                  namespace: apisix
+                  chart:
+                    name: apisix
+                    repository: https://charts.apiseven.com
+                    version: "2.4.0"
+                  values:
+                    apisix:
+                      replicas: 3
+                    etcd:
+                      replicaCount: 3
+                      persistence:
+                        enabled: true
+                        size: 5Gi
+                    gateway:
+                      type: LoadBalancer
+                      http:
+                        port: 80
+                      https:
+                        port: 443
+                    admin:
+                      enabled: true
+                      port: 9180
+                    dashboard:
+                      enabled: true
+                      port: 3000
+                providerConfigRef:
+                  name: provider-helm
+            patches:
+              # Release name
+              - type: FromCompositeFieldPath
+                fromFieldPath: metadata.name
+                toFieldPath: metadata.name
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.clusterName
+                toFieldPath: metadata.name
+                policy:
+                  fromFieldPath: Optional
+              # Target namespace
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.namespace
+                toFieldPath: spec.forProvider.namespace
+              # Chart version
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.chartVersion
+                toFieldPath: spec.forProvider.chart.version
+              # Replicas
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.etcdReplicas
+                toFieldPath: spec.forProvider.values.etcd.replicaCount
+                policy:
+                  fromFieldPath: Optional
+              # Storage
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.etcdStorageSize
+                toFieldPath: spec.forProvider.values.etcd.persistence.size
+                policy:
+                  fromFieldPath: Optional
+              # Ports
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.adminPort
+                toFieldPath: spec.forProvider.values.admin.port
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.gatewayHttpPort
+                toFieldPath: spec.forProvider.values.gateway.http.port
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.gatewayHttpsPort
+                toFieldPath: spec.forProvider.values.gateway.https.port
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.dashboardPort
+                toFieldPath: spec.forProvider.values.dashboard.port
+              # Flags
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.adminEnabled
+                toFieldPath: spec.forProvider.values.admin.enabled
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.dashboardEnabled
+                toFieldPath: spec.forProvider.values.dashboard.enabled
+              # Gateway service type
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.gatewayType
+                toFieldPath: spec.forProvider.values.gateway.type
+
+    - step: automatically-detect-readiness
+      functionRef:
+        name: function-auto-ready
+

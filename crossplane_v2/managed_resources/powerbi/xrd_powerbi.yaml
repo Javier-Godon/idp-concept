@@ -1,0 +1,143 @@
+apiVersion: apiextensions.crossplane.io/v2
+kind: CompositeResourceDefinition
+metadata:
+  name: xpowerbiconnectors.koncept.bluesolution.es
+  annotations:
+    koncept.io/tier: "3"
+    koncept.io/deployment-method: "kubernetes-configmap"
+    koncept.io/pattern: "integration-helper"
+    koncept.io/last-reviewed: "2026-06-07"
+spec:
+  scope: Cluster
+  group: koncept.bluesolution.es
+  names:
+    kind: XPowerBIConnector
+    plural: xpowerbiconnectors
+  claimNames:
+    kind: PowerBIConnector
+    plural: powerbiconnectors
+  defaultCompositionRef:
+    name: xpowerbiconnector-configmap-composition
+  versions:
+    - name: v1alpha1
+      served: true
+      referenceable: true
+      additionalPrinterColumns:
+        - name: NAMESPACE
+          type: string
+          jsonPath: .spec.namespace
+        - name: DATASOURCES
+          type: string
+          jsonPath: .spec.dataSources
+        - name: READY
+          type: string
+          jsonPath: .status.conditions[?(@.type=="Ready")].status
+        - name: AGE
+          type: date
+          jsonPath: .metadata.creationTimestamp
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              description: Power BI connector configuration exposes connection details to Power BI for connecting to data platforms.
+              required:
+                - namespace
+                - dataSources
+              properties:
+                namespace:
+                  type: string
+                  description: Kubernetes namespace where connector ConfigMap will be stored.
+                description:
+                  type: string
+                  description: Human-readable description of this connector configuration.
+                  default: "Power BI connector configuration"
+                dataSources:
+                  type: array
+                  description: List of data sources to expose (e.g., questdb, superset, postgres).
+                  items:
+                    type: string
+                    enum:
+                      - questdb
+                      - superset
+                      - postgres
+                questdbHost:
+                  type: string
+                  description: QuestDB host name or IP.
+                questdbPort:
+                  type: integer
+                  description: QuestDB PostgreSQL wire protocol port.
+                  default: 5432
+                  minimum: 1
+                  maximum: 65535
+                questdbDatabase:
+                  type: string
+                  description: QuestDB default database.
+                  default: "qdb"
+                questdbUsername:
+                  type: string
+                  description: QuestDB connection username.
+                  default: "admin"
+                supersetHost:
+                  type: string
+                  description: Apache Superset host name or IP.
+                supersetPort:
+                  type: integer
+                  description: Apache Superset web UI port.
+                  default: 8088
+                  minimum: 1
+                  maximum: 65535
+                postgresHost:
+                  type: string
+                  description: PostgreSQL host name or IP.
+                postgresPort:
+                  type: integer
+                  description: PostgreSQL port.
+                  default: 5432
+                  minimum: 1
+                  maximum: 65535
+                postgresDatabase:
+                  type: string
+                  description: Default PostgreSQL database.
+                postgresUsername:
+                  type: string
+                  description: PostgreSQL connection username.
+                environment:
+                  type: string
+                  description: "Target environment (informational)."
+                  default: production
+                  enum:
+                    - local
+                    - development
+                    - staging
+                    - production
+                owner:
+                  type: string
+                  description: "Team or system that owns this connector config."
+                  default: ""
+            status:
+              type: object
+              properties:
+                conditions:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      type:
+                        type: string
+                      status:
+                        type: string
+                      reason:
+                        type: string
+                      message:
+                        type: string
+                      lastTransitionTime:
+                        type: string
+                configMapName:
+                  type: string
+                  description: The name of the generated ConfigMap.
+                lastUpdated:
+                  type: string
+                  description: Last configuration update timestamp.
+
