@@ -108,7 +108,7 @@ koncept changelog render --version v0.2.0 --file CHANGELOG.next.md
 ./scripts/acceptance_runtime.sh --case runtime-all --install-dependencies
 ```
 
-See `docs/ACCEPTANCE_DEPENDENCIES.md` for dependency requirements, `docs/ACCEPTANCE_RUNTIME.md` for the real deployment acceptance layer, `docs/GOLDEN_OUTPUTS.md` for snapshot review, `docs/POLICY_EXEMPTIONS.md` for owned/time-bounded policy waivers, `docs/CHANGELOG_WORKFLOW.md` for platform release-note fragments, and `docs/CROSSPLANE_PATTERNS.md` for the Crossplane v2 management test bar.
+See [ACCEPTANCE_DEPENDENCIES.md](ACCEPTANCE_DEPENDENCIES.md) for dependency requirements, [ACCEPTANCE_RUNTIME.md](ACCEPTANCE_RUNTIME.md) for the real deployment acceptance layer, [GOLDEN_OUTPUTS.md](GOLDEN_OUTPUTS.md) for snapshot review, [POLICY_EXEMPTIONS.md](../operations/POLICY_EXEMPTIONS.md) for owned/time-bounded policy waivers, [CHANGELOG_WORKFLOW.md](../operations/CHANGELOG_WORKFLOW.md) for platform release-note fragments, and [CROSSPLANE_PATTERNS.md](../integrations/CROSSPLANE_PATTERNS.md) for the Crossplane v2 management test bar.
 
 ## CI Recommendation
 

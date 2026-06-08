@@ -548,7 +548,7 @@ Check the procedure implementation for the target format:
 ## References
 
 - [Framework Schemas Documentation](FRAMEWORK_SCHEMAS.md)
-- [Acceptance Testing Guide](ACCEPTANCE_TESTING.md)
+- [Acceptance Testing Guide](../testing/ACCEPTANCE_TESTING.md)
 - [KCL Language](https://www.kcl-lang.io/docs/)
 - [Kusion Documentation](https://www.kusionstack.io/)
 

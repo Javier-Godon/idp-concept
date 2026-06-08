@@ -7,7 +7,7 @@ There are two cluster-oriented layers:
 - `./scripts/acceptance_kind.sh` — render + server-side dry-run matrix, with real apply only for lightweight built-in Kubernetes cases.
 - `./scripts/acceptance_runtime.sh` — opt-in real deployment layer that applies manifests without CRD stubs and waits for rollouts or operator Ready conditions.
 
-Use `docs/ACCEPTANCE_RUNTIME.md` for the real deployment layer.
+Use [ACCEPTANCE_RUNTIME.md](ACCEPTANCE_RUNTIME.md) for the real deployment layer.
 
 ## Design borrowed from similar platform projects
 
@@ -138,7 +138,7 @@ Dry-run-only cases install lightweight acceptance CRD stubs from `framework/test
 
 When adding local/dev variants, prefer the `footprint = "local"` or `"development"` setting in fixtures instead of hardcoding production storage classes or replica counts. Keep Ceph/Longhorn-specific coverage in the dedicated persistence scenarios.
 
-See `docs/ACCEPTANCE_DEPENDENCIES.md` for the dependency matrix behind these cases, including when Data Prepper needs OpenSearch, when Keycloak needs PostgreSQL, and when persistent templates require Longhorn, Ceph, or another StorageClass provider.
+See [ACCEPTANCE_DEPENDENCIES.md](ACCEPTANCE_DEPENDENCIES.md) for the dependency matrix behind these cases, including when Data Prepper needs OpenSearch, when Keycloak needs PostgreSQL, and when persistent templates require Longhorn, Ceph, or another StorageClass provider.
 
 ## Suggested future acceptance groups
 

@@ -1,6 +1,6 @@
 # Platform Metrics (opt-in local telemetry)
 
-> Phase G of the [IDP Evolution Plan](IDP_EVOLUTION_PLAN.md). Lets a platform
+> Phase G of the [IDP Evolution Plan](../strategy/IDP_EVOLUTION_PLAN.md). Lets a platform
 > team measure adoption, render performance, and the most common failure
 > categories — **without sending any data off the developer's machine**.
 

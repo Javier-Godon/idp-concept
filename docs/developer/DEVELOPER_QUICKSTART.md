@@ -4,14 +4,14 @@
 
 ## Prerequisites
 
-> **Full installation guide with local vs global options, pros/cons, and mise version locking**: [TOOLING_SETUP.md](./TOOLING_SETUP.md)
+> **Full installation guide with local vs global options, pros/cons, and mise version locking**: [TOOLING_SETUP.md](../operations/TOOLING_SETUP.md)
 
 | Tool | Purpose | Required | Install |
 |---|---|---|---|
-| `koncept` Go CLI | Primary developer interface for scaffold/render/validate/policy workflows | **Yes** | See [TOOLING_SETUP.md](./TOOLING_SETUP.md#koncept-go-cli) |
-| [KCL](https://www.kcl-lang.io/docs/user_docs/getting-started/install) (`kcl`) | Direct KCL troubleshooting and local test runs | Recommended | See [TOOLING_SETUP.md](./TOOLING_SETUP.md#kcl) |
-| [kubeconform](https://github.com/yannh/kubeconform) | Validates K8s manifests | Recommended | See [TOOLING_SETUP.md](./TOOLING_SETUP.md#kubeconform) |
-| [Helm](https://helm.sh/docs/intro/install/) | Lints Helm chart output | Optional | See [TOOLING_SETUP.md](./TOOLING_SETUP.md#helm) |
+| `koncept` Go CLI | Primary developer interface for scaffold/render/validate/policy workflows | **Yes** | See [TOOLING_SETUP.md](../operations/TOOLING_SETUP.md#koncept-go-cli) |
+| [KCL](https://www.kcl-lang.io/docs/user_docs/getting-started/install) (`kcl`) | Direct KCL troubleshooting and local test runs | Recommended | See [TOOLING_SETUP.md](../operations/TOOLING_SETUP.md#kcl) |
+| [kubeconform](https://github.com/yannh/kubeconform) | Validates K8s manifests | Recommended | See [TOOLING_SETUP.md](../operations/TOOLING_SETUP.md#kubeconform) |
+| [Helm](https://helm.sh/docs/intro/install/) | Lints Helm chart output | Optional | See [TOOLING_SETUP.md](../operations/TOOLING_SETUP.md#helm) |
 
 ## Quick Commands
 
@@ -166,7 +166,7 @@ koncept render backstage
 
 > **All 9 formats** are rendered from the same KCL source — change one config, re-render any format. Prefer Tier 1 (`yaml`, `argocd`, `helmfile`, `backstage`) unless your platform team has chosen another path.
 
-For framework compatibility metadata and support windows, see [FRAMEWORK_VERSIONING.md](./FRAMEWORK_VERSIONING.md).
+For framework compatibility metadata and support windows, see [FRAMEWORK_VERSIONING.md](../platform-engineering/FRAMEWORK_VERSIONING.md).
 
 ## Validation
 

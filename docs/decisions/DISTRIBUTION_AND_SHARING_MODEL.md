@@ -27,13 +27,13 @@ anybody on the team can install and enjoy the whole functionality of the IDP."
   `v*` tags. `make docker` builds a pinned container image (bundling the `kcl` toolchain) that
   is pushed to GHCR for CI and reproducible local use.
 - **Install paths**: a single binary on `PATH` for individuals, or the pinned image for CI and
-  Docker-based environments. See [TOOLING_SETUP.md](../TOOLING_SETUP.md).
+  Docker-based environments. See [TOOLING_SETUP.md](../operations/TOOLING_SETUP.md).
 - **What it provides**: scaffolding (`init project|module|env|release`), rendering
   (`render <format>`), validation and governance (`doctor`, `policy check`, `golden check`,
   `changelog`), and diagnostics (`deps`, `metrics`).
 
 The `framework/` engine is consumed as a **versioned KCL module**, not copied per project.
-See [FRAMEWORK_VERSIONING.md](../FRAMEWORK_VERSIONING.md).
+See [FRAMEWORK_VERSIONING.md](../platform-engineering/FRAMEWORK_VERSIONING.md).
 
 ## The shared work = a Git repository + GitOps
 
@@ -44,7 +44,7 @@ Collaboration happens through Git, not through file hand-off:
 2. **Commit** — they commit both the KCL source and the committed rendered output (the golden
    files) to the shared Git repository. CI validates: `koncept doctor`, `policy check`,
    `golden check`, and the render smoke matrix.
-3. **Review** — changes are reviewed as code (see [OPERATING_MODEL.md](../OPERATING_MODEL.md)
+3. **Review** — changes are reviewed as code (see [OPERATING_MODEL.md](../operations/OPERATING_MODEL.md)
    for roles and approval paths).
 4. **Reconcile** — a GitOps controller (ArgoCD) watches the repository and applies the rendered
    manifests to the target clusters. The Git repository is the single source of *intent*; the
@@ -85,6 +85,6 @@ Collaboration happens through Git, not through file hand-off:
 
 - [RENDERING_STRATEGY_DECISION.md](RENDERING_STRATEGY_DECISION.md) — which output format /
   runtime target to use per environment.
-- [OPERATING_MODEL.md](../OPERATING_MODEL.md) — roles, change categories, approval paths.
-- [FRAMEWORK_VERSIONING.md](../FRAMEWORK_VERSIONING.md) — consuming the framework as a versioned
+- [OPERATING_MODEL.md](../operations/OPERATING_MODEL.md) — roles, change categories, approval paths.
+- [FRAMEWORK_VERSIONING.md](../platform-engineering/FRAMEWORK_VERSIONING.md) — consuming the framework as a versioned
   module.

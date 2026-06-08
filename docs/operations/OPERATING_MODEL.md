@@ -4,7 +4,7 @@
 > who owns what, which changes need which approvals, and how the golden paths
 > stay safe as several products adopt the platform.
 >
-> This expands Section 17 of the [IDP Evolution Plan](IDP_EVOLUTION_PLAN.md) into
+> This expands Section 17 of the [IDP Evolution Plan](../strategy/IDP_EVOLUTION_PLAN.md) into
 > an actionable reference for day-to-day change management.
 
 ## Why an operating model
@@ -50,12 +50,12 @@ in evidence rather than opinion:
 - **`koncept policy check`** — baseline security/ownership rules; narrow, expiring
   `--exemptions` for reviewed exceptions (see [POLICY_EXEMPTIONS.md](POLICY_EXEMPTIONS.md)).
 - **`koncept golden check`** / `scripts/golden.sh` — render drift is visible and
-  intentionally approved (see [GOLDEN_OUTPUTS.md](GOLDEN_OUTPUTS.md)).
+  intentionally approved (see [GOLDEN_OUTPUTS.md](../testing/GOLDEN_OUTPUTS.md)).
 - **`koncept changelog check`** — framework release intent is reviewed with code
   (see [CHANGELOG_WORKFLOW.md](CHANGELOG_WORKFLOW.md)).
 - **CI (`.github/workflows/validate.yml`)** — runs the above on every PR.
 - **Runtime CI (`.github/workflows/runtime.yml`)** — opt-in/nightly real-cluster
-  reconciliation for selected templates (see [ACCEPTANCE_RUNTIME.md](ACCEPTANCE_RUNTIME.md)).
+  reconciliation for selected templates (see [ACCEPTANCE_RUNTIME.md](../testing/ACCEPTANCE_RUNTIME.md)).
 
 ## Self-service vs platform-owned
 

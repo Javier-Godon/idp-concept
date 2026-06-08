@@ -194,7 +194,7 @@ This repository publishes **two consumable artifacts** to
 |---|---|---|
 | `koncept` CLI binaries + checksums | GitHub Releases assets | Installable cross-platform CLI |
 | `koncept` CLI container image | `ghcr.io/javier-godon/idp-concept/koncept` | Pinned CI/runtime image (kcl bundled) |
-| Framework KCL module (OCI) | `oras://ghcr.io/javier-godon/idp-concept-framework` | The reusable `framework/` package — see `docs/GHCR_PUBLISHING_GUIDE.md` |
+| Framework KCL module (OCI) | `oras://ghcr.io/javier-godon/idp-concept-framework` | The reusable `framework/` package — see [GHCR_PUBLISHING_GUIDE.md](GHCR_PUBLISHING_GUIDE.md) |
 
 The `projects/` directory (`video_streaming`, `erp_back`, `pokedex`) is **not** a
 published artifact. Those are **reference example usages** of the framework that
@@ -388,8 +388,8 @@ git push origin v1.0.1
 
 ## See Also
 
-- **Quick Start**: `docs/DEVELOPER_QUICKSTART.md`
-- **API Reference**: `docs/FRAMEWORK_SCHEMAS.md`
+- **Quick Start**: [../developer/DEVELOPER_QUICKSTART.md](../developer/DEVELOPER_QUICKSTART.md)
+- **API Reference**: [../platform-engineering/FRAMEWORK_SCHEMAS.md](../platform-engineering/FRAMEWORK_SCHEMAS.md)
 - **Release Notes**: GitHub Releases page
 
 ---

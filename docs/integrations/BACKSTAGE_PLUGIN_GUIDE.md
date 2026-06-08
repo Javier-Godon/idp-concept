@@ -107,7 +107,7 @@ metadata:
 ```
 
 Populate these by attaching `framework.models.metadata.Metadata` to the project
-`Stack` (see `docs/FRAMEWORK_SCHEMAS.md`). `owner`/`lifecycle` from metadata also
+`Stack` (see [../platform-engineering/FRAMEWORK_SCHEMAS.md](../platform-engineering/FRAMEWORK_SCHEMAS.md)). `owner`/`lifecycle` from metadata also
 override the render defaults on every generated entity.
 
 ### 2.2 TeraSky Kubernetes Ingestor
@@ -397,20 +397,20 @@ site_name: idp-concept Platform Documentation
 nav:
   - Home: README.md
   - Getting Started:
-      - Developer Quickstart: docs/DEVELOPER_QUICKSTART.md
-      - Developer Guide: docs/DEVELOPER_GUIDE.md
+    - Developer Quickstart: docs/developer/DEVELOPER_QUICKSTART.md
+    - Developer Guide: docs/developer/DEVELOPER_GUIDE.md
   - Architecture:
-      - Project Architecture: docs/PROJECT_ARCHITECTURE.md
-      - Framework Schemas: docs/FRAMEWORK_SCHEMAS.md
+    - Project Architecture: docs/platform-engineering/PROJECT_ARCHITECTURE.md
+    - Framework Schemas: docs/platform-engineering/FRAMEWORK_SCHEMAS.md
   - Operations:
-      - Workflows: docs/WORKFLOWS.md
-      - Migration Guide: docs/MIGRATION_GUIDE.md
-      - Tooling Setup: docs/TOOLING_SETUP.md
-  - Security: docs/SECURITY.md
-  - Testing: docs/TESTING_STRATEGY.md
+    - Workflows: docs/developer/WORKFLOWS.md
+    - Migration Guide: docs/platform-engineering/MIGRATION_GUIDE.md
+    - Tooling Setup: docs/operations/TOOLING_SETUP.md
+  - Security: docs/operations/SECURITY.md
+  - Testing: docs/testing/TESTING_STRATEGY.md
   - Backstage:
-      - Adoption Analysis: docs/BACKSTAGE_ADOPTION_ANALYSIS.md
-      - Plugin Guide: docs/BACKSTAGE_PLUGIN_GUIDE.md
+    - Adoption Analysis: docs/integrations/BACKSTAGE_ADOPTION_ANALYSIS.md
+    - Plugin Guide: docs/integrations/BACKSTAGE_PLUGIN_GUIDE.md
 plugins:
   - techdocs-core
 ```

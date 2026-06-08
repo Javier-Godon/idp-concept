@@ -8,8 +8,8 @@
 |---|---|---|
 | Application developer | [DEVELOPER_QUICKSTART.md](DEVELOPER_QUICKSTART.md) | Render, validate, and review application/environment output |
 | Platform engineer | This guide + [CLI_REFERENCE.md](CLI_REFERENCE.md) | Scaffold projects/modules/environments, maintain stacks, enforce policy |
-| Framework contributor | This guide + [FRAMEWORK_SCHEMAS.md](FRAMEWORK_SCHEMAS.md) | Extend KCL schemas, builders, templates, and render procedures |
-| Operator / release engineer | [WORKFLOWS.md](WORKFLOWS.md) + [GOLDEN_OUTPUTS.md](GOLDEN_OUTPUTS.md) | Run promotion, drift, policy, and release-note gates |
+| Framework contributor | This guide + [FRAMEWORK_SCHEMAS.md](../platform-engineering/FRAMEWORK_SCHEMAS.md) | Extend KCL schemas, builders, templates, and render procedures |
+| Operator / release engineer | [WORKFLOWS.md](WORKFLOWS.md) + [GOLDEN_OUTPUTS.md](../testing/GOLDEN_OUTPUTS.md) | Run promotion, drift, policy, and release-note gates |
 
 ## Mental Model
 
@@ -237,7 +237,7 @@ koncept golden check --factory <factory> --formats yaml,helmfile
 koncept changelog check
 ```
 
-Policy checks cover privileged containers, unpinned images, missing resources, owner labels, secret-looking literal env values, namespaces, and NetworkPolicies. Use [POLICY_EXEMPTIONS.md](POLICY_EXEMPTIONS.md) for narrow, owned, expiring waivers.
+Policy checks cover privileged containers, unpinned images, missing resources, owner labels, secret-looking literal env values, namespaces, and NetworkPolicies. Use [POLICY_EXEMPTIONS.md](../operations/POLICY_EXEMPTIONS.md) for narrow, owned, expiring waivers.
 
 Golden files are expected-output snapshots. Update them only after reviewing the render diff:
 
@@ -275,6 +275,6 @@ For product and platform workflows, prefer `koncept` because it owns output rout
 - [CLI_REFERENCE.md](CLI_REFERENCE.md) — complete `koncept` command reference.
 - [DEVELOPER_QUICKSTART.md](DEVELOPER_QUICKSTART.md) — shortest path to first render.
 - [WORKFLOWS.md](WORKFLOWS.md) — role-based task recipes.
-- [PROJECT_ARCHITECTURE.md](PROJECT_ARCHITECTURE.md) — deeper architecture and data-flow explanation.
-- [FRAMEWORK_SCHEMAS.md](FRAMEWORK_SCHEMAS.md) — KCL schema reference.
-- [TOOLING_SETUP.md](TOOLING_SETUP.md) — installing `koncept`, KCL, and optional tools.
+- [PROJECT_ARCHITECTURE.md](../platform-engineering/PROJECT_ARCHITECTURE.md) — deeper architecture and data-flow explanation.
+- [FRAMEWORK_SCHEMAS.md](../platform-engineering/FRAMEWORK_SCHEMAS.md) — KCL schema reference.
+- [TOOLING_SETUP.md](../operations/TOOLING_SETUP.md) — installing `koncept`, KCL, and optional tools.

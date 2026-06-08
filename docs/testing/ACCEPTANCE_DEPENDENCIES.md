@@ -16,7 +16,7 @@ template/module instance(s) -> RenderStack -> procedures.kcl_to_yaml.yaml_stream
 | L3 operator-backed apply | Real operators/controllers reconcile custom resources | `./scripts/acceptance_runtime.sh --case <runtime-group>` | Requires installing real operators, waiting for Ready conditions, and often more CPU/memory/time. |
 | L4 integration behavior | Dependent services exchange traffic successfully | `./scripts/acceptance_runtime.sh --case runtime-integrations` | Example: send an event to Data Prepper and query OpenSearch, or log into Keycloak backed by PostgreSQL. |
 
-See `docs/ACCEPTANCE_RUNTIME.md` for the real deployment runner and runtime groups.
+See [ACCEPTANCE_RUNTIME.md](ACCEPTANCE_RUNTIME.md) for the real deployment runner and runtime groups.
 
 ## Important dependency findings
 
@@ -89,7 +89,7 @@ Persistent templates need a Kubernetes storage provisioner when they create PVCs
   - a healthy `CephCluster`, monitor/mgr pods, CSI sidecars, and required secrets,
   - a ready `CephBlockPool` and generated StorageClass before dependent PVCs bind.
 - The `persistence-ceph` fixture renders Ceph plus representative persistent workloads using the Ceph StorageClass. It is dry-run-only because a real Ceph cluster is too heavy for default local acceptance.
-- On Windows/WSL2 company laptops, keep Ceph cases dry-run-only and use `footprint = "local"` with kind's default local-path provisioner for functional local persistence. See `docs/WINDOWS_LOCAL_SETUP.md`.
+- On Windows/WSL2 company laptops, keep Ceph cases dry-run-only and use `footprint = "local"` with kind's default local-path provisioner for functional local persistence. See [../developer/WINDOWS_LOCAL_SETUP.md](../developer/WINDOWS_LOCAL_SETUP.md).
 
 ## Scenario fixtures
 

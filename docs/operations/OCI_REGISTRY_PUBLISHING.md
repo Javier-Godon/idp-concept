@@ -633,7 +633,7 @@ pipeline {
 
 ## References
 
-- [KCL Module System](kcl-module-system.instructions.md)
+- [KCL Module System](../../.github/instructions/kcl-module-system.instructions.md)
 - [KCL Registry Documentation](https://www.kcl-lang.io/docs/reference/registry)
 - [OCI Image Spec](https://github.com/opencontainers/image-spec)
 - [ORAS — OCI Registry As Storage](https://oras.land/)

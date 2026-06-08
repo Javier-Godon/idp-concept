@@ -318,7 +318,7 @@ koncept render <format>
 The CLI invokes the pinned `kcl` toolchain to render the factory and also provides
 scaffolding (`init`), validation (`doctor`, `policy check`, `golden check`), and
 release/changelog workflows. See the
-[distribution & sharing model](decisions/DISTRIBUTION_AND_SHARING_MODEL.md) for how it is
+[distribution & sharing model](../decisions/DISTRIBUTION_AND_SHARING_MODEL.md) for how it is
 packaged and how teams share rendered output through Git/GitOps.
 
 ---
@@ -337,8 +337,8 @@ There are **two distinct Crossplane tracks**, and they should not be confused:
 
 `crossplane_v2/managed_resources/` deliberately tracks only **infrastructure/middleware** templates
 (databases, messaging, identity, certificates), **not** application workloads — those stay on the
-Tier-1 GitOps/YAML path. See `docs/CROSSPLANE_PATTERNS.md` §1.1 (selection policy + parity matrix)
-and `docs/IDP_EVOLUTION_PLAN.md` §5.7 for the full explanation.
+Tier-1 GitOps/YAML path. See [../integrations/CROSSPLANE_PATTERNS.md](../integrations/CROSSPLANE_PATTERNS.md) §1.1 (selection policy + parity matrix)
+and [../strategy/IDP_EVOLUTION_PLAN.md](../strategy/IDP_EVOLUTION_PLAN.md) §5.7 for the full explanation.
 
 The curated reference APIs in `crossplane_v2/managed_resources/`:
 
@@ -409,7 +409,7 @@ factory/render.k -D output=yaml
 
 ## 11. Adding a New Project
 
-See the [Developer Guide](./DEVELOPER_GUIDE.md) for detailed instructions. Summary:
+See the [Developer Guide](../developer/DEVELOPER_GUIDE.md) for detailed instructions. Summary:
 
 1. Create `projects/<name>/` with `kcl.mod` (depends on `framework`)
 2. Create `kernel/` — project definition + base configurations

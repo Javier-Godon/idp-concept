@@ -13,7 +13,7 @@ Teams get locked into specific tools (Helm, Kustomize, etc.). When requirements 
 ## Output Formats
 
 Outputs are organized into **support tiers** so teams know what is production-supported
-versus experimental (see the [evolution plan](docs/IDP_EVOLUTION_PLAN.md#51-output-format-sprawl)):
+versus experimental (see the [evolution plan](docs/strategy/IDP_EVOLUTION_PLAN.md#51-output-format-sprawl)):
 
 | Tier | Format | Command | Use Case |
 |---|---|---|---|
@@ -35,7 +35,7 @@ Backstage.
 
 ### 🚀 Helmfile & Crossplane: Production-Grade Multi-Format Output (June 2026)
 
-**NEW**: Helmfile and Crossplane V2 outputs are now **production-ready** with full governance metadata, deterministic orchestration, and comprehensive acceptance testing. See the **[Helmfile & Crossplane Adoption Guide](docs/HELMFILE_CROSSPLANE_ADOPTION.md)** for detailed adoption patterns.
+**NEW**: Helmfile and Crossplane V2 outputs are now **production-ready** with full governance metadata, deterministic orchestration, and comprehensive acceptance testing. See the **[Helmfile & Crossplane Adoption Guide](docs/integrations/HELMFILE_CROSSPLANE_ADOPTION.md)** for detailed adoption patterns.
 
 **When to use each:**
 - **Helmfile** (`koncept render helmfile`): Multi-Helm-chart orchestration with dependency management and per-release customization. Ideal for applications already packaged as Helm charts.
@@ -68,8 +68,8 @@ Backstage.
 
 | Tool | Purpose | Install |
 |---|---|---|
-| [Go](https://go.dev/) | Builds the `koncept` CLI | [TOOLING_SETUP.md](docs/TOOLING_SETUP.md) |
-| [KCL](https://www.kcl-lang.io/) (`kcl`) | Renders configurations | [TOOLING_SETUP.md](docs/TOOLING_SETUP.md#kcl) |
+| [Go](https://go.dev/) | Builds the `koncept` CLI | [TOOLING_SETUP.md](docs/operations/TOOLING_SETUP.md) |
+| [KCL](https://www.kcl-lang.io/) (`kcl`) | Renders configurations | [TOOLING_SETUP.md](docs/operations/TOOLING_SETUP.md#kcl) |
 
 ### 2. Set Up the CLI
 
@@ -147,7 +147,7 @@ koncept metrics           # summarize opt-in local telemetry (enable with --metr
 > Two golden gates guard rendering: `scripts/golden.sh` for the hand-authored
 > `erp_back` reference factories, and `scripts/golden_generated.sh` for what the
 > CLI generates (`koncept init project` + `init module --wire` for webapp,
-> webapp+postgres, webapp+redis, webapp+kafka). See `docs/GOLDEN_OUTPUTS.md`.
+> webapp+postgres, webapp+redis, webapp+kafka). See [docs/testing/GOLDEN_OUTPUTS.md](docs/testing/GOLDEN_OUTPUTS.md).
 
 
 ### 5. Run Tests
@@ -240,11 +240,12 @@ Key entry points:
 | Document | Audience | Content |
 |---|---|---|
 | [docs/README (index)](docs/README.md) | All | Master index and recommended reading path |
-| [Developer Quickstart](docs/DEVELOPER_QUICKSTART.md) | Developers | Fast path to first validate/render loop |
-| [CLI Reference](docs/CLI_REFERENCE.md) | Developers / Platform engineers | Current `koncept` command surface and flags |
-| [Developer Guide](docs/DEVELOPER_GUIDE.md) | Developers / Platform engineers | CLI-centered project, factory, stack, and governance guide |
-| [PROJECT_ARCHITECTURE](docs/PROJECT_ARCHITECTURE.md) | All | Architecture, data flow, how everything connects |
-| [WORKFLOWS](docs/WORKFLOWS.md) | Developers / Platform engineers | Role-based and step-by-step render workflows |
+| [Developer Quickstart](docs/developer/DEVELOPER_QUICKSTART.md) | Developers | Fast path to first validate/render loop |
+| [CLI Reference](docs/developer/CLI_REFERENCE.md) | Developers / Platform engineers | Current `koncept` command surface and flags |
+| [Developer Guide](docs/developer/DEVELOPER_GUIDE.md) | Developers / Platform engineers | CLI-centered project, factory, stack, and governance guide |
+| [Platform Installation](docs/platform-engineering/PLATFORM_INSTALLATION.md) | Platform engineers | Install CLI/framework usage, Backstage, Crossplane, and delivery paths |
+| [Project Architecture](docs/platform-engineering/PROJECT_ARCHITECTURE.md) | All | Architecture, data flow, how everything connects |
+| [Workflows](docs/developer/WORKFLOWS.md) | Developers / Platform engineers | Role-based and step-by-step render workflows |
 | [Distribution & Sharing Model](docs/decisions/DISTRIBUTION_AND_SHARING_MODEL.md) | All | How the CLI is installed and how teams share work via Git/GitOps |
 | [Rendering Strategy Decision](docs/decisions/RENDERING_STRATEGY_DECISION.md) | Platform engineers | Kustomize for dev, Crossplane v2 for the variable stack |
 

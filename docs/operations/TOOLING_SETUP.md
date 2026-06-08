@@ -21,7 +21,7 @@
 > The Go CLI is the single user path for scaffold/render/validate/policy workflows. `kcl` is
 > only needed locally for direct troubleshooting; everything else is optional.
 
-For Windows/company laptops, prefer WSL2 + Docker Desktop + kind and see `docs/WINDOWS_LOCAL_SETUP.md` for local footprint and Ceph guidance.
+For Windows/company laptops, prefer WSL2 + Docker Desktop + kind and see [../developer/WINDOWS_LOCAL_SETUP.md](../developer/WINDOWS_LOCAL_SETUP.md) for local footprint and Ceph guidance.
 
 ---
 

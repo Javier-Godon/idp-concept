@@ -404,5 +404,5 @@ Once Helmfile validation is integrated into CI/CD:
 - [Helm Template Documentation](https://helm.sh/docs/helm/helm_template/)
 - [Helmfile GitHub](https://github.com/roboll/helmfile)
 - [Kubeconform GitHub](https://github.com/yannh/kubeconform)
-- [PLATFORM_COMPARISON_AND_KCL_ANALYSIS.md - Helmfile Output Excellence](./PLATFORM_COMPARISON_AND_KCL_ANALYSIS.md)
+- [PLATFORM_COMPARISON_AND_KCL_ANALYSIS.md - Helmfile Output Excellence](../strategy/PLATFORM_COMPARISON_AND_KCL_ANALYSIS.md)
 

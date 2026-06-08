@@ -237,7 +237,7 @@ The acceptance approach follows common Kubernetes platform/operator testing prac
 - apply resources and wait for rollout/Ready status
 - keep heavy/operator-backed cases opt-in or nightly
 
-See `docs/ACCEPTANCE_TESTING.md` for runner details and `docs/ACCEPTANCE_DEPENDENCIES.md` for the dependency matrix covering scenarios such as `keycloak-postgresql`, `dataprepper-opensearch`, `persistence-longhorn`, `persistence-ceph`, and future runtime groups like `elastic-eck-v9`.
+See [ACCEPTANCE_TESTING.md](ACCEPTANCE_TESTING.md) for runner details and [ACCEPTANCE_DEPENDENCIES.md](ACCEPTANCE_DEPENDENCIES.md) for the dependency matrix covering scenarios such as `keycloak-postgresql`, `dataprepper-opensearch`, `persistence-longhorn`, `persistence-ceph`, and future runtime groups like `elastic-eck-v9`.
 
 ### 5.2 Runtime Acceptance Tests (Real Deployments)
 
@@ -257,7 +257,7 @@ Runtime acceptance does **not** install dry-run CRD stubs. Operator-backed templ
 ./scripts/acceptance_runtime.sh --case runtime-all --install-dependencies
 ```
 
-See `docs/ACCEPTANCE_RUNTIME.md` for runtime groups and readiness semantics.
+See [ACCEPTANCE_RUNTIME.md](ACCEPTANCE_RUNTIME.md) for runtime groups and readiness semantics.
 
 ### 5.3 Crossplane V2 Composition and Management Tests
 

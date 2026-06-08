@@ -92,6 +92,6 @@ of plain app delivery.
 
 - [DISTRIBUTION_AND_SHARING_MODEL.md](DISTRIBUTION_AND_SHARING_MODEL.md) — CLI = package, Git +
   GitOps = sharing.
-- [CROSSPLANE_PATTERNS.md](../CROSSPLANE_PATTERNS.md) — XRD/Composition/function-kcl patterns.
-- [STORAGE_POLICY_PATTERNS.md](../STORAGE_POLICY_PATTERNS.md) — storage classes per environment.
+- [CROSSPLANE_PATTERNS.md](../integrations/CROSSPLANE_PATTERNS.md) — XRD/Composition/function-kcl patterns.
+- [STORAGE_POLICY_PATTERNS.md](../platform-engineering/STORAGE_POLICY_PATTERNS.md) — storage classes per environment.
 - README **Output Formats** — the full tier list of supported renderers.

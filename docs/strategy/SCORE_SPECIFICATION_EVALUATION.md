@@ -492,9 +492,9 @@ Should idp-concept integrate Score specification as input/output format?
 - Community (watch GitHub discussion/ Discussions tab)
 
 ### Related Decisions
-- [Helmfile output excellence](docs/HELMFILE_ADOPTION.md)
-- [Crossplane architecture](docs/CROSSPLANE_PATTERNS.md)
-- [Framework versioning](docs/FRAMEWORK_VERSIONING.md)
+- [Helmfile output excellence](../integrations/HELMFILE_ADOPTION.md)
+- [Crossplane architecture](../integrations/CROSSPLANE_PATTERNS.md)
+- [Framework versioning](../platform-engineering/FRAMEWORK_VERSIONING.md)
 
 ---
 
@@ -561,7 +561,7 @@ kubectl apply -f manifests/
 - **Score GitHub**: https://github.com/score-spec/spec
 - **Score Spec**: https://score.dev/docs/spec/
 - **Humanitec Platform**: https://humanitec.com/ (major Score implementer)
-- **idp-concept Architecture**: docs/PROJECT_ARCHITECTURE.md
+- **idp-concept Architecture**: [../platform-engineering/PROJECT_ARCHITECTURE.md](../platform-engineering/PROJECT_ARCHITECTURE.md)
 - **CNCF Landscape**: https://landscape.cncf.io/ (track emerging tools)
 
 ---

@@ -8,9 +8,9 @@
 >   copy-paste recipes for rendering, adding modules/tenants/sites/releases, Crossplane, and
 >   debugging.
 >
-> Prerequisites and installation live in [TOOLING_SETUP.md](./TOOLING_SETUP.md). The only
+> Prerequisites and installation live in [TOOLING_SETUP.md](../operations/TOOLING_SETUP.md). The only
 > interface is the Go `koncept` CLI; see the
-> [distribution & sharing model](./decisions/DISTRIBUTION_AND_SHARING_MODEL.md).
+> [distribution & sharing model](../decisions/DISTRIBUTION_AND_SHARING_MODEL.md).
 
 ---
 
@@ -399,7 +399,7 @@ rm kcl.mod.lock && kcl run main.k
 # Part B — Step-by-step task guides
 
 Concrete recipes for common tasks. All commands assume the `koncept` CLI is installed (see
-[TOOLING_SETUP.md](./TOOLING_SETUP.md)).
+[TOOLING_SETUP.md](../operations/TOOLING_SETUP.md)).
 
 ## Planning with Dry-Run (Helmfile + Crossplane)
 
@@ -568,7 +568,7 @@ factory/main.k
 
 > For the recommended per-environment rendering strategy (Kustomize for dev, Crossplane v2 for
 > the variable stack), see
-> [RENDERING_STRATEGY_DECISION.md](./decisions/RENDERING_STRATEGY_DECISION.md).
+> [RENDERING_STRATEGY_DECISION.md](../decisions/RENDERING_STRATEGY_DECISION.md).
 
 ---
 
@@ -813,8 +813,8 @@ projects/video_streaming/releases/kusion/paris/v1_0_0_paris/default/factory/
 ## 12. Deploying Crossplane Resources
 
 > For the strategic role of Crossplane v2 in the platform, see
-> [RENDERING_STRATEGY_DECISION.md](./decisions/RENDERING_STRATEGY_DECISION.md) and
-> [CROSSPLANE_PATTERNS.md](./CROSSPLANE_PATTERNS.md).
+> [RENDERING_STRATEGY_DECISION.md](../decisions/RENDERING_STRATEGY_DECISION.md) and
+> [CROSSPLANE_PATTERNS.md](../integrations/CROSSPLANE_PATTERNS.md).
 
 ### Install Crossplane Functions
 ```bash

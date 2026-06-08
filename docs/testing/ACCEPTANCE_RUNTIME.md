@@ -149,7 +149,7 @@ A fixture is considered truly runtime-covered only when it has:
 1. A runtime case in `scripts/acceptance_runtime.sh`.
 2. Real `kubectl apply` without dry-run CRD stubs.
 3. A rollout or Ready wait that proves a controller reconciled the resource.
-4. Documentation of required operators/storage providers in this file or `docs/ACCEPTANCE_DEPENDENCIES.md`.
+4. Documentation of required operators/storage providers in this file or [ACCEPTANCE_DEPENDENCIES.md](ACCEPTANCE_DEPENDENCIES.md).
 
 ## Recommended workflow
 

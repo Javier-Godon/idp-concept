@@ -70,7 +70,7 @@ This pilot program validates idp-concept framework in external production enviro
 - [ ] Verify GHCR access: Pull test image
 - [ ] Clone updated idp-concept repo (or use GHCR)
 - [ ] Run framework unit tests locally (kcl test ./...)
-- [ ] Read docs/README.md + docs/DEVELOPER_QUICKSTART.md
+- [ ] Read [../README.md](../README.md) + [../developer/DEVELOPER_QUICKSTART.md](../developer/DEVELOPER_QUICKSTART.md)
 
 **Core Team Actions:**
 - [ ] Prepare custom demo for team's use case
@@ -94,7 +94,7 @@ This pilot program validates idp-concept framework in external production enviro
 - [ ] Ask 2-3 questions about architecture or usage
 
 **Suggested Path:**
-1. Follow docs/DEVELOPER_QUICKSTART.md (15 min)
+1. Follow [../developer/DEVELOPER_QUICKSTART.md](../developer/DEVELOPER_QUICKSTART.md) (15 min)
 2. Look at projects/erp_back sample (understand structure) (30 min)
 3. Try `koncept render yaml` on sample factory (10 min)
 4. Modify sample config, re-render, iterate (30 min)

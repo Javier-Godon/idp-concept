@@ -208,7 +208,7 @@ framework = "oras://ghcr.io/javier-godon/idp-concept-framework:v1.0.0"
 
 - GitHub Issues: https://github.com/Javier-Godon/idp-concept/issues
 - Documentation: https://github.com/Javier-Godon/idp-concept/blob/main/docs/
-- Architecture: See docs/PROJECT_ARCHITECTURE.md
+- Architecture: See [../platform-engineering/PROJECT_ARCHITECTURE.md](../platform-engineering/PROJECT_ARCHITECTURE.md)
 
 ---
 
@@ -512,7 +512,7 @@ A: Publish v1.0.1, v1.0.2, etc. Teams explicit- ly update kcl.mod to consume pat
 - OCI Image Spec: https://github.com/opencontainers/image-spec
 - GHCR Documentation: https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry
 - KCL Module System: docs/INSTRUCTIONS_KCL_MODULE_SYSTEM.md
-- Framework Architecture: docs/PROJECT_ARCHITECTURE.md
+- Framework Architecture: [../platform-engineering/PROJECT_ARCHITECTURE.md](../platform-engineering/PROJECT_ARCHITECTURE.md)
 
 ---
 

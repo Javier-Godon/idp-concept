@@ -168,7 +168,7 @@ Direct `kcl run` remains useful for framework debugging, but project users shoul
 
 ## Crossplane Commands
 
-`koncept crossplane test` validates generated Crossplane v2 output contracts and can run local render/runtime profiles. Use it for the generated Crossplane output path. Hand-authored APIs under `crossplane_v2/` follow the curated Crossplane architecture described in [CROSSPLANE_PATTERNS.md](CROSSPLANE_PATTERNS.md) and the Crossplane architecture instructions.
+`koncept crossplane test` validates generated Crossplane v2 output contracts and can run local render/runtime profiles. Use it for the generated Crossplane output path. Hand-authored APIs under `crossplane_v2/` follow the curated Crossplane architecture described in [CROSSPLANE_PATTERNS.md](../integrations/CROSSPLANE_PATTERNS.md) and the Crossplane architecture instructions.
 
 ## Troubleshooting
 
@@ -185,5 +185,5 @@ Direct `kcl run` remains useful for framework debugging, but project users shoul
 - [DEVELOPER_QUICKSTART.md](DEVELOPER_QUICKSTART.md) for the shortest path to first render.
 - [DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md) for how the CLI maps onto the project architecture.
 - [WORKFLOWS.md](WORKFLOWS.md) for role-based recipes.
-- [TOOLING_SETUP.md](TOOLING_SETUP.md) for installation.
-- [GOLDEN_OUTPUTS.md](GOLDEN_OUTPUTS.md), [POLICY_EXEMPTIONS.md](POLICY_EXEMPTIONS.md), and [CHANGELOG_WORKFLOW.md](CHANGELOG_WORKFLOW.md) for governance details.
+- [TOOLING_SETUP.md](../operations/TOOLING_SETUP.md) for installation.
+- [GOLDEN_OUTPUTS.md](../testing/GOLDEN_OUTPUTS.md), [POLICY_EXEMPTIONS.md](../operations/POLICY_EXEMPTIONS.md), and [CHANGELOG_WORKFLOW.md](../operations/CHANGELOG_WORKFLOW.md) for governance details.
