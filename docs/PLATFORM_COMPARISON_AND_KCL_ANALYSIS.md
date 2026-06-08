@@ -843,7 +843,7 @@ Result: Quality improvements in existing outputs provide more value than new for
 | **Framework OCI Publishing Guide** | ✅ COMPLETE | docs/OCI_REGISTRY_PUBLISHING.md | 500+ line guide ready |
 | **Framework Extensibility Guide** | ✅ COMPLETE | docs/FRAMEWORK_EXTENSION_GUIDE.md | 400+ line guide ready |
 | **Helmfile Orchestration Docs** | ✅ COMPLETE | docs/HELMFILE_ORCHESTRATION.md | Comprehensive reference |
-| **Dry-Run Planning Docs** | ✅ COMPLETE | docs/DRY_RUN_PLANNING.md | Operational guide |
+| **Dry-Run Planning Docs** | ✅ COMPLETE | docs/archive/DRY_RUN_PLANNING.md | Historical planning guide; current CLI usage is in docs/CLI_REFERENCE.md |
 
 ### Outstanding Medium-term Objectives (Requiring Implementation)
 
@@ -871,7 +871,7 @@ Builder Tests:        All template builders PASS ✅
 |---|---|---|---|
 | **Helmfile Strategy** | HELMFILE_ADOPTION.md, HELMFILE_ORCHESTRATION.md | Jun 3 | ✅ Complete |
 | **Crossplane Strategy** | CROSSPLANE_PATTERNS.md, crossplane_architecture.instructions.md | Jun 3 | ✅ Complete |
-| **Dry-Run Usage** | DRY_RUN_PLANNING.md, CLI help text | Jun 3 | ✅ Complete |
+| **Dry-Run Usage** | CLI_REFERENCE.md, CLI help text | Jun 3 | ✅ Complete |
 | **CLI Distribution** | CLI_DISTRIBUTION.md, Makefile | Jun 3 | ✅ Complete |
 | **Framework Extension** | FRAMEWORK_EXTENSION_GUIDE.md | Jun 3 | ✅ Complete |
 | **OCI Publishing** | OCI_REGISTRY_PUBLISHING.md | Jun 3 | ✅ Complete |
@@ -953,7 +953,7 @@ All 5-step evolution plan now has comprehensive documentation and clear executio
 - ✅ **Step 3**: docs/FRAMEWORK_OBSERVABILITY.md (monitoring integration)
 - ✅ **Step 4**: docs/ADOPTION_PILOT_GUIDE.md (8-week pilot framework)
 - ✅ **Step 5**: docs/SCORE_SPECIFICATION_EVALUATION.md (decision record)
-### Implementation Checklist: docs/EVOLUTION_IMPLEMENTATION_CHECKLIST.md
+### Implementation Checklist: docs/archive/EVOLUTION_IMPLEMENTATION_CHECKLIST.md
 - All 5 steps with detailed action items
 - Week-by-week schedule
 - Success metrics & checkpoints  

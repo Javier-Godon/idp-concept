@@ -19,12 +19,15 @@ Follow these in order. Stop wherever you have what you need.
 3. **[Tooling Setup](TOOLING_SETUP.md)** — install the CLI and KCL. (Windows users:
    [Windows Local Setup](WINDOWS_LOCAL_SETUP.md).)
 4. **[Developer Quickstart](DEVELOPER_QUICKSTART.md)** — render your first manifests.
-5. **[Project Architecture](PROJECT_ARCHITECTURE.md)** — how configuration merges
+5. **[CLI Reference](CLI_REFERENCE.md)** — the current `koncept` command surface.
+6. **[Developer Guide](DEVELOPER_GUIDE.md)** — how the CLI maps to KCL, factories, stacks,
+   and governance.
+7. **[Project Architecture](PROJECT_ARCHITECTURE.md)** — how configuration merges
    (kernel → profile → tenant → site) and how everything connects.
-6. **[Workflows](WORKFLOWS.md)** — role-based and step-by-step task recipes (rendering, adding
+8. **[Workflows](WORKFLOWS.md)** — role-based and step-by-step task recipes (rendering, adding
    modules/tenants/sites/releases, Crossplane, debugging).
-7. **Go deeper for your role** — pick the relevant track in the catalog below.
-8. **[Decisions](#decisions--adrs)** — read the ADRs to understand *why* the platform is shaped
+9. **Go deeper for your role** — pick the relevant track in the catalog below.
+10. **[Decisions](#decisions--adrs)** — read the ADRs to understand *why* the platform is shaped
    the way it is (rendering strategy, search stack, distribution).
 
 ---
@@ -36,6 +39,7 @@ Follow these in order. Stop wherever you have what you need.
 | Document | Audience | Description |
 |---|---|---|
 | [DEVELOPER_QUICKSTART.md](DEVELOPER_QUICKSTART.md) | Developers | Prerequisites, render commands, troubleshooting |
+| [CLI_REFERENCE.md](CLI_REFERENCE.md) | Developers / Platform engineers | Current `koncept` command reference |
 | [TOOLING_SETUP.md](TOOLING_SETUP.md) | All | Install the `koncept` CLI, KCL, and optional tools |
 | [WINDOWS_LOCAL_SETUP.md](WINDOWS_LOCAL_SETUP.md) | Developers | WSL2 + Docker Desktop + kind local setup |
 | [APPLICATION_CONFIGURATION_PATTERNS.md](APPLICATION_CONFIGURATION_PATTERNS.md) | Developers | Standard config/env patterns per language and framework |
@@ -46,7 +50,7 @@ Follow these in order. Stop wherever you have what you need.
 |---|---|---|
 | [PROJECT_ARCHITECTURE.md](PROJECT_ARCHITECTURE.md) | All | Architecture, data flow, layers, how to extend |
 | [FRAMEWORK_SCHEMAS.md](FRAMEWORK_SCHEMAS.md) | Platform engineers | Complete KCL schema reference |
-| [DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md) | Platform engineers | Deep concepts guide — schemas, factories, templates |
+| [DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md) | Developers / Platform engineers | CLI-centered guide to projects, factories, stacks, templates, and governance |
 | [PROJECT_FOLDER_STANDARD.md](PROJECT_FOLDER_STANDARD.md) | Platform engineers | Folder conventions and path-derived values |
 | [FRAMEWORK_VERSIONING.md](FRAMEWORK_VERSIONING.md) | Platform engineers | Compatibility metadata, SemVer rules, support tiers |
 
@@ -97,8 +101,15 @@ Follow these in order. Stop wherever you have what you need.
 
 ### Planning & analysis (meta)
 
+Keep this section small. Implementation progress reports, dated status docs, and one-off completion summaries belong in [archive/](archive/) once the active guides below explain the current behavior.
+
 | Document | Audience | Description |
 |---|---|---|
 | [IDP_EVOLUTION_PLAN.md](IDP_EVOLUTION_PLAN.md) | All | Current-state assessment, phases, roadmap |
-| [WORK_MATRIX.md](WORK_MATRIX.md) | All | Phases mapped to user profiles and tasks |
 | [PLATFORM_COMPARISON_AND_KCL_ANALYSIS.md](PLATFORM_COMPARISON_AND_KCL_ANALYSIS.md) | Platform engineers | KCL vs Go analysis, k0rdent/Fleet patterns |
+
+### Archive
+
+| Location | Description |
+|---|---|
+| [archive/](archive/) | Historical implementation reports, status summaries, completion reports, and superseded checklists. Do not use archived files as the source for current commands. |

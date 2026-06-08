@@ -1,6 +1,6 @@
 # Developer Quickstart
 
-> Deploy and manage your applications using the **koncept** CLI — zero Kubernetes knowledge required.
+> Deploy and manage your applications using the **koncept** CLI — zero Kubernetes knowledge required. For every command and flag, use [CLI_REFERENCE.md](./CLI_REFERENCE.md).
 
 ## Prerequisites
 
@@ -23,13 +23,15 @@ cd projects/<project>/
 koncept validate --factory pre_releases/manifests/<env>/factory
 
 # Render manifests (pick the format your team uses)
-koncept render argocd --factory pre_releases/manifests/<env>/factory      # Tier 1 GitOps YAML
+koncept render yaml --factory pre_releases/manifests/<env>/factory        # Tier 1 plain YAML
+koncept render argocd --factory pre_releases/manifests/<env>/factory      # Tier 1 ArgoCD/GitOps YAML
 koncept render helmfile --factory pre_releases/manifests/<env>/factory    # Tier 1 Helmfile
 koncept render backstage --factory pre_releases/manifests/<env>/factory   # Tier 1 catalog metadata
-koncept render kusion --factory pre_releases/manifests/<env>/factory      # Compatibility path
-koncept render kustomize --factory pre_releases/manifests/<env>/factory   # Compatibility path
-koncept render timoni --factory pre_releases/manifests/<env>/factory      # Experimental path
+koncept render helm --factory pre_releases/manifests/<env>/factory        # Tier 2 Helm chart
 koncept render crossplane --factory pre_releases/manifests/<env>/factory  # Platform-team path
+koncept render kustomize --factory pre_releases/manifests/<env>/factory   # Tier 2 Kustomize
+koncept render kusion --factory pre_releases/manifests/<env>/factory      # Tier 3 experimental
+koncept render timoni --factory pre_releases/manifests/<env>/factory      # Tier 3 experimental
 
 # Navigate to a production release
 cd projects/<project>/releases/<version>/
@@ -109,9 +111,10 @@ These are configured in `modules/` by platform engineers — you control environ
 
 ## Render Formats
 
-### ArgoCD (plain YAML)
-Best for GitOps workflows. Generates Kubernetes manifests + ArgoCD Application CRDs.
+### YAML / ArgoCD
+Best for GitOps workflows. `yaml` and `argocd` both produce plain Kubernetes manifests suitable for ArgoCD or Flux-style deployment.
 ```bash
+koncept render yaml
 koncept render argocd
 ```
 
@@ -121,6 +124,12 @@ Generates parameterized Helm charts with `values.yaml` + `helmfile.yaml`.
 koncept render helmfile
 # Output: output/charts/<name>/Chart.yaml, values.yaml, templates/
 #         output/helmfile.yaml
+```
+
+### Helm
+Generates standalone Helm chart structure.
+```bash
+koncept render helm
 ```
 
 ### Kusion
@@ -155,7 +164,7 @@ Generates Backstage catalog entity definitions from component/accessory metadata
 koncept render backstage
 ```
 
-> **All 9 formats** are rendered from the same KCL source — change one config, re-render any format.
+> **All 9 formats** are rendered from the same KCL source — change one config, re-render any format. Prefer Tier 1 (`yaml`, `argocd`, `helmfile`, `backstage`) unless your platform team has chosen another path.
 
 For framework compatibility metadata and support windows, see [FRAMEWORK_VERSIONING.md](./FRAMEWORK_VERSIONING.md).
 
@@ -176,3 +185,5 @@ koncept validate
 | `cannot find module` | Wrong directory | `cd` to the directory with `kcl.mod` |
 | `attribute not found` | Spelling error in config | Check field names in `core_sources/` |
 | `check block failed` | Invalid value (e.g., port out of range) | Fix the value per the error message |
+
+For deeper troubleshooting, run `koncept doctor --factory <factory>` and then see [CLI_REFERENCE.md](./CLI_REFERENCE.md#troubleshooting).

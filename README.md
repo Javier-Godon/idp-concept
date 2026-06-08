@@ -240,7 +240,9 @@ Key entry points:
 | Document | Audience | Content |
 |---|---|---|
 | [docs/README (index)](docs/README.md) | All | Master index and recommended reading path |
-| [DEVELOPER_QUICKSTART](docs/DEVELOPER_QUICKSTART.md) | Developers | Day-to-day usage, render commands, config options |
+| [Developer Quickstart](docs/DEVELOPER_QUICKSTART.md) | Developers | Fast path to first validate/render loop |
+| [CLI Reference](docs/CLI_REFERENCE.md) | Developers / Platform engineers | Current `koncept` command surface and flags |
+| [Developer Guide](docs/DEVELOPER_GUIDE.md) | Developers / Platform engineers | CLI-centered project, factory, stack, and governance guide |
 | [PROJECT_ARCHITECTURE](docs/PROJECT_ARCHITECTURE.md) | All | Architecture, data flow, how everything connects |
 | [WORKFLOWS](docs/WORKFLOWS.md) | Developers / Platform engineers | Role-based and step-by-step render workflows |
 | [Distribution & Sharing Model](docs/decisions/DISTRIBUTION_AND_SHARING_MODEL.md) | All | How the CLI is installed and how teams share work via Git/GitOps |
