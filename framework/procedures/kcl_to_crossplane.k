@@ -88,14 +88,14 @@ _CURATED_SERVICES = {
     "observability" = {xrd_kind = "XObservabilityProvisioner", claim_kind = "ObservabilityProvisioner", api_group = "koncept.bluesolution.es"}
 }
 
-_is_curated_service = lambda component: str -> bool {
+_is_curated_service = lambda service_name: str -> bool {
     """Check if a service has a curated Crossplane API."""
-    component.lower() in _CURATED_SERVICES
+    service_name.lower() in _CURATED_SERVICES
 }
 
-_get_curated_api_info = lambda component: str -> {str:} {
+_get_curated_api_info = lambda service_name: str -> {str:} {
     """Get XRD/Claim info for a curated service, or empty dict if not curated."""
-    _lower = component.lower()
+    _lower = service_name.lower()
     (_CURATED_SERVICES[_lower] if _lower in _CURATED_SERVICES else {})
 }
 
