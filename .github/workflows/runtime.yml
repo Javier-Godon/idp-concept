@@ -30,7 +30,7 @@ on:
       install_dependencies:
         description: "Install pinned operators/controllers before apply"
         required: false
-        default: "false"
+        default: false
         type: boolean
 
 permissions:
@@ -51,9 +51,13 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Install KCL
-        uses: kcl-lang/setup-kcl@v0.2.1
-        with:
-          kcl-version: ${{ env.KCL_VERSION }}
+        run: |
+          set -euo pipefail
+          curl -fsSL -o /tmp/kcl.tar.gz \
+            "https://github.com/kcl-lang/cli/releases/download/v${KCL_VERSION}/kcl-v${KCL_VERSION}-linux-amd64.tar.gz"
+          tar -xzf /tmp/kcl.tar.gz -C /tmp kcl
+          sudo install -m 0755 /tmp/kcl /usr/local/bin/kcl
+          kcl version
 
       - name: Install kind
         run: |

@@ -26,7 +26,7 @@ FRAMEWORK_DIR="$PROJECT_ROOT/framework"
 VERSION="${1:-0.1.0}"
 REGISTRY="${2:-ghcr.io/$(echo $GITHUB_REPOSITORY | cut -d'/' -f1)}"
 CREDENTIALS="${3:-}"
-IMAGE_NAME="$REGISTRY/idp-concept-framework"
+IMAGE_NAME="$REGISTRY/idp-concept/framework"
 IMAGE_FULL="$IMAGE_NAME:v$VERSION"
 
 # Colors

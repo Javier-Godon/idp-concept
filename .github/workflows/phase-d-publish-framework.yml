@@ -6,13 +6,13 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Framework version (e.g., 0.1.0)'
+        description: "Framework version (e.g., 0.1.0)"
         required: false
-        default: 'from-tag'
+        default: "from-tag"
       registry:
-        description: 'OCI Registry (e.g., ghcr.io/my-org)'
+        description: "OCI Registry (e.g., ghcr.io/my-org)"
         required: false
-        default: 'ghcr.io'
+        default: "ghcr.io"
 
 concurrency:
   group: publish-framework
@@ -28,9 +28,15 @@ jobs:
           fetch-depth: 0
 
       - name: Setup KCL
-        uses: kcl-lang/setup-kcl@v1
-        with:
-          version: latest
+        env:
+          KCL_VERSION: "0.10.0"
+        run: |
+          set -euo pipefail
+          curl -fsSL -o /tmp/kcl.tar.gz \
+            "https://github.com/kcl-lang/cli/releases/download/v${KCL_VERSION}/kcl-v${KCL_VERSION}-linux-amd64.tar.gz"
+          tar -xzf /tmp/kcl.tar.gz -C /tmp kcl
+          sudo install -m 0755 /tmp/kcl /usr/local/bin/kcl
+          kcl version
 
       - name: Validate Framework Structure
         run: |
@@ -92,55 +98,54 @@ jobs:
           VERSION="1.1.0"
           curl -L -o /tmp/oras_linux_amd64.tar.gz \
             https://github.com/oras-project/oras/releases/download/v${VERSION}/oras_${VERSION}_linux_amd64.tar.gz
-          
+
           mkdir -p /tmp/oras-tmp
           tar -xzf /tmp/oras_linux_amd64.tar.gz -C /tmp/oras-tmp
           sudo mv /tmp/oras-tmp/oras /usr/local/bin/oras
           sudo chmod +x /usr/local/bin/oras
-          
+
           echo "✓ ORAS installed: $(oras version)"
 
       - name: Build and Push Framework Artifact
         env:
-          REGISTRY: ghcr.io/${{ github.repository_owner }}
+          REGISTRY: ghcr.io/${{ github.repository }}
           VERSION: ${{ steps.version.outputs.version }}
         run: |
           set -e
-          
-          ARTIFACT_NAME="idp-concept-framework"
+
+          ARTIFACT_NAME="framework"
           IMAGE_NAME="${REGISTRY}/${ARTIFACT_NAME}"
           IMAGE_FULL="${IMAGE_NAME}:v${VERSION}"
-          
+
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           echo "Publishing Framework Artifact"
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           echo "Image:    $IMAGE_FULL"
           echo "Version:  $VERSION"
           echo ""
-          
+
           # Build artifact tarball
           tar -czf /tmp/framework-${VERSION}.tar.gz -C framework .
-          
+
           # Create config descriptor
           cat > /tmp/config.json << 'CONFIG'
           {
-            "name": "idp-concept-framework",
+            "name": "idp-concept/framework",
             "version": "VERSION_PLACEHOLDER",
-            "description": "KCL Framework Module for idp-concept Platform",
-            "author": "Platform Engineering",
+            "description": "KCL Framework Module for idp-concept Platform",            "author": "Platform Engineering",
             "type": "kcl-module"
           }
           CONFIG
           sed -i "s/VERSION_PLACEHOLDER/${VERSION}/g" /tmp/config.json
-          
+
           # Push with ORAS
           oras push "$IMAGE_FULL" \
             --config "/tmp/config.json:application/vnd.oras.config.v1+json" \
             "/tmp/framework-${VERSION}.tar.gz:application/vnd.oras.layer.v1.tar+gzip"
-          
+
           echo ""
           echo "✓ Framework artifact published: $IMAGE_FULL"
-          
+
           # Also tag as latest if this is a release (not pre-release)
           if [ "${{ github.event.release.prerelease }}" = "false" ]; then
             oras copy "$IMAGE_FULL" "${IMAGE_NAME}:latest"
@@ -149,12 +154,12 @@ jobs:
 
       - name: Verify Publication
         env:
-          REGISTRY: ghcr.io/${{ github.repository_owner }}
-          ARTIFACT_NAME: idp-concept-framework
+          REGISTRY: ghcr.io/${{ github.repository }}
+          ARTIFACT_NAME: framework
           VERSION: ${{ steps.version.outputs.version }}
         run: |
           IMAGE="${REGISTRY}/${ARTIFACT_NAME}:v${VERSION}"
-          
+
           echo "Verifying publication: $IMAGE"
           oras manifest fetch "$IMAGE" | jq . | head -20
           echo "✓ Verification successful"
@@ -162,37 +167,37 @@ jobs:
       - name: Update Usage Documentation
         run: |
           VERSION="${{ steps.version.outputs.version }}"
-          REGISTRY="ghcr.io/${{ github.repository_owner }}"
-          IMAGE_NAME="${REGISTRY}/idp-concept-framework"
+          REGISTRY="ghcr.io/${{ github.repository }}"
+          IMAGE_NAME="${REGISTRY}/framework"
           IMAGE_FULL="${IMAGE_NAME}:v${VERSION}"
-          
+
           mkdir -p docs
-          
+
           cat > docs/OCI_FRAMEWORK_USAGE.md << 'DOCEOF'
           # Using Published Framework Module via OCI
-          
+
           ## Latest Published Version
-          
+
           **Version**: VERSION_PLACEHOLDER  
           **Registry**: REGISTRY_PLACEHOLDER  
           **Image**: IMAGE_PLACEHOLDER
-          
+
           ## Installation
-          
+
           Update your project's `kcl.mod`:
-          
+
           \`\`\`toml
           [dependencies]
           framework = "IMAGE_PLACEHOLDER"
           \`\`\`
-          
+
           See [OCI_FRAMEWORK_USAGE.md](../docs/OCI_FRAMEWORK_USAGE.md) for full usage guide.
           DOCEOF
-          
+
           sed -i "s|VERSION_PLACEHOLDER|${VERSION}|g" docs/OCI_FRAMEWORK_USAGE.md
           sed -i "s|REGISTRY_PLACEHOLDER|${REGISTRY}|g" docs/OCI_FRAMEWORK_USAGE.md
           sed -i "s|IMAGE_PLACEHOLDER|${IMAGE_FULL}|g" docs/OCI_FRAMEWORK_USAGE.md
-          
+
           echo "Updated: docs/OCI_FRAMEWORK_USAGE.md"
 
       - name: Create Release Notes
@@ -201,27 +206,27 @@ jobs:
         with:
           body: |
             ## Framework Published to OCI Registry
-            
+
             **Version**: ${{ steps.version.outputs.version }}  
-            **Registry**: ghcr.io/${{ github.repository_owner }}/idp-concept-framework  
-            **Image**: ghcr.io/${{ github.repository_owner }}/idp-concept-framework:v${{ steps.version.outputs.version }}
-            
+            **Registry**: ghcr.io/${{ github.repository }}/framework  
+            **Image**: ghcr.io/${{ github.repository }}/framework:v${{ steps.version.outputs.version }}
+
             ### Usage
-            
+
             Update your `kcl.mod` to use the published framework:
-            
+
             ```toml
             [dependencies]
-            framework = "ghcr.io/${{ github.repository_owner }}/idp-concept-framework:v${{ steps.version.outputs.version }}"
+            framework = "ghcr.io/${{ github.repository }}/framework:v${{ steps.version.outputs.version }}"
             ```
-            
+
             ### Changes Included
-            
+
             - All templates from `framework/templates/`
             - All builders from `framework/builders/`
             - All procedures for output generation
             - Complete documentation and examples
-            
+
             See [OCI Framework Usage](../docs/OCI_FRAMEWORK_USAGE.md) for detailed installation and usage instructions.
 
       - name: Job Summary
@@ -229,24 +234,23 @@ jobs:
         run: |
           cat >> $GITHUB_STEP_SUMMARY << 'SUMMARY'
           ## Phase D: Framework Published ✅
-          
+
           | Field | Value |
           |-------|-------|
           | **Version** | ${{ steps.version.outputs.version }} |
-          | **Registry** | ghcr.io/${{ github.repository_owner }} |
-          | **Image** | `idp-concept-framework:v${{ steps.version.outputs.version }}` |
+          | **Registry** | ghcr.io/${{ github.repository }} |
+          | **Image** | `framework:v${{ steps.version.outputs.version }}` |
           | **Status** | ✅ Published |
-          
+
           ### Next Steps
-          
+
           1. **Update downstream projects**: Modify their `kcl.mod` to reference the new framework version
           2. **Verify resolution**: Run `kcl run` and check that imports resolve from registry
           3. **Monitor adoption**: Track usage across teams
-          
+
           ### Documentation
-          
+
           - Installation guide: [`docs/OCI_FRAMEWORK_USAGE.md`](../docs/OCI_FRAMEWORK_USAGE.md)
           - Framework reference: [`docs/FRAMEWORK_SCHEMAS.md`](../docs/FRAMEWORK_SCHEMAS.md)
-          
-          SUMMARY
 
+          SUMMARY

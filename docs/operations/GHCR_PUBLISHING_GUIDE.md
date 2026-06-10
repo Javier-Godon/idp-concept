@@ -1,20 +1,20 @@
 # GHCR Publishing Guide for idp-concept Framework
 
-> Step-by-step guide for publishing idp-concept framework v1.0.0 to GitHub Container Registry (GHCR) with automated CI/CD integration and rollback procedures.
+> Step-by-step guide for publishing the idp-concept framework to GitHub Container Registry (GHCR) with automated CI/CD integration and rollback procedures.
 
 ---
 
 ## 1. Executive Summary
 
-This guide provides concrete steps for publishing the idp-concept framework as versioned OCI packages to `ghcr.io/javier-godon` (GitHub Container Registry). After publication, external teams can consume the framework via:
+This guide provides concrete steps for publishing the idp-concept framework as versioned OCI packages under `ghcr.io/javier-godon/idp-concept` (GitHub Container Registry). Publishing under the repository path keeps the package automatically associated with the [Javier-Godon/idp-concept](https://github.com/Javier-Godon/idp-concept) repository. After publication, external teams can consume the framework via:
 
 ```toml
 # In kcl.mod of consuming projects:
 [dependencies]
-framework = "oras://ghcr.io/javier-godon/idp-concept-framework:v1.0.0"
+framework = "oras://ghcr.io/javier-godon/idp-concept/framework:v1.0.0"
 ```
 
-**Current Status**: Framework v1.0.0 ready for publication. KPM v2.0 automation blocked on external release (Q3 2026). **Workaround**: Manual `oras` CLI publishing available now (<30 minutes).
+**Current Status**: Framework v1.0.0 is **published** to GHCR at `oras://ghcr.io/javier-godon/idp-concept/framework:v1.0.0`. Publishing is automated by `.github/workflows/phase-d-publish-framework.yml` (on GitHub Release) and reproducible locally via `scripts/publish_oci.sh framework <version>`.
 
 ---
 
@@ -68,7 +68,7 @@ script does under the hood; day-to-day publishing should use `scripts/publish_oc
 
 | Published artifact | Reference |
 |---|---|
-| Framework KCL module (OCI) | `oras://ghcr.io/javier-godon/idp-concept-framework:<version>` |
+| Framework KCL module (OCI) | `oras://ghcr.io/javier-godon/idp-concept/framework:<version>` |
 | `koncept` CLI container image | `ghcr.io/javier-godon/idp-concept/koncept:<version>` |
 | `koncept` CLI binaries + checksums | GitHub Releases assets |
 
@@ -140,8 +140,8 @@ tar tzf /tmp/idp-publish/framework-v1.0.0.tar.gz | head -20
 ```bash
 # Set variables
 REGISTRY="ghcr.io"
-NAMESPACE="javier-godon"
-REPO="idp-concept-framework"
+NAMESPACE="javier-godon/idp-concept"
+REPO="framework"
 TAG="v1.0.0"
 IMAGE="$REGISTRY/$NAMESPACE/$REPO:$TAG"
 
@@ -186,11 +186,11 @@ cat > /tmp/idp-publish/release-notes.txt << 'EOF'
 
 ## Publishing Details
 
-- **Registry**: ghcr.io/javier-godon
-- **Package**: idp-concept-framework:v1.0.0
+- **Registry**: ghcr.io/javier-godon/idp-concept
+- **Package**: framework:v1.0.0
 - **Edition**: KCL v0.10.0
 - **K8s Support**: v1.31.2
-- **Consumption**: oras://ghcr.io/javier-godon/idp-concept-framework:v1.0.0
+- **Consumption**: oras://ghcr.io/javier-godon/idp-concept/framework:v1.0.0
 
 ## Migration from Git Clone
 
@@ -201,7 +201,7 @@ Replace in kcl.mod:
 # framework = { path = "../../framework" }
 
 # NEW: GHCR registry method
-framework = "oras://ghcr.io/javier-godon/idp-concept-framework:v1.0.0"
+framework = "oras://ghcr.io/javier-godon/idp-concept/framework:v1.0.0"
 ```
 
 ## Support & Feedback
@@ -226,17 +226,17 @@ oras attach "$IMAGE" \
 
 ```bash
 # List all published versions
-oras ls "ghcr.io/javier-godon/idp-concept-framework"
+oras ls "ghcr.io/javier-godon/idp-concept/framework"
 # Expected: v1.0.0
 
 # Show manifest
-oras manifest fetch "ghcr.io/javier-godon/idp-concept-framework:v1.0.0" | jq .
+oras manifest fetch "ghcr.io/javier-godon/idp-concept/framework:v1.0.0" | jq .
 
 # Show artifact size
-oras describe "ghcr.io/javier-godon/idp-concept-framework:v1.0.0" --verbose
+oras describe "ghcr.io/javier-godon/idp-concept/framework:v1.0.0" --verbose
 
 # Test pull access (simulates external team)
-oras pull "ghcr.io/javier-godon/idp-concept-framework:v1.0.0" -o /tmp/framework-test
+oras pull "ghcr.io/javier-godon/idp-concept/framework:v1.0.0" -o /tmp/framework-test
 tar tzf /tmp/framework-test/framework-v1.0.0.tar.gz | head -10
 ```
 
@@ -255,7 +255,7 @@ framework = { path = "../../framework" }
 
 # After
 [dependencies]
-framework = "oras://ghcr.io/javier-godon/idp-concept-framework:v1.0.0"
+framework = "oras://ghcr.io/javier-godon/idp-concept/framework:v1.0.0"
 ```
 
 ### 4.2 Test Consuming Project
@@ -272,7 +272,7 @@ edition = "v0.10.0"
 version = "0.0.1"
 
 [dependencies]
-framework = "oras://ghcr.io/javier-godon/idp-concept-framework:v1.0.0"
+framework = "oras://ghcr.io/javier-godon/idp-concept/framework:v1.0.0"
 k8s = "1.31.2"
 EOF
 
@@ -295,14 +295,16 @@ kcl run main.k --quiet
 
 ---
 
-## 5. CI/CD Integration (Future: KPM v2.0)
+## 5. CI/CD Integration
 
-Once KPM v2.0 stabilizes (Q3 2026), automate the publishing pipeline:
+Publishing is already automated. `.github/workflows/phase-d-publish-framework.yml` packages
+`framework/` and pushes it to GHCR on every GitHub Release (and on manual dispatch). The
+workflow below documents that flow; keep it in sync with the committed workflow file.
 
-### 5.1 GitHub Actions Workflow (Template)
+### 5.1 GitHub Actions Workflow (Reference)
 
 ```yaml
-# .github/workflows/publish-framework.yml
+# .github/workflows/phase-d-publish-framework.yml (excerpt)
 name: Publish Framework to GHCR
 
 on:
@@ -314,8 +316,8 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  NAMESPACE: javier-godon
-  REPO: idp-concept-framework
+  NAMESPACE: javier-godon/idp-concept
+  REPO: framework
 
 jobs:
   publish:
@@ -328,8 +330,14 @@ jobs:
       - uses: actions/checkout@v4
       
       - name: Install KCL
+        env:
+          KCL_VERSION: "0.10.0"
         run: |
-          curl -sSL https://kcl-lang.io/script/install.sh | bash
+          set -euo pipefail
+          curl -fsSL -o /tmp/kcl.tar.gz \
+            "https://github.com/kcl-lang/cli/releases/download/v${KCL_VERSION}/kcl-v${KCL_VERSION}-linux-amd64.tar.gz"
+          tar -xzf /tmp/kcl.tar.gz -C /tmp kcl
+          sudo install -m 0755 /tmp/kcl /usr/local/bin/kcl
           kcl version
       
       - name: Run tests (pre-publication check)
@@ -393,7 +401,7 @@ v1.0.0-rc.1 = Release candidate
 
 ```bash
 # Option 1: Temporarily remove from registry
-oras discover "ghcr.io/javier-godon/idp-concept-framework:v1.0.0" --format json
+oras discover "ghcr.io/javier-godon/idp-concept/framework:v1.0.0" --format json
 
 # Option 2: Communicate issue to consuming teams
 # - Create GitHub issue documenting problem
@@ -411,7 +419,7 @@ gh release delete v1.0.0 --yes # Removes GitHub release
 ```bash
 # Support option: Pin to previous version during transition
 # In their kcl.mod:
-framework = "oras://ghcr.io/javier-godon/idp-concept-framework:v0.9.9"
+framework = "oras://ghcr.io/javier-godon/idp-concept/framework:v0.9.9"
 
 # Timeline: Give 2 release cycles (e.g., 1 month) before deprecating old version
 # Communication via GitHub Releases page
@@ -427,7 +435,7 @@ framework = "oras://ghcr.io/javier-godon/idp-concept-framework:v0.9.9"
 # Via GitHub API (requires authentication)
 curl -H "Authorization: token $GITHUB_TOKEN" \
      "https://api.github.com/users/javier-godon/packages?package_type=container" \
-     | jq '.[] | select(.name == "idp-concept-framework")' 
+     | jq '.[] | select(.name == "idp-concept/framework")' 
 
 # Manual: Visit https://github.com/Javier-Godon?tab=packages
 ```
@@ -435,7 +443,7 @@ curl -H "Authorization: token $GITHUB_TOKEN" \
 ### 7.2 Monitor GHCR Storage
 
 - Login to https://ghcr.io
-- Navigate to **Packages** → **idp-concept-framework**
+- Navigate to **Packages** → **idp-concept/framework**
 - View: version history, pull statistics, storage usage
 
 ---
@@ -455,35 +463,30 @@ curl -H "Authorization: token $GITHUB_TOKEN" \
 # Requires: https://docs.sigstore.dev/cosign/
 
 # Sign pushed image
-cosign sign --key cosign.key ghcr.io/javier-godon/idp-concept-framework:v1.0.0
+cosign sign --key cosign.key ghcr.io/javier-godon/idp-concept/framework:v1.0.0
 
 # Verify signature
-cosign verify --key cosign.pub ghcr.io/javier-godon/idp-concept-framework:v1.0.0
+cosign verify --key cosign.pub ghcr.io/javier-godon/idp-concept/framework:v1.0.0
 ```
 
 ---
 
 ## 9. Next Steps
 
-### Immediate (Today)
+### Done
 
 1. ✅ Create GitHub PAT for `javier-godon` account
 2. ✅ Authenticate locally with GHCR
 3. ✅ Package framework v1.0.0
-4. ✅ Push to GHCR via ORAS
+4. ✅ Push to GHCR via ORAS under the repo-associated `idp-concept/framework` path
 5. ✅ Verify pull from GHCR works
+6. ✅ Automate publishing in `.github/workflows/phase-d-publish-framework.yml`
 
-### Short-term (This week)
+### Ongoing
 
-6. Update internal consuming projects (video_streaming, erp_back, pokedex) to use GHCR
-7. Create adoption pilot documentation (see ADOPTION_PILOT_GUIDE.md)
-8. Identify 2-3 external teams for pilot
-
-### Medium-term (Q3 2026)
-
-9. Wait for KPM v2.0 release
-10. Implement CI/CD automation via GitHub Actions
-11. Establish semantic versioning and release cadence
+7. Update internal consuming projects (video_streaming, erp_back, pokedex) to the pinned OCI reference once KCL `oras://` dependency resolution is fully validated; local `path` remains the working development default.
+8. Establish semantic versioning and release cadence (see §5.2).
+9. Track adoption across consuming teams.
 
 ---
 
@@ -499,10 +502,10 @@ A: Mirror to Harbor or Docker Hub as backup (requires org decision). GHCR has 99
 A: Use semantic versioning. v2.0.0 signals breaking changes. Give teams 2-3 release cycles to migrate.
 
 **Q: Can teams use specific historical versions?**
-A: Yes. Reference framework = "oras://ghcr.io/javier-godon/idp-concept-framework:v1.0.0" in kcl.mod to pin to specific version.
+A: Yes. Reference framework = "oras://ghcr.io/javier-godon/idp-concept/framework:v1.0.0" in kcl.mod to pin to specific version.
 
 **Q: How do external teams get bugfixes?**
-A: Publish v1.0.1, v1.0.2, etc. Teams explicit- ly update kcl.mod to consume patch versions.
+A: Publish v1.0.1, v1.0.2, etc. Teams explicitly update kcl.mod to consume patch versions.
 
 ---
 
@@ -511,12 +514,11 @@ A: Publish v1.0.1, v1.0.2, etc. Teams explicit- ly update kcl.mod to consume pat
 - ORAS CLI: https://oras.land/
 - OCI Image Spec: https://github.com/opencontainers/image-spec
 - GHCR Documentation: https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry
-- KCL Module System: docs/INSTRUCTIONS_KCL_MODULE_SYSTEM.md
+- KCL Module System: [../../.github/instructions/kcl-module-system.instructions.md](../../.github/instructions/kcl-module-system.instructions.md)
 - Framework Architecture: [../platform-engineering/PROJECT_ARCHITECTURE.md](../platform-engineering/PROJECT_ARCHITECTURE.md)
 
 ---
 
-**Generated**: 2026-06-03
 **Framework Version**: v1.0.0
-**Status**: Ready for manual ORAS publishing, CI/CD awaiting KPM v2.0
+**Status**: Published to `oras://ghcr.io/javier-godon/idp-concept/framework:v1.0.0`; CI publishing via `.github/workflows/phase-d-publish-framework.yml`
 

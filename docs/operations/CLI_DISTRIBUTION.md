@@ -194,7 +194,7 @@ This repository publishes **two consumable artifacts** to
 |---|---|---|
 | `koncept` CLI binaries + checksums | GitHub Releases assets | Installable cross-platform CLI |
 | `koncept` CLI container image | `ghcr.io/javier-godon/idp-concept/koncept` | Pinned CI/runtime image (kcl bundled) |
-| Framework KCL module (OCI) | `oras://ghcr.io/javier-godon/idp-concept-framework` | The reusable `framework/` package — see [GHCR_PUBLISHING_GUIDE.md](GHCR_PUBLISHING_GUIDE.md) |
+| Framework KCL module (OCI) | `oras://ghcr.io/javier-godon/idp-concept/framework` | The reusable `framework/` package — see [GHCR_PUBLISHING_GUIDE.md](GHCR_PUBLISHING_GUIDE.md) |
 
 The `projects/` directory (`video_streaming`, `erp_back`, `pokedex`) is **not** a
 published artifact. Those are **reference example usages** of the framework that
@@ -206,28 +206,33 @@ published as a package.
 
 
 
-The `koncept` CLI includes a pinned version of the KCL toolchain to ensure reproducible renders across all platforms and environments.
+The `koncept` CLI bundles a pinned KCL toolchain (and the kcl-go SDK) to ensure reproducible renders across all platforms and environments.
 
-### Verify KCL Version
+### Verify The Bundled KCL Toolchain
 
 ```bash
-koncept version --kcl
-# Output: KCL 0.10.0
+# doctor reports the koncept build and the KCL CLI it can find
+koncept doctor
+# e.g. "KCL CLI found: /usr/local/bin/kcl (kcl version 0.11.3)"
 ```
 
 ### Update KCL (If Needed)
 
-If you need a different KCL version:
+The container image pins the KCL CLI via the `KCL_VERSION` build arg in
+`cmd/koncept/Dockerfile`, and the render engine is pinned through the `kcl-go`
+dependency in `cmd/koncept/go.mod`. To change the version:
 
-```makefile
-# In cmd/koncept/go.mod
-require (
-    github.com/kcl-lang/kcl-go v0.11.0  # Update this version
-)
-
-# Then rebuild
+```bash
+# 1. Bump the kcl-go SDK used by the render engine
+cd cmd/koncept
+go get github.com/kcl-lang/kcl-go@v0.11.3
 go mod tidy
-go build -o koncept .
+
+# 2. Bump the bundled CLI in the image (cmd/koncept/Dockerfile)
+#    ARG KCL_VERSION=0.11.3
+
+# 3. Rebuild
+make build
 ```
 
 ---
@@ -238,7 +243,7 @@ After installing, verify the CLI works:
 
 ```bash
 # Check version
-koncept version
+koncept --version
 
 # Check help
 koncept --help

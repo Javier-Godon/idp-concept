@@ -99,8 +99,8 @@ project pins a version instead:
 # projects/erp_back/kcl.mod (after — version-pinned)
 [dependencies]
 framework = "1.2.0"
-# or, explicitly via OCI:
-# framework = { oci = "oci://ghcr.io/your-org/idp-framework", tag = "1.2.0" }
+# or, explicitly via the published OCI artifact:
+# framework = "oras://ghcr.io/javier-godon/idp-concept/framework:v1.0.0"
 ```
 
 Migration steps for one project:

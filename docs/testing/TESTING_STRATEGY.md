@@ -431,9 +431,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: kcl-lang/setup-kcl@v0.2.0
-        with:
-          kcl-version: "0.11.3"
+      - name: Install KCL
+        env:
+          KCL_VERSION: "0.11.3"
+        run: |
+          set -euo pipefail
+          curl -fsSL -o /tmp/kcl.tar.gz \
+            "https://github.com/kcl-lang/cli/releases/download/v${KCL_VERSION}/kcl-v${KCL_VERSION}-linux-amd64.tar.gz"
+          tar -xzf /tmp/kcl.tar.gz -C /tmp kcl
+          sudo install -m 0755 /tmp/kcl /usr/local/bin/kcl
+          kcl version
       - name: Install kubeconform
         run: go install github.com/yannh/kubeconform/cmd/kubeconform@v0.7.0
       - name: KCL Unit Tests

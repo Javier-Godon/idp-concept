@@ -6,6 +6,15 @@
 
 ## 1. Overview
 
+> **Current state.** The idp-concept framework is already published to GitHub Container
+> Registry at `oras://ghcr.io/javier-godon/idp-concept/framework:v1.0.0`, associated with
+> the [Javier-Godon/idp-concept](https://github.com/Javier-Godon/idp-concept) repository.
+> The canonical, supported publishing path is `scripts/publish_oci.sh framework <version>`
+> (local, reads `credentials/ghcr.env`) and the `.github/workflows/phase-d-publish-framework.yml`
+> workflow (CI, on release). See [GHCR_PUBLISHING_GUIDE.md](GHCR_PUBLISHING_GUIDE.md) for the
+> concrete GHCR procedure. This document covers the general OCI-registry concepts that apply
+> to any registry (Harbor, Artifactory, ACR, Docker Hub, mirrors, air-gapped).
+
 The idp-concept framework can be published to OCI-compatible registries (Docker Registry, OCI Distribution, Artifactory, Harbor, etc.) for:
 
 - **Versioned distribution** — Pin specific framework versions
@@ -107,10 +116,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up KCL
-        uses: kcl-lang/setup-kcl@main
-        with:
-          kcl-version: 'v0.10.0'
+      - name: Install KCL
+        env:
+          KCL_VERSION: "0.10.0"
+        run: |
+          set -euo pipefail
+          curl -fsSL -o /tmp/kcl.tar.gz \
+            "https://github.com/kcl-lang/cli/releases/download/v${KCL_VERSION}/kcl-v${KCL_VERSION}-linux-amd64.tar.gz"
+          tar -xzf /tmp/kcl.tar.gz -C /tmp kcl
+          sudo install -m 0755 /tmp/kcl /usr/local/bin/kcl
+          kcl version
 
       - name: Log in to OCI Registry
         run: |
