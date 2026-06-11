@@ -2,6 +2,10 @@
 
 This project can be developed from Windows, but the most reliable local Kubernetes path is **WSL2 + Docker Desktop + kind**. Use lightweight `footprint = "local"` template settings for laptop environments.
 
+Install, update, and uninstall `koncept` from inside WSL2 using
+[CLI_DISTRIBUTION.md](../operations/CLI_DISTRIBUTION.md). Install supporting
+tools with [TOOLING_SETUP.md](../operations/TOOLING_SETUP.md).
+
 ## Recommended stack
 
 1. Windows 11 with WSL2 enabled.
@@ -13,6 +17,7 @@ Run project commands from the WSL filesystem, not from `/mnt/c/...`, to avoid sl
 
 ```bash
 cd ~/workspaces/idp-concept
+koncept doctor --factory projects/erp_back/pre_releases/manifests/dev/factory
 ./scripts/verify.sh
 ./scripts/acceptance_kind.sh --case basic
 ```
@@ -54,9 +59,9 @@ Recommended alternatives:
 ./scripts/acceptance_kind.sh --case persistence-ceph
 ```
 
-2. For functional local persistence, use kind's default local-path provisioner and `footprint = "local"`.
-3. For real Ceph validation, use a Linux workstation, remote dev cluster, or CI/nightly cluster with dedicated storage.
-4. Do not force Ceph storage classes into local templates unless the scenario is explicitly testing Ceph wiring.
+1. For functional local persistence, use kind's default local-path provisioner and `footprint = "local"`.
+2. For real Ceph validation, use a Linux workstation, remote dev cluster, or CI/nightly cluster with dedicated storage.
+3. Do not force Ceph storage classes into local templates unless the scenario is explicitly testing Ceph wiring.
 
 ## Operators and Helm-backed templates
 

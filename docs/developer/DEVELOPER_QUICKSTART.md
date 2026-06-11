@@ -4,14 +4,23 @@
 
 ## Prerequisites
 
-> **Full installation guide with local vs global options, pros/cons, and mise version locking**: [TOOLING_SETUP.md](../operations/TOOLING_SETUP.md)
+> **Install, update, and uninstall `koncept`**: [CLI_DISTRIBUTION.md](../operations/CLI_DISTRIBUTION.md)
+>
+> **Supporting tools and local vs global setup**: [TOOLING_SETUP.md](../operations/TOOLING_SETUP.md)
 
 | Tool | Purpose | Required | Install |
 |---|---|---|---|
-| `koncept` Go CLI | Primary developer interface for scaffold/render/validate/policy workflows | **Yes** | See [TOOLING_SETUP.md](../operations/TOOLING_SETUP.md#koncept-go-cli) |
+| `koncept` Go CLI | Primary developer interface for scaffold/render/validate/policy workflows | **Yes** | See [CLI_DISTRIBUTION.md](../operations/CLI_DISTRIBUTION.md) |
 | [KCL](https://www.kcl-lang.io/docs/user_docs/getting-started/install) (`kcl`) | Direct KCL troubleshooting and local test runs | Recommended | See [TOOLING_SETUP.md](../operations/TOOLING_SETUP.md#kcl) |
 | [kubeconform](https://github.com/yannh/kubeconform) | Validates K8s manifests | Recommended | See [TOOLING_SETUP.md](../operations/TOOLING_SETUP.md#kubeconform) |
 | [Helm](https://helm.sh/docs/intro/install/) | Lints Helm chart output | Optional | See [TOOLING_SETUP.md](../operations/TOOLING_SETUP.md#helm) |
+
+After installing or updating `koncept`, run:
+
+```bash
+koncept --version
+koncept doctor --factory projects/erp_back/pre_releases/manifests/dev/factory
+```
 
 ## Quick Commands
 
@@ -83,6 +92,22 @@ As a developer, you interact with **site** and **tenant** configuration files:
 - `render.k` — Generic renderer (auto-managed)
 - `koncept.yaml` — Project CLI/framework metadata; update through platform-approved versioning changes
 
+## Framework Package Version
+
+Projects can consume the reusable framework from the repository checkout during
+development, or from the published OCI package when pinned distribution is needed:
+
+```toml
+[dependencies]
+framework = { path = "../../framework" }
+
+# Published package form:
+# framework = "oras://ghcr.io/javier-godon/idp-concept/framework:v1.0.0"
+```
+
+Do not change a project from a local path to an OCI framework package casually.
+Treat it as a platform versioning change and validate every target factory.
+
 ## Available Infrastructure Services
 
 The platform provides pre-built templates for common infrastructure. Ask your platform engineer to add these to your stack:
@@ -112,14 +137,18 @@ These are configured in `modules/` by platform engineers — you control environ
 ## Render Formats
 
 ### YAML / ArgoCD
+
 Best for GitOps workflows. `yaml` and `argocd` both produce plain Kubernetes manifests suitable for ArgoCD or Flux-style deployment.
+
 ```bash
 koncept render yaml
 koncept render argocd
 ```
 
 ### Helmfile
+
 Generates parameterized Helm charts with `values.yaml` + `helmfile.yaml`.
+
 ```bash
 koncept render helmfile
 # Output: output/charts/<name>/Chart.yaml, values.yaml, templates/
@@ -127,19 +156,25 @@ koncept render helmfile
 ```
 
 ### Helm
+
 Generates standalone Helm chart structure.
+
 ```bash
 koncept render helm
 ```
 
 ### Kusion
+
 Generates Kusion spec with resources and dependency ordering.
+
 ```bash
 koncept render kusion
 ```
 
 ### Kustomize
+
 Generates a Kustomize base directory with `kustomization.yaml` and individual resource files.
+
 ```bash
 koncept render kustomize
 # Output: output/base/kustomization.yaml
@@ -147,19 +182,25 @@ koncept render kustomize
 ```
 
 ### Timoni
+
 Generates CUE-based Timoni bundle manifests.
+
 ```bash
 koncept render timoni
 ```
 
 ### Crossplane
+
 Generates Crossplane-compatible YAML for managed resources.
+
 ```bash
 koncept render crossplane
 ```
 
 ### Backstage
+
 Generates Backstage catalog entity definitions from component/accessory metadata.
+
 ```bash
 koncept render backstage
 ```
@@ -171,6 +212,7 @@ For framework compatibility metadata and support windows, see [FRAMEWORK_VERSION
 ## Validation
 
 Always validate before rendering:
+
 ```bash
 koncept validate
 # ✅ Configuration is valid

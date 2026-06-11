@@ -7,6 +7,14 @@ The helper is designed for `WebAppModule`, which already accepts:
 - `configData?: {str:str}`
 - `env?: [any]`
 
+Use these helpers in module definitions, then validate through the normal CLI loop:
+
+```bash
+koncept validate --factory <factory>
+koncept render argocd --factory <factory>
+koncept policy check --factory <factory>
+```
+
 ## Supported runtimes
 
 | Runtime | Default config file | Runtime-specific env examples |
@@ -85,3 +93,9 @@ Use `extraConfigFiles` when your runtime needs additional files such as:
 
 Use `extraEnv` for simple direct environment variables and `secretEnvVars` for values coming from Kubernetes Secrets.
 
+## Safety Rules
+
+- Put non-secret runtime values in `extraEnv`, `properties`, or generated config files.
+- Put credentials, API tokens, passwords, and signing keys in `secretEnvVars`.
+- Do not hardcode secret-looking values in `configData` or direct env values; policy checks are expected to flag them.
+- Keep frontend public config values separate from server-side secrets, especially for `next`, `nuxt`, `react`, and `vue` runtimes.

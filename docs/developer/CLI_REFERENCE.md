@@ -18,6 +18,10 @@ Global flags:
 
 Use `koncept doctor` first when a command cannot find the expected factory, `kcl.mod`, or output settings.
 
+Install, update, uninstall, binary verification, and container image usage are
+covered in [CLI_DISTRIBUTION.md](../operations/CLI_DISTRIBUTION.md). This page
+focuses on command behavior after the CLI is available on `PATH`.
+
 ## Golden Path
 
 ```bash
@@ -165,6 +169,17 @@ koncept render argocd --factory <factory>
 | `koncept publish` | Publish a KCL module as an OCI artifact |
 
 Direct `kcl run` remains useful for framework debugging, but project users should prefer the CLI because it captures repository conventions and output routing.
+
+## Version And Health Checks
+
+```bash
+koncept --version
+koncept doctor --factory <factory>
+```
+
+There is no `koncept version` subcommand and no `koncept version --kcl` flag.
+Use `koncept --version` for the CLI build and `koncept doctor` to report the KCL
+CLI found on the host or in the container image.
 
 ## Crossplane Commands
 

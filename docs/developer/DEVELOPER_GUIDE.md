@@ -59,6 +59,23 @@ koncept golden check --formats yaml,helmfile
 
 Use [CLI_REFERENCE.md](CLI_REFERENCE.md) for the full command reference.
 
+## Keeping Tooling Current
+
+The CLI is a distributed artifact, separate from the example projects in this
+repository. Product teams update the installed CLI binary or container image;
+platform teams separately decide when a project should move to a new framework
+package version.
+
+| Item | Normal owner | Where to update |
+|---|---|---|
+| `koncept` binary | Developer / release engineer | [CLI_DISTRIBUTION.md](../operations/CLI_DISTRIBUTION.md#updating-the-cli) |
+| `koncept` container image | CI/release engineer | Workflow or deployment image tag |
+| Framework KCL package | Platform engineer | Project `kcl.mod` and compatibility metadata |
+| KCL CLI/runtime | Platform engineer | CLI image build args and `cmd/koncept/go.mod` |
+
+After any update, run `koncept doctor`, `koncept validate`, and at least one Tier
+1 render for the affected factory.
+
 ## Output Tiers
 
 | Tier | Formats | Who should use them |
@@ -278,3 +295,4 @@ For product and platform workflows, prefer `koncept` because it owns output rout
 - [PROJECT_ARCHITECTURE.md](../platform-engineering/PROJECT_ARCHITECTURE.md) — deeper architecture and data-flow explanation.
 - [FRAMEWORK_SCHEMAS.md](../platform-engineering/FRAMEWORK_SCHEMAS.md) — KCL schema reference.
 - [TOOLING_SETUP.md](../operations/TOOLING_SETUP.md) — installing `koncept`, KCL, and optional tools.
+- [CLI_DISTRIBUTION.md](../operations/CLI_DISTRIBUTION.md) — install, update, uninstall, and verify `koncept`.

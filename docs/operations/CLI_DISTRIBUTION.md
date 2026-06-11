@@ -18,8 +18,8 @@ curl -L https://github.com/Javier-Godon/idp-concept/releases/latest/download/kon
 chmod +x koncept
 
 # Verify checksum
-curl -L https://github.com/Javier-Godon/idp-concept/releases/latest/download/CHECKSUMS -o CHECKSUMS
-sha256sum --check CHECKSUMS
+curl -L https://github.com/Javier-Godon/idp-concept/releases/latest/download/SHA256SUMS -o SHA256SUMS
+grep "koncept-linux-amd64" SHA256SUMS | sha256sum --check
 
 # Use it
 ./koncept render yaml
@@ -88,15 +88,15 @@ Invoke-WebRequest -Uri $url -OutFile koncept.exe
 
 ## Checksum Verification
 
-All releases include `CHECKSUMS` files signed with GPG. To verify:
+All releases include a `SHA256SUMS` file. To verify one downloaded binary:
 
 ```bash
 # Download binary and checksums
 curl -L https://github.com/Javier-Godon/idp-concept/releases/latest/download/koncept-linux-amd64 -o koncept-linux-amd64
-curl -L https://github.com/Javier-Godon/idp-concept/releases/latest/download/CHECKSUMS -o CHECKSUMS
+curl -L https://github.com/Javier-Godon/idp-concept/releases/latest/download/SHA256SUMS -o SHA256SUMS
 
-# Verify SHA256 (all platforms)
-sha256sum --check CHECKSUMS
+# Verify SHA256 for the downloaded platform asset
+grep "koncept-linux-amd64" SHA256SUMS | sha256sum --check
 
 # Expected output:
 # koncept-linux-amd64: OK
@@ -105,20 +105,131 @@ sha256sum --check CHECKSUMS
 ### On macOS
 
 ```bash
-sha256sum --check CHECKSUMS
+grep "koncept-darwin-arm64" SHA256SUMS | shasum -a 256 -c -
 # or
-shasum -a 256 -c CHECKSUMS
+grep "koncept-darwin-amd64" SHA256SUMS | shasum -a 256 -c -
 ```
 
 ### On Windows (PowerShell)
 
 ```powershell
 $hash = (Get-FileHash koncept-windows-amd64.exe -Algorithm SHA256).Hash
-Get-Content CHECKSUMS | Select-String "koncept-windows-amd64.exe"
+Get-Content SHA256SUMS | Select-String "koncept-windows-amd64.exe"
 # Compare manually or use:
-$expectedHash = (Get-Content CHECKSUMS | Select-String "koncept-windows-amd64.exe").Line.Split()[0]
+$expectedHash = (Get-Content SHA256SUMS | Select-String "koncept-windows-amd64.exe").Line.Split()[0]
 $hash -eq $expectedHash
 ```
+
+---
+
+## Updating The CLI
+
+The CLI is distributed as a release binary and as a container image. Updating is a
+replace-in-place operation: download the new version, verify it, then move it over
+the old binary.
+
+### Update To The Latest Linux Binary
+
+```bash
+tmpdir="$(mktemp -d)"
+curl -L https://github.com/Javier-Godon/idp-concept/releases/latest/download/koncept-linux-amd64 \
+  -o "$tmpdir/koncept"
+curl -L https://github.com/Javier-Godon/idp-concept/releases/latest/download/SHA256SUMS \
+  -o "$tmpdir/SHA256SUMS"
+
+(cd "$tmpdir" && grep "koncept-linux-amd64" SHA256SUMS | sha256sum --check)
+chmod +x "$tmpdir/koncept"
+sudo install -m 0755 "$tmpdir/koncept" /usr/local/bin/koncept
+koncept --version
+koncept doctor
+```
+
+For macOS, replace the asset name with `koncept-darwin-amd64` or
+`koncept-darwin-arm64` and verify with `shasum -a 256 -c -`.
+
+### Update To A Specific Version
+
+```bash
+version="v1.0.0"
+asset="koncept-linux-amd64"
+
+tmpdir="$(mktemp -d)"
+curl -L "https://github.com/Javier-Godon/idp-concept/releases/download/${version}/${asset}" \
+  -o "$tmpdir/koncept"
+curl -L "https://github.com/Javier-Godon/idp-concept/releases/download/${version}/SHA256SUMS" \
+  -o "$tmpdir/SHA256SUMS"
+
+(cd "$tmpdir" && grep "$asset" SHA256SUMS | sha256sum --check)
+chmod +x "$tmpdir/koncept"
+sudo install -m 0755 "$tmpdir/koncept" /usr/local/bin/koncept
+```
+
+### Update The Container Image
+
+Use pinned tags in CI and production; use `latest` only for local experiments.
+
+```bash
+docker pull ghcr.io/javier-godon/idp-concept/koncept:v1.0.0
+docker pull ghcr.io/javier-godon/idp-concept/koncept:latest
+```
+
+Then update the image tag in your workflow, script, or deployment definition and
+run the normal validation loop:
+
+```bash
+koncept doctor --factory <factory>
+koncept validate --factory <factory>
+koncept render argocd --factory <factory>
+```
+
+### Update A Source Build
+
+```bash
+git pull --ff-only
+cd cmd/koncept
+go mod download
+make build
+sudo install -m 0755 bin/koncept /usr/local/bin/koncept
+```
+
+---
+
+## Uninstalling The CLI
+
+Uninstall removes the binary or local image. It does not remove rendered output,
+project source, `framework/`, or OCI packages already published to GHCR.
+
+### Linux And macOS Binary
+
+```bash
+command -v koncept
+sudo rm -f /usr/local/bin/koncept
+koncept --version  # should now fail unless another copy exists earlier in PATH
+```
+
+If you installed into a user-local path, remove that copy instead:
+
+```bash
+rm -f "$HOME/.local/bin/koncept"
+rm -f "$HOME/go/bin/koncept"
+```
+
+### Windows Binary
+
+Remove the folder that contains `koncept.exe` from `PATH`, then delete the binary:
+
+```powershell
+Remove-Item .\koncept.exe
+```
+
+### Container Image
+
+```bash
+docker image rm ghcr.io/javier-godon/idp-concept/koncept:v1.0.0
+docker image rm ghcr.io/javier-godon/idp-concept/koncept:latest
+```
+
+Use `podman image rm ...` if you run Podman.
 
 ---
 
@@ -192,7 +303,7 @@ This repository publishes **two consumable artifacts** to
 
 | Artifact | Reference | Purpose |
 |---|---|---|
-| `koncept` CLI binaries + checksums | GitHub Releases assets | Installable cross-platform CLI |
+| `koncept` CLI binaries + `SHA256SUMS` | GitHub Releases assets | Installable cross-platform CLI |
 | `koncept` CLI container image | `ghcr.io/javier-godon/idp-concept/koncept` | Pinned CI/runtime image (kcl bundled) |
 | Framework KCL module (OCI) | `oras://ghcr.io/javier-godon/idp-concept/framework` | The reusable `framework/` package — see [GHCR_PUBLISHING_GUIDE.md](GHCR_PUBLISHING_GUIDE.md) |
 
@@ -203,8 +314,6 @@ demonstrate the recommended project layout and templates. Likewise the hand-auth
 published as a package.
 
 ---
-
-
 
 The `koncept` CLI bundles a pinned KCL toolchain (and the kcl-go SDK) to ensure reproducible renders across all platforms and environments.
 
@@ -253,6 +362,7 @@ koncept dry-run
 ```
 
 Expected output:
+
 ```
 [DryRun] Generating dependency-aware preview plan...
 ✅ Dry-run plan written to output/dry_run_plan.yaml
@@ -283,13 +393,18 @@ jobs:
         run: |
           # Download and verify CLI
           curl -L https://github.com/Javier-Godon/idp-concept/releases/latest/download/koncept-linux-amd64 \
-            -o /use/local/bin/koncept
-          chmod +x /usr/local/bin/koncept
-          sha256sum --check CHECKSUMS
+            -o /tmp/koncept
+          curl -L https://github.com/Javier-Godon/idp-concept/releases/latest/download/SHA256SUMS \
+            -o /tmp/SHA256SUMS
+          cd /tmp
+          grep "koncept-linux-amd64" SHA256SUMS | sha256sum --check
+          chmod +x /tmp/koncept
+          sudo install -m 0755 /tmp/koncept /usr/local/bin/koncept
           
           # Render factory
-          koncept --factory projects/erp_back/pre_releases/manifests/dev/factory \
-            render yaml argocd helmfile crossplane
+          cd "$GITHUB_WORKSPACE"
+          koncept render argocd --factory projects/erp_back/pre_releases/manifests/dev/factory
+          koncept render helmfile --factory projects/erp_back/pre_releases/manifests/dev/factory
       
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
@@ -319,6 +434,7 @@ render-manifests:
 ### Issue: "command not found: koncept"
 
 **Solution**: Ensure the binary is in your PATH:
+
 ```bash
 # Option 1: Add to PATH
 export PATH="/path/to/koncept:$PATH"
@@ -333,18 +449,20 @@ sudo mv koncept /usr/local/bin/
 ### Issue: "checksum verification failed"
 
 **Solution**: Verify you downloaded both the binary AND checksums file:
+
 ```bash
 # Redownload both
 curl -L https://github.com/Javier-Godon/idp-concept/releases/latest/download/koncept-linux-amd64 -o koncept-linux-amd64
-curl -L https://github.com/Javier-Godon/idp-concept/releases/latest/download/CHECKSUMS -o CHECKSUMS
+curl -L https://github.com/Javier-Godon/idp-concept/releases/latest/download/SHA256SUMS -o SHA256SUMS
 
 # Try verification again
-sha256sum --check CHECKSUMS
+grep "koncept-linux-amd64" SHA256SUMS | sha256sum --check
 ```
 
 ### Issue: "KCL version mismatch"
 
 **Solution**: Ensure you're using the prebuilt binary (includes pinned KCL):
+
 ```bash
 # NOT: apt-get install kcl  (this installs unrelated version)
 
@@ -355,6 +473,7 @@ sha256sum --check CHECKSUMS
 ### Issue: Container can't find factory
 
 **Solution**: Ensure the mount path matches:
+
 ```bash
 # Run FROM the repository root
 docker run -v $(pwd):/workspace \
@@ -401,4 +520,3 @@ git push origin v1.0.1
 
 **Last Updated**: June 2026
 **Next Review**: When new platforms or architectures are added
-

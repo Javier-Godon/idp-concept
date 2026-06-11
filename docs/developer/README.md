@@ -1,6 +1,8 @@
 # Developer Documentation
 
 Start here if you build or operate applications through the platform without changing the framework internals.
+The supported interface is the `koncept` CLI. Install, update, and uninstall
+instructions live in [CLI_DISTRIBUTION.md](../operations/CLI_DISTRIBUTION.md).
 
 ## Read In Order
 
@@ -20,8 +22,23 @@ Start here if you build or operate applications through the platform without cha
 
 | Task | Start with |
 |---|---|
-| Install local tools | [../operations/TOOLING_SETUP.md](../operations/TOOLING_SETUP.md) |
+| Install, update, or uninstall `koncept` | [../operations/CLI_DISTRIBUTION.md](../operations/CLI_DISTRIBUTION.md) |
+| Install local supporting tools | [../operations/TOOLING_SETUP.md](../operations/TOOLING_SETUP.md) |
 | Create a new project | [CLI_REFERENCE.md](CLI_REFERENCE.md#koncept-init-project) |
 | Add a service or database | [CLI_REFERENCE.md](CLI_REFERENCE.md#koncept-init-module) |
 | Render manifests | [DEVELOPER_QUICKSTART.md](DEVELOPER_QUICKSTART.md#quick-commands) |
 | Troubleshoot a factory | [CLI_REFERENCE.md](CLI_REFERENCE.md#troubleshooting) |
+
+## Before Opening A Change
+
+Run the shortest validation loop that covers your change:
+
+```bash
+koncept doctor --factory <factory>
+koncept validate --factory <factory>
+koncept render argocd --factory <factory>
+koncept policy check --factory <factory>
+```
+
+For framework or platform changes, add golden checks and the relevant acceptance
+test group before asking for review.

@@ -8,8 +8,9 @@
 >   copy-paste recipes for rendering, adding modules/tenants/sites/releases, Crossplane, and
 >   debugging.
 >
-> Prerequisites and installation live in [TOOLING_SETUP.md](../operations/TOOLING_SETUP.md). The only
-> interface is the Go `koncept` CLI; see the
+> Install, update, and uninstall the CLI with [CLI_DISTRIBUTION.md](../operations/CLI_DISTRIBUTION.md).
+> Supporting local tools live in [TOOLING_SETUP.md](../operations/TOOLING_SETUP.md). The only
+> day-to-day interface is the Go `koncept` CLI; see the
 > [distribution & sharing model](../decisions/DISTRIBUTION_AND_SHARING_MODEL.md).
 
 ---
@@ -26,29 +27,38 @@ Developer-oriented documentation for each of the three user profiles. Each secti
 ### 1.1 Day-to-Day Commands
 
 ```bash
-# 1. Navigate to your release
-cd projects/my-project/pre_releases/manifests/dev/factory
+# 1. Navigate to your project
+cd projects/my-project
 
 # 2. Validate configuration (catch errors before rendering)
-koncept validate
+koncept validate --factory pre_releases/manifests/dev/factory
 
 # 3. Preview merged config + dependency orchestration safely
-koncept dry-run                # output/dry_run_plan.yaml (Helmfile + Crossplane-aware)
+koncept dry-run --factory pre_releases/manifests/dev/factory
 
 # 4. Render manifests for GitOps
-koncept render argocd          # Plain K8s YAML → commit to Git → ArgoCD syncs
+koncept render argocd --factory pre_releases/manifests/dev/factory
 
 # 5. Render Helm charts for environment customization
-koncept render helmfile        # Helm charts + values.yaml + helmfile.yaml
+koncept render helmfile --factory pre_releases/manifests/dev/factory
 
-# 6. Render Kustomize overlays
-koncept render kustomize       # kustomization.yaml + manifest files
+# 6. Generate Backstage catalog metadata
+koncept render backstage --factory pre_releases/manifests/dev/factory
 
-# 7. Render Timoni CUE module (experimental)
-koncept render timoni          # Timoni module structure
+# Optional maintained/experimental formats when your platform team requests them
+koncept render helm --factory pre_releases/manifests/dev/factory
+koncept render crossplane --factory pre_releases/manifests/dev/factory
+koncept render kustomize --factory pre_releases/manifests/dev/factory
+koncept render kusion --factory pre_releases/manifests/dev/factory
+koncept render timoni --factory pre_releases/manifests/dev/factory
+```
 
-# 8. Generate Kusion spec
-koncept render kusion          # Kusion spec YAML
+For release directories that contain a `factory/` subdirectory, the default is enough:
+
+```bash
+cd projects/my-project/releases/v1_0_0_production
+koncept validate
+koncept render argocd
 ```
 
 ### 1.2 What Developers Configure
@@ -77,7 +87,7 @@ Developers customize their applications through **site configuration files** (YA
 |---|---|
 | `koncept validate` fails | Check error message — usually a config value out of range or missing |
 | `koncept render` fails with KCL error | Run `koncept validate` first; if still fails, contact Platform Engineer |
-| "Cannot find module" error | You're in the wrong directory — `cd` to the `factory/` folder |
+| "Cannot find module" error | Run `koncept deps`; usually the nearest `kcl.mod` or `--factory` path is wrong |
 | Application not deploying | Check ArgoCD UI → sync status; check events for K8s errors |
 | Need a new environment variable | Add to site config file, run `koncept render`, commit to Git |
 
@@ -292,6 +302,7 @@ build_my_resource = lambda spec: MyResourceSpec -> any {
 ```
 
 **Testing requirement**: Every builder must have a matching `*_test.k` file:
+
 ```kcl
 # framework/tests/builders/my_resource_test.k
 import builders.my_resource as res
@@ -349,6 +360,7 @@ generate_<format>_from_stack = lambda components, accessories, namespaces, stack
 ```
 
 Currently supported output procedures:
+
 - `kcl_to_yaml` — Plain K8s YAML (for ArgoCD/GitOps)
 - `kcl_to_argocd` — ArgoCD Application CRDs
 - `kcl_to_helm` — Helm Chart.yaml + values.yaml
@@ -399,64 +411,74 @@ rm kcl.mod.lock && kcl run main.k
 # Part B — Step-by-step task guides
 
 Concrete recipes for common tasks. All commands assume the `koncept` CLI is installed (see
-[TOOLING_SETUP.md](../operations/TOOLING_SETUP.md)).
+[CLI_DISTRIBUTION.md](../operations/CLI_DISTRIBUTION.md)). Supporting tools are covered by
+[TOOLING_SETUP.md](../operations/TOOLING_SETUP.md).
 
 ## Planning with Dry-Run (Helmfile + Crossplane)
 
 ### When to Use
+
 Preview merged configuration and dependency orchestration before producing deployable output.
 
 ### Steps
 
-1. Navigate to a release or pre-release factory directory.
+1. Navigate to the project or release directory.
 
 2. Run dry-run:
+
 ```bash
-koncept dry-run
+koncept dry-run --factory pre_releases/manifests/dev/factory
 ```
 
-3. Inspect `output/dry_run_plan.yaml`:
+1. Inspect `output/dry_run_plan.yaml`:
    - `spec.mergedConfigurations`: final merged kernel/profile/tenant/site values.
    - `spec.dependencies`: explicit dependency edges between modules.
    - `spec.outputs.helmfile.releases[*].needs`: Helmfile orchestration view.
    - `spec.outputs.crossplane.sequencerRules`: Crossplane V2 ordering contract.
 
 ### Why this matters
+
 This is the recommended first gate for Helmfile/Crossplane changes: verify dependency identity and ordering here before `koncept render helmfile` or `koncept render crossplane`.
 
 ## 4. Rendering Plain YAML (ArgoCD/GitOps)
 
 ### When to Use
+
 Generate plain Kubernetes YAML manifests for GitOps workflows (ArgoCD, Flux) or direct `kubectl apply`.
 
 ### Steps
 
-1. Navigate to a pre_release generator directory:
+1. Navigate to a project directory:
+
 ```bash
-cd projects/video_streaming/pre_releases/manifests/site_one/generators/kafka_video_consumer_mongodb_python/dev
+cd projects/erp_back
 ```
 
-2. Render:
+1. Render:
+
 ```bash
-koncept render argocd
+koncept render argocd --factory pre_releases/manifests/dev/factory
 ```
 
-3. Output is written to `../../../generated/dev/kafka_video_consumer_mongodb_python/kubernetes_manifests.yaml`
+1. Output is written under the configured `output/` directory for the factory.
 
 ### What Happens Internally
+
 ```
 factory/factory_seed.k
   → Imports configurations_dev.k (merges kernel + profile + tenant + site)
   → Creates RenderStack with specific components/namespaces
 
-factory/kubernetes_manifests_builder.k
-  → Calls kcl_to_yaml.yaml_stream_stack(stack)
-  → Outputs multi-document YAML
+factory/render.k
+    → Calls the shared framework renderer with output=argocd
+    → Writes multi-document Kubernetes YAML
 ```
 
 ### Alternative: Manual KCL Execution
+
 ```bash
-kcl run factory/kubernetes_manifests_builder.k -o output/manifests.yaml
+cd projects/erp_back/pre_releases/manifests/dev/factory
+kcl run render.k -D output=argocd
 ```
 
 ---
@@ -464,37 +486,41 @@ kcl run factory/kubernetes_manifests_builder.k -o output/manifests.yaml
 ## 5. Rendering Helmfile Output
 
 ### When to Use
+
 Generate Helm charts and helmfile.yaml for Helmfile-based deployments.
 
 ### Steps
 
-1. Navigate to a release directory:
+1. Navigate to a project or release directory:
+
 ```bash
-cd projects/video_streaming/releases/helmfile/berlin/v1_0_0_berlin
+cd projects/erp_back
 ```
 
-2. Render:
+1. Render:
+
 ```bash
-koncept render helmfile
+koncept render helmfile --factory pre_releases/manifests/dev/factory
 ```
 
-3. Output structure:
+1. Output structure:
+
 ```
 output/
 ├── charts/
-│   ├── Chart.yaml          # Generated from chart_builder.k
-│   ├── values.yaml         # Empty (placeholder)
+│   ├── Chart.yaml          # Generated chart metadata
+│   ├── values.yaml         # Generated chart values
 │   └── templates/
-│       └── manifests.yaml  # Generated from templates_builder.k
-└── helmfile.yaml            # Generated from helmfile_builder.k
+│       └── manifests.yaml  # Generated manifest template
+└── helmfile.yaml            # Generated Helmfile orchestration
 ```
 
 ### What Happens Internally
+
 ```
-factory/factory_seed.k → Release context setup
-factory/chart_builder.k → Chart metadata (imports helm.Chart schema)
-factory/templates_builder.k → K8s manifests (calls kcl_to_helm)
-factory/render.k → kcl_to_helmfile.generate_helmfile_from_stack(stack, "./charts")
+factory/factory_seed.k → Release/pre-release context setup
+factory/render.k → shared framework renderer with output=helmfile
+framework/procedures/kcl_to_helmfile.k → helmfile.yaml + chart projection
 ```
 
 ### Configuring the generated Helmfile
@@ -535,29 +561,34 @@ Generated Helmfile releases also translate framework `dependsOn` relationships b
 ## 6. Rendering Kusion Spec
 
 ### When to Use
+
 Generate Kusion specification YAML for Kusion-based deployments.
 
 ### Steps
 
-1. Navigate to a release directory:
+1. Navigate to a project or release directory:
+
 ```bash
-cd projects/video_streaming/releases/kusion/berlin/v1_0_0_berlin/default
+cd projects/erp_back
 ```
 
-2. Render:
+1. Render:
+
 ```bash
-koncept render kusion
+koncept render kusion --factory pre_releases/manifests/dev/factory
 ```
 
-3. Output: `output/kusion_spec.yaml`
+1. Output: `output/kusion_spec.yaml`
 
-4. Preview and apply:
+2. Preview and apply:
+
 ```bash
 kusion preview --spec-file output/kusion_spec.yaml
 kusion apply --spec-file output/kusion_spec.yaml
 ```
 
 ### What Happens Internally
+
 ```
 factory/main.k
   → Merges configurations (kernel + profile + tenant + site)
@@ -575,16 +606,19 @@ factory/main.k
 ## 7. Adding a New Application Module
 
 ### Scenario
+
 Add a new REST API service called `order-api`.
 
 ### Steps (Recommended — Using Templates)
 
 1. **Create module directory**:
+
 ```
 projects/<project>/modules/appops/order_api/
 ```
 
-2. **Create module definition** (`order_api_module_def.k`):
+1. **Create module definition** (`order_api_module_def.k`):
+
 ```kcl
 import framework.templates.webapp.v1_0_0.webapp as webapp
 import framework.builders.deployment as deploy
@@ -618,7 +652,8 @@ order_api = OrderApiModule {
 }
 ```
 
-3. **Add to stack definition** (`stacks/development/stack_def.k`):
+1. **Add to stack definition** (`stacks/development/stack_def.k`):
+
 ```kcl
 import <project>.modules.appops.order_api as order_api
 
@@ -637,7 +672,7 @@ components = [
 ]
 ```
 
-4. **Validate**: `cd pre_releases && kcl run manifests/dev/factory/render.k -D output=yaml | kubeconform -summary`
+1. **Validate**: `koncept validate --factory pre_releases/manifests/dev/factory`
 
 ---
 
@@ -650,11 +685,13 @@ Add a PostgreSQL database using CloudNativePG operator.
 ### Steps
 
 1. **Create module directory**:
+
 ```
 projects/<project>/modules/infrastructure/postgres/
 ```
 
-2. **Create module definition** (`postgres_module_def.k`):
+1. **Create module definition** (`postgres_module_def.k`):
+
 ```kcl
 import framework.templates.postgresql.v1_0_0.postgresql as pg
 
@@ -670,7 +707,8 @@ project_postgres = ProjectPostgresModule {
 }
 ```
 
-3. **Add to stack** as an accessory:
+1. **Add to stack** as an accessory:
+
 ```kcl
 accessories = [
     _postgres.instance
@@ -696,18 +734,21 @@ accessories = [
 ## 9. Adding a New Tenant
 
 ### Scenario
+
 Add a new tenant called "France".
 
 ### Steps
 
 1. **Create tenant directory and files**:
+
 ```
 projects/video_streaming/tenants/france/
 ├── tenant_configurations.k
 └── tenant_def.k
 ```
 
-2. **tenant_configurations.k**:
+1. **tenant_configurations.k**:
+
 ```kcl
 import video_streaming.core_sources.video_streaming_configurations as configurations
 
@@ -716,7 +757,8 @@ _france_tenant_configurations = configurations.VideoStreamingConfigurations {
 }
 ```
 
-3. **tenant_def.k**:
+1. **tenant_def.k**:
+
 ```kcl
 import framework.models.tenant
 
@@ -732,11 +774,13 @@ tenant_france = tenant.Tenant {
 ## 10. Adding a New Site
 
 ### Scenario
+
 Add a Paris production site for the France tenant.
 
 ### Steps
 
 1. **Create site directory**:
+
 ```
 projects/video_streaming/sites/tenants/production/paris/
 ├── configurations.k
@@ -744,7 +788,8 @@ projects/video_streaming/sites/tenants/production/paris/
 └── site_def.k
 ```
 
-2. **config.yaml**:
+1. **config.yaml**:
+
 ```yaml
 site:
   name: Paris
@@ -754,7 +799,8 @@ rootPaths:
   keycloak: "keycloak.keycloak/realm/auth"
 ```
 
-3. **configurations.k**:
+1. **configurations.k**:
+
 ```kcl
 import video_streaming.core_sources.video_streaming_configurations
 
@@ -766,7 +812,8 @@ _paris_site_configurations = video_streaming_configurations.VideoStreamingConfig
 }
 ```
 
-4. **site_def.k**:
+1. **site_def.k**:
+
 ```kcl
 import framework.models.site
 import video_streaming.tenants.france
@@ -787,25 +834,29 @@ paris_site = site.Site {
 ## 11. Creating a New Versioned Release
 
 ### Scenario
+
 Create release v1.0.0 for Paris.
 
 ### Steps
 
-1. **Create release directory for helmfile**:
-```
-projects/video_streaming/releases/helmfile/paris/v1_0_0_paris/factory/
+1. **Create the versioned release factory**:
+
+```bash
+cd projects/video_streaming
+koncept init release 1.0.0 --storage-class rook-ceph-block
 ```
 
-2. **Copy factory files from berlin** and update:
-   - `factory_seed.k` — Change imports to use Paris site and France tenant
-   - `chart_builder.k` — Same (reuse)
-   - `templates_builder.k` — Same (reuse)
-   - `helmfile_builder.k` — Same (reuse)
-   - `main.k` — Update release name and references
+1. **Review the generated release inputs**:
+    - `releases/v1_0_0_production/factory/factory_seed.k`
+    - `releases/v1_0_0_production/factory/render.k`
+    - production site and versioned stack references
 
-3. **Create release directory for kusion** (similar pattern):
-```
-projects/video_streaming/releases/kusion/paris/v1_0_0_paris/default/factory/
+2. **Validate and render the release**:
+
+```bash
+koncept validate --factory releases/v1_0_0_production/factory
+koncept render argocd --factory releases/v1_0_0_production/factory
+koncept golden check --factory releases/v1_0_0_production/factory --formats yaml,helmfile
 ```
 
 ---
@@ -817,17 +868,20 @@ projects/video_streaming/releases/kusion/paris/v1_0_0_paris/default/factory/
 > [CROSSPLANE_PATTERNS.md](../integrations/CROSSPLANE_PATTERNS.md).
 
 ### Install Crossplane Functions
+
 ```bash
 kubectl apply -f crossplane_v2/functions/
 ```
 
 ### Install Providers
+
 ```bash
 kubectl apply -f crossplane_v2/providers/kubernetes_provider/
 kubectl apply -f crossplane_v2/providers/helm_provider/
 ```
 
 ### Deploy PostgreSQL
+
 ```bash
 kubectl apply -f crossplane_v2/managed_resources/postgres/xrd_postgres.yaml
 kubectl apply -f crossplane_v2/managed_resources/postgres/x_postgres.yaml
@@ -835,6 +889,7 @@ kubectl apply -f crossplane_v2/managed_resources/postgres/xr_instance_postgres.y
 ```
 
 ### Deploy cert-manager
+
 ```bash
 kubectl apply -f crossplane_v2/managed_resources/cert_manager/xrd_cert_manager.yaml
 kubectl apply -f crossplane_v2/managed_resources/cert_manager/x_cert_manager.yaml
@@ -842,6 +897,7 @@ kubectl apply -f crossplane_v2/managed_resources/cert_manager/xr_instance_cert_m
 ```
 
 ### Deploy Kafka (Strimzi)
+
 ```bash
 kubectl apply -f crossplane_v2/managed_resources/kafka_strimzi/crossplane_xrd.yaml
 kubectl apply -f crossplane_v2/managed_resources/kafka_strimzi/crossplane_x.yaml
@@ -849,6 +905,7 @@ kubectl apply -f crossplane_v2/managed_resources/kafka_strimzi/crossplane_claim.
 ```
 
 ### Deploy Keycloak
+
 ```bash
 # Pre-requisite: PostgreSQL must be running
 kubectl apply -f crossplane_v2/managed_resources/keycloak/crossplane/xrd_keycloak.yaml
@@ -861,24 +918,31 @@ kubectl apply -f crossplane_v2/managed_resources/keycloak/crossplane/xr_instance
 ## 13. Debugging KCL Compilation Errors
 
 ### Common Error: "type redefinition"
+
 ```
 KCL Compile Error: type redefinition
 ```
+
 **Fix**: You used `type` as a field name. Use `$type` instead.
 
 ### Common Error: "attribute not found"
+
 ```
 EvaluationError: attribute 'xyz' not found in schema
 ```
+
 **Fix**: Check the schema definition — the field may be named differently or be optional.
 
 ### Common Error: "invalid import"
+
 ```
 CannotFindModule: Cannot find module 'xxx'
 ```
+
 **Fix**: Check `kcl.mod` — ensure the dependency path is correct relative to the `kcl.mod` file.
 
 ### Debug Command
+
 ```bash
 # Run with verbose output
 kcl run main.k -v
