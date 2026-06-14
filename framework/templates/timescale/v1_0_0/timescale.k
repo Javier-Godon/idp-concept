@@ -147,6 +147,7 @@ build_timescaledb_cluster = lambda spec: TimescaleDBSpec -> any {
         }
         instance_manifest: _manifests
     }
+}
 
 schema TimescaleDBModule(accessory.Accessory):
     """
@@ -202,7 +203,7 @@ schema TimescaleDBModule(accessory.Accessory):
 
     _ts_result = build_timescaledb_cluster(_ts_spec)
 
-    kind = "INFRASTRUCTURE"
+    kind = "CRD"
     name = clusterName
     namespace = namespace
     configurations = _ts_spec
