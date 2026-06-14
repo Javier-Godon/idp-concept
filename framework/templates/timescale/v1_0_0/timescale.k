@@ -157,6 +157,7 @@ schema TimescaleDBModule(accessory.Accessory):
     All manifests are auto-generated.
     """
     clusterName: str
+    namespace: str
     footprint?: str = "production"
     instances?: int
     storageSize?: str
@@ -176,11 +177,8 @@ schema TimescaleDBModule(accessory.Accessory):
     primaryUpdateStrategy?: str
     resources?: any
 
-    check:
-        len(name) > 0, "clusterName must be non-empty"
-        len(namespace) > 0, "namespace must be non-empty"
-
-    _spec = TimescaleDBSpec {
+    # Auto-computed
+    _ts_spec = TimescaleDBSpec {
         name = clusterName
         namespace = namespace
         footprint = footprint
@@ -203,10 +201,17 @@ schema TimescaleDBModule(accessory.Accessory):
         resources = resources
     }
 
-    _result = build_timescaledb_cluster(_spec)
+    _ts_result = build_timescaledb_cluster(_ts_spec)
 
     kind = "INFRASTRUCTURE"
-    component = "timescaledb"
-    manifests = _result.instance_manifest
-    instance = _result.instance
+    name = clusterName
+    configurations = _ts_spec
+    asset = {version = timescaleVersion}
+    manifests = _ts_result.instance_manifest
+    leaders = []
+    dependsOn = []
+
+    check:
+        len(clusterName) > 0, "clusterName must be non-empty"
+        len(namespace) > 0, "namespace must be non-empty"
 
