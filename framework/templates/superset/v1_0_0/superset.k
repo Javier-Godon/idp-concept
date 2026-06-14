@@ -97,11 +97,11 @@ build_superset_release = lambda spec: SupersetSpec -> any {
 
     _service_values: {str:str} = {"service.port" = str(spec.webPort), "service.type" = "LoadBalancer" if spec.footprint == "production" else "NodePort"}
 
-    _persistence_values: {str:str} = {"persistence.enabled" = str(spec.persistenceEnabled), if spec.persistenceEnabled: "persistence.size" = _storage_size if spec.persistenceStorageClass: "persistence.storageClassName" = spec.persistenceStorageClass}
+    _persistence_values: {str:str} = {"persistence.enabled" = str(spec.persistenceEnabled)} | ({} if not spec.persistenceEnabled else {"persistence.size" = _storage_size}) | ({} if not spec.persistenceStorageClass else {"persistence.storageClassName" = spec.persistenceStorageClass})
 
-    _web_resources: {str:str} = {if spec.webCpuRequest: "supersetNode.resources.requests.cpu" = spec.webCpuRequest if spec.webMemoryRequest: "supersetNode.resources.requests.memory" = spec.webMemoryRequest if spec.webCpuLimit: "supersetNode.resources.limits.cpu" = spec.webCpuLimit if spec.webMemoryLimit: "supersetNode.resources.limits.memory" = spec.webMemoryLimit}
+    _web_resources: {str:str} = {} | ({} if not spec.webCpuRequest else {"supersetNode.resources.requests.cpu" = spec.webCpuRequest}) | ({} if not spec.webMemoryRequest else {"supersetNode.resources.requests.memory" = spec.webMemoryRequest}) | ({} if not spec.webCpuLimit else {"supersetNode.resources.limits.cpu" = spec.webCpuLimit}) | ({} if not spec.webMemoryLimit else {"supersetNode.resources.limits.memory" = spec.webMemoryLimit})
 
-    _worker_resources: {str:str} = {if spec.workerCpuRequest: "supersetWorker.resources.requests.cpu" = spec.workerCpuRequest if spec.workerMemoryRequest: "supersetWorker.resources.requests.memory" = spec.workerMemoryRequest if spec.workerCpuLimit: "supersetWorker.resources.limits.cpu" = spec.workerCpuLimit if spec.workerMemoryLimit: "supersetWorker.resources.limits.memory" = spec.workerMemoryLimit}
+    _worker_resources: {str:str} = {} | ({} if not spec.workerCpuRequest else {"supersetWorker.resources.requests.cpu" = spec.workerCpuRequest}) | ({} if not spec.workerMemoryRequest else {"supersetWorker.resources.requests.memory" = spec.workerMemoryRequest}) | ({} if not spec.workerCpuLimit else {"supersetWorker.resources.limits.cpu" = spec.workerCpuLimit}) | ({} if not spec.workerMemoryLimit else {"supersetWorker.resources.limits.memory" = spec.workerMemoryLimit})
 
     _all_values: {str:str} = _web_replicas_values | _worker_replicas_values | _database_values | _redis_values | _admin_values | _service_values | _persistence_values | _web_resources | _worker_resources | (spec.extraValues or {})
 
