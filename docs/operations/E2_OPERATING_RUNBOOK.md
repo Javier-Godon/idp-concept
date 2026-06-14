@@ -83,6 +83,7 @@ kubectl describe mongodbinstance <name> -n <namespace>
 ```
 
 **Output Interpretation**:
+
 ```
 NAME                    READY   SYNCED   AGE
 my-database-claim       True    True     5m
@@ -189,6 +190,7 @@ kubectl describe xr <stack-name>-xr | tail -20
 ```
 
 **What happens during an update**:
+
 1. Claim spec is modified
 2. Composition pipeline re-runs with new spec
 3. Provider applies changes (e.g., Helm Release updated, CNPG Cluster scaled)
@@ -228,6 +230,7 @@ kubectl delete mongodbinstance <name> -n <namespace>
 ```
 
 **Deletion Policies**:
+
 - `Orphan` (default): Keep underlying resource after Claim deletion
 - `Delete`: Remove underlying resource when Claim is deleted
 
@@ -252,6 +255,7 @@ curl http://localhost:8080/metrics | grep crossplane
 ```
 
 **Key Metrics**:
+
 ```
 crossplane_managed_resources_list_duration_seconds
 crossplane_managed_resources_reconcile_duration_seconds
@@ -261,6 +265,7 @@ crossplane_managed_resources_reconcile_error_total
 #### Grafana Dashboards
 
 Import community dashboards:
+
 - **Crossplane**: https://grafana.com/grafana/dashboards/17373
 
 ### 2. Claim-Level Observability
@@ -335,6 +340,7 @@ kubectl rollout history claim/mongodbinstance/<name> \
 ### Problem: Claim Status is "Creating" After 10+ Minutes
 
 **Diagnosis**:
+
 ```bash
 # 1. Check Claim conditions
 kubectl describe mongodbinstance <name> -n <namespace>
@@ -353,6 +359,7 @@ kubectl describe xr <stack-name>-xr | grep -A 5 "Pipeline"
 ```
 
 **Solutions**:
+
 - **Provider not ready**: `kubectl wait --for=condition=Healthy providers --all -n crossplane-system`
 - **Resource quota exceeded**: Check cluster capacity; scale down other workloads
 - **Network issue**: Test DNS resolution from provider pod to target API
@@ -361,6 +368,7 @@ kubectl describe xr <stack-name>-xr | grep -A 5 "Pipeline"
 ### Problem: Update Fails with "Forbidden"
 
 **Diagnosis**:
+
 ```bash
 # RBAC issue: User may not have create/update/patch permissions
 kubectl auth can-i patch mongodbinstances
@@ -370,12 +378,14 @@ kubectl get rolebinding -n crossplane-system -o yaml | grep provider
 ```
 
 **Solutions**:
+
 - Grant user permission: `kubectl create rolebinding claim-updater --clusterrole=edit --user=<email>`
 - Configure provider RBAC: Ensure `ProviderConfig.credentials.source` is set correctly
 
 ### Problem: Secret Not Available to Workload Pod
 
 **Diagnosis**:
+
 ```bash
 # 1. Verify secret was created
 kubectl get secret <claim-name>-conn -n <namespace>
@@ -388,6 +398,7 @@ kubectl describe pod <pod-name> | grep Mounts
 ```
 
 **Solutions**:
+
 - Ensure workload is in the same namespace as the Claim
 - Verify `ServiceAccount` has `get` permission on `secrets` resource
 - Check that Connection Secret Name is correctly referenced in workload spec
@@ -395,6 +406,7 @@ kubectl describe pod <pod-name> | grep Mounts
 ### Problem: Claim Deletion is Stuck
 
 **Diagnosis**:
+
 ```bash
 # Check finalizers
 kubectl get mongodbinstance <name> -n <namespace> -o yaml | grep finalizers
@@ -404,6 +416,7 @@ kubectl get <resource-type> -n <namespace> | grep <claim-name>
 ```
 
 **Solutions**:
+
 ```bash
 # Force removal of finalizer (use with caution)
 kubectl patch mongodbinstance <name> \
@@ -422,6 +435,7 @@ kubectl delete mongodbinstance <name> -n <namespace>
 ### 1. Claim Lifecycle Management
 
 - **Always set deletionPolicy explicitly** in production:
+
   ```yaml
   spec:
     deletionPolicy: Orphan  # or Delete based on your needs
@@ -663,4 +677,3 @@ resource "crossplane_mongodb_instance" "app_db" {
 **Last Updated**: June 7, 2026  
 **Next Review**: October 7, 2026 (post-adoption)  
 **Status**: ✅ PRODUCTION READY
-

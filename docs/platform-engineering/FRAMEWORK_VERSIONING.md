@@ -125,4 +125,3 @@ Because the import roots and schema paths are unchanged, only `kcl.mod` and the
 compatibility metadata change — KCL source files keep importing
 `framework.templates.*` exactly as before. This is what lets Product A stay on
 `1.2.0` while Product B moves to `1.3.0` without a coordinated big-bang upgrade.
-

@@ -13,6 +13,7 @@ This guide demonstrates how to deploy and integrate three complementary platform
 3. **Power BI Connector** — Kubernetes-native integration helper for connecting Power BI to data sources
 
 Together, these support:
+
 - **API Management**: APISIX routes requests to backend services
 - **Data Exploration**: Superset provides collaborative data visualization and SQL exploration
 - **Enterprise BI**: Power BI connects to QuestDB and Superset for dashboard creation and reporting
@@ -355,6 +356,7 @@ kubectl get configmap -n analytics-prod powerbi-postgres-connector -o yaml
 ### APISIX Security
 
 1. **Enable Plugins**:
+
    ```bash
    # Enable OAuth2 plugin for API protection
    curl http://localhost:9180/apisix/admin/v1/plugins/oauth2 \
@@ -370,6 +372,7 @@ kubectl get configmap -n analytics-prod powerbi-postgres-connector -o yaml
 ### Superset Security
 
 1. **Use Secrets for Database Credentials**:
+
    ```bash
    kubectl create secret generic superset-db-secret \
      -n analytics-prod \
@@ -387,6 +390,7 @@ kubectl get configmap -n analytics-prod powerbi-postgres-connector -o yaml
    - Rotate credentials regularly
 
 2. **Network Policies**:
+
    ```bash
    # Restrict traffic to analytics namespace
    kubectl apply -f - <<EOF
@@ -523,4 +527,3 @@ kubectl exec -i -n infra-prod postgres-pod -- \
 - **Created**: June 7, 2026
 
 For issues or updates, refer to official project documentation or community channels.
-

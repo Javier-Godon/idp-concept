@@ -192,6 +192,7 @@ helmfile -f helmfile.yaml -e prod sync
 ### Setup
 
 1. **Commit helmfile to Git** (next to factory configs)
+
    ```
    projects/erp_back/releases/v1_0_0_production/
      factory/
@@ -204,6 +205,7 @@ helmfile -f helmfile.yaml -e prod sync
    ```
 
 2. **Add ArgoCD ApplicationSet** that deploys via Helmfile:
+
    ```yaml
    apiVersion: argoproj.io/v1alpha1
    kind: ApplicationSet
@@ -228,6 +230,7 @@ helmfile -f helmfile.yaml -e prod sync
    ```
 
 3. **Deploy**
+
    ```bash
    kubectl apply -f applicationset.yaml
    ```
@@ -250,6 +253,7 @@ database.SingleDatabaseModule {
 ```
 
 Generated `values.yaml`:
+
 ```yaml
 storageClassName: standard
 persistence:
@@ -298,6 +302,7 @@ releases:
 ```
 
 Then:
+
 ```bash
 helmfile -f output/helmfile.yaml sync
 ```
@@ -387,6 +392,7 @@ helmfile -f output/helmfile.yaml status
 **Cause**: Release name was overridden or namespace differs from expectation
 
 **Fix**: Verify release name in helmfile.yaml matches the `needs` entry:
+
 ```yaml
 releases:
   - name: erp-postgres     ← exact name used in 'needs'
@@ -404,6 +410,7 @@ releases:
 **Cause**: Generated `values.yaml` has values that don't match template expectations
 
 **Fix**: Validate values structure:
+
 ```bash
 helm template charts/erp-api
 helm lint charts/erp-api
@@ -415,7 +422,8 @@ helm lint charts/erp-api
 
 **Cause**: Wrong storageClassName for the cluster
 
-**Fix**: 
+**Fix**:
+
 ```bash
 # Check available classes
 kubectl get storageclass
@@ -452,4 +460,3 @@ releases:
 
 **Last Updated**: June 2026
 **Next Review**: When new template types or storage patterns are added
-

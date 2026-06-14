@@ -14,6 +14,7 @@
 ### Core Implementation
 
 **File Modified**: `framework/procedures/kcl_to_crossplane.k`
+
 - **Lines before**: 398
 - **Lines after**: 470 (+72 lines)
 - **Content**: Curated services mapping (23 services) + convergence helpers (3 functions) + two-track processing logic
@@ -119,13 +120,15 @@ generate_crossplane_from_stack()
 
 ### For Platform Engineers (Technical Implementation)
 
-→ Read: 
+→ Read:
+
 1. **E2_CONVERGENCE_IMPLEMENTATION.md** (understand the architecture)
 2. **framework/procedures/kcl_to_crossplane.k** (review the code: lines 59–203)
 
 ### For Integration Partners (GitOps/CLI)
 
 → Read:
+
 1. **E2_CONVERGENCE_SESSION_SUMMARY.md** (see integration points, API changes)
 2. **docs/E2_CONVERGENCE_IMPLEMENTATION.md** sections "Output Separation" and "CLI Distribution"
 
@@ -183,6 +186,7 @@ generate_crossplane_from_stack()
 ### What You Get (E2.1 Complete)
 
 ✅ **Two-track Crossplane architecture** that intelligently routes services:
+
 - Track 1 (Curated): 23 infrastructure services → typed Claim instances
 - Track 2 (Bridge): Remaining services → Object wrappers (unchanged)
 
@@ -214,7 +218,7 @@ A: No. Track 2 (bridge Objects) works exactly as before. New `managed_resources`
 A: Install prerequisites → Install XRD/Composition → Apply Track 1 Claims → Apply XR (Track 2)
 
 **Q: How do I add a new curated service?**
-A: Create XRD + Composition in crossplane_v2/; add entry to _CURATED_SERVICES dict
+A: Create XRD + Composition in crossplane_v2/; add entry to_CURATED_SERVICES dict
 
 **Q: When is this production-ready?**
 A: After E2.2 (acceptance tests) and E2.3 (operating runbook) — estimated 2–3 weeks
@@ -244,4 +248,3 @@ A: After E2.2 (acceptance tests) and E2.3 (operating runbook) — estimated 2–
 **Last Updated**: June 7, 2026  
 **Status**: ✅ COMPLETE AND READY FOR NEXT PHASE  
 **Confidence**: 🟢 VERY HIGH (Syntax verified, logic validated, backward compatible)
-

@@ -46,7 +46,6 @@
 >
 > Update 2026-06-07 (credentials, identity, and publishing-scope hardening): (1) **Credentials never leave the machine.** The git-ignored `credentials/` folder is the single source for the GHCR token (`credentials/ghcr.env`); `.gitignore` was made explicit (`/credentials/`, `**/credentials/`, `*credentials`, `*.credentials`) and verified untracked. (2) **Publishing reads the token from that folder** — added `scripts/publish_oci.sh {image|framework|all}` which authenticates with `--password-stdin` and never prompts for, echoes, or accepts a token on the command line. `docs/GHCR_PUBLISHING_GUIDE.md`, `docs/CLI_DISTRIBUTION.md`, and `docs/archive/EVOLUTION_IMPLEMENTATION_CHECKLIST.md` were rewritten to use this flow instead of `export CR_PAT=...`. (3) **Corrected wrong identity URLs.** Documentation that referenced `https://github.com/idp-concept/...` and `ghcr.io/idp-concept:...` now uses the real owner: repo `https://github.com/Javier-Godon/idp-concept`, GHCR namespace `ghcr.io/javier-godon`, CLI image `ghcr.io/javier-godon/idp-concept/koncept`, framework package `oras://ghcr.io/javier-godon/idp-concept/framework`. (The `github.com/idp-concept/koncept` strings in `cmd/koncept/**` are the Go *module path* — code identity — and are intentionally left unchanged.) (4) **Clarified what is published vs. what is an example.** The published artifacts are the framework OCI module, the `koncept` CLI image, and the CLI binaries. The `projects/` directory (`video_streaming`, `erp_back`, `pokedex`) is explicitly documented as **reference example usage**, not a shipped artifact (see Section 6a). (5) **Crossplane location question recorded.** The recurring "should `crossplane_v2/` live under `framework/templates/`?" question is addressed in Section 5.7 with the decision and rationale.
 
-
 ---
 
 ## 1. Executive Assessment
@@ -364,7 +363,6 @@ reviewable. If a future decision still wants relocation, the cleanest target wou
 but clearly separate from KCL templates — and it must update the CLI, scripts, skill, and instructions
 in the same change.
 
-
 ---
 
 ## 6. Missing or Underdeveloped Features
@@ -426,8 +424,6 @@ dependency. Publishing tooling (`scripts/publish_oci.sh`) therefore only ever pa
 `framework/` and the CLI image — never `projects/`.
 
 ---
-
-
 
 The previous roadmap emphasized many future phases. Given the current state, the next work should be more focused: **productize the golden path before expanding the framework**.
 

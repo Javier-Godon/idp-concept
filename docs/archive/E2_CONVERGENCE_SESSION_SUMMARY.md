@@ -17,6 +17,7 @@
 ### Implementation Details
 
 #### 1. Curated Services Registry
+
 - **File**: `framework/procedures/kcl_to_crossplane.k` (lines 59–89)
 - **What it is**: Mapping of 23 infrastructure services → XRD/Claim kinds
 - **Why it matters**: Single source of truth for which services get professional typed APIs vs. bridge wrapping
@@ -49,25 +50,31 @@ _CURATED_SERVICES = {
 ```
 
 #### 2. Convergence Helper Functions
+
 **File**: `framework/procedures/kcl_to_crossplane.k` (lines 91–100, 174–186)
 
 **`_is_curated_service(component: str) -> bool`**
+
 - Gate function for Track 1 detection
 - Case-insensitive lookup in `_CURATED_SERVICES`
 
 **`_get_curated_api_info(component: str) -> {str:}`**
+
 - Retrieves metadata dict (xrd_kind, claim_kind, api_group)
 - Returns empty dict if not curated
 
 **`_generate_curated_claim(...) -> {str:}`**
+
 - Creates a Claim instance with proper apiVersion, kind, metadata
 - Sets namespace from context
 - Leaves spec empty (to be configured by user/GitOps/controller)
 
 #### 3. Two-Track Processing Logic
+
 **File**: `framework/procedures/kcl_to_crossplane.k` (lines 188–203)
 
 **Before** (Track 2 only — all accessories wrapped in Objects):
+
 ```kcl
 _process_accessories = lambda accessories: [...] -> [{str:}] {
   [_wrap_in_object(...) for acc in accessories for m in acc.manifests]
@@ -75,6 +82,7 @@ _process_accessories = lambda accessories: [...] -> [{str:}] {
 ```
 
 **After** (Track 1 + Track 2):
+
 ```kcl
 _process_accessories = lambda accessories: [...] -> [{str:}] {
   # Track 1: Curated accessories emit Claims
@@ -93,11 +101,14 @@ _process_accessories = lambda accessories: [...] -> [{str:}] {
 ```
 
 #### 4. Output Separation
+
 **File**: `framework/procedures/kcl_to_crossplane.k` (lines 408–464)
 
 Key changes to `generate_crossplane_from_stack()`:
+
 - Separates Track 1 (Claims) from Track 2 (Objects) by `_type` flag
 - Returns both in output dict:
+
   ```kcl
   {
     xrd = ...,
@@ -114,6 +125,7 @@ Key changes to `generate_crossplane_from_stack()`:
   ```
 
 #### 5. Backward Compatibility
+
 - **No breaking changes**: Track 2 (Objects) works exactly as before
 - **New output field**: `managed_resources` added (existing consumers unaffected)
 - **Composition pipeline**: Still processes Track 2 bridge resources
@@ -143,6 +155,7 @@ Key changes to `generate_crossplane_from_stack()`:
 ### What the Convergence Achieves
 
 **Before Convergence** (Bridge-only):
+
 ```
 Stack (23 infrastructure services)
        ↓
@@ -155,6 +168,7 @@ Composition pipeline + prerequisites
 ```
 
 **After Convergence** (Two-track):
+
 ```
 Stack (23 infrastructure services)
        ↓
@@ -186,15 +200,19 @@ Output directory:
    (Central platform APIs available)
 
 3. **Provision Infrastructure** (Track 1):  
+
    ```bash
    kubectl apply -f output/crossplane/managed_resources/
    ```
+
    User creates typed `MongoDBInstance` Claims; platform reconciles via curated Compositions
 
 4. **Trigger Workload** (Track 2):  
+
    ```bash
    kubectl apply -f output/crossplane/xr.yaml
    ```
+
    Composite Resource triggers Composition pipeline; bridge Objects create app infrastructure
 
 ### Key Design Decisions
@@ -245,6 +263,7 @@ E2.3: Operational runbook         ⏳ AFTER E2.2
 | `EVOLUTION_PLAN_STATUS_2026_06_07.md` | Updated E2 section + overall status | Reflect Point 1 completion |
 
 ### Statistics
+
 - **Lines added**: ~150 (docstring + mapping + helpers + logic)
 - **Lines refactored**: ~30 (_process_accessories, output handling)
 - **Breaking changes**: 0
@@ -257,6 +276,7 @@ E2.3: Operational runbook         ⏳ AFTER E2.2
 ### E2.2: Acceptance Testing (HIGH priority)
 
 **Goals**:
+
 1. Render a complex stack with both curated (MongoDB, PostgreSQL) and non-curated (WebApp) services
 2. Verify `managed_resources/` directory contains typed Claim instances
 3. Verify Composition pipeline contains only Track 2 Object wrappers
@@ -268,6 +288,7 @@ E2.3: Operational runbook         ⏳ AFTER E2.2
 ### E2.3: Operational Runbook (MEDIUM priority)
 
 **Goals**:
+
 1. Document platform engineer workflows (create, inspect, update, delete, rollback Claims)
 2. Define RBAC/permissions for Claim provisioning
 3. Create monitoring checks (reconciliation status, error rates)
@@ -294,6 +315,7 @@ E2.3: Operational runbook         ⏳ AFTER E2.2
 ## Integration Points
 
 ### CLI Output (`koncept render crossplane`)
+
 ```
 output/crossplane/
 ├── xrd.yaml                    # CompositeResourceDefinition
@@ -309,6 +331,7 @@ output/crossplane/
 ```
 
 ### GitOps/ArgoCD Integration
+
 ```yaml
 # ArgoCD Application for managed infrastructure
 apiVersion: argoproj.io/v1alpha1
@@ -323,6 +346,7 @@ spec:
 ```
 
 ### Kubernetes Reconciliation Loop
+
 ```
 User/GitOps writes managed_resources/* Claims
        ↓
@@ -367,4 +391,3 @@ Claim status.connectionDetails exposed to consumers
 **Session Contributor**: GitHub Copilot  
 **Reviewed Against**: Evolution Plan Phase E2, Crossplane Architecture instructions, framework-builders instructions  
 **Ready for**: E2.2 acceptance test fixture implementation
-

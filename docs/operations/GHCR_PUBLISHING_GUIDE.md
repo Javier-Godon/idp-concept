@@ -77,7 +77,6 @@ is a set of **reference example usages** of the framework, not a shipped package
 `crossplane_v2/` cluster prerequisites and curated reference APIs are applied per cluster,
 not published as an artifact.
 
-
 ### 2.2 Install ORAS CLI
 
 ```bash
@@ -217,9 +216,11 @@ Published by: GitHub Copilot Framework Automation
 EOF
 
 # Tag the archive with metadata
+
 oras attach "$IMAGE" \
     --artifact-type "application/vnd.idp-concept.release-notes.v1+text" \
     /tmp/idp-publish/release-notes.txt
+
 ```
 
 ### 3.4 Verify Published Package
@@ -521,4 +522,3 @@ A: Publish v1.0.1, v1.0.2, etc. Teams explicitly update kcl.mod to consume patch
 
 **Framework Version**: v1.0.0
 **Status**: Published to `oras://ghcr.io/javier-godon/idp-concept-framework:v1.0.0`; CI publishing via `.github/workflows/phase-d-publish-framework.yml`
-

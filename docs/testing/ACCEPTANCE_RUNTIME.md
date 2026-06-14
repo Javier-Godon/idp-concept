@@ -178,7 +178,6 @@ Nightly or release validation, still one case at a time:
 ./scripts/acceptance_runtime.sh --case runtime-all --install-dependencies
 ```
 
-
 ## CI: scheduled runtime workflow
 
 Runtime acceptance runs outside the fast PR gate so the default developer loop

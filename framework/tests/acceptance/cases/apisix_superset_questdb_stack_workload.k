@@ -8,14 +8,13 @@ import templates.apisix.v1_0_0.apisix as apisix
 import templates.superset.v1_0_0.superset as superset
 import templates.questdb.v1_0_0.questdb as qdb
 
-_namespace = "idp-acceptance-analytics-stack"
+_namespace = "idp-acceptance-apisix-superset-questdb-stack"
 
 # APISIX Gateway
 _gateway = apisix.APIGatewayModule {
     name = "analytics-gateway"
     namespace = _namespace
     footprint = "development"
-    gatewayType = "NodePort"
     etcdReplicas = 1
 }.instance
 
@@ -25,7 +24,6 @@ _qdb_resource = qdb.build_questdb_release(qdb.QuestDBSpec {
     namespace = _namespace
     chartVersion = "0.32.0"
     storageSize = "1Gi"
-    footprint = "development"
 })
 _questdb = h.wrap_accessory("acceptance-questdb", _namespace, "helm.toolkit.fluxcd.io/v2beta1", "HelmRelease", [_qdb_resource], "0.32.0")
 
@@ -43,7 +41,6 @@ _superset = superset.SupersetModule {
 
 h.render_stack(
     [_namespace],
-    [_gateway, _superset],
-    []
+    [],
+    [_gateway, _questdb, _superset]
 )
-

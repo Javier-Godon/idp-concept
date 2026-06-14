@@ -9,6 +9,7 @@
 ## Phase 2c: Final 2 Services (Complete Set)
 
 ### 18. **OpenBao** (CNCF Open-Source Vault Alternative)
+
 - **Files**: `xrd_openbao.yaml`, `x_openbao.yaml`, `xr_instance_openbao.yaml`
 - **Location**: `crossplane_v2/managed_resources/openbao/`
 - **API**: `XOpenBaoInstance` / `OpenBaoInstance` (claim)
@@ -17,6 +18,7 @@
 - **License**: CNCF/Open-Source (vs Vault/VSO which is BUSL-1.1)
 
 ### 19. **Fluent Bit** (Log Collection & Forwarding)
+
 - **Files**: `xrd_fluentbit.yaml`, `x_fluentbit.yaml`, `xr_instance_fluentbit.yaml`
 - **Location**: `crossplane_v2/managed_resources/fluentbit/`
 - **API**: `XFluentBitInstance` / `FluentBitInstance` (claim)
@@ -65,18 +67,21 @@
 ## Architecture Patterns (Updated)
 
 ### Category A: Operator-Native CRD (11 services)
+
 MongoDB, RabbitMQ, Redis, OpenSearch, MinIO, Elasticsearch, Kibana, Logstash, Vault, Valkey, Keycloak, Kafka
 
 **Pattern**: provider-kubernetes Object → Operator CRD  
 **Functions**: patch-and-transform + sequencer + auto-ready
 
 ### Category B: Helm Release (4 services)
+
 QuestDB, OpenTelemetry Operator, Cert-Manager, **OpenBao**
 
 **Pattern**: provider-helm Release  
 **Functions**: patch-and-transform + sequencer + auto-ready
 
 ### Category C: Kubernetes-Native (2 services)
+
 Data Prepper, **Fluent Bit**
 
 **Pattern**: provider-kubernetes Objects for Deployment/DaemonSet + Service + ConfigMap  
@@ -87,22 +92,26 @@ Data Prepper, **Fluent Bit**
 ## Key Achievements
 
 ✅ **Every framework template has a Crossplane API**
+
 - framework/templates/postgresql/ → crossplane_v2/managed_resources/postgresql/ (pre-existing)
 - framework/templates/kafka/ → crossplane_v2/managed_resources/kafka_strimzi/
 - all 19 services now have XRD + Composition + Instance examples
 
 ✅ **Multiple deployment patterns demonstrated**
+
 - 11 operator-native CRD-based APIs
 - 4 Helm Release-based APIs
 - 2 Kubernetes-native APIs
 - 3 services with mode-awareness (Redis, Valkey, OpenTelemetry, FluentBit)
 
 ✅ **No application workloads included** (as per architecture policy)
+
 - WebApp: Tier-1 GitOps YAML (not infrastructure)
 - SingleDatabase: Generic (use domain-specific APIs instead)
 - Admin UIs: Optional companions (separately packaged)
 
 ✅ **Professional-grade APIs for all**
+
 - OpenAPI v3 validation
 - Multi-environment support (local/dev/staging/prod)
 - RBAC via owner labels
@@ -114,6 +123,7 @@ Data Prepper, **Fluent Bit**
 ## File Count (Phase 2 Total)
 
 **All Phases Combined**:
+
 - **57 Crossplane YAML files** (19 XRDs + 19 Compositions + 19 Examples)
 - **9 comprehensive documentation files**
 - **Total**: 66 new files delivering 100% infrastructure parity
@@ -146,6 +156,7 @@ Data Prepper, **Fluent Bit**
 ## Usage Summary
 
 ### Deploy a Service (Any of 19)
+
 ```bash
 # Cluster-scoped XR
 kubectl apply -f crossplane_v2/managed_resources/{service}/xr_instance_{service}.yaml
@@ -164,6 +175,7 @@ EOF
 ```
 
 ### Monitor Reconciliation
+
 ```bash
 kubectl get {service}instances
 kubectl describe {service}instance my-service -n myapp
@@ -175,10 +187,12 @@ kubectl logs -n crossplane-system -f deployment/crossplane
 ## Architecture Evolution Complete
 
 **Two-Track Model Achieved**:
+
 - ✅ **Track 1 (Generated)**: `framework/procedures/kcl_to_crossplane.k` generates manifests (uses Object wrapping today)
 - ✅ **Track 2 (Hand-Authored)**: `crossplane_v2/managed_resources/` curated APIs (professional, operator-driven)
 
 **Convergence Ready** (Phase E2):
+
 - Framework templates render to Crossplane APIs directly
 - No manifest wrapping needed (managed resources take precedence)
 - Provider/function chain complete
@@ -221,16 +235,19 @@ kubectl logs -n crossplane-system -f deployment/crossplane
 ## Recommended Next Steps
 
 ### Immediate (Week 1)
+
 - [ ] Pin provider versions in `crossplane_v2/providers/`
 - [ ] Pin function versions in `crossplane_v2/functions/`
 - [ ] Create operator prerequisites checklist
 
 ### Short-term (Week 2-3)
+
 - [ ] Add dry-run CRD stubs for acceptance testing
 - [ ] Create acceptance fixtures for all 19 services
 - [ ] Update `scripts/acceptance_kind.sh` with managed-resource groups
 
 ### Medium-term (Phase E2, 4-8 weeks)
+
 - [ ] Update `framework/procedures/kcl_to_crossplane.k`
 - [ ] Emit managed-resource references instead of Object wraps
 - [ ] Create convergence test fixtures
@@ -274,6 +291,7 @@ kubectl logs -n crossplane-system -f deployment/crossplane
 🎉 **IMPLEMENTATION COMPLETE — 100% INFRASTRUCTURE PARITY ACHIEVED**
 
 ### Summary by Phase
+
 - **Phase 1**: 4 pre-existing services (PostgreSQL, Kafka, Keycloak, Cert-Manager)
 - **Phase 2a**: 8 new services (MongoDB → Elasticsearch)
 - **Phase 2b**: 5 services (Kibana → Valkey)
@@ -282,6 +300,7 @@ kubectl logs -n crossplane-system -f deployment/crossplane
 ---
 
 ### Total Deliverables
+
 - **19 infrastructure services** with professional-grade Crossplane APIs
 - **57 new resource files** (XRD + Composition + Examples)
 - **9 comprehensive guides** (architecture, patterns, mapping, reference)
@@ -291,6 +310,7 @@ kubectl logs -n crossplane-system -f deployment/crossplane
 ---
 
 ### Deployment-Ready Status
+
 ✅ XRDs validated with OpenAPI v3 schemas  
 ✅ Compositions tested with patch-and-transform + sequencer + auto-ready  
 ✅ Multiple deployment patterns proven  
@@ -310,4 +330,3 @@ The idp-concept platform now has **professional-grade, production-ready Crosspla
 ---
 
 **Next: Phase E2 Convergence (Framework ↔ Crossplane integration)**
-

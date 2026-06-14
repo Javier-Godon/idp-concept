@@ -90,6 +90,7 @@ schema PowerBIConnectorModule(component.Component):
     kind = "APPLICATION"
 
     # Settings
+    connectorVersion: str = "1.0.0"
     questdbHost: str
     questdbPort: int = 5432
     questdbDatabase: str = "qdb"
@@ -133,7 +134,9 @@ schema PowerBIConnectorModule(component.Component):
             extraData = extraData
     }
 
+    configurations = _spec
+    asset = {version = connectorVersion}
     manifests = [build_powerbi_connector_configmap(_spec)]
-
+    dependsOn = []
 
 

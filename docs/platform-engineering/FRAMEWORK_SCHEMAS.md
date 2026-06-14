@@ -495,6 +495,7 @@ schema ApplicationConfigSpec:
 ```
 
 Lambdas:
+
 - `build_config_data` → `{str:str}` for `WebAppModule.configData`
 - `build_env_vars` → `[any]` for `WebAppModule.env`
 - `build_config_bundle` → `{configData, env}` ready for `WebAppModule`
@@ -798,6 +799,7 @@ RenderStack (framework/models/manifests/)
 ## 8. Usage Summary
 
 ### Creating a Module (Raw Approach)
+
 ```kcl
 import framework.models.modules.component as component
 
@@ -813,6 +815,7 @@ schema MyModule(component.Component):
 ```
 
 ### Creating a Module (Template Approach — Recommended)
+
 ```kcl
 import framework.templates.webapp.v1_0_0.webapp as webapp
 
@@ -822,6 +825,7 @@ schema MyApp(webapp.WebAppModule):
 ```
 
 ### Creating a Stack
+
 ```kcl
 import framework.models.stack
 
@@ -835,6 +839,7 @@ schema MyStack(stack.Stack):
 ```
 
 ### Creating a Release
+
 ```kcl
 import framework.models.release
 

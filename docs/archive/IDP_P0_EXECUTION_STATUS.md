@@ -42,12 +42,14 @@ The P0 (highest-priority) actions from `docs/IDP_ASSESSMENT_2026H2.md` are being
 **Status: PARTIALLY COMPLETE**
 
 #### What Worked
+
 - ✅ Framework published to GHCR: `ghcr.io/javier-godon/idp-concept-framework:v1.0.0-pre`
 - ✅ Fixed `scripts/publish_oci.sh` to handle absolute paths in ORAS (`--disable-path-validation` flag)
 - ✅ Verified pull works: `oras pull ghcr.io/javier-godon/idp-concept-framework:v1.0.0-pre` succeeds
 - ✅ Distribution infrastructure is production-ready
 
 #### What's Blocked
+
 - ❌ **KCL module resolver doesn't yet support direct ORAS references in `kcl.mod`:**
   - Attempted: `framework = "oras://ghcr.io/javier-godon/idp-concept-framework:v1.0.0-pre"`
   - Error: KCL tried to resolve as a KCL registry (`ghcr.io/kcl-lang/framework`), not as ORAS
@@ -55,6 +57,7 @@ The P0 (highest-priority) actions from `docs/IDP_ASSESSMENT_2026H2.md` are being
   - Status: **Blocked on external KPM release (expected Q3 2026)**
   
 #### Outcome
+
 - **Published, not yet consumed**: The framework is in GHCR and ready for distribution to external teams wanting to manually pull it. Teams can use ORAS CLI directly for now.
 - **Next step when KPM v2.0 ships**: Pin consuming projects via `kcl.mod` and validate multi-version isolation.
 
@@ -63,6 +66,7 @@ The P0 (highest-priority) actions from `docs/IDP_ASSESSMENT_2026H2.md` are being
 **Status: DECISION NEEDED**
 
 Two options:
+
 1. **Lightweight**: Use existing internal teams (e.g., if video_streaming or pokedex projects are used by non-authors within the org).
 2. **Planned external**: Set up a formal 8-week pilot per `docs/ADOPTION_PILOT_GUIDE.md` (requires recruiting 2–3 external teams, SLA, feedback cadence, etc.).
 
@@ -120,4 +124,3 @@ Two options:
 ⏳ **Adoption proof pending** — decision needed on pilot scope.
 
 The platform is ready for **P1 actions** (supply-chain hardening, Kyverno/OPA, Renovate, Crossplane promotion gate) once A4 pilot scope is decided.
-

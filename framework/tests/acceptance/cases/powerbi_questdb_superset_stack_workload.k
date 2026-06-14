@@ -8,7 +8,7 @@ import templates.powerbi.v1_0_0.powerbi_connector as pbi
 import templates.questdb.v1_0_0.questdb as qdb
 import templates.superset.v1_0_0.superset as superset
 
-_namespace = "idp-acceptance-powerbi-full"
+_namespace = "idp-acceptance-powerbi-questdb-superset-stack"
 
 # QuestDB
 _qdb_resource = qdb.build_questdb_release(qdb.QuestDBSpec {
@@ -46,7 +46,6 @@ _powerbi = pbi.PowerBIConnectorModule {
 
 h.render_stack(
     [_namespace],
-    [_powerbi, _superset],
-    []
+    [_powerbi],
+    [_questdb, _superset]
 )
-

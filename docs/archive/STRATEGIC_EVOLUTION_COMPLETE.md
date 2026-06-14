@@ -21,6 +21,7 @@ This document records the completion of the **Long-term Strategic Objectives** f
 ### 1. Helmfile Output Suite ✅
 
 **Files**:
+
 - `framework/procedures/kcl_to_helmfile.k` — Complete Helmfile generation procedure
 - `docs/HELMFILE_ADOPTION.md` — Strategic adoption guide
 - `docs/HELMFILE_ORCHESTRATION.md` — Operational reference
@@ -29,6 +30,7 @@ This document records the completion of the **Long-term Strategic Objectives** f
 - Acceptance fixtures — Multi-tier, multi-repo, override scenarios
 
 **Capabilities**:
+
 - ✅ Full `HelmfileRenderOptions` schema support (repositories, releases, environments, hooks, etc.)
 - ✅ Metadata propagation (owner, team, lifecycle, tier, criticality, etc.) via labels
 - ✅ Dependency orchestration (`dependsOn` → Helmfile `needs` with identity resolution)
@@ -43,6 +45,7 @@ This document records the completion of the **Long-term Strategic Objectives** f
 ### 2. Crossplane V2 Output Suite ✅
 
 **Files**:
+
 - `framework/procedures/kcl_to_crossplane.k` — Complete Crossplane generation procedure
 - `crossplane_v2/managed_resources/` — 12+ curated infrastructure APIs (MongoDB, PostgreSQL, Redis, OpenSearch, MinIO, Vault, QuestDB, Elasticsearch, Kibana, Logstash, OTel, Data Prepper)
 - `docs/CROSSPLANE_PATTERNS.md` — Architecture + design patterns
@@ -51,6 +54,7 @@ This document records the completion of the **Long-term Strategic Objectives** f
 - Acceptance fixtures — Multi-release, orchestration, lifecycle scenarios
 
 **Capabilities**:
+
 - ✅ XRD/Composition/XR generation from stack data
 - ✅ Two-track model (generated bridge + hand-authored managed resources)
 - ✅ No-legacy policy (single canonical set per resource)
@@ -66,6 +70,7 @@ This document records the completion of the **Long-term Strategic Objectives** f
 ### 3. CLI Integration ✅
 
 **Enhancements**:
+
 - ✅ `koncept render helmfile` — Full end-to-end Helmfile rendering
 - ✅ `koncept render crossplane` — Full end-to-end Crossplane rendering
 - ✅ `koncept crossplane test` — Static + runtime validation with profiles (smoke, catalog, api-lifecycle, matrix)
@@ -73,6 +78,7 @@ This document records the completion of the **Long-term Strategic Objectives** f
 - ✅ `koncept golden {check|update}` — Regression gates for helmfile + crossplane + dry-run
 
 **Quality**:
+
 - ✅ All 433 KCL tests passing
 - ✅ Golden snapshots locked in (5 formats × 3 projects)
 - ✅ Integration tests with real tools (helmfile, helm, crossplane)
@@ -182,7 +188,9 @@ Integration Tests:
 ## Learning & Best Practices Applied
 
 ### 1. Output Governance Parity
+
 All strategic outputs (YAML, Helmfile, Crossplane, ArgoCD) carry consistent:
+
 - Ownership metadata (owner, team, lifecycle, SLO tier, criticality, data classification, cost center)
 - Support contacts + runbooks
 - Governance labels/annotations
@@ -191,14 +199,18 @@ All strategic outputs (YAML, Helmfile, Crossplane, ArgoCD) carry consistent:
 **Result**: Audit trail consistent across all deployment modes.
 
 ### 2. Dependency Identity Resolution
+
 Both Helmfile and Crossplane use concrete rendered resource names, not logical references:
+
 - Helmfile: `needs: ["namespace/release-name"]` after `releaseDefaults` + overrides
 - Crossplane: Sequencer rules use actual wrapped resource names (e.g., `comp-app-deployment-xyz`) with regex fallback
 
 **Result**: Eliminates orchestration identity drift; reduces integration bugs.
 
 ### 3. Acceptance Testing Stratification
+
 Test tiers enable appropriate CI strategies:
+
 - **L0/L1**: Fast PR validation (render + dry-run)
 - **L2**: Lightweight kind rollout (built-in workloads)
 - **L3/L4**: Real cluster tests (operator + Helm lifecycle)
@@ -206,7 +218,9 @@ Test tiers enable appropriate CI strategies:
 **Result**: Regression gates without slowing PR feedback.
 
 ### 4. Documentation-First Adoption
+
 Comprehensive decision trees, patterns, and troubleshooting guides enable:
+
 - Independent team adoption (without framework authors present)
 - Reduced onboarding friction
 - Self-service troubleshooting
@@ -218,24 +232,28 @@ Comprehensive decision trees, patterns, and troubleshooting guides enable:
 ## Recommended Next Steps (Phased)
 
 ### Phase 1: Immediate (This Week)
+
 - [ ] Review this document with team
 - [ ] Verify helmfile + crossplane rendering in real environments
 - [ ] Run full acceptance test suite
 - [ ] Commit all changes to main
 
 ### Phase 2: Short-term (Next 1-2 weeks)
+
 - [ ] Integrate helmfile integration test into CI/CD gates
 - [ ] Launch external adoption pilot (docs/ADOPTION_PILOT_GUIDE.md ready)
 - [ ] Collect feedback from pilot teams on ergonomics + pain points
 - [ ] Document lessons learned
 
 ### Phase 3: Medium-term (Weeks 3-4)
+
 - [ ] Implement OCI registry publishing (scripts/publish_oci.sh ready)
 - [ ] Expand Crossplane runtime profiles beyond current set
 - [ ] Publish framework version 1.0.0 to registries
 - [ ] Begin adoption pilot case study documentation
 
 ### Phase 4: Long-term (Months 2-3)
+
 - [ ] Evaluate Fleet output format based on multi-cluster adoption signals
 - [ ] Consider Score spec input format based on developer demand
 - [ ] Incident response patterns (what to do when deployments fail)
@@ -280,4 +298,3 @@ The platform now provides:
 **Last Updated**: June 7, 2026  
 **Maintained By**: Platform Engineering Team  
 **Next Review**: Upon completion of Phase 2 adoption pilot
-

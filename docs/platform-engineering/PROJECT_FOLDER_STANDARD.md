@@ -217,5 +217,3 @@ _manifest_path = _factory.manifestPath
 | `build_profile(ProfileSpec)` | Creates a framework `Profile` with the derived name |
 | `build_tenant(TenantSpec)` | Creates a framework `Tenant` with optional display-name override |
 | `build_site(SiteSpec)` | Creates a framework `Site` with the derived name |
-
-

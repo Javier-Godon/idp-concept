@@ -5,6 +5,7 @@
 > The `mcp-server-fetch` tool runs inside a **hardened Docker container** with process, network, and filesystem isolation. This mitigates the primary SSRF risk: the container's `localhost` is isolated from the host machine, and cloud metadata endpoints (169.254.169.254) are unreachable.
 >
 > **Despite Docker isolation, ALL AI assistants using the fetch tool MUST:**
+>
 > 1. **NEVER fetch localhost, 127.0.0.1, 0.0.0.0, or any private/internal IP address**
 > 2. **NEVER fetch URLs on local network ranges** (10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16)
 > 3. **NEVER fetch URLs with non-standard ports** unless the domain is in the trusted list below
@@ -80,6 +81,7 @@ Before adding **any** external tool (MCP server, extension, CLI utility, depende
 ## Detailed Assessment: `mcp-server-fetch`
 
 ### Identity
+
 - **Repository**: [modelcontextprotocol/servers/src/fetch](https://github.com/modelcontextprotocol/servers/tree/main/src/fetch)
 - **Organization**: `modelcontextprotocol` — The official MCP organization (backed by Anthropic)
 - **License**: MIT (existing code) / Apache 2.0 (new contributions)
@@ -92,6 +94,7 @@ Before adding **any** external tool (MCP server, extension, CLI utility, depende
 **No tool is 100% secure.** However, `mcp-server-fetch` is the **most trustworthy option** for web fetching via MCP because:
 
 #### What makes it trustworthy
+
 1. **Official reference server** — Maintained by the MCP steering group (Anthropic-backed), listed as a "Reference Server" (not community/third-party)
 2. **Active maintenance** — Regular commits, bug fixes, and security patches (last update: March 2026)
 3. **Proper security practices** — Has SECURITY.md with vulnerability reporting via GitHub Security Advisories
@@ -113,6 +116,7 @@ Before adding **any** external tool (MCP server, extension, CLI utility, depende
 #### Verdict: **APPROVED for development use**
 
 The `mcp-server-fetch` server is approved for use in this project under these **strict conditions**:
+
 1. **MUST run inside Docker** with the hardened configuration below — NEVER run via `uvx` or `pip` directly
 2. Used ONLY on developer workstations, NEVER in CI/CD or production
 3. **ONLY fetch URLs from the explicitly trusted domain allowlist below** — no exceptions
@@ -244,6 +248,7 @@ https://fleet.rancher.io/*
 ## Detailed Assessment: `github-mcp-server`
 
 ### Identity
+
 - **Repository**: [github/github-mcp-server](https://github.com/github/github-mcp-server)
 - **Organization**: `github` — Official GitHub organization (Microsoft-backed)
 - **License**: MIT

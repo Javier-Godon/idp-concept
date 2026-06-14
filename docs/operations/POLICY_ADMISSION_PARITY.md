@@ -9,6 +9,7 @@
 The `koncept policy check` CLI gate runs **before rendering**, catching policy violations early in the development workflow. For production clusters, the same rules must be enforced **at admission time**, so no manifest can bypass policy even if hand-edited or bypassed in CI.
 
 This document maps the 7 platform policies to:
+
 1. **Kyverno ClusterPolicy** (preferred: simpler, Kubernetes-native)
 2. **OPA Gatekeeper + Rego rules** (alternative: more flexible)
 3. **Conftest policies** (CI/CD: validates rendered YAML before deployment)
@@ -32,6 +33,7 @@ This document maps the 7 platform policies to:
 ## Part 1: Kyverno ClusterPolicies
 
 ### Installation
+
 ```bash
 helm repo add kyverno https://kyverno.github.io/kyverno/
 helm install kyverno kyverno/kyverno --namespace kyverno --create-namespace \
@@ -39,6 +41,7 @@ helm install kyverno kyverno/kyverno --namespace kyverno --create-namespace \
 ```
 
 ### Policy 1: Deny Privileged & Host Access
+
 ```yaml
 apiVersion: kyverno.io/v1
 kind: ClusterPolicy
@@ -82,6 +85,7 @@ spec:
 ```
 
 ### Policy 2: Require Image Digest or Specific Tag
+
 ```yaml
 apiVersion: kyverno.io/v1
 kind: ClusterPolicy
@@ -110,6 +114,7 @@ spec:
 ```
 
 ### Policy 3: Require CPU/Memory Resources
+
 ```yaml
 apiVersion: kyverno.io/v1
 kind: ClusterPolicy
@@ -144,6 +149,7 @@ spec:
 ```
 
 ### Policy 4: Require Ownership Labels
+
 ```yaml
 apiVersion: kyverno.io/v1
 kind: ClusterPolicy
@@ -170,6 +176,7 @@ spec:
 ```
 
 ### Policy 5: Require Secret References
+
 ```yaml
 apiVersion: kyverno.io/v1
 kind: ClusterPolicy
@@ -202,11 +209,13 @@ spec:
 ## Part 2: OPA Gatekeeper Rules (Rego)
 
 ### Installation
+
 ```bash
 kubectl apply -f https://raw.githubusercontent.com/open-policy-agent/gatekeeper/master/deploy/gatekeeper.yaml
 ```
 
 ### Rule 1: Require Image Digest (Rego)
+
 ```rego
 package k8srequireddigest
 
@@ -220,6 +229,7 @@ violation[{"msg": msg}] {
 ```
 
 ### Rule 2: Deny Privileged (Rego)
+
 ```rego
 package k8sdenyprivileged
 
@@ -231,6 +241,7 @@ violation[{"msg": msg}] {
 ```
 
 ### Rule 3: Require Resources (Rego)
+
 ```rego
 package k8srequireresources
 
@@ -254,6 +265,7 @@ violation[{"msg": msg}] {
 ## Part 3: Conftest Policies (Rego for CI/CD)
 
 ### Install Conftest
+
 ```bash
 curl -L -o conftest.tar.gz https://github.com/open-policy-agent/conftest/releases/download/v0.55.0/conftest_0.55_linux_x86_64.tar.gz
 tar xzf conftest.tar.gz
@@ -261,6 +273,7 @@ sudo mv conftest /usr/local/bin/
 ```
 
 ### CI Job Example (GitHub Actions)
+
 ```yaml
 - name: Validate with Conftest
   run: |
@@ -271,6 +284,7 @@ sudo mv conftest /usr/local/bin/
 ```
 
 ### Rego Policy File (`framework/policies/rego/platform.rego`)
+
 ```rego
 package main
 
@@ -317,11 +331,13 @@ warn[msg] {
 ## Deployment Workflow
 
 ### Development (Local + CI)
+
 1. Developer runs `koncept policy check --factory <dir>` locally
 2. CI runs both `koncept policy check` and `conftest test` on rendered YAML
 3. Policy violations block PR
 
 ### Staging/Production (Admission)
+
 1. Manifests reach cluster API server
 2. Kyverno webhook intercepts Pod/Deployment/StatefulSet/DaemonSet creates
 3. ClusterPolicy validates against the mapped rules
@@ -356,4 +372,3 @@ warn[msg] {
 - **OPA/Gatekeeper**: https://open-policy-agent.github.io/gatekeeper/
 - **Conftest**: https://www.conftest.dev/
 - **koncept policy check**: `koncept policy check --help`
-

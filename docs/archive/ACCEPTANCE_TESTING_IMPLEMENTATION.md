@@ -9,6 +9,7 @@
 ## Quick Start
 
 ### Run All New Tests
+
 ```bash
 cd /home/javier/javier/workspaces/public_github/idp-concept
 
@@ -24,6 +25,7 @@ bash scripts/verify.sh
 ```
 
 ### Run All Tests Together
+
 ```bash
 # Run platform group (includes apisix, superset, powerbi)
 ./scripts/acceptance_kind.sh --case platform
@@ -44,17 +46,20 @@ bash scripts/verify.sh
 **File**: `framework/tests/acceptance/cases/apisix_workload.k`
 
 **What it tests**:
+
 - Apache APISIX Helm chart rendering
 - etcd backend configuration
 - Port and replica settings
 - Dashboard and admin API configuration
 
 **Run it**:
+
 ```bash
 ./scripts/acceptance_kind.sh --case apisix
 ```
 
 **Expected output**:
+
 ```
 ✓ Renders Helm Release for APISIX
 ✓ Creates namespace idp-acceptance-apisix
@@ -69,6 +74,7 @@ bash scripts/verify.sh
 **File**: `framework/tests/acceptance/cases/superset_workload.k`
 
 **What it tests**:
+
 - Superset Helm chart rendering
 - Database backend connection (PostgreSQL)
 - Redis cache and Celery broker
@@ -76,11 +82,13 @@ bash scripts/verify.sh
 - Persistence configuration
 
 **Run it**:
+
 ```bash
 ./scripts/acceptance_kind.sh --case superset
 ```
 
 **Expected output**:
+
 ```
 ✓ Renders Helm Release for Superset
 ✓ Creates namespace idp-acceptance-superset
@@ -95,6 +103,7 @@ bash scripts/verify.sh
 **File**: `framework/tests/acceptance/cases/powerbi_workload.k`
 
 **What it tests**:
+
 - Power BI connector ConfigMap generation
 - Connection string documentation
 - QuestDB PostgreSQL wire protocol setup
@@ -102,11 +111,13 @@ bash scripts/verify.sh
 - PostgreSQL connection settings
 
 **Run it**:
+
 ```bash
 ./scripts/acceptance_kind.sh --case powerbi
 ```
 
 **Expected output**:
+
 ```
 ✓ Renders ConfigMap for Power BI Connector
 ✓ Creates namespace idp-acceptance-powerbi
@@ -121,6 +132,7 @@ bash scripts/verify.sh
 **File**: `framework/tests/acceptance/cases/apisix_superset_questdb_stack_workload.k`
 
 **What it tests**:
+
 - Multi-module deployment in shared namespace
 - Service interdependencies
 - Network connectivity between services
@@ -128,11 +140,13 @@ bash scripts/verify.sh
 - APISIX gateway routing setup
 
 **Run it**:
+
 ```bash
 ./scripts/acceptance_kind.sh --case apisix-superset-questdb-stack
 ```
 
 **Expected output**:
+
 ```
 ✓ Creates shared namespace idp-acceptance-analytics-stack
 ✓ Deploys APISIX gateway with etcd backend
@@ -147,6 +161,7 @@ bash scripts/verify.sh
 **File**: `framework/tests/acceptance/cases/powerbi_questdb_superset_stack_workload.k`
 
 **What it tests**:
+
 - Full analytics backend integration
 - Multi-datasource configuration
 - Power BI connector with all backends
@@ -154,11 +169,13 @@ bash scripts/verify.sh
 - Complete deployment scenario
 
 **Run it**:
+
 ```bash
 ./scripts/acceptance_kind.sh --case powerbi-questdb-superset-stack
 ```
 
 **Expected output**:
+
 ```
 ✓ Creates shared namespace idp-acceptance-powerbi-full
 ✓ Deploys QuestDB database
@@ -173,32 +190,38 @@ bash scripts/verify.sh
 ## Test Categories
 
 ### PLATFORM_CASES (Platform Infrastructure Services)
+
 ```bash
 ./scripts/acceptance_kind.sh --case platform
 ```
 
 Now includes:
+
 - `apisix`
 - `superset`
 - `powerbi`
 - (plus existing platform cases)
 
 ### INTEGRATION_CASES (Multi-Module Scenarios)
+
 ```bash
 ./scripts/acceptance_kind.sh --case integrations
 ```
 
 Now includes:
+
 - `apisix-superset-questdb-stack`
 - `powerbi-questdb-superset-stack`
 - (plus existing integration cases)
 
 ### TEMPLATE_CASES (All Template Module Tests)
+
 ```bash
 ./scripts/acceptance_kind.sh --case templates
 ```
 
 Now includes all 39+ template test cases including:
+
 - `apisix`, `superset`, `powerbi`
 - (plus existing template cases)
 
@@ -207,6 +230,7 @@ Now includes all 39+ template test cases including:
 ## Verification Commands
 
 ### Quick Render Check (No cluster required)
+
 ```bash
 cd framework
 
@@ -228,12 +252,14 @@ done
 ```
 
 ### Full Verification Suite
+
 ```bash
 # Run all linting and rendering tests
 bash scripts/verify.sh
 ```
 
 This will:
+
 1. Lint all KCL source files
 2. Render all acceptance fixtures (including new ones)
 3. Run all KCL tests
@@ -244,6 +270,7 @@ This will:
 ## Expected Test Outputs
 
 ### Rendered APISIX Manifest
+
 ```yaml
 apiVersion: helm.toolkit.fluxcd.io/v2beta1
 kind: HelmRelease
@@ -278,6 +305,7 @@ spec:
 ```
 
 ### Rendered Superset Manifest
+
 ```yaml
 apiVersion: helm.toolkit.fluxcd.io/v2beta1
 kind: HelmRelease
@@ -304,6 +332,7 @@ spec:
 ```
 
 ### Rendered Power BI Connector Manifests
+
 ```yaml
 apiVersion: v1
 kind: ConfigMap
@@ -329,6 +358,7 @@ data:
 ### Issue: "cannot find module" errors
 
 **Solution**: Ensure framework dependencies are resolved:
+
 ```bash
 cd framework
 kcl mod download
@@ -338,6 +368,7 @@ kcl run tests/acceptance/cases/apisix_workload.k
 ### Issue: "Connection refused" when running tests on kind
 
 **Solution**: Prerequisites must be running:
+
 ```bash
 # For Superset tests, PostgreSQL and Redis must be available
 # Install them first or mock them:
@@ -353,6 +384,7 @@ kubectl create deployment redis-dev \
 ### Issue: Helm chart not found
 
 **Solution**: Add Helm repositories:
+
 ```bash
 helm repo add apisix https://charts.apiseven.com
 helm repo add superset https://apache.github.io/superset
@@ -362,6 +394,7 @@ helm repo update
 ### Issue: Tests fail at rendering stage
 
 **Solution**: Check KCL version and dependencies:
+
 ```bash
 kcl version
 kcl mod tidy
@@ -403,7 +436,9 @@ Before deploying to production, verify:
 ## Next Test Phases
 
 ### L2: Live Deployment Testing
+
 Run actual kubectl apply on kind cluster:
+
 ```bash
 # Create kind cluster
 kind create cluster --name acceptance
@@ -421,7 +456,9 @@ kubectl rollout status deployment -n idp-acceptance-superset
 ```
 
 ### L3: Runtime Validation
+
 Test actual service functionality:
+
 ```bash
 # Port-forward to APISIX admin
 kubectl port-forward -n idp-acceptance-apisix svc/acceptance-apisix 9180:9180 &
@@ -437,7 +474,9 @@ curl http://localhost:8088/health
 ```
 
 ### L4: Integration Testing
+
 Test the full stack together:
+
 ```bash
 # Deploy all manifests from stack integration tests
 kubectl apply -f /tmp/stack1.yaml
@@ -466,16 +505,18 @@ curl -X GET http://localhost:80/analytics/
 ## Support
 
 For issues or questions:
+
 1. Check test fixtures in `framework/tests/acceptance/cases/`
 2. Review acceptance testing instructions
 3. Run individual fixtures with verbose KCL output:
+
    ```bash
    kcl run -v tests/acceptance/cases/apisix_workload.k
    ```
+
 4. Check Helm chart defaults and values
 5. Verify all dependencies are installed
 
 ---
 
 *Last Updated: 2026-06-08*
-

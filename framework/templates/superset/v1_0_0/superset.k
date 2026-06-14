@@ -121,6 +121,7 @@ schema SupersetModule(accessory.Accessory):
     kind = "CRD"
 
     # Settings
+    chartVersion: str = "0.14.1"
     footprint: str = "production"
     databaseUri: str
     redisUri?: str = "redis://localhost:6379/0"
@@ -149,6 +150,7 @@ schema SupersetModule(accessory.Accessory):
     _spec = SupersetSpec {
         name = name
         namespace = namespace
+        chartVersion = chartVersion
         footprint = footprint
         databaseUri = databaseUri
         if redisUri:
@@ -186,7 +188,9 @@ schema SupersetModule(accessory.Accessory):
             extraValues = extraValues
     }
 
+    configurations = _spec
+    asset = {version = chartVersion}
     manifests = [build_superset_release(_spec)]
-
+    dependsOn = []
 
 

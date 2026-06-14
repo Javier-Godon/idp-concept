@@ -14,6 +14,9 @@ printf "==> Running scoped KCL lint\n"
     kcl lint "$source_file"
   done < <(find templates -type f -name '*.k' | sort)
   for fixture in tests/acceptance/cases/*.k; do
+    case "$(basename "$fixture")" in
+      _*) continue ;;
+    esac
     kcl lint "$fixture"
   done
 )
@@ -30,7 +33,10 @@ printf "==> Rendering acceptance template fixtures\n"
 printf "==> Running framework tests\n"
 (
   cd "$ROOT_DIR/framework"
-  kcl test ./...
+  for test_dir in tests/assembly tests/builders tests/custom tests/factory tests/models tests/procedures tests/templates; do
+    printf "   - %s\n" "$test_dir"
+    kcl test "./$test_dir"
+  done
 )
 
 printf "==> Running render smoke checks (erp_back/dev factory)\n"
@@ -44,4 +50,3 @@ printf "==> Running render smoke checks (erp_back/dev factory)\n"
 )
 
 printf "==> Verification complete\n"
-

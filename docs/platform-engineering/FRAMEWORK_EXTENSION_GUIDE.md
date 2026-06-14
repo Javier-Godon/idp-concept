@@ -396,6 +396,7 @@ _stack = RenderStack {
 ```
 
 Output formats automatically handle dependency ordering:
+
 - **Helmfile**: Generates `needs:` entries
 - **Crossplane**: Adds sequencer rules
 - **Dry-run**: Shows dependency graph
@@ -508,6 +509,7 @@ _pvc = storage.build_pv_and_pvc(storage.PersistentVolumeSpec {
 ### "cannot find the module" error
 
 Check your `kcl.mod` file:
+
 - Is the package `name` correct?
 - Are relative paths correct relative to `kcl.mod` location?
 - Are transitive dependencies declared?
@@ -529,6 +531,7 @@ _right = MyModule { ... }.instance  # ← Instance, correct
 ### Manifest rendering differences between formats
 
 Check the procedure implementation for the target format:
+
 - `framework/procedures/kcl_to_*.k` files have format-specific logic
 - Custom fields may have different handling per format
 - Validation errors show which format rejected the schema
@@ -551,4 +554,3 @@ Check the procedure implementation for the target format:
 - [Acceptance Testing Guide](../testing/ACCEPTANCE_TESTING.md)
 - [KCL Language](https://www.kcl-lang.io/docs/)
 - [Kusion Documentation](https://www.kusionstack.io/)
-

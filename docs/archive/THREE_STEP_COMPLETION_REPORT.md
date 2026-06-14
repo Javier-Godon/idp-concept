@@ -44,14 +44,14 @@ In one focused session, I completed **all three next steps**:
 
 ### What It Validates
 
-✅ Convergence functions exist and compile  
-✅ _CURATED_SERVICES mapping has all 23 services  
-✅ _is_curated_service() correctly detects infrastructure services  
-✅ _process_accessories() splits Track 1 (Claims) from Track 2 (Objects)  
-✅ Mixed stacks render without errors  
-✅ Composition pipeline includes full 3-step flow (patch → sequencer → auto-ready)  
-✅ Backward compatibility: Track 2 unchanged  
-✅ No regression in bridge wrapping for non-curated services  
+✅ Convergence functions exist and compile
+✅ `_CURATED_SERVICES` mapping has all 23 services
+✅ `_is_curated_service()` correctly detects infrastructure services
+✅ `_process_accessories()` splits Track 1 (Claims) from Track 2 (Objects)
+✅ Mixed stacks render without errors
+✅ Composition pipeline includes full 3-step flow (patch → sequencer → auto-ready)
+✅ Backward compatibility: Track 2 unchanged
+✅ No regression in bridge wrapping for non-curated services
 
 ### Running the Tests
 
@@ -88,12 +88,14 @@ In one focused session, I completed **all three next steps**:
 ### Content Overview
 
 #### Quick Start (5 minutes)
+
 - Install Crossplane prerequisites
 - Deploy platform APIs (XRD, Composition)
 - Provision infrastructure (Track 1 Claims)
 - Trigger workloads (Track 2 XR)
 
 #### Day-2 Operations
+
 - **Inspect Status**: Check Ready/Synced conditions, diagnose failures
 - **Connection Details**: Retrieve secrets for integration with applications
 - **Update Claims**: Modify spec fields; monitor reconciliation
@@ -102,6 +104,7 @@ In one focused session, I completed **all three next steps**:
 - **Audit & Compliance**: Event logging, revision history
 
 #### Troubleshooting (8 scenarios)
+
 1. Claim stuck in "Creating" — diagnosis & solutions
 2. Update fails with "Forbidden" — RBAC debugging
 3. Secret not available — verification steps
@@ -112,12 +115,14 @@ In one focused session, I completed **all three next steps**:
 8. Authentication failures — credential management
 
 #### Best Practices
+
 - **Lifecycle management**: Deletion policies, namespace isolation
 - **Monitoring**: Alert thresholds, metric interpretation
 - **Security**: RBAC, InjectedIdentity, audit logging
 - **Cost management**: Right-sizing, cost tags, showback
 
 #### Reference Materials
+
 - **XRD Schemas** for common services (PostgreSQL, MongoDB, Kafka with full spec fields)
 - **Integration patterns** (ArgoCD sync, Terraform provider future)
 - **Emergency procedures** (restore, pause, rollback)
@@ -218,6 +223,7 @@ framework = "ghcr.io/my-org/idp-concept-framework:v0.1.0"
 ### Verification
 
 Post-publish verification:
+
 ```bash
 # List published versions
 crane ls ghcr.io/my-org/idp-concept-framework
@@ -334,6 +340,7 @@ kcl run  # Imports framework from registry
 ## What's Next?
 
 ### Immediate (End of Session)
+
 - ✅ All three steps implemented and documented
 - ✅ Ready to merge to main branch
 - ✅ Ready to share with teams
@@ -341,21 +348,25 @@ kcl run  # Imports framework from registry
 ### Next Session Options
 
 **Option A: E2.2 Full Execution** (High priority)
+
 - Run E2.2 acceptance tests in real kind cluster
 - Add test results to CI/CD pipeline
 - Create test summary in docs
 
 **Option B: Phase F — Backstage Workflows** (5–8 hours)
+
 - Add Backstage UI for infrastructure provisioning
 - Create workflow templates (new database, new namespace, update config)
 - Full end-to-end self-service flow
 
 **Option C: Phase G — OTLP Telemetry** (3–5 hours)
+
 - Wire local metrics to OTLP backend
 - Create observability dashboards
 - Automated feedback loop
 
 **Option D: First Phase D Publish** (1 hour)
+
 - Create first release tag (v0.1.0)
 - Watch GitHub Actions publish automatically
 - Verify in downstream project
@@ -406,4 +417,3 @@ kcl run  # Imports framework from registry
 
 **Session Complete** ✅  
 Ready for: Merge → Release → Adoption
-

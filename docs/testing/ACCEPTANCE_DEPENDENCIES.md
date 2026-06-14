@@ -170,4 +170,3 @@ Run one scenario while iterating:
 4. If a fixture references custom resources, add only minimal dry-run CRD stubs for L1 validation; do not treat stubs as production CRDs.
 5. If a fixture uses a named StorageClass, include or document the storage provider that must create it before PVCs can bind.
 6. Use pinned versions for images, charts, and operator CRs. Never use `latest`.
-

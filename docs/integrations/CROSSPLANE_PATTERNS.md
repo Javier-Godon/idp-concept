@@ -100,6 +100,7 @@ XRDs define the custom API that platform users interact with.
 - Define connection details explicitly. Crossplane v2 XRs should compose or aggregate a Secret intentionally instead of relying on implicit v1-style connection secret behavior.
 
 ### Template
+
 ```yaml
 apiVersion: apiextensions.crossplane.io/v2
 kind: CompositeResourceDefinition
@@ -134,6 +135,7 @@ spec:
 ### Examples in Project and Maturity Target
 
 **cert-manager XRD** (`xrd_cert_manager.yaml`):
+
 ```yaml
 spec:
   properties:
@@ -142,6 +144,7 @@ spec:
 ```
 
 **Keycloak XRD** (`xrd_keycloak.yaml`):
+
 ```yaml
 spec:
   properties:
@@ -163,6 +166,7 @@ spec:
 ```
 
 **PostgreSQL XRD** (`xrd_postgres.yaml`) — CNPG-native, intent-level (the current reference target):
+
 ```yaml
 spec:
   scope: Cluster
@@ -211,6 +215,7 @@ All compositions use `mode: Pipeline` with function steps.
 | Business-specific reconciliation logic | Custom Go function using `function-sdk-go` | Use only when KCL/templates/P&T cannot express the behavior clearly; must include Go unit tests and `crossplane render` fixtures. |
 
 ### Template
+
 ```yaml
 apiVersion: apiextensions.crossplane.io/v1
 kind: Composition
@@ -413,6 +418,7 @@ Crossplane v2 compositions must model connection and status data explicitly:
 | `CombineFromComposite` | Multiple XR fields → Resource | Combine fields into one |
 
 ### Standard Patch (Most Common)
+
 ```yaml
 patches:
   - type: FromCompositeFieldPath
@@ -421,6 +427,7 @@ patches:
 ```
 
 ### Required Policy
+
 ```yaml
 patches:
   - fromFieldPath: "spec.label.postgresNamespace"
@@ -434,6 +441,7 @@ patches:
 ## 7. Provider Configuration
 
 ### Kubernetes Provider
+
 ```yaml
 apiVersion: kubernetes.crossplane.io/v1alpha1
 kind: ProviderConfig
@@ -445,6 +453,7 @@ spec:
 ```
 
 ### Helm Provider
+
 ```yaml
 apiVersion: helm.crossplane.io/v1beta1
 kind: ProviderConfig
@@ -600,18 +609,21 @@ Future scope can extend this same entrypoint with optional cluster reconciliatio
 The manual `crossplane_v2/` directory contains hand-crafted compositions. The automated Crossplane output currently generates XRDs, Compositions, and XRs directly from stack definitions.
 
 ### Usage
+
 ```bash
 cd projects/<project>/pre_releases/<release>
 koncept render crossplane
 ```
 
 This generates:
+
 - `output/crossplane/xrd.yaml` — CompositeResourceDefinition with `koncept.bluesolution.es/v1alpha1`
 - `output/crossplane/composition.yaml` — Pipeline composition (patch-and-transform → function-sequencer → auto-ready)
 - `output/crossplane/xr.yaml` — Composite Resource claim instance
 - `output/crossplane/prerequisites/infrastructure.yaml` — Provider + function installs
 
 ### How It Works
+
 1. **KCL resolves** all configurations (kernel → profile → tenant → site merge)
 2. **Stack modules** produce finalized K8s manifests
 3. **`kcl_to_crossplane`** wraps each manifest in a `kubernetes.crossplane.io/v1alpha2 Object`
@@ -626,6 +638,7 @@ This generates:
 ### Verified Implementation (June 2026)
 
 ✅ **Complete Features**:
+
 - Resource wrapping with Crossplane `Object` manifests
 - Concrete sequencer rule names for namespace/component/accessory dependencies
 - Stack governance metadata applied at Composition/XRD/XR/Object/prerequisite levels
@@ -636,6 +649,7 @@ This generates:
 - CLI integration: `koncept render crossplane` + `koncept crossplane test`
 
 **Governance Metadata Flow**:
+
 ```
 RenderStack.metadata
   ↓
@@ -653,6 +667,7 @@ Composition.metadata.annotations
 ```
 
 **Sequencer Rules Example**:
+
 ```yaml
 pipeline:
   - step: sequence-creation
@@ -678,11 +693,13 @@ This output is still a bridge, not the final professional Crossplane model, when
 ### Planned Enhancements
 
 🔄 **Runtime Validation**:
+
 - Expand beyond `smoke` profile to exercise actual Crossplane reconciliation
 - Build fixtures for provider-native managed resources integration tests
 - Add Crossplane update/delete lifecycle testing
 
 📋 **Future Maturity**:
+
 - Native provider equivalents for PostgreSQL (CloudNativePG operator vs provider-sql)
 - Kafka Strimzi composition with provider-native or manager integration
 - Keycloak composition with generated TypedJSONSchema for platform teams

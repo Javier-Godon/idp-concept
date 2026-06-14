@@ -140,6 +140,7 @@ Metadata is applied at **three levels** for complete governance visibility:
 3. **Per-release `labels`** — Override or extend top-level labels for specific releases
 
 This triple-application ensures governance metadata flows through at every Helm invocation:
+
 - When Helm installs/upgrades a release, `commonLabels` and release-specific `labels` are merged
 - When operators query released charts, they see the full governance context
 - When observability systems scrape pod/service labels, they inherit the stack identity
@@ -564,6 +565,7 @@ helmfile -l criticality=high sync  # Deploy only high-criticality releases
 ## 11. Implementation Status
 
 ✅ **Complete Features**:
+
 - Helmfile generation from stack components/accessories
 - Metadata label injection at three levels (top-level, common, per-release)
 - Dependency orchestration via `needs` calculation
@@ -573,13 +575,13 @@ helmfile -l criticality=high sync  # Deploy only high-criticality releases
 - CLI integration via `koncept render helmfile`
 
 🔄 **In Progress**:
+
 - Expanded Helmfile integration testing with real chart values
 - Observability enhancements (resource totals in dry-run output)
 - Multi-chart dependency analysis and visualization
 
 📋 **Future**:
+
 - Fleet output format (Helmfile + GitRepo as deployment interface)
 - Helmfile lifecycle hooks for pre/post sync callbacks
 - Custom Helmfile plugins for organization-specific hooks
-
-

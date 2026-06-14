@@ -54,16 +54,20 @@ Mapping of 23 infrastructure services to their XRD/Claim kinds in `crossplane_v2
 ### 2. Helper Functions
 
 **`_is_curated_service(component: str) -> bool`**
+
 - Checks if a service name has a corresponding curated API
 - Case-insensitive lookup in `_CURATED_SERVICES`
 
 **`_get_curated_api_info(component: str) -> {str:}`**
+
 - Retrieves XRD/Claim metadata for a service
 - Returns empty dict if not curated
 
 **`_generate_curated_claim(accessory_name, namespace, component, api_info, meta) -> {str:}`**
+
 - Creates a Claim instance with proper apiVersion, kind, metadata, and spec fields
 - Example output for MongoDB:
+
   ```yaml
   apiVersion: koncept.bluesolution.es/v1alpha1
   kind: MongoDBInstance
@@ -133,6 +137,7 @@ composition = generate_composition(_xr_kind, _bridge_all_resources, ..., meta)
 ### End-to-End Flow
 
 1. **Stack Definition** (e.g., erp_back/pre_releases/factory/)
+
    ```
    components = [WebApp, DataPrepper]
    accessories = [PostgreSQL, MongoDB, Kafka, Redis]
@@ -146,13 +151,16 @@ composition = generate_composition(_xr_kind, _bridge_all_resources, ..., meta)
 
 3. **Output Generation**
    - **managed_resources/** (Track 1):
+
      ```
      postgresql_claim.yaml
      mongodb_claim.yaml
      kafka_claim.yaml
      redis_claim.yaml
      ```
+
    - **composition.yaml** (Track 2 Composition pipeline):
+
      ```yaml
      pipeline:
        - step: render-manifests  # Renders Object wrappers for WebApp, DataPrepper
@@ -166,6 +174,7 @@ composition = generate_composition(_xr_kind, _bridge_all_resources, ..., meta)
      ```
 
 4. **CLI Distribution**
+
    ```
    koncept render crossplane
    ├── output/crossplane/xrd.yaml
@@ -182,6 +191,7 @@ composition = generate_composition(_xr_kind, _bridge_all_resources, ..., meta)
    ```
 
 5. **Deployment**
+
    ```bash
    # (1) Bootstrap providers and functions
    kubectl apply -f output/crossplane/prerequisites/
@@ -209,6 +219,7 @@ No need to maintain two separate systems; one generation passes handles both.
 ### 2. Why Not Wrap Everything in Objects?
 
 Objects hide:
+
 - Type information
 - Schema validation
 - Governance metadata
@@ -243,6 +254,7 @@ kcl run procedures/kcl_to_crossplane.k  # Should compile without errors
 ### 2. Logic Verification
 
 The implementation correctly:
+
 - ✅ Detects curated services by name lookup in `_CURATED_SERVICES`
 - ✅ Generates typed Claim instances for Track 1 (lines 174-186)
 - ✅ Wraps non-curated accessories in Objects for Track 2 (lines 188-203)
@@ -252,6 +264,7 @@ The implementation correctly:
 ### 3. Integration Points
 
 The convergence output is consumed by:
+
 - **CLI**: `koncept render crossplane` writes to `output/crossplane/managed_resources/` directory
 - **GitOps**: Separate files for manual/automated apply ordering
 - **Composition**: Bridge resources feed into Composition pipeline
@@ -273,6 +286,7 @@ Point 1 of 3 complete. Remaining work:
 ### Point 2: Lifecycle Testing (Convergence Validation)
 
 Create acceptance tests that exercise the two-track output:
+
 - [ ] Render a stack with both curated (MongoDB, PostgreSQL) and non-curated (WebApp) modules
 - [ ] Verify `managed_resources/` directory contains Claim instances
 - [ ] Verify Composition pipeline contains only Track 2 Object wrappers
@@ -281,6 +295,7 @@ Create acceptance tests that exercise the two-track output:
 ### Point 3: Operational Runbook
 
 Create a deployment guide for using curated APIs:
+
 - [ ] Scope: Which infrastructure services warrant Claim provisioning vs. bridge wrapping
 - [ ] Security: RBAC/permissions for platform engineers to approve/create Claims
 - [ ] Monitoring: How to observe convergence and composition reconciliation
@@ -321,4 +336,3 @@ Create a deployment guide for using curated APIs:
 
 **Session**: Continuation from June 7, 2026 Session (E2 Convergence Part 1)  
 **Completion Confidence**: HIGH — Implementation follows established patterns, syntax verified, all 23 services correctly mapped
-

@@ -130,4 +130,3 @@ _es = es.build_elasticsearch_cluster(es.ElasticsearchSpec {
     }]
 })
 ```
-

@@ -25,6 +25,7 @@
 **Recommendation**: Adopt **Backstage** (CNCF Incubation) as the developer portal for idp-concept.
 
 **Key Findings**:
+
 - Backstage is the **only viable free OSS developer portal** with sufficient maturity and ecosystem
 - **Full compatibility** with all our technologies: KCL (via custom actions), Crossplane (TeraSky plugin), ArgoCD (Roadie plugin), Helm, Kubernetes, Kafka, Keycloak, Vault
 - The **TeraSky Kubernetes Ingestor** plugin is a perfect bridge — it auto-ingests K8s workloads and Crossplane claims as Backstage catalog entities, and auto-generates Templates from Crossplane XRDs
@@ -33,6 +34,7 @@
 - New technology requirement: **Node.js + TypeScript + React** for Backstage customization
 
 **Gaps to Fill Before Adoption**:
+
 1. Backstage scaffolder templates wired to the current `koncept init project|module|env|release` lifecycle commands
 2. Production Backstage instance deployment and plugin configuration
 3. Node.js/TypeScript development capability
@@ -318,6 +320,7 @@ spec:
 This plugin deserves special attention because it **solves our biggest integration challenge**:
 
 **What it does**:
+
 1. **Auto-ingests K8s workloads** (Deployments, StatefulSets, etc.) as Backstage Components
 2. **Auto-ingests Crossplane Claims** as Backstage Components
 3. **Auto-generates Backstage Templates** from Crossplane XRDs (our `crossplane_v2/` XRDs become self-service forms!)
@@ -326,11 +329,13 @@ This plugin deserves special attention because it **solves our biggest integrati
 6. **Rich annotation system** for customizing entity creation
 
 **How it fits our architecture**:
+
 - Our `koncept render crossplane` generates XRDs/Compositions → deployed to K8s → Ingestor auto-creates Templates
 - Our `koncept render argocd` generates K8s manifests → deployed via ArgoCD → Ingestor auto-creates Components
 - No manual `catalog-info.yaml` maintenance needed for deployed resources
 
 **Annotations we'd add to our K8s manifests**:
+
 ```yaml
 metadata:
   annotations:
@@ -533,6 +538,7 @@ framework/tests/procedures/backstage_test.k
 ```
 
 Deliverables:
+
 - `generate_backstage_component` lambda
 - `generate_backstage_resource` lambda
 - `generate_backstage_system` lambda
@@ -567,6 +573,7 @@ Add annotations to generated K8s manifests for TeraSky Ingestor:
 #### 9.1 Core Plugin Installation
 
 Install and configure:
+
 - Kubernetes plugin → connect to target clusters
 - TeraSky Kubernetes Ingestor → auto-discover workloads and Crossplane claims
 - TeraSky Crossplane Resources → view claim/XR/managed resource graphs
@@ -592,6 +599,7 @@ Install and configure:
 #### 10.1 Custom Scaffolder Actions
 
 Create TypeScript actions wrapping `koncept` CLI:
+
 - `koncept:render` — render manifests in specified format
 - `koncept:validate` — validate configurations
 - `koncept:init` — scaffold new project/release
@@ -648,6 +656,7 @@ Create Backstage Templates mapping to our KCL templates:
 **Decision**: Adopt Backstage (CNCF Incubation) as the developer portal.
 
 **Rationale**:
+
 1. Only viable free OSS developer portal with sufficient maturity
 2. 33,000+ stars, 1,867 contributors, Apache-2.0 license
 3. Plugins exist for every technology in our stack
@@ -656,6 +665,7 @@ Create Backstage Templates mapping to our KCL templates:
 6. CNCF ecosystem alignment (Backstage, Crossplane, ArgoCD all CNCF)
 
 **Consequences**:
+
 - New technology requirement: Node.js + TypeScript + React
 - New infrastructure: PostgreSQL for Backstage (already have template)
 - Backstage catalog output and custom actions need ongoing compatibility with CLI contracts
@@ -671,6 +681,7 @@ Create Backstage Templates mapping to our KCL templates:
 **Decision**: Keep `koncept` CLI as the primary build/render tool. Backstage wraps it via scaffolder actions.
 
 **Rationale**:
+
 1. CLI is the "compiler" — it transforms KCL into outputs. This is CI/CD critical.
 2. Platform engineers prefer terminal workflows
 3. Backstage scaffolder actions executing CLI commands is the standard Backstage pattern
@@ -678,6 +689,7 @@ Create Backstage Templates mapping to our KCL templates:
 5. Removing CLI would require reimplementing all rendering logic in TypeScript
 
 **Consequences**:
+
 - Two interfaces to maintain (CLI + portal)
 - CLI commands must remain stable (portal depends on them)
 - Need documentation for when to use which

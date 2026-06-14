@@ -21,30 +21,35 @@ Successfully implemented **all 13 recommended infrastructure services** in Cross
 ## Phase 2b Implementations (5 Services)
 
 ### 10. **Kibana** (ECK Operator-Native)
+
 - **Files**: `xrd_kibana.yaml`, `x_kibana.yaml`, `xr_instance_kibana.yaml`
 - **API**: `XKibanaInstance` / `KibanaInstance` (claim)
 - **Pattern**: Provider-Kubernetes Object for ECK Kibana CRD
 - **Features**: Depends on Elasticsearch via elasticsearchRef field
 
 ### 11. **Logstash** (ECK Operator-Native)
+
 - **Files**: `xrd_logstash.yaml`, `x_logstash.yaml`, `xr_instance_logstash.yaml`
 - **API**: `XLogstashInstance` / `LogstashInstance` (claim)
 - **Pattern**: Provider-Kubernetes Object for ECK Logstash CRD
 - **Features**: Log processing pipeline; configurable via pipelines field
 
 ### 12. **OpenTelemetry Collector** (Helm Release)
+
 - **Files**: `xrd_otel_collector.yaml`, `x_otel_collector.yaml`, `xr_instance_otel_collector.yaml`
 - **API**: `XOpenTelemetryCollector` / `OpenTelemetryCollector` (claim)
 - **Pattern**: Provider-Helm Release for operator
 - **Features**: Mode-aware (deployment/daemonset/statefulset); configurable receivers/processors/exporters
 
 ### 13. **Data Prepper** (Kubernetes-Native)
+
 - **Files**: `xrd_dataprepper.yaml`, `x_dataprepper.yaml`, `xr_instance_dataprepper.yaml`
 - **API**: `XDataPrepperPipeline` / `DataPrepperPipeline` (claim)
 - **Pattern**: Kubernetes-native (Deployment + Service + ConfigMap, no operator)
 - **Features**: OpenSearch/Elasticsearch log ingestion pipeline
 
 ### 14. **Valkey** (OT Operator-Native)
+
 - **Files**: `xrd_valkey.yaml`, `x_valkey.yaml`, `xr_instance_valkey.yaml`
 - **API**: `XValkeyInstance` / `ValkeyInstance` (claim)
 - **Pattern**: Provider-Kubernetes Object for Valkey/ValkeyCluster CRD (Redis API-compatible)
@@ -79,18 +84,21 @@ Successfully implemented **all 13 recommended infrastructure services** in Cross
 ## Composition Patterns (by Category)
 
 ### Category A: Operator-Native CRD (11 services)
+
 ✅ MongoDB, RabbitMQ, Redis, OpenSearch, MinIO, Elasticsearch, Kibana, Logstash, Vault, Valkey, Kafka, Keycloak
 
 **Pattern**: Namespace (provider-kubernetes) → Operator CRD (provider-kubernetes)  
 **Functions**: patch-and-transform + sequencer + auto-ready
 
 ### Category B: Helm Release (3 services)
+
 ✅ QuestDB, OpenTelemetry Operator, Cert-Manager
 
 **Pattern**: Namespace (provider-kubernetes) → Helm Release (provider-helm)  
 **Functions**: patch-and-transform + sequencer + auto-ready
 
 ### Category C: Kubernetes-Native (1 service)
+
 ✅ Data Prepper
 
 **Pattern**: Namespace → Deployment + Service + ConfigMap (provider-kubernetes)  
@@ -101,11 +109,13 @@ Successfully implemented **all 13 recommended infrastructure services** in Cross
 ## File Count Summary
 
 **Phase 2 New Files**: 45
+
 - XRD files: 15
 - Composition files: 15
 - Instance example sets: 15
 
-**Total Project Additions**: 
+**Total Project Additions**:
+
 - 45 new Crossplane managed resource files
 - 4 documentation files
 - 1 implementation index
@@ -154,6 +164,7 @@ Successfully implemented **all 13 recommended infrastructure services** in Cross
 ## Usage Examples (All Patterns)
 
 ### Operator-Native (Most Common)
+
 ```yaml
 kubectl apply -f - <<EOF
 apiVersion: koncept.bluesolution.es/v1alpha1
@@ -170,6 +181,7 @@ EOF
 ```
 
 ### Mode-Aware (Redis / Valkey / OpenTelemetry)
+
 ```yaml
 # Standalone
 kind: RedisInstance
@@ -190,6 +202,7 @@ spec:
 ```
 
 ### Helm-Based
+
 ```yaml
 kind: OpenTelemetryCollector
 spec:
@@ -258,16 +271,19 @@ spec:
 ## Recommended Next Steps (Post-Phase 2)
 
 ### Immediate (Week 1-2)
+
 - Pin provider/function versions in `crossplane_v2/providers/` and `crossplane_v2/functions/`
 - Create dry-run CRD stubs for acceptance testing
 - Add managed-resource groups to `scripts/acceptance_kind.sh`
 
 ### Short-term (Week 3-4)
+
 - Create acceptance fixtures for all 17 services
 - Verify operator installations + real reconciliation
 - Test multi-service deployments (e.g., ELK stack)
 
 ### Medium-term (Phase E2, 4-8 weeks)
+
 - Update `framework/procedures/kcl_to_crossplane.k` to emit managed-resource references
 - Implement convergence test fixtures
 - Document migration pathway from framework → Crossplane
@@ -277,11 +293,13 @@ spec:
 ## Architecture Evolution Path
 
 **Current State (Today)**:
+
 - ✅ Framework templates → 9 output formats (YAML, Helm, Kusion, etc.)
 - ✅ 17 curated Crossplane APIs (infrastructure only)
 - ⏳ Generated `kcl_to_crossplane` still uses Object wrapping bridge
 
 **Phase E2 Target**:
+
 - ✅ Framework templates → 9 output formats (unchanged)
 - ✅ 17 curated Crossplane APIs (unchanged)
 - ✅ Generated `kcl_to_crossplane` emits managed-resource references
@@ -297,6 +315,7 @@ spec:
 The idp-concept platform now has **100% infrastructure-as-code parity** between framework templates and Crossplane managed resource definitions.
 
 ### By the Numbers
+
 - **17 total infrastructure APIs** (4 pre-existing + 13 new)
 - **51 new Crossplane resource files** (XRD + Composition + Examples)
 - **7 comprehensive documentation guides**
@@ -304,6 +323,7 @@ The idp-concept platform now has **100% infrastructure-as-code parity** between 
 - **100% schema validation**, RBAC, and security review
 
 ### Ready for
+
 ✅ Acceptance testing  
 ✅ Operator prerequisite documentation  
 ✅ Integration with generated `kcl_to_crossplane` output  
@@ -315,4 +335,3 @@ The idp-concept platform now has **100% infrastructure-as-code parity** between 
 **Project**: idp-concept  
 **Workspace**: `crossplane_v2/managed_resources/`  
 **Status**: COMPLETE & READY FOR DEPLOYMENT
-

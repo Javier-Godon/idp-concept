@@ -105,6 +105,7 @@ schema APIGatewayModule(accessory.Accessory):
     kind = "CRD"
 
     # Settings
+    chartVersion: str = "2.4.0"
     footprint: str = "production"
     adminEnabled: bool = True
     adminPort: int = 9180
@@ -126,6 +127,7 @@ schema APIGatewayModule(accessory.Accessory):
     _spec = APIGatewaySpec {
         name = name
         namespace = namespace
+        chartVersion = chartVersion
         footprint = footprint
         adminEnabled = adminEnabled
         adminPort = adminPort
@@ -149,7 +151,9 @@ schema APIGatewayModule(accessory.Accessory):
             extraValues = extraValues
     }
 
+    configurations = _spec
+    asset = {version = chartVersion}
     manifests = [build_apisix_release(_spec)]
-
+    dependsOn = []
 
 

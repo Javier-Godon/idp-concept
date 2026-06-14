@@ -9,6 +9,7 @@
 ## Test Files Created
 
 ### Acceptance Test Fixtures
+
 ```
 framework/tests/acceptance/cases/
 ├── apisix_workload.k                              L0 Render
@@ -21,6 +22,7 @@ Total: 5 new test files (145 lines of KCL code)
 ```
 
 ### Documentation Files
+
 ```
 docs/
 ├── ACCEPTANCE_TEST_REPORT_NEW_TEMPLATES.md        (Test results & validation)
@@ -31,6 +33,7 @@ Total: 3 documentation files (2000+ lines)
 ```
 
 ### Script Updates
+
 ```
 scripts/
 └── acceptance_kind.sh                             (Updated with new test cases)
@@ -47,6 +50,7 @@ scripts/
 ### Individual Component Tests
 
 #### ✅ APISIX APIGateway Test
+
 ```
 Test File: apisix_workload.k
 Module Type: Accessory (CRD)
@@ -71,6 +75,7 @@ Output Format:
 ```
 
 #### ✅ Superset BI Platform Test
+
 ```
 Test File: superset_workload.k
 Module Type: Accessory (CRD)
@@ -95,6 +100,7 @@ Output Format:
 ```
 
 #### ✅ Power BI Connector Test
+
 ```
 Test File: powerbi_workload.k
 Module Type: Component
@@ -120,6 +126,7 @@ Output Format:
 ### Integration Stack Tests
 
 #### ✅ APISIX + Superset + QuestDB Stack Test
+
 ```
 Test File: apisix_superset_questdb_stack_workload.k
 Fixture Type: Stack (RenderStack)
@@ -148,6 +155,7 @@ Integration Points:
 ```
 
 #### ✅ Power BI + Full Analytics Backend Stack Test
+
 ```
 Test File: powerbi_questdb_superset_stack_workload.k
 Fixture Type: Stack (RenderStack)
@@ -182,6 +190,7 @@ Integration Points:
 ## Rendering Validation Checklist
 
 ### KCL Compilation
+
 - [x] apisix.k compiles without errors
 - [x] superset.k compiles without errors
 - [x] powerbi_connector.k compiles without errors
@@ -190,6 +199,7 @@ Integration Points:
 - [x] No undefined variables or functions
 
 ### YAML Generation
+
 - [x] Valid apiVersion declarations
 - [x] Valid kind declarations
 - [x] Proper metadata structure
@@ -198,6 +208,7 @@ Integration Points:
 - [x] Labels and annotations present where required
 
 ### Framework Compliance
+
 - [x] Uses Accessory/Component module inheritance
 - [x] Implements leaders and dependsOn relationships
 - [x] Uses _helpers.k render functions
@@ -207,6 +218,7 @@ Integration Points:
 - [x] Manifests property properly structured
 
 ### Kubernetes Compliance
+
 - [x] apiVersion matches API version
 - [x] kind matches Kubernetes resource type
 - [x] metadata.name follows DNS-1123 rules
@@ -340,6 +352,7 @@ Analytics backend composition validation:
 ## Acceptance Test Framework Integration
 
 ### Updated Test Scripts
+
 ```bash
 ✓ acceptance_kind.sh updated
   ├─ New PLATFORM_CASES: apisix, superset, powerbi
@@ -357,6 +370,7 @@ Analytics backend composition validation:
 ```
 
 ### Test Execution Paths
+
 ```
 verify.sh (rendering only)
 ├─ ✓ Lints all KCL files
@@ -391,6 +405,7 @@ acceptance_kind.sh (full deployment)
 ### Prerequisites for Real Deployment
 
 **Must be installed before deploying:**
+
 - [ ] Helm (for chart rendering)
 - [ ] Kubernetes cluster 1.31+
 - [ ] PostgreSQL database
@@ -398,6 +413,7 @@ acceptance_kind.sh (full deployment)
 - [ ] Helm provider (for Crossplane)
 
 **Optional for full test:**
+
 - [ ] kind or minikube (local testing)
 - [ ] kubectl (cluster interaction)
 - [ ] Helm repositories (apisix, superset, questdb)
@@ -407,18 +423,21 @@ acceptance_kind.sh (full deployment)
 ## Test Quality Metrics
 
 ### Code Coverage
+
 - **Lines of KCL**: 145 lines in test fixtures
 - **Test Cases**: 5 individual + 2 integration = 7 total
 - **Coverage Areas**: Rendering, integration, stacks, multi-module composition
 - **Framework Patterns**: All major patterns tested
 
 ### Documentation
+
 - **Test Report**: 250+ lines
 - **Implementation Guide**: 300+ lines  
 - **Integration Guide**: 400+ lines (existing)
 - **Acceptance Testing Instructions**: Comprehensive
 
 ### Test Execution
+
 - **Rendering Tests**: Fast (<1s per fixture)
 - **Integration Tests**: ~5-10s per stack
 - **Kind Cluster Tests**: ~30-60s per case (with prerequisites)
@@ -429,6 +448,7 @@ acceptance_kind.sh (full deployment)
 ## Recommendations for Continued Testing
 
 ### Before Production Deployment
+
 1. Run full acceptance suite: `./scripts/acceptance_kind.sh --case all`
 2. Manually test with real Helm charts installed
 3. Verify all external connections (PostgreSQL, Redis, etc.)
@@ -436,12 +456,14 @@ acceptance_kind.sh (full deployment)
 5. Validate monitoring and logging integration
 
 ### Continuous Integration
+
 1. Run `verify.sh` on every commit (already integrated)
 2. Run acceptance tests nightly in CI/CD pipeline
 3. Monitor for Helm chart version updates
 4. Track CVEs in Helm chart dependencies
 
 ### Monitoring & Support
+
 1. Set up alerts for pod readiness
 2. Monitor service interconnectivity
 3. Track Helm Release sync status
@@ -485,4 +507,3 @@ The new test fixtures and integration stacks are now part of the standard accept
 **Ready for Production**: YES
 
 *See `docs/ACCEPTANCE_TESTING_IMPLEMENTATION.md` for detailed testing instructions.*
-

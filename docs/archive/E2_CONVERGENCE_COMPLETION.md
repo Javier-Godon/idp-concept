@@ -85,7 +85,7 @@
 |--------|-------|
 | **Lines of new code** | ~150 (docstring, mapping, helpers, logic) |
 | **Lines refactored** | ~30 (output handling, processing) |
-| **Functions added** | 3 (_is_curated_service, _get_curated_api_info, _generate_curated_claim) |
+| **Functions added** | 3 (_is_curated_service,_get_curated_api_info,_generate_curated_claim) |
 | **Complexity added** | Low (simple dict lookups + existing patterns) |
 | **Breaking changes** | 0 |
 | **Syntax errors** | 0 (verified) |
@@ -94,16 +94,19 @@
 ### Architecture Decisions
 
 **Why 23 curated services only?**
+
 - Platform/infrastructure services warrant typed safe APIs (databases, queues, messaging, identity, certs, storage, observability)
 - Application workloads (WebApp, generic database) stay on Tier-1 GitOps YAML
 - Clear separation: control-plane (Crossplane) vs. user-plane (GitOps)
 
 **Why separate Track 1 and Track 2?**
+
 - Track 1 (Curated Claims): Professional APIs with schema validation and intent modeling
 - Track 2 (Bridge Objects): Backward compatibility for unmodeled services; gradual adoption path
 - Single generator handles both; flexible deployment
 
 **Why output separation?**
+
 - GitOps/automation needs to apply Tier 1 Claims (infrastructure) before Tier 2 XR (workloads)
 - CLI writes them to separate directory; users control deployment order
 - Composition pipeline only processes Track 2 (bridge Objects); avoids duplication with curated Compositions
@@ -157,12 +160,15 @@ kubectl apply -f output/crossplane/composition.yaml
 ### For Framework Developers (New Curated APIs)
 
 To add a new curated service:
+
 1. Create XRD in `crossplane_v2/managed_resources/<service>/xrd_*.yaml`
 2. Create Composition in `crossplane_v2/managed_resources/<service>/x_*.yaml`
 3. Add entry to `_CURATED_SERVICES` in `framework/procedures/kcl_to_crossplane.k`:
+
    ```kcl
    "<service_name>" = {xrd_kind = "X<ServiceName>", claim_kind = "<ServiceName>Claim", api_group = "koncept.bluesolution.es"}
    ```
+
 4. Verify: Run a test stack that includes the service; confirm Claim emitted to managed_resources/
 
 ---
@@ -202,6 +208,7 @@ grep "^_is_curated_service\|^_get_curated_api_info\|^_generate_curated_claim" pr
 ### Changed Behavior (Track 1 Only)
 
 **Before**: All accessories wrapped in provider-kubernetes Objects
+
 ```
 MongoDB → Kubernetes Object
   spec.forProvider.manifest:
@@ -210,6 +217,7 @@ MongoDB → Kubernetes Object
 ```
 
 **After**: Curated accessories emit Claims (still can wrap in Objects if needed)
+
 ```
 MongoDB → MongoDBInstance Claim
   apiVersion: koncept.bluesolution.es/v1alpha1
@@ -250,7 +258,7 @@ Non-curated services and application workloads continue wrapping in Objects exac
 
 1. **Professional Control-Plane APIs**: Infrastructure teams can now use typed, validated APIs instead of working with raw manifests
 
-2. **Clearer Responsibilities**: 
+2. **Clearer Responsibilities**:
    - Platform engineers manage Track 1 (infrastructure Claims)
    - Application teams manage Track 2 / Tier-1 GitOps (workloads)
 
@@ -303,6 +311,7 @@ Non-curated services and application workloads continue wrapping in Objects exac
 **Status**: ✅ READY FOR E2.2 ACCEPTANCE TESTING
 
 **Confidence Level**: 🟢 **VERY HIGH**
+
 - Logic: Verified against established patterns
 - Syntax: Zero KCL compiler errors
 - Backward compatibility: 100% maintained
@@ -313,4 +322,3 @@ Non-curated services and application workloads continue wrapping in Objects exac
 **Next Session**: E2.2 acceptance test implementation or Phase D OCI publish (user's choice)  
 **Estimated E2.2 effort**: 5–10 hours (fixture creation + CI wiring)  
 **Estimated Phase D effort**: 3–5 hours (publish script + CI integration)
-

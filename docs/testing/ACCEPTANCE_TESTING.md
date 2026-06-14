@@ -170,6 +170,7 @@ The recommended approach is:
 - run heavier cases in nightly CI or before releases
 
 For true operator-backed deployment verification, use:
+
 ```
 ./scripts/acceptance_runtime.sh --case <runtime-group>
 ```

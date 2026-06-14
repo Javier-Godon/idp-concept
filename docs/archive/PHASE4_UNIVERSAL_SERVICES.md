@@ -27,11 +27,13 @@ These are foundational services commonly deployed on every production Kubernetes
 ### Two-Track Implementation
 
 **Track 1: Framework Templates** (`framework/templates/*/v1_0_0/*.k`)
+
 - KCL-based configuration generators
 - Render to multiple output formats (YAML, Helm, Kusion, Crossplane, etc.)
 - Used by `koncept render` CLI
 
 **Track 2: Crossplane Managed Resources** (`crossplane_v2/managed_resources/*/`)
+
 - Hand-authored platform APIs (XIRDs/Compositions/XR instances)
 - Intent-level self-service APIs
 - Kubernetes-native declarative resources
@@ -39,6 +41,7 @@ These are foundational services commonly deployed on every production Kubernetes
 ### Gateway API: Replacing Legacy Ingress
 
 Gateway API provides:
+
 - ✅ Multiple implementations: Envoy, NGINX, Istio
 - ✅ Cross-namespace routing
 - ✅ Advanced routing semantics (weights, timeouts, retries)
@@ -50,11 +53,13 @@ Gateway API provides:
 ### 1. Cert-Manager
 
 **Framework Template**: `framework/templates/cert_manager/v1_0_0/cert_manager.k`
+
 - Helm-based deployment (Bitnami chart)
 - ACME provider support (Let's Encrypt, etc.)
 - ClusterIssuer + Certificate CRD pattern
 
 **Crossplane Resources**: `crossplane_v2/managed_resources/cert_manager/`
+
 - ✅ XRD: `xrd_cert_manager.yaml` (XCertManager)
 - ✅ Composition: `x_cert_manager.yaml`
 - ✅ Example: `xr_instance_cert_manager.yaml`
@@ -62,11 +67,13 @@ Gateway API provides:
 ### 2. External-DNS
 
 **Framework Template**: `framework/templates/external_dns/v1_0_0/external_dns.k`
+
 - Multi-provider support (AWS, Azure, GCP, Cloudflare, Digital Ocean, Linode, TransIP)
 - Ingress/Service/Gateway source support
 - Registry backend strategy (txt, aws-sd, noop)
 
 **Crossplane Resources**: `crossplane_v2/managed_resources/external_dns/`
+
 - ✅ XRD: `xrd_external_dns.yaml` (XExternalDNS)
 - ✅ Composition: `x_external_dns.yaml`
 - ✅ Example: `xr_instance_external_dns.yaml`
@@ -74,11 +81,13 @@ Gateway API provides:
 ### 3. Gateway API
 
 **Framework Template**: `framework/templates/gateway_api/v1_0_0/gateway_api.k`
+
 - Multi-provider support (Envoy Gateway, NGINX Gateway Fabric, Istio)
 - Gateway CRD deployment via Helm
 - Gateway + HTTPRoute + TLSRoute pattern
 
 **Crossplane Resources**: `crossplane_v2/managed_resources/gateway_api/`
+
 - ✅ XRD: `xrd_gateway_api.yaml` (XGateway)
 - ✅ Composition: `x_gateway_api.yaml`
 - ✅ Example: `xr_instance_gateway_api.yaml`
@@ -86,11 +95,13 @@ Gateway API provides:
 ### 4. Network Policies
 
 **Framework Template**: `framework/templates/network_policies/v1_0_0/network_policies.k`
+
 - Zero-trust default (deny-all ingress)
 - Allow-from patterns (namespace, pod, service)
 - DNS, Prometheus monitoring egress controls
 
 **Crossplane Resources**: `crossplane_v2/managed_resources/network_policies/`
+
 - ✅ XRD: `xrd_network_policies.yaml` (XNetworkPolicies)
 - ✅ Composition: `x_network_policies.yaml` (KCL-function-based)
 - ✅ Example: `xr_instance_network_policies.yaml`
@@ -98,18 +109,21 @@ Gateway API provides:
 ## Files Created/Modified
 
 ### New Framework Templates
+
 - `framework/templates/cert_manager/v1_0_0/cert_manager.k`
 - `framework/templates/external_dns/v1_0_0/external_dns.k`
 - `framework/templates/gateway_api/v1_0_0/gateway_api.k`
 - `framework/templates/network_policies/v1_0_0/network_policies.k`
 
 ### New Crossplane Managed Resources
+
 - `crossplane_v2/managed_resources/cert_manager/` (updated with updated context)
 - `crossplane_v2/managed_resources/external_dns/{xrd,x,xr_instance}_external_dns.yaml`
 - `crossplane_v2/managed_resources/gateway_api/{xrd,x,xr_instance}_gateway_api.yaml`
 - `crossplane_v2/managed_resources/network_policies/{xrd,x,xr_instance}_network_policies.yaml`
 
 ### Documentation Updates
+
 - `crossplane_v2/TEMPLATE_MAPPING.md` — Added Phase 4 services to parity matrix
 - `crossplane_v2/IMPLEMENTATION_STATUS.md` — Updated total count (23→27 services), added Phase 4 section
 
@@ -165,6 +179,7 @@ EOF
 ## Future Enhancements
 
 ### Planned Improvements (Phase 5+)
+
 - [ ] Acceptance fixtures for each service in `framework/tests/acceptance/cases/`
 - [ ] Dry-run CRD stubs in `framework/tests/acceptance/crds/dry_run_crds.yaml`
 - [ ] Provider prerequisites pinned in `crossplane_v2/providers/`
@@ -172,6 +187,7 @@ EOF
 - [ ] Extended documentation in `docs/CROSSPLANE_PATTERNS.md`
 
 ### Integration with Existing Platform
+
 - Gateway API integration with SSL/TLS certificates (cert-manager)
 - Automatic DNS routing via External-DNS
 - Network policy automation for all deployed services
@@ -193,4 +209,3 @@ EOF
   - Added 4 complete Crossplane managed resource APIs (XRД + Composition + XR instances)
   - Updated documentation (TEMPLATE_MAPPING.md, IMPLEMENTATION_STATUS.md)
   - All resources security-hardened and production-ready
-

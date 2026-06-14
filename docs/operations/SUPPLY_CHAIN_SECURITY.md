@@ -9,17 +9,20 @@
 As of 2026-06-07, the `.github/workflows/release.yml` now includes:
 
 ### 1. **SLSA v1.0 Provenance** (supply-chain levels for software artifacts)
+
 - Generated automatically for every tagged release via `slsa-github-generator`
 - Proves the artifact was built from the tagged commit, not injected later
 - File: `koncept.provenance.json` on GitHub Release
 
 ### 2. **Software Bill of Materials (SBOM)** using Syft
+
 - Scans each binary for dependencies (transitive), licenses, and known vulnerabilities
 - Format: **CycloneDX XML** (industry standard, integrates with Grype/Snyk/etc.)
 - Files: `koncept-<platform>.sbom.xml` on GitHub Release
 - Usage: `syft --file koncept.sbom.xml` or import into SIEM/scanning tools
 
 ### 3. **Code Signing** via Cosign
+
 - Each binary signed using Sigstore keyless signing (OIDC + Fulcio)
 - No manual key management; GitHub OIDC token is the identity
 - Files: `koncept-<platform>.bundle` (signature + cert chain)
@@ -71,6 +74,7 @@ docker pull ghcr.io/javier-godon/idp-concept/koncept:v1.0.0
 ## Workflow Details
 
 ### Binaries Job (`release.yml`)
+
 - ✅ Builds for all platforms (Linux amd64/arm64, macOS amd64/arm64, Windows amd64)
 - ✅ Generates SHA256SUMS checksums
 - ✅ Creates SBOM for each binary via `syft`
@@ -78,11 +82,13 @@ docker pull ghcr.io/javier-godon/idp-concept/koncept:v1.0.0
 - ✅ Outputs hashes for SLSA provenance job
 
 ### Provenance Job (`release.yml`)
+
 - ✅ Generates SLSA v1.0 provenance for all binaries
 - ✅ Publishes `koncept.provenance.json` to GitHub Release
 - ✅ Requires explicit `id-token: write` permission (OIDC)
 
 ### Artifact Publishing
+
 - GitHub Release includes:
   - Binaries (`koncept-linux-amd64`, `koncept-darwin-arm64`, `koncept-windows-amd64.exe`, etc.)
   - Checksums (`SHA256SUMS`)
@@ -119,15 +125,18 @@ Before adopting a new version, teams should:
 ## Troubleshooting
 
 ### "Cannot verify signature"
+
 - Ensure `cosign` is v2.0.0+: `cosign version`
 - Check certificate expiry; Sigstore certs rotate daily
 - Verify GitHub OIDC is enabled in the workflow (check logs for cosign login)
 
 ### "SBOM is empty"
+
 - Binary might not have Go dependencies (pure static binary is possible)
 - Run `syft <binary>` locally to debug
 
 ### "Provenance JSON doesn't match my binary"
+
 - Hash the binary and compare to `subject.digest.sha256` in provenance JSON
 - If mismatch, binary may have been mutated; do not use
 
@@ -149,4 +158,3 @@ Before adopting a new version, teams should:
 - CycloneDX: https://cyclonedx.org/ — SBOM standard
 - Syft: https://github.com/anchore/syft — SBOM generator
 - Cosign: https://github.com/sigstore/cosign — signing tool
-

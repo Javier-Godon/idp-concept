@@ -23,5 +23,4 @@ _module = pbi.PowerBIConnectorModule {
     footprint = "development"
 }.instance
 
-h.render_accessory(_namespace, _module)
-
+h.render_component(_namespace, _module)

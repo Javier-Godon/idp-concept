@@ -64,7 +64,7 @@ koncept --factory projects/erp_back/pre_releases/manifests/dev/factory golden up
 ```
 
 On drift, `golden check` prints a concise line diff of the changed region
-(`- ` golden vs `+ ` actual, with line numbers) so reviewers see exactly what
+(`-` golden vs `+` actual, with line numbers) so reviewers see exactly what
 changed without opening the file.
 
 ## CI

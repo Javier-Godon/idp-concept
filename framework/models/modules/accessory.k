@@ -11,6 +11,7 @@ schema AccessoryInstance:
     name: str
     kind: str
     namespace: str
+    component?: str = ""
     configurations: any
     asset: AccessoryAsset
     leaders: [AccessoryLeader]
@@ -22,6 +23,7 @@ schema Accessory:
         name = name
         kind = kind
         namespace = namespace
+        component = component
         configurations = configurations
         asset = asset
         leaders = leaders
@@ -31,9 +33,9 @@ schema Accessory:
     kind: "CRD" | "SECRET"
     name: str
     namespace: str
+    component?: str = ""
     configurations: any
     asset: AccessoryAsset
     leaders: [AccessoryLeader]
     manifests: [any]
     dependsOn?: [any]
-

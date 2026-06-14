@@ -52,4 +52,3 @@ _site_cfg = ProjectConfigurations {
 - Longhorn stack: `framework/templates/longhorn.k`
 
 Use one storage provider per cluster unless you have a clear multi-storage strategy.
-

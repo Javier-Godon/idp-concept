@@ -253,6 +253,7 @@ The factory provides two files that every release directory copies:
 ### 5.6 Assembly (`framework/assembly/`) — Helpers
 
 Convenience functions for common operations:
+
 - `create_namespace(name, config)` — creates a `K8sNamespaceInstance` in one line
 - `create_namespace_from_config(field, config)` — reads namespace name from a config field
 
@@ -452,6 +453,7 @@ schema MyModule(component.Component):
 ```
 
 Then add the module to your stack:
+
 ```kcl
 _my_api = MyApi { name = "api", namespace = _ns.name, asset = { image = "...", version = "1.0" }, configurations = instanceConfigurations, dependsOn = [_ns] }.instance
 components = [_my_api]

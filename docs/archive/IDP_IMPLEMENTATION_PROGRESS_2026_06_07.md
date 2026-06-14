@@ -17,6 +17,7 @@ Execution of the IDP Assessment 2026H2 plan is progressing systematically. All P
 ### P0 — Reduce Surface Area & Make Platform Legible
 
 #### ✅ **A1: Documentation Consolidation + CI Linting**
+
 - **Archived** 15 redundant status documents (`*_COMPLETE*.md`, `*_SUMMARY*.md`, etc.) → `docs/archive/`
 - **Root tree cleaned**: Only `README.md` remains; all active docs under `docs/`
 - **Added doc-lint gate** to `.github/workflows/validate.yml`:
@@ -26,6 +27,7 @@ Execution of the IDP Assessment 2026H2 plan is progressing systematically. All P
 - **Impact**: Future doc sprawl is blocked; dead links caught in CI
 
 #### ✅ **A2: Formalize Output Support Tiers in Code**
+
 - **Encoded tiers** in `cmd/koncept/cmd/render.go`:
   - Tier 1 (production): yaml, argocd, helmfile, backstage
   - Tier 2 (maintained): helm, crossplane, kustomize
@@ -35,6 +37,7 @@ Execution of the IDP Assessment 2026H2 plan is progressing systematically. All P
 - **Impact**: Teams see clear support expectations; Tier-3 decisions are visible and justified
 
 #### 🟡 **A3: Execute Framework OCI Publish + Pin One Project**
+
 - **✅ Published**: Framework now at `oras://ghcr.io/javier-godon/idp-concept-framework:v1.0.0-pre`
 - **✅ Fixed publish script**: Added `--disable-path-validation` for ORAS to handle absolute paths
 - **✅ Verified**: `oras pull` successfully retrieves published framework
@@ -43,6 +46,7 @@ Execution of the IDP Assessment 2026H2 plan is progressing systematically. All P
 - **Impact**: Distribution infrastructure is proven and ready; adoption awaits external tooling
 
 #### ✅ **A4: Real Adoption Pilot Setup**
+
 - **Status**: Decision point identified; two options documented
 - **Lightweight path**: Use existing internal projects (video_streaming, pokedex) for pilot feedback
 - **Formal path**: Full 8-week external pilot per `docs/ADOPTION_PILOT_GUIDE.md`
@@ -53,6 +57,7 @@ Execution of the IDP Assessment 2026H2 plan is progressing systematically. All P
 ### P1 — Supply-Chain & Policy Hardening
 
 #### ✅ **A5: Add Supply-Chain Integrity (Cosign + SLSA + SBOM)**
+
 - **Enhanced `.github/workflows/release.yml`**:
   - Added `id-token: write` for Sigstore keyless signing
 - **SBOM Generation** (Syft):
@@ -71,6 +76,7 @@ Execution of the IDP Assessment 2026H2 plan is progressing systematically. All P
 - **Impact**: Enterprises can verify artifact authenticity and provenance; audit trail tied to Git commit
 
 #### ✅ **A7: Renovate Configuration for Dependency Automation**
+
 - **Created**: `renovate.json` with intelligent update strategy
 - **Features**:
   - Semantic commits for clarity
@@ -87,11 +93,13 @@ Execution of the IDP Assessment 2026H2 plan is progressing systematically. All P
 ## In-Progress / Not Started
 
 ### P1 Actions
+
 - **A6 (Kyverno/OPA admission parity)**: Requires mapping `koncept policy check` rules to Kyverno/Conftest; blocked on policy rule review
 - **A8 (Crossplane promotion gate)**: Requires completing reconciliation tests for Crossplane APIs
 - **A9 (Converge bridge ↔ curated APIs)**: Blocked on A8
 
 ### P2 Actions
+
 - **A10–A12**: Deferred pending P0/P1 completion
 
 ---
@@ -138,6 +146,7 @@ Execution of the IDP Assessment 2026H2 plan is progressing systematically. All P
 ## Strategic Impact
 
 ### Immediate (This Week)
+
 - **Repo is now legible**: No competing status docs; clear forward-looking assessment drives work
 - **Teams see support tiers**: Tier-3 freeze decision is justified and visible
 - **Distribution is proven**: Framework in GHCR; KCL integration awaits KPM v2.0
@@ -145,11 +154,13 @@ Execution of the IDP Assessment 2026H2 plan is progressing systematically. All P
 - **Dependencies stay current**: Renovate automates updates with intelligent grouping
 
 ### Medium-term (Next Sprint)
+
 - Implement A4 adoption pilot (lightweight internal → formal external)
 - Start A8 Crossplane promotion gate (reconciliation tests)
 - Monitor KPM v2.0 release for ORAS support (then finalize A3)
 
 ### Long-term (Post-adoption Pilot)
+
 - A6: Map policy rules to Kyverno/OPA/Conftest admission
 - A9: Converge generated bridge with curated Crossplane APIs
 - A10: Backstage golden paths live
@@ -160,11 +171,13 @@ Execution of the IDP Assessment 2026H2 plan is progressing systematically. All P
 ## Blockers Resolved / Remaining
 
 ### ✅ Resolved
+
 - Doc sprawl (P0)
 - Output tier ambiguity (P0)
 - Distribution tooling (P0, except KCL integration)
 
 ### ⏳ Remaining
+
 - **KCL ORAS support** (external, KPM v2.0 Q3/2026) — blocks A3 finalization
 - **Decision on A4 scope** (lightweight vs. formal pilot) — platform team input needed
 - **Crossplane API promotion checklist** — requires real reconciliation tests for P1/A8
@@ -174,18 +187,21 @@ Execution of the IDP Assessment 2026H2 plan is progressing systematically. All P
 ## Recommendations for Next Steps
 
 **Immediate (by end of week):**
+
 1. Review and approve P0 completion
 2. Run CI to verify doc-lint gate works
 3. Decide on A4 adoption pilot scope (section "Action Needed")
 4. Tag framework v1.0.0-pre release notes for reference
 
 **Next sprint:**
+
 1. If lightweight A4 pilot: contact existing projects for feedback
 2. If formal A4 pilot: begin recruitment per `ADOPTION_PILOT_GUIDE.md`
 3. Start A8 work: pick 2–3 Crossplane APIs and schedule reconciliation tests
 4. Monitor KPM releases for v2.0 ORAS support
 
 **Post-pilot:**
+
 1. Incorporate pilot feedback into P1 priorities
 2. Finalize A3 once KCL supports ORAS
 3. Begin A6/A9 Crossplane convergence
@@ -199,4 +215,3 @@ Execution of the IDP Assessment 2026H2 plan is progressing systematically. All P
 - **P0 status**: `docs/IDP_P0_EXECUTION_STATUS.md` (this document's predecessor)
 - **Supply chain details**: `docs/SUPPLY_CHAIN_SECURITY.md`
 - **Adoption pilot setup**: `docs/ADOPTION_PILOT_GUIDE.md` (reference for A4 decision)
-

@@ -435,6 +435,7 @@ spec:
 These templates require custom actions registered in `backstage/plugins/`:
 
 ### `koncept:init:project` Action
+
 ```typescript
 export const konceptInitProject: createBackstageAction<{
   projectName: string;
@@ -451,6 +452,7 @@ export const konceptInitProject: createBackstageAction<{
 ```
 
 ### `koncept:validate` Action
+
 ```typescript
 export const konceptValidate: createBackstageAction<{
   projectPath: string;
@@ -471,16 +473,19 @@ export const konceptValidate: createBackstageAction<{
 ## Implementation Roadmap
 
 ### Phase 1: Foundation (Sprint 1)
+
 - [ ] Create custom action framework in `backstage/actions/`
 - [ ] Scaffold Template 1 (new-webapp)
 - [ ] Test locally with Backstage dev server
 
 ### Phase 2: Expansion (Sprint 2)
+
 - [ ] Add Templates 2 & 3
 - [ ] Integrate CI/CD approval workflow
 - [ ] Document for end-users
 
 ### Phase 3: Production (Sprint 3)
+
 - [ ] Deploy Backstage instance
 - [ ] Train platform team
 - [ ] Gather user feedback
@@ -504,4 +509,3 @@ export const konceptValidate: createBackstageAction<{
 - **Custom actions**: `backstage/plugins/actions/`
 - **CLI commands**: `koncept --help`
 - **Templates**: `framework/templates/`
-

@@ -12,15 +12,9 @@ Type: Dry-run (no real Crossplane deployment)
 Expected output: managed_resources/ dir with Claims + composition.yaml with Objects
 """
 
-import models.stack as stack_mod
-import models.release as release_mod
-import models.modules.component
-import models.modules.accessory
+import models.modules.component as component
+import models.modules.accessory as accessory
 import models.modules.k8snamespace as ns_mod
-import templates.webapp.v1_0_0.webapp as webapp_template
-import templates.postgresql.v1_0_0.postgresql as postgresql_template
-import templates.mongodb.v1_0_0.mongodb as mongodb_template
-import templates.kafka.v1_0_0.kafka as kafka_template
 import procedures.kcl_to_crossplane as crossplane_proc
 
 # --- Test: Mixed Stack with Curated + Non-Curated Services ---
@@ -41,15 +35,10 @@ test_mixed_convergence_stack = lambda -> {str:} {
     """
 
     # Setup: Test namespace
-    _test_namespace = ns_mod.K8sNamespaceInstance {
+    _test_namespace = ns_mod.K8sNamespace {
         name = "e2-test"
-        namespace = "default"
-        manifests = [{
-            apiVersion = "v1"
-            kind = "Namespace"
-            metadata.name = "e2-test"
-        }]
-    }
+        configurations = {}
+    }.instance
 
     # Track 1.1: PostgreSQL (curated service)
     _postgresql_manifests = [
@@ -64,12 +53,16 @@ test_mixed_convergence_stack = lambda -> {str:} {
             }
         }
     ]
-    _postgresql_acc = models.modules.accessory.AccessoryInstance {
+    _postgresql_acc = accessory.AccessoryInstance {
         name = "test-postgres"
         namespace = "e2-test"
-        kind = "INFRASTRUCTURE"
+        kind = "CRD"
+        component = "postgresql"
+        configurations = {}
+        asset = {version = "1.0.0"}
         leaders = []
         manifests = _postgresql_manifests
+        dependsOn = []
     }
 
     # Track 1.2: MongoDB (curated service)
@@ -86,12 +79,16 @@ test_mixed_convergence_stack = lambda -> {str:} {
             }
         }
     ]
-    _mongodb_acc = models.modules.accessory.AccessoryInstance {
+    _mongodb_acc = accessory.AccessoryInstance {
         name = "test-mongodb"
         namespace = "e2-test"
-        kind = "INFRASTRUCTURE"
+        kind = "CRD"
+        component = "mongodb"
+        configurations = {}
+        asset = {version = "1.0.0"}
         leaders = []
         manifests = _mongodb_manifests
+        dependsOn = []
     }
 
     # Track 1.3: Kafka (curated service)
@@ -108,12 +105,16 @@ test_mixed_convergence_stack = lambda -> {str:} {
             }
         }
     ]
-    _kafka_acc = models.modules.accessory.AccessoryInstance {
+    _kafka_acc = accessory.AccessoryInstance {
         name = "test-kafka"
         namespace = "e2-test"
-        kind = "INFRASTRUCTURE"
+        kind = "CRD"
+        component = "kafka"
+        configurations = {}
+        asset = {version = "1.0.0"}
         leaders = []
         manifests = _kafka_manifests
+        dependsOn = []
     }
 
     # Track 2: WebApp (non-curated, should wrap in Object)
@@ -148,10 +149,12 @@ test_mixed_convergence_stack = lambda -> {str:} {
             }
         }
     ]
-    _webapp_comp = models.modules.component.ComponentInstance {
+    _webapp_comp = component.ComponentInstance {
         name = "test-app"
         namespace = "e2-test"
         kind = "APPLICATION"
+        configurations = {}
+        asset = {version = "1.0.0"}
         leaders = []
         manifests = _webapp_manifests
         dependsOn = [
@@ -217,7 +220,7 @@ test_mixed_convergence_stack = lambda -> {str:} {
 
     # 9. Verify sequencer rules if present
     if len(_pipeline) > 2:
-        _has_sequencer = any(step.step == "sequence-creation" for step in _pipeline)
+        _has_sequencer = len([step for step in _pipeline if step.step == "sequence-creation"]) > 0
         if _has_sequencer:
             assert _result.metadata.sequencerRules > 0, "Should have sequencer rules for dependencies"
 
@@ -275,15 +278,20 @@ test_output_separation = lambda -> {str:} {
     """
     Unit test: Verify that managed_resources and composition are properly separated
     """
+    _empty_components: [component.ComponentInstance] = []
     _simple_stack = crossplane_proc.generate_crossplane_from_stack(
-        [] as [models.modules.component.ComponentInstance],
+        _empty_components,
         [
-            models.modules.accessory.AccessoryInstance {
+            accessory.AccessoryInstance {
                 name = "test-db"
                 namespace = "default"
-                kind = "INFRASTRUCTURE"
+                kind = "CRD"
+                component = "postgresql"
+                configurations = {}
+                asset = {version = "1.0.0"}
                 leaders = []
                 manifests = [{apiVersion = "v1", kind = "Pod"}]
+                dependsOn = []
             }
         ],
         [],
@@ -330,4 +338,3 @@ _test_3 = test_output_separation()
     managedResourcesEmitClaims = True
     compositionPipelineValid = True
 }
-

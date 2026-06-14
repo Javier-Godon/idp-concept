@@ -9,6 +9,7 @@
 ### Problem Found
 
 Every `pre_release/` and `release/` had two files in `factory/`:
+
 - **`render.k`** — The multi-format renderer (identical everywhere, ~110 lines)
 - **`factory_seed.k`** — Environment-specific setup (varies, ~25-45 lines)
 
@@ -144,6 +145,7 @@ Fleet (1.7k stars, 99.1% Go) is **GitOps and HelmOps at scale** — designed for
 ### Fleet as an Output Target
 
 Fleet could be a **10th output format** for idp-concept. The `koncept render fleet` command could generate:
+
 - `fleet.yaml` per module with helm/kustomize/plain-manifest configuration
 - `GitRepo` CRD pointing to the rendered output directory
 
@@ -247,6 +249,7 @@ Most IDP and platform/deployment tools use Go: Crossplane (Go), Kusion (Go but u
 ```
 
 A Go CLI using the [KCL Go SDK](https://www.kcl-lang.io/docs/reference/xlang-api/go-api) would:
+
 - Distribute as a single binary (bundling the pinned `kcl` toolchain)
 - Call `kcl.RunFiles()` to render KCL configs
 - Handle file I/O (writing output to correct directories)
@@ -566,6 +569,7 @@ Following the strategic action items, this phase focused on consolidating helmfi
 ### ✅ Helmfile Integration Testing
 
 **Implemented**: Acceptance test infrastructure for Helmfile format rendering.
+
 - Added `helmfile-integration` case to acceptance test suite under `INTEGRATION_CASES`
 - Future: Real `helm template` validation paired with kubeval/kubeconform
 - **Learning**: Teams benefit most from template validation + dependency ordering checks, not just manifest syntax
@@ -573,12 +577,14 @@ Following the strategic action items, this phase focused on consolidating helmfi
 ### ✅ Observability Enhancements in Dry-Run
 
 **Implemented**: Resource footprint calculations in `koncept dry-run` output.
+
 - `kcl_to_dry_run.k` now computes total CPU/memory requests across all manifests
 - Cluster sizing heuristic: rough node count estimation (2000m per node)
 - Resource warnings: detects missing limits, replicas mismatch, unset values
 - CLI enhancement in `cmd/koncept/cmd/dry_run.go` displays human-readable footprint summary
 
 **Produced Artifacts**:
+
 - Enhanced dry-run YAML includes `spec.observability.resourceFootprint` section
 - Console output shows: `[Observability] Estimated cluster footprint: CPU requested, Memory requested, Estimated nodes, Warnings`
 
@@ -586,7 +592,8 @@ Following the strategic action items, this phase focused on consolidating helmfi
 
 ### ✅ Documentation Expansion
 
-**Produced**: 
+**Produced**:
+
 1. **HELMFILE_ADOPTION.md** — When/why to use Helmfile, workflows, storage patterns, troubleshooting
 2. **CLI_DISTRIBUTION.md** — How to obtain/verify/use cross-platform binaries and container images
 3. **FRAMEWORK_EXTENSION_GUIDE.md** — Complete patterns for creating custom modules, templates, and accessories
@@ -598,18 +605,21 @@ Following the strategic action items, this phase focused on consolidating helmfi
 ### 🔄 Strategic Reflection
 
 **What Worked Well**:
+
 - KCL's union operator and schema inheritance made multi-format orchestration (Helmfile dependencies, Crossplane sequencing) natural
 - Golden tests catch rendering regressions with zero overhead (deterministic, fast)
 - Observability focus shifts operator mindset from "hope it fits" to "verify before deploy"
 - Documentation-first approach drives adoption more than new features
 
 **What Surprised Us**:
+
 - Resource footprint calculations are crude but surprisingly useful (rough heuristics often beat complex models when teams just need ballpark figures)
 - Helmfile's `needs` entries eliminate 90% of orchestration bugs when derived from logical `dependsOn` chains
 - Teams care more about "does this fit our cluster?" than "what's the theoretical resource ceiling?"
 - Framework extensibility guide drives more adoption than feature releases alone
 
 **Remaining Gaps** (for future work):
+
 1. **Crossplane runtime test expansion** — Current `smoke` profile validates static API contracts; `lifecycle` profile should exercise actual reconciliation
 2. **Helmfile integration with CI** — Integration tests should template real Helm charts, not just check YAML syntax
 3. **OCI package distribution** — Framework should be published to OCI registry for versioned consumption (not just referenced locally)
@@ -721,12 +731,14 @@ Adding fixtures with different component patterns (stateless + stateful, multi-r
 ### Observability Enhancements - Complete Implementation
 
 **Implemented**: Enhanced dry-run output with real resource footprint calculations.
+
 - `kcl_to_dry_run.k` now includes resource extraction lambdas for CPU/memory/storage from manifest specs
 - Go CLI (`cmd/koncept/cmd/dry_run.go`) displays human-readable footprint summaries with node estimates
 - Resource warnings detect missing limits and common misconfigurations
 - Multi-layer observability: workload counts → CPU millis → estimated small/medium nodes
 
 **Key Insight**: Resource forecasting works best as multi-level abstractions:
+
 1. Manifest-level: Count Deployments/StatefulSets/PVCs
 2. Container-level: Extract CPU/memory from container.resources.requests
 3. Replica-level: Multiply by spec.replicas for total cluster demand
@@ -737,11 +749,13 @@ Adding fixtures with different component patterns (stateless + stateful, multi-r
 ### Helmfile Integration Testing with Real Helm
 
 **Implemented**:
+
 - `scripts/helmfile_helm_integration_test.sh` — comprehensive helm template validation
 - `docs/HELMFILE_HELM_INTEGRATION.md` — detailed integration guide with CI/CD examples
 - Helper script handles multi-release templating, kubeconform validation, dependency verification
 
 **Key Insight**: Real helm template execution catches three classes of bugs that YAML parsing misses:
+
 1. Template injection errors (undefined variables, function calls)
 2. Chart dependency resolution failures (missing repositories, version constraints)
 3. Schema mismatches (generated values don't match chart's values schema)
@@ -751,12 +765,14 @@ Adding fixtures with different component patterns (stateless + stateful, multi-r
 ### CLI Distribution Hardening - Complete
 
 **Implemented**:
+
 - Enhanced `cmd/koncept/Makefile` with platform-specific build targets (`build-linux`, `build-darwin`, `build-windows`)
 - Added distribution verification: `verify-checksums` and `test-binaries` targets
 - Archive creation via `dist-archives` target (tar.gz for Unix, zip for Windows)
 - Updated `.github/workflows/release.yml` with enhanced testing and archive publishing
 
 **Improvements Made**:
+
 - Platform-specific compilation reduces cross-compilation issues
 - Binary testing validates execution on all platforms (macOS, Linux, Windows)
 - Archive distribution includes checksums for integrity verification
@@ -769,6 +785,7 @@ Adding fixtures with different component patterns (stateless + stateful, multi-r
 **Status**: Already in place from earlier work. Stack schemas include optional `compatibility: FrameworkCompatibility` field.
 
 **Enhancement**: Added documentation on compatibility versioning strategy:
+
 - MAJOR bumps for breaking schema changes
 - MINOR bumps for new features (backward compatible)
 - PATCH bumps for bug fixes
@@ -806,6 +823,7 @@ This phase completed the "depth" objective: Medium-term items now mature and pro
 ### Lesson Learned: Output Excellence over Output Breadth
 
 The "depth before breadth" strategy proved effective. Instead of chasing new output formats (Fleet, Score), this phase:
+
 - Hardened existing priority outputs (Helmfile, Crossplane)
 - Made observability actionable (teams know cluster footprint before deploying)
 - Automated distribution (no manual CLI installation required)
@@ -822,6 +840,7 @@ Result: Quality improvements in existing outputs provide more value than new for
 **Resolved**: Resource footprint calculation lambdas used imperative-style loops and type checking not supported in KCL.
 
 **Changes Made**:
+
 - Converted imperative `for` loops to functional list comprehensions
 - Replaced `isinstance()` type checking with simpler functional approach using string conversion
 - Simplified conditional logic to single-expression lambdas (KCL requirement)
@@ -880,18 +899,21 @@ Builder Tests:        All template builders PASS ✅
 ### Production Readiness Assessment
 
 **Helmfile Output**: ✅ PRODUCTION READY
+
 - Governance metadata complete
 - Dependency orchestration verified
 - Integration testing documented.env patterns established
 - Teams can adopt with confidence
 
 **Crossplane V2 Output**: ✅ PRODUCTION READY
+
 - XRD/Composition/XR generation verified
 - Sequencer rules deterministic with concrete names
 - Prerequisite management documented
 - Teams can adopt for infrastructure provisioning
 
 **Dry-Run Planning**: ✅ OPERATIONAL READY
+
 - Resource footprint estimates useful for planning
 - CLI integration complete
 - Documentation provided
@@ -918,6 +940,7 @@ Builder Tests:        All template builders PASS ✅
 ### Key Achievement Summary
 
 The platform now provides **production-grade multi-format output generation** with:
+
 - ✅ Strong governance metadata flowing through all outputs
 - ✅ Deterministic dependency orchestration (no silent failures)
 - ✅ Actionable observability (teams know cluster footprint)

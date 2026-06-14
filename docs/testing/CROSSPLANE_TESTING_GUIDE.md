@@ -245,6 +245,7 @@ koncept crossplane test --runtime-profile lifecycle --runtime-plan
 ### Cleanup Behavior
 
 Resources are deleted in **reverse dependency order**:
+
 1. Delete XR (claim)
 2. Wait for composed resources to be reaped
 3. Delete Composition
@@ -562,5 +563,3 @@ crossplane:runtime:
 - [ ] Predictive resource requirement analysis
 
 ---
-
-

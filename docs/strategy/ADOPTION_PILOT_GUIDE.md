@@ -67,17 +67,20 @@ This pilot program validates idp-concept framework in external production enviro
 ### Week 0: Kick-off (Before pilot start)
 
 **Pilot Team Lead Actions:**
+
 - [ ] Verify GHCR access: Pull test image
 - [ ] Clone updated idp-concept repo (or use GHCR)
 - [ ] Run framework unit tests locally (kcl test ./...)
 - [ ] Read [../README.md](../README.md) + [../developer/DEVELOPER_QUICKSTART.md](../developer/DEVELOPER_QUICKSTART.md)
 
 **Core Team Actions:**
+
 - [ ] Prepare custom demo for team's use case
 - [ ] Identify similar templates in framework already
 - [ ] Provision pilot environment (if needed)
 
 **Kick-off Meeting (1 hour)**
+
 - Architecture overview (15 min): Project → Tenant → Site → Stack → Release
 - Output formats overview (10 min): YAML, Helm, Crossplane, Kusion
 - Team's use case walkthrough (20 min): What they want to build
@@ -89,17 +92,20 @@ This pilot program validates idp-concept framework in external production enviro
 ### Week 1: Get Familiar
 
 **Pilot Team Objectives:**
+
 - [ ] Set up first project using framework template
 - [ ] Produce sample YAML output locally
 - [ ] Ask 2-3 questions about architecture or usage
 
 **Suggested Path:**
+
 1. Follow [../developer/DEVELOPER_QUICKSTART.md](../developer/DEVELOPER_QUICKSTART.md) (15 min)
 2. Look at projects/erp_back sample (understand structure) (30 min)
 3. Try `koncept render yaml` on sample factory (10 min)
 4. Modify sample config, re-render, iterate (30 min)
 
 **Core Team Check-in:**
+
 - Async Slack channel: "How's onboarding going? Questions?"
 - Support: Answer architecture questions, share relevant docs sections
 
@@ -108,23 +114,27 @@ This pilot program validates idp-concept framework in external production enviro
 ### Week 2: First Use Case
 
 **Pilot Team Objectives:**
+
 - [ ] Adapt their real workload to framework templates
 - [ ] Produce YAML/Helm/Kusion for 1+ real service
 - [ ] Identify any missing templates or features
 
 **Suggested Path:**
+
 1. Map team's workload to framework templates (webapp, database, infrastructure)
 2. Create project structure mirroring erp_back layout
 3. Configure stack for their services
 4. Render to YAML/Helm, validate with kubeconform/helm lint
 
 **Core Team Check-in (Week 2 Sync — 30 min):**
+
 - Review team's current progress
 - Demo any custom patterns team discovered
 - Identify blockers: missing templates, unclear docs, rendering errors
 - Adjust support intensity based on team needs
 
-**Feedback Focus**: 
+**Feedback Focus**:
+
 - "What's harder than expected?" → Doc gaps
 - "What's easier than expected?" → Highlight in marketing
 - "What do you wish existed?" → Feature request tracking
@@ -134,17 +144,20 @@ This pilot program validates idp-concept framework in external production enviro
 ### Week 3-4: Hardening
 
 **Pilot Team Objectives:**
+
 - [ ] Test output in staging environment (apply to cluster)
 - [ ] Validate output with ArgoCD / Helmfile if those are used
 - [ ] Resolve production-readiness issues
 
 **Expected Pain Points:**
+
 - RBAC/ServiceAccount setup
 - Secret handling (how to reference external secrets?)
 - Storage class selection for different environments
 - Multi-release coordination (Helm chart vs direct YAML)
 
 **Core Team Actions:**
+
 - Provide custom solutions to pain points
 - Document workarounds in docs/APPLICATION_CONFIGURATION_PATTERNS.md
 - If major issue: create GitHub issue for team to reference
@@ -154,22 +167,26 @@ This pilot program validates idp-concept framework in external production enviro
 ### Week 5-6: External Integration
 
 **Pilot Team Objectives:**
+
 - [ ] Integrate framework output with team's GitOps system (ArgoCD, Flux, etc.)
 - [ ] Test multi-environment workflow (dev → staging → production config)
 - [ ] Validate observability output (if using konzept dry-run metrics)
 
 **Pattern Tests:**
+
 - Helmfile orchestration across multiple releases
 - Kusion spec for multi-resource deployments
 - Crossplane composition ordering if doing infrastructure-as-code
 - Dry-run planning to predict cluster impact before deploy
 
-**Feedback Focus**: 
+**Feedback Focus**:
+
 - "How well does framework integrate with our existing tooling?"
 - "What's the learning curve for team members who haven't used KCL?"
 - "What's the most valuable output format for our use case?"
 
 **Core Team Actions:**
+
 - Set up best-practice examples for team's specific pattern
 - Create case study documentation (anonymized)
 
@@ -178,11 +195,13 @@ This pilot program validates idp-concept framework in external production enviro
 ### Week 7: Polish & Feedback
 
 **Pilot Team Objectives:**
+
 - [ ] Write up experience: what worked, what didn't
 - [ ] Suggest documentation improvements (PRs welcome)
 - [ ] Commit to post-pilot support model (if success)
 
 **Feedback Survey**:
+
 1. Overall satisfaction (scale 1-10)
 2. Most valuable feature
 3. Most frustrating aspect
@@ -191,6 +210,7 @@ This pilot program validates idp-concept framework in external production enviro
 6. Interest in deep integration (workshops, trainings)
 
 **Core Team Actions:**
+
 - Collect all feedback
 - Triage into: immediate fixes, doc updates, future features
 - Prepare final wrap-up presentation
@@ -200,11 +220,13 @@ This pilot program validates idp-concept framework in external production enviro
 ### Week 8: Graduation & Case Study
 
 **Pilot Team Objectives:**
+
 - [ ] Promote workload to production (if appropriate)
 - [ ] Provide statement of success for case study
 - [ ] Commit to ongoing feedback (if willing)
 
 **Final Presentation (1 hour):**
+
 - Team demo: "Here's what we built with idp-concept"
 - Core team demo: "Here's what we learned from pilot cohort"
 - Next steps: ongoing support model, case study publication
@@ -219,11 +241,13 @@ This pilot program validates idp-concept framework in external production enviro
 ### 4.1 Communication Channels
 
 **Synchronous (Real-time):**
+
 - Slack channel: `#idp-concept-pilot` (monitored during business hours)
 - Weekly video sync: Thursdays 10 AM UTC (30 min)
 - Office hours: Wednesdays 3 PM UTC (optional drop-in)
 
 **Asynchronous:**
+
 - GitHub Issues (bugs & feature requests)
 - Email (javier@example.com for escalations)
 - Shared Google Doc: pilot feedback & action tracking
@@ -254,16 +278,19 @@ This pilot program validates idp-concept framework in external production enviro
 ### 5.2 Individual Team Expectations
 
 **By End of Week 4:**
+
 - Team has rendered framework output to YAML/Helm
 - Team has identified 1-2 feature requests or doc gaps
 - Team feels confident to continue independently with async support
 
 **By End of Week 8:**
+
 - Team has integrated framework into their tooling (ArgoCD, Helmfile, etc.)
 - Team has deployed at least 1 workload to test environment
 - Team provides feedback survey & (optionally) case study
 
 **Post-Pilot:**
+
 - Team enters "ongoing support" model (async Slack, quarterly sync)
 - Team considers framework for production workloads
 - Team provides reference for future customers
@@ -275,6 +302,7 @@ This pilot program validates idp-concept framework in external production enviro
 ### Ideal Pilot Team Profile
 
 ✅ **Good Fit:**
+
 - Has existing K8s infrastructure to test against
 - Uses one or more of: Helm, Kustomize, ArgoCD, Helmfile
 - Willing to provide constructive feedback
@@ -283,6 +311,7 @@ This pilot program validates idp-concept framework in external production enviro
 - Trust in experimental features; comfortable with v1.0.0 maturity
 
 ❌ **Poor Fit:**
+
 - Only interested in consuming black-box YAML (not learning KCL)
 - No K8s environment to test in (dry-run only)
 - Tightly coupled to specific vendor tooling (AWS-only, Azure-only)
@@ -323,11 +352,13 @@ We're piloting the idp-concept framework (an open-source Kubernetes IDP) with 2-
 All feedback collected during pilot feeds into v1.1.0 planning:
 
 **Week 8 → Week 9:**
+
 - Core team reviews all feedback
 - Triage into: docs-only fixes, bugsv1.0.1, features→v1.1.0 backlog
 - Publish "Here's what we learned" blog post + roadmap update
 
 **High Priority Features** (likely from pilot):
+
 - Custom template scaffolding tool (ako `kcl init template`)
 - Better secret reference patterns (integration with ArgoCD secrets)
 - Multi-environment config override simplification
@@ -387,6 +418,7 @@ If a team encounters a blocking issue:
 5. **Release**: If critical, prepare v1.0.1 patch with fix
 
 **Example Critical Issues:**
+
 - Framework fails to render any output (compilation error)
 - Security vulnerability in dependencies
 - Generated manifests fail to apply to K8s
@@ -674,4 +706,3 @@ After successful pilot, showcase:
 **Last Updated:** 2026-06-03
 **Framework Version:** v1.0.0
 **Status:** Ready to launch
-

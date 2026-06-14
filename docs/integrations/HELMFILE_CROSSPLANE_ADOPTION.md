@@ -48,6 +48,7 @@ START: "I need to deploy infrastructure and applications"
 ### What is Helmfile?
 
 Helmfile is a declarative interface for managing multiple Helm charts. Each "release" in a Helmfile represents a Helm chart deployment. Helmfile orchestrates:
+
 - Chart installation order (via `needs` dependencies)
 - Shared values inheritance (via `defaults`)
 - Environment-specific configurations (via `environments`)
@@ -56,12 +57,14 @@ Helmfile is a declarative interface for managing multiple Helm charts. Each "rel
 ### When to Use Helmfile
 
 ✅ **Good fit for:**
+
 - Applications already packaged as Helm charts (databases, message queues, SaaS connectors)
 - Multi-chart deployments where orchestration order matters
 - Teams already familiar with Helm chart values + overrides
 - Want separation between infrastructure (managed separately) and applications (via Helmfile)
 
 ❌ **Not ideal for:**
+
 - Custom application containers not in Helm charts yet
 - Low-level Kubernetes primitives not packaged as charts
 - Want single unified Kubernetes manifest (use YAML/ArgoCD instead)
@@ -178,6 +181,7 @@ Verify your Helmfile renders correctly before deploying:
 ### What is Crossplane?
 
 Crossplane is a Kubernetes-native infrastructure-as-code system that allows you to:
+
 - Define infrastructure services using **Kubernetes Custom Resources** (XRs = Composite Resources)
 - Manage infrastructure **lifecycle** (create, update, delete) via kubectl
 - Orchestrate dependencies between infrastructure components
@@ -186,6 +190,7 @@ Crossplane is a Kubernetes-native infrastructure-as-code system that allows you 
 ### When to Use Crossplane
 
 ✅ **Good fit for:**
+
 - Infrastructure services (databases, message queues, object storage, identity providers)
 - Multi-tenant, multi-environment infrastructure provisioning
 - Teams already comfortable with `kubectl apply` and Kubernetes APIs
@@ -193,6 +198,7 @@ Crossplane is a Kubernetes-native infrastructure-as-code system that allows you 
 - Want to treat infrastructure as code via GitOps
 
 ❌ **Not ideal for:**
+
 - One-off infrastructure (prefer direct provider CLI)
 - Simple single-service deployments (overhead of Crossplane setup)
 - Teams not familiar with Kubernetes operators
@@ -416,6 +422,7 @@ helmfile sync
 Both Helmfile and Crossplane outputs include rich governance metadata:
 
 **Helmfile Labels**:
+
 ```yaml
 labels:
   owner: platform-team
@@ -429,6 +436,7 @@ commonLabels:  # Applied to all resources
 ```
 
 **Crossplane Annotations**:
+
 ```yaml
 metadata:
   annotations:
@@ -510,4 +518,3 @@ kubectl get functions.pkg.crossplane.io
 
 **Document last updated**: June 7, 2026  
 **Maintained by**: Platform Engineering Team
-

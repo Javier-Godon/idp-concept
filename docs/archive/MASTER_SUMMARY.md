@@ -9,6 +9,7 @@
 ## What Was Requested
 
 After completing E2 Convergence (Point 1), the user asked to proceed with the three next steps:
+
 1. **E2.2 Acceptance Tests** — Verify two-track convergence output
 2. **E2.3 Operating Runbook** — Day-2 infrastructure operations guide  
 3. **Phase D OCI Publishing** — Publish framework to registry
@@ -65,10 +66,12 @@ After completing E2 Convergence (Point 1), the user asked to proceed with the th
 **Purpose**: Validate two-track Crossplane convergence (Track 1 Claims + Track 2 Bridge Objects)
 
 **Files**:
+
 - `framework/tests/acceptance/cases/e2_convergence_acceptance_test.k` (250 lines)
 - `scripts/e2_acceptance_tests.sh` (180 lines)
 
 **What It Validates**:
+
 - ✓ _CURATED_SERVICES mapping (all 23 services)
 - ✓ _is_curated_service() detection works
 - ✓ _process_accessories() two-track split
@@ -87,6 +90,7 @@ After completing E2 Convergence (Point 1), the user asked to proceed with the th
 **File**: `docs/E2_OPERATING_RUNBOOK.md` (500 lines)
 
 **Content**:
+
 - 5-minute quick start (install, deploy, provision)
 - 8 day-2 operations (inspect, update, delete, secrets, etc.)
 - 8 troubleshooting scenarios (stuck claims, RBAC, network, etc.)
@@ -105,11 +109,13 @@ After completing E2 Convergence (Point 1), the user asked to proceed with the th
 **Purpose**: Publish KCL framework as immutable OCI artifact for multi-repo consumption
 
 **Files**:
+
 - `scripts/publish_framework_oci.sh` (220 lines) — Manual publish
 - `.github/workflows/phase-d-publish-framework.yml` (280 lines) — Automated CI/CD
 - `docs/OCI_FRAMEWORK_USAGE.md` (auto-generated) — Downstream usage guide
 
 **How It Works**:
+
 ```bash
 # Manual (local)
 ./scripts/publish_framework_oci.sh 0.1.0
@@ -218,22 +224,26 @@ kcl run .
 ## What's Next After This?
 
 ### Option A: Execute First Publish (1 hour)
+
 ```bash
 git tag v0.1.0 && git push origin v0.1.0
 # Watch GitHub Actions publish framework to registry
 ```
 
 ### Option B: Phase F — Backstage Workflows (5–8 hours)
+
 - Add Backstage UI for self-service infrastructure provisioning
 - Create workflow templates (new database, namespace, update)
 - Full end-to-end self-service
 
 ### Option C: Phase G — OTLP Telemetry (3–5 hours)
+
 - Wire local metrics to OTLP backend
 - Create observability dashboards
 - Automated feedback loop
 
 ### Option D: Full E2.2 Lifecycle Testing (10–15 hours)
+
 - Run acceptance tests in real kind cluster
 - Add lifecycle tests (create, update, delete, rollback)
 - Full integration validation
@@ -297,4 +307,3 @@ git tag v0.1.0 && git push origin v0.1.0
 ---
 
 **Next Action**: Merge to main → Create v0.1.0 tag → Watch GitHub Actions publish → Adopt in projects 🚀
-

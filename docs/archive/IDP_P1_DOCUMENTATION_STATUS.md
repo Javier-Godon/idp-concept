@@ -22,6 +22,7 @@
 ## Files Created
 
 ### Documentation
+
 1. **docs/POLICY_ADMISSION_PARITY.md** (700 lines)
    - Maps 7 `koncept policy check` rules to Kyverno ClusterPolicies
    - Provides OPA/Gatekeeper Rego equivalents
@@ -52,12 +53,14 @@
 ## Strategic Impact
 
 ### Immediate Impact
+
 - **Policy Enforcement**: Teams now have a roadmap from `koncept policy check` (pre-merge) → Kyverno/OPA (admission) → consistency end-to-end
 - **Crossplane Clarity**: 21 APIs are now explicitly categorized; maintainers know what needs completion before "supported" status
 - **Platform Control Plane**: Bridge convergence removes duplication; professional APIs can coexist with generated output
 - **Self-Service**: Backstage templates provide non-KCL users a one-click path to generate scaffolding
 
 ### Medium-term Outcome (Q3–Q4 2026)
+
 - Teams can enforce policy at both render-time (CLI) and admission-time (cluster)
 - Crossplane APIs progressively move from Experimental → Supported as production reconciliation tests pass
 - Backstage becomes the primary interface for 80% of platform interactions
@@ -98,16 +101,19 @@
 ## Next Steps (Ordered by Priority)
 
 ### This Week
+
 1. Execute A4 decision: lightweight internal pilot or formal external pilot
 2. Run doc-lint CI gate to verify no new sprawl
 3. Socialize Crossplane maturity matrix with infrastructure team
 
 ### Next Sprint
+
 1. Start A6 Kyverno policy implementation (if adoption pilot chooses admission control)
 2. Begin A8 reconciliation tests for postgres (anchor the supported APIs)
 3. Start A10 Backstage custom action framework
 
 ### Q3 2026 (Post-adoption-pilot)
+
 1. Full A9 bridge convergence implementation
 2. Promote Kafka → SUPPORTED
 3. Scale Backstage templates to full self-service
@@ -128,15 +134,18 @@
 ## Documentation Map
 
 ### For Platform Operators
+
 - `crossplane_v2/PROMOTION_STATUS.md` — which APIs are ready, which are experimental
 - `docs/POLICY_ADMISSION_PARITY.md` — how to deploy Kyverno/OPA
 - `docs/CROSSPLANE_BRIDGE_CONVERGENCE.md` — implementation phases for convergence
 
 ### For Infrastructure Teams
+
 - `docs/BACKSTAGE_GOLDEN_PATHS.md` — how to request new services
 - `docs/POLICY_ADMISSION_PARITY.md` — what policies are enforced
 
 ### For Platform Developers
+
 - `docs/CROSSPLANE_BRIDGE_CONVERGENCE.md` — technical roadmap
 - `crossplane_v2/PROMOTION_STATUS.md` — checklist for getting APIs to supported
 
@@ -187,4 +196,3 @@ Impact:
 
 Ready for: Adoption pilot feedback → implementation in Q3 2026
 ```
-

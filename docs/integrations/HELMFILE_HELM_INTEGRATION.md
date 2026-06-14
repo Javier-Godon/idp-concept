@@ -238,6 +238,7 @@ Error: UPGRADE FAILED: chart /path/to/chart not found
 ```
 
 **Solution**:
+
 ```bash
 # Update chart dependencies
 helm dependency update
@@ -253,6 +254,7 @@ error parsing the template... undefined variable
 ```
 
 **Solution**:
+
 ```bash
 # Check values file format
 cat values-<release>.yaml | head -20
@@ -271,6 +273,7 @@ unable to validate the schema
 ```
 
 **Solution**:
+
 ```bash
 # Use kubeconform with schema skip for custom resources
 kubeconform -skip CustomResourceDefinition,MyCustomKind output.yaml
@@ -405,4 +408,3 @@ Once Helmfile validation is integrated into CI/CD:
 - [Helmfile GitHub](https://github.com/roboll/helmfile)
 - [Kubeconform GitHub](https://github.com/yannh/kubeconform)
 - [PLATFORM_COMPARISON_AND_KCL_ANALYSIS.md - Helmfile Output Excellence](../strategy/PLATFORM_COMPARISON_AND_KCL_ANALYSIS.md)
-

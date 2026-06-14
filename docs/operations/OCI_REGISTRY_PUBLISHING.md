@@ -81,6 +81,7 @@ kcl mod push --registry oras://myregistry.azurecr.io
 ```
 
 **Output:**
+
 ```
 ✓ Published framework module
   Registry: oras://myregistry.azurecr.io
@@ -145,6 +146,7 @@ jobs:
 ```
 
 **Trigger:**
+
 ```bash
 # Publish framework v1.0.0
 git tag framework-v1.0.0
@@ -652,4 +654,3 @@ pipeline {
 - [KCL Registry Documentation](https://www.kcl-lang.io/docs/reference/registry)
 - [OCI Image Spec](https://github.com/opencontainers/image-spec)
 - [ORAS — OCI Registry As Storage](https://oras.land/)
-

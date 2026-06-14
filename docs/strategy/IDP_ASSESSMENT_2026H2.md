@@ -103,6 +103,7 @@ plan still holds: *no new breadth without a named consumer, tests, docs, ownersh
 ### P0 — Reduce surface area & make the platform legible
 
 **A1. Documentation consolidation (highest ROI).**
+
 - Move every root-level `*_COMPLETE/SUMMARY/SESSION/FINAL/MASTER/PHASE_*` report into
   `docs/archive/` (or delete — git history is the record, per the project's no-legacy principle).
 - Keep at the repo root only: `README.md`, `LICENSE`, and a single `CHANGELOG`/release-notes entrypoint.
@@ -113,6 +114,7 @@ plan still holds: *no new breadth without a named consumer, tests, docs, ownersh
   link-check with `lychee`) so dead links and duplicate "status" docs cannot reaccumulate.
 
 **A2. Formalize output support tiers in code, not just prose.**
+
 - Tag each procedure with a tier and gate CI accordingly: Tier-1 must pass golden + policy + render;
   Tier-2 render-only; Tier-3 marked experimental and excluded from the adoption surface.
 - Consider **freezing or deprecating** Tier-3 (`timoni`, `kusion`) until a real consumer appears,
@@ -122,6 +124,7 @@ plan still holds: *no new breadth without a named consumer, tests, docs, ownersh
 ### P0 — Prove it works for someone else
 
 **A3. Execute the framework OCI publish and migrate one project to pin it.**
+
 - Run `scripts/publish_oci.sh framework <version>`, then change **one** project (e.g. `erp_back`)
   from `path = "../../framework"` to the pinned `oras://ghcr.io/...` reference, and keep it green.
 - This converts Phase D from "tooling exists" to "distribution proven" and unlocks the
@@ -129,6 +132,7 @@ plan still holds: *no new breadth without a named consumer, tests, docs, ownersh
   dependencies (already documented in `FRAMEWORK_VERSIONING.md`; just not exercised).
 
 **A4. Run a genuine adoption pilot with a non-author.**
+
 - Use `docs/ADOPTION_PILOT_GUIDE.md`, but the success metric is brutal and simple: *someone who did
   not build this renders and deploys a new service from `koncept init project` without editing
   framework internals.* Capture every friction point as an issue. *Best practice:* "platform as a
@@ -137,12 +141,14 @@ plan still holds: *no new breadth without a named consumer, tests, docs, ownersh
 ### P1 — Supply-chain & policy hardening (industry table stakes)
 
 **A5. Sign and attest the published artifacts.**
+
 - Sign the CLI image and framework OCI module with **cosign (Sigstore)**; generate **SLSA**
   provenance and an **SBOM** (`syft`) in `release.yml`; scan with `grype`/Trivy.
 - *Why:* any platform that distributes artifacts to multiple teams needs verifiable provenance;
   this is now standard (SLSA, Sigstore are CNCF/OpenSSF baselines).
 
 **A6. Close the policy-as-code loop with admission parity.**
+
 - `koncept policy check` is a great pre-merge gate. Add an **exported equivalent ruleset** for a
   cluster admission controller — **Kyverno** (or OPA Gatekeeper) — so the same rules (no `latest`,
   no privileged, required resources/labels, secret-reference) are enforced *at deploy time*, not
@@ -150,6 +156,7 @@ plan still holds: *no new breadth without a named consumer, tests, docs, ownersh
   Rego/Kyverno policies. *Best practice:* shift-left + admission defense-in-depth.
 
 **A7. Automated dependency currency.**
+
 - Add **Renovate** (or Dependabot) for Go modules, the pinned `k8s` KCL dep, operator/chart
   versions referenced in templates, and GitHub Actions. Pair with the existing CVE-validation
   habit. *Why:* pinned versions are correct, but pinned-and-never-updated becomes the next risk.
@@ -157,6 +164,7 @@ plan still holds: *no new breadth without a named consumer, tests, docs, ownersh
 ### P1 — Make the breadth honest
 
 **A8. Crossplane: gate promotion, mark the rest experimental.**
+
 - For each of the 21 managed resources, either complete the `CROSSPLANE_PATTERNS.md` promotion
   checklist (render fixture → XRD schema review → reconcile/update/delete → revision/rollback test)
   or label it `status: experimental` in its docs and exclude it from "supported."
@@ -165,6 +173,7 @@ plan still holds: *no new breadth without a named consumer, tests, docs, ownersh
   *Best practice:* don't ship control-plane APIs you can't prove reconcile; supported ≠ rendered.
 
 **A9. Converge the generated bridge with the curated APIs (finish Phase E2 intent).**
+
 - Make `kcl_to_crossplane` emit/reference the provider-native/operator APIs for templates that have
   a curated `managed_resources/` equivalent, falling back to `Object` wrapping only for unmodeled
   resources. This removes the last "two ways to do PostgreSQL in Crossplane" inconsistency.
@@ -172,18 +181,21 @@ plan still holds: *no new breadth without a named consumer, tests, docs, ownersh
 ### P2 — Developer experience & feedback loops
 
 **A10. Make Backstage the real self-service front door.**
+
 - Finish wiring scaffolder templates to the Go CLI lifecycle and validate **end-to-end in a live
   Backstage backend** (currently `[~]`). Add the "new env / new release / promote release" and
   preview-diff flows. *Best practice:* golden-path self-service portal (Backstage is the de-facto
   CNCF standard).
 
 **A11. Turn telemetry into a decision loop.**
+
 - OTLP export now exists; point it at the bundled collector/Grafana and define **3–5 platform KPIs**
   (render failure rate, validation failure categories, template usage, onboarding time, output-format
   usage). Use them to justify the Tier-3 freeze (A2) and template investment. *Best practice:*
   product metrics drive roadmap, not intuition.
 
 **A12. Lower the KCL barrier.**
+
 - Reproducible dev env (**devbox/Nix** or a pinned dev container) so `kcl`, `kubeconform`,
   `crossplane`, `helm` versions are one command. Expand `koncept doctor`/error hints for the top
   recurring KCL/module-resolution failures surfaced by A11. *Best practice:* paved-road local setup.
@@ -228,4 +240,3 @@ These principles from the evolution plan remain in force and constrain every act
 > idp-concept has won the **capability** battle; the next battle is **legibility, distribution, and
 > proof**. Consolidate the docs, encode support tiers, actually publish and pin the framework, and
 > prove the golden path with one independent team — before adding anything else.
-

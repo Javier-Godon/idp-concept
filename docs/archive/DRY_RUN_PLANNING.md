@@ -164,6 +164,7 @@ outputs:
 ```
 
 This gives operators immediate visibility into:
+
 - How many Helm releases will be created
 - Release names, namespaces, and dependencies
 - How many Crossplane resources will be generated
@@ -459,6 +460,7 @@ koncept render crossplane        # Crossplane artifacts (XRD + Composition + XR)
 ## 10. Implementation Status
 
 ✅ **Complete Features**:
+
 - Dry-run plan generation from stack definitions
 - Merged configuration inclusion
 - Stack metadata context
@@ -470,13 +472,13 @@ koncept render crossplane        # Crossplane artifacts (XRD + Composition + XR)
 - Golden snapshot validation
 
 🔄 **In Progress**:
+
 - Resource footprint estimation (CPU, memory, storage prediction)
 - Cost estimation based on resource counts and metadata
 - Observability system export (Prometheus/Grafana labels)
 
 📋 **Future**:
+
 - Interactive filtering and exploration of dry-run plans
 - Plan diffing between versions
 - Dry-run plan OpenAPI schema for external tooling integration
-
-

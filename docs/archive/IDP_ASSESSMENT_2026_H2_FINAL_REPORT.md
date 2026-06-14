@@ -27,6 +27,7 @@ The **IDP Assessment 2026 H2 Plan** has been fully executed. All 12 actions (P0 
 **Commits**: `f0109f8`
 
 **Files Modified**:
+
 - `.github/workflows/validate.yml` (+ doc-lint)
 - `.github/workflows/release.yml` (+ SBOM/signing/provenance)
 - `.github/.markdownlint.json` (new)
@@ -60,6 +61,7 @@ The **IDP Assessment 2026 H2 Plan** has been fully executed. All 12 actions (P0 
 **Commits**: `15bfeb3`
 
 **Documentation Files Created**:
+
 - `docs/POLICY_ADMISSION_PARITY.md` (700 lines)
 - `crossplane_v2/PROMOTION_STATUS.md` (350 lines)
 - `docs/CROSSPLANE_BRIDGE_CONVERGENCE.md` (400 lines)
@@ -81,6 +83,7 @@ The **IDP Assessment 2026 H2 Plan** has been fully executed. All 12 actions (P0 
 ## Metrics & Impact Summary
 
 ### Repository Health
+
 | Metric | Before | After | Change |
 |--------|--------|-------|--------|
 | Root .md files (sprawl) | 16 | 1 | **-94%** |
@@ -91,6 +94,7 @@ The **IDP Assessment 2026 H2 Plan** has been fully executed. All 12 actions (P0 
 | Self-service workflows | 0 | 3 documented | **+300%** |
 
 ### Strategic Positions
+
 - **Legibility**: Repo now has one authoritative doc per concern; no competing status reports
 - **Distribution**: Framework in GHCR (published); consuming blocked only by KCL tooling
 - **Security**: All releases signed + verified + SBOM included; policies layered (render, admit, CI)
@@ -102,12 +106,14 @@ The **IDP Assessment 2026 H2 Plan** has been fully executed. All 12 actions (P0 
 ## Governance & Decision Points
 
 ### Decisions Made (P0)
+
 1. ✅ **Archive status docs** to `docs/archive/` (not delete; git is the record)
 2. ✅ **Tier outputs** (1=production, 2=maintained, 3=experimental, freeze option available)
 3. ✅ **Publish framework** to GHCR v1.0.0-pre (upstream KPM v2.0 needed for consumption)
 4. ✅ **A4 pilot paths** documented (lightweight internal feedback → formal external)
 
 ### Decisions Pending (P1/P2)
+
 1. **A4 Decision**: Platform team chooses between lightweight vs. formal adoption pilot
 2. **A8 Lifecycle**: Which 2–3 Crossplane APIs to promote first (recommend postgres, kafka, keycloak)
 3. **A9 Timeline**: Phase 1–2 in Sprint 1–2 vs. deferring to Q4 based on adoption pace
@@ -118,6 +124,7 @@ The **IDP Assessment 2026 H2 Plan** has been fully executed. All 12 actions (P0 
 ## Quality Assurance
 
 ### Testing Verification
+
 - ✅ Go CLI builds without errors
 - ✅ All 53/53 KCL builder tests passing
 - ✅ All 9 output formats render successfully
@@ -130,6 +137,7 @@ The **IDP Assessment 2026 H2 Plan** has been fully executed. All 12 actions (P0 
 - ✅ All 9 new documentation files follow Markdown standards
 
 ### Process Verification
+
 - ✅ All changes staged and committed
 - ✅ Commit messages follow semantic conventions
 - ✅ No uncommitted work
@@ -150,6 +158,7 @@ The **IDP Assessment 2026 H2 Plan** has been fully executed. All 12 actions (P0 
 ## Recommended Next Steps (Sequenced)
 
 ### Critical Path This Week
+
 ```
 1. Platform team decides A4 (lightweight vs. formal pilot)
    ↓
@@ -161,6 +170,7 @@ The **IDP Assessment 2026 H2 Plan** has been fully executed. All 12 actions (P0 
 ```
 
 ### Next Sprint (Q3 2026)
+
 ```
 1. Execute A4 (whichever path chosen)
    - Lightweight: Get feedback from video_streaming / pokedex teams
@@ -183,6 +193,7 @@ The **IDP Assessment 2026 H2 Plan** has been fully executed. All 12 actions (P0 
 ```
 
 ### Q3–Q4 2026 (Post-Pilot)
+
 ```
 1. A8: Promote Kafka, Keycloak to SUPPORTED (reconciliation tests pass)
    → Update PROMOTION_STATUS.md; mark in adoption materials
@@ -208,24 +219,29 @@ The **IDP Assessment 2026 H2 Plan** has been fully executed. All 12 actions (P0 
 ## Documentation Map (All Deliverables)
 
 ### P0 Documents
+
 - `docs/IDP_ASSESSMENT_2026H2.md` — Forward-looking plan & current-state assessment
 - `docs/IDP_P0_EXECUTION_STATUS.md` — P0 progress tracker
 - `docs/IDP_IMPLEMENTATION_PROGRESS_2026_06_07.md` — Comprehensive implementation summary
 
 ### P1 Core Implementation Docs
+
 - `docs/SUPPLY_CHAIN_SECURITY.md` — Cosign/SBOM/SLSA verification workflows (A5)
 
 ### P1 Strategic Roadmaps (Ready for Q3 Implementation)
+
 - `docs/POLICY_ADMISSION_PARITY.md` — Kyverno/OPA/Conftest mappings (A6)
 - `crossplane_v2/PROMOTION_STATUS.md` — Maturity model for 21 APIs (A8)
 - `docs/CROSSPLANE_BRIDGE_CONVERGENCE.md` — 5-phase convergence plan (A9)
 - `docs/BACKSTAGE_GOLDEN_PATHS.md` — 3 self-service workflow templates (A10)
 
 ### P1 Summary
+
 - `docs/IDP_P1_DOCUMENTATION_STATUS.md` — P1 execution status & timeline
 - This file: `docs/IDP_ASSESSMENT_2026_H2_FINAL_REPORT.md` — Master executive summary
 
 ### Historical / Archive
+
 - `docs/IDP_EVOLUTION_PLAN.md` — Marked as archive; historical evolution record
 - `docs/archive/` — 15 old status documents (working notes, not authoritative)
 
@@ -305,4 +321,3 @@ Commit 15bfeb3: P1 supply-chain hardening documentation — policy, Crossplane, 
 ---
 
 **END OF REPORT**
-

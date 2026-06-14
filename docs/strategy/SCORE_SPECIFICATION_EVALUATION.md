@@ -9,6 +9,7 @@
 **Recommendation**: ⏸️ **DEFER** integration until after successful external adoption pilot (Step 4) and when clear business drivers emerge.
 
 **Rationale**:
+
 - Score is developer-centric workload spec; idp-concept is platform-centric infrastructure framework
 - Current KCL-based config (Project → Tenant → Site → Stack) philosophically stronger for governance-heavy IDPs
 - Score integration would add complexity without clear adoption demand signal
@@ -63,6 +64,7 @@ volumes:
 ```
 
 **Key Concepts**:
+
 - **Workload type**: `service`, `batch`, `daemon` (runtime behavior)
 - **Containers**: Multiple containers per workload
 - **Services**: Port bindings + service type (ClusterIP, NodePort, LoadBalancer)
@@ -116,6 +118,7 @@ Docker / K8s / ECS / Cloud Run   Output: YAML / Helm / Kusion / Crossplane
 ### 3.3 Integration Points
 
 #### Option A: Score as Input Format (Not Recommended)
+
 Score could theoretically replace the "developer config" in idp-concept:
 
 ```
@@ -129,12 +132,14 @@ Output: Helm / Crossplane
 ```
 
 **Problems**:
+
 - Awkward translation layer (K8s → KCL templates)
 - Score loses governance metadata that idp-concept needs
 - Developers still need KCL knowledge for infrastructure decisions
 - Two input formats = doubled support burden
 
 #### Option B: idp-concept Generates Score Files (Possible Future)
+
 idp-concept could output Score YAML for downstream systems:
 
 ```
@@ -148,10 +153,12 @@ External teams use score CLI for Docker / ECS deployments
 ```
 
 **Benefits**:
+
 - Enables teams using Score ecosystem to consume idp-concept outputs
 - Potential distribution channel: "Use idp-concept to generate Score, then Score handles platform translation"
 
 **Challenges**:
+
 - Adds 10th output format
 - Requires score-specific metadata (workload type, extensions)
 - Unclear customer demand (Score adoption still early, ≤1K stars on GitHub)
@@ -176,11 +183,13 @@ External teams use score CLI for Docker / ECS deployments
 ### 4.2 Adoption Signals
 
 **Who Uses Score?**
+
 - Individual developers + startups (Docker → K8s migrations)
 - Humanitec + partners (using Humanitec Platform API implementation)
 - Small number of enterprises (LinkedIn posts, case studies scarce)
 
 **Adoption Limitations:**
+
 - 🔴 Not adopted by major cloud platforms (AWS, GCP, Azure have own formats)
 - 🔴 Competing with simpler approaches (shell scripts, Helm + Kustomize)
 - 🟡 Enterprise adoption unclear; mostly developer/startup focus
@@ -194,6 +203,7 @@ External teams use score CLI for Docker / ECS deployments
 ### 5.1 Score vs KCL Philosophies
 
 #### Score Approach (Imperative Config with Declared Requirements)
+
 ```yaml
 # score.yaml: "Here's what my workload needs"
 workload:
@@ -209,6 +219,7 @@ volumes:
 **Weaknesses**: Less control, harder to enforce governance, limited advanced patterns
 
 #### KCL Approach (Declarative Policy with Governance)
+
 ```kcl
 # release.kcl: "Here's the complete stack with governance"
 project = Project {
@@ -252,11 +263,13 @@ project = Project {
 **Idea**: Teams provide `score.yaml` instead of KCL config
 
 **Implementation**:
+
 ```
 score.yaml (developer) → score-k8s → K8s manifests → idp-concept wrapper
 ```
 
 **Problems**:
+
 - 🔴 Score loses governance metadata during translation
 - 🔴 Developers can't encode tenant/site/profile requirements in Score
 - 🔴 Awkward layering: Score implementation + idp-concept framework
@@ -272,16 +285,19 @@ score.yaml (developer) → score-k8s → K8s manifests → idp-concept wrapper
 **Idea**: Add `koncept render score` output format
 
 **Implementation**:
+
 ```
 Release.kcl → idp-concept templates → score.yaml → score CLI → Docker/K8s
 ```
 
 **Benefits**:
+
 - ✅ Enables teams in Score ecosystem to consume idp-concept
 - ✅ One more layer of indirection for advanced orchestration
 - ✅ Opens distribution to Score marketplace
 
 **Problems**:
+
 - ⏸️ Low adoption demand: Score itself is 8K stars, enterprise adoption unclear
 - ⏸️ Maintenance: 10th output format, needs Score spec expertise
 - ⏸️ Unclear value: Why generate Score when already outputting K8s/Helm/Kusion?
@@ -289,6 +305,7 @@ Release.kcl → idp-concept templates → score.yaml → score CLI → Docker/K8
 - ⏸️ Development cost: ~2-3 weeks development + testing + docs
 
 **Conditional**: Worth revisiting IF:
+
 1. ✅ Score adoption reaches 50K+ stars (mainstream)
 2. ✅ External teams specifically request Score output
 3. ✅ idp-concept adoption pilot succeeds and shows demand for ecosystem integration
@@ -302,11 +319,13 @@ Release.kcl → idp-concept templates → score.yaml → score CLI → Docker/K8
 **Idea**: Build a `koncept init score` template that helps teams scaffold Score files
 
 **Implementation**:
+
 ```
 koncept init score → score template files → developer fills in → score CLI
 ```
 
 **Problems**:
+
 - 🔴 Scope creep: idp-concept designed for platform engineers, not developer onboarding
 - 🔴 Minimal value: Score docs already excellent for scaffolding
 - 🔴 Maintenance: Tracking Score spec changes
@@ -321,6 +340,7 @@ koncept init score → score template files → developer fills in → score CLI
 ### 7.1 Current Status: No Demand (Q2 2026)
 
 **Evidence**:
+
 - ❌ A No external teams have requested Score integration
 - ❌ Score adoption limited to specific niches (Humanitec ecosystem, startups)
 - ❌ Enterprise adoption of Score unclear
@@ -353,22 +373,26 @@ koncept init score → score template files → developer fills in → score CLI
 ### 8.2 Recommended Path Forward
 
 **Phase 1 (Now - June 2026)**: ✅ **Monitor & Document**
+
 - [ ] Add Score to reference knowledge base (docs/REFERENCE_RESOURCES.md)
 - [ ] Document this evaluation for team knowledge sharing
 - [ ] Set calendar reminder to re-evaluate in Q4 2026
 
 **Phase 2 (July-August 2026)**: 📊 **Collect Adoption Signals**
+
 - [ ] Conduct adoption pilot (Step 4) without Score focus
 - [ ] Ask pilot teams: "Would Score output be valuable?"
 - [ ] Monitor Score project (watch GitHub releases)
 - [ ] Track industry adoption (Twitter, KubeCon, Cloud Native forums)
 
 **Phase 3 (September-October 2026)**: 🔄 **Re-Evaluate**
+
 - [ ] If adoption signals present → Start Scenario B implementation (estimated 2-3 weeks)
 - [ ] If no signals → Defer to 2027 roadmap
 - [ ] If Score gains major adoption → Fast-track priority
 
 **Phase 4 (2027+)**: 🚀 **Potential Integration** (if triggered)
+
 - Score output format as optional 10th output
 - Competitive analysis vs Timoni/Flux/Fleet at that time
 
@@ -376,6 +400,7 @@ koncept init score → score template files → developer fills in → score CLI
 
 **Current (June 2026)**: 0 hours/week (deferred)
 **Post-Adoption Pilot (Q4 2026)**:
+
 - If pursue: 20-30 hours (design + implementation + testing)
 - If defer: 1 hour (quarterly review)
 
@@ -422,6 +447,7 @@ koncept init score → score template files → developer fills in → score CLI
 | Simple developer interface | ⚠️ Requires KCL learning (trade-off) |
 
 **Unique idp-concept Strengths Score Cannot Match:**
+
 - Multi-tenant governance + compliance
 - Infrastructure as Code (Kafka, PostgreSQL, etc.)
 - Rich output formats (Crossplane, Kusion, Kustomize)
@@ -467,12 +493,15 @@ A: If Score hits 50K+ stars and major enterprise adoption → Fast-track Scenari
 ## 13. Decision Record
 
 ### Issue
+
 Should idp-concept integrate Score specification as input/output format?
 
 ### Decision
+
 **⏸️ DEFER** integration until after successful adoption pilot (Step 4, September 2026) and when clear business drivers emerge.
 
 ### Rationale
+
 1. **Misaligned audiences**: Score targets developers; idp-concept targets platform engineers
 2. **No demand signal**: Zero external teams requesting Score integration
 3. **Premature**: Score still in v1b1 (pre-v1.0); ecosystem adoption unclear
@@ -480,6 +509,7 @@ Should idp-concept integrate Score specification as input/output format?
 5. **Better path forward**: Monitor adoption signals, revisit with data
 
 ### Timeline
+
 - ✅ Now: Document evaluation, add to knowledge base
 - 📊 Q3 2026: Collect adoption signals from pilot (Step 4)
 - 🔄 September 2026: Re-evaluate with adoption data + Score v1.0.0 release
@@ -487,11 +517,13 @@ Should idp-concept integrate Score specification as input/output format?
 - ⏸️ If not triggered: Defer to 2027 roadmap
 
 ### Stakeholders
+
 - Core team (implement decision)
 - Pilot teams (provide feedback on demand signals)
 - Community (watch GitHub discussion/ Discussions tab)
 
 ### Related Decisions
+
 - [Helmfile output excellence](../integrations/HELMFILE_ADOPTION.md)
 - [Crossplane architecture](../integrations/CROSSPLANE_PATTERNS.md)
 - [Framework versioning](../platform-engineering/FRAMEWORK_VERSIONING.md)
@@ -569,4 +601,3 @@ kubectl apply -f manifests/
 **Document Status**: ✅ DECISION MADE (Deferred)
 **Last Updated**: 2026-06-03
 **Next Review**: September 2026 (post-adoption pilot)
-

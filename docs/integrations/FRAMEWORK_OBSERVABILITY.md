@@ -323,5 +323,3 @@ yq '.spec.dependencies' output/dry_run_plan.yaml | head -20
 | **Document ownership** | Facilitate troubleshooting | Metadata sync to CMDB weekly |
 
 ---
-
-

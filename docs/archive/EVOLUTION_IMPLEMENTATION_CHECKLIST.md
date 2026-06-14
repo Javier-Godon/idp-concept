@@ -32,12 +32,14 @@ This document tracks completion of 5 strategic evolution steps to establish idp-
   - Registered in scripts/acceptance_kind.sh RUNTIME_CASES
 
 ### Status: ✅ COMPLETE
+
 - [x] Documentation published
 - [x] Advanced fixture implemented
 - [x] All 433 KCL tests passing
 - [x] No regressions in framework, builders, templates
 
 ### Evidence
+
 - Commit: 03a4265
 - Test run: `cd framework && kcl test ./...` → ✅ PASS (433/433)
 
@@ -52,10 +54,12 @@ This document tracks completion of 5 strategic evolution steps to establish idp-
 **Document**: docs/GHCR_PUBLISHING_GUIDE.md ✅ CREATED
 
 **Actions Required**:
+
 - [ ] **2.a.1** Create GitHub PAT token and store it in `credentials/ghcr.env`
   - Navigate: https://github.com/settings/tokens/new
   - Scopes: write:packages, read:packages, delete:packages
   - Save it ONLY in the git-ignored `credentials/ghcr.env` (never in a commit/command):
+
     ```bash
     cat > credentials/ghcr.env << 'EOF'
     GHCR_USERNAME=javier-godon
@@ -63,17 +67,21 @@ This document tracks completion of 5 strategic evolution steps to establish idp-
     EOF
     git check-ignore -v credentials/   # must show a .gitignore match
     ```
+
   - Time: <5 minutes
 
 - [ ] **2.a.2** (No manual login needed) — `scripts/publish_oci.sh` authenticates from
   `credentials/ghcr.env` automatically. To verify manually:
+
   ```bash
   set -a; source credentials/ghcr.env; set +a
   printf '%s' "$CR_PAT" | docker login ghcr.io -u "${GHCR_USERNAME:-javier-godon}" --password-stdin
   ```
+
   - Time: <5 minutes
 
 - [ ] **2.a.3** Install ORAS CLI
+
   ```bash
   # macOS
   brew install oras
@@ -83,9 +91,11 @@ This document tracks completion of 5 strategic evolution steps to establish idp-
   # Verify
   oras version
   ```
+
   - Time: <10 minutes
 
 - [ ] **2.a.4** Package + push framework v1.0.0 (one command, credentials from folder)
+
   ```bash
   cd /path/to/idp-concept
   # Authenticates from credentials/ghcr.env, packages framework/, and pushes via oras.
@@ -94,9 +104,11 @@ This document tracks completion of 5 strategic evolution steps to establish idp-
   oras ls ghcr.io/javier-godon/idp-concept-framework
   # Expected: v1.0.0 listed
   ```
+
   - Time: <5 minutes
 
 - [ ] **2.a.5** (Manual fallback) Push to GHCR via ORAS
+
   ```bash
   # Only needed if NOT using scripts/publish_oci.sh. Auth comes from credentials/ghcr.env:
   set -a; source credentials/ghcr.env; set +a
@@ -107,9 +119,11 @@ This document tracks completion of 5 strategic evolution steps to establish idp-
       /tmp/idp-publish/framework-v1.0.0.tar.gz:application/vnd.idp-concept.framework.v1+gzip
   oras ls ghcr.io/javier-godon/idp-concept-framework
   ```
+
   - Time: <5 minutes
 
 - [ ] **2.a.6** Test consuming project can pull
+
   ```bash
   cd /tmp && mkdir test-import && cd test-import
   # Create kcl.mod with GHCR reference
@@ -128,6 +142,7 @@ This document tracks completion of 5 strategic evolution steps to establish idp-
   kcl run main.k --quiet
   # Should work without errors
   ```
+
   - Time: <10 minutes
 
 **Total Time for Phase 2a**: ~45 minutes
@@ -135,6 +150,7 @@ This document tracks completion of 5 strategic evolution steps to establish idp-
 #### Phase 2b: Update Internal Consuming Projects
 
 **Actions Required**:
+
 - [ ] **2.b.1** Update projects/video_streaming/kcl.mod
   - Replace: `framework = { path = "../../framework" }`
   - With: `framework = "oras://ghcr.io/javier-godon/idp-concept-framework:v1.0.0"`
@@ -149,11 +165,13 @@ This document tracks completion of 5 strategic evolution steps to establish idp-
   - Time: <5 minutes
 
 - [ ] **2.b.4** Run tests on updated projects
+
   ```bash
   cd projects/video_streaming && kcl run factory/main.k --quiet
   cd projects/erp_back && kcl run pre_releases/factory/main.k --quiet
   # Both should complete without errors
   ```
+
   - Time: <10 minutes
 
 **Total Time for Phase 2b**: ~30 minutes
@@ -172,12 +190,14 @@ This document tracks completion of 5 strategic evolution steps to establish idp-
 - [ ] GitHub Actions CI/CD template provided (done; awaiting KPM v2.0)
 
 ### Status: ⏳ IN PROGRESS
+
 - [x] Documentation complete
 - [ ] Manual ORAS publishing execution (awaiting user execution)
 - [ ] Internal project updates (awaiting publishing)
 - [ ] CI/CD automation (blocked on KPM v2.0, Q3 2026)
 
 ### Estimated Time to Complete Phase 2
+
 - Manual publishing + testing: ~1.5 hours
 - Internal project updates: ~0.5 hours
 - **Total: 2 hours** (can be done in one session)
@@ -203,12 +223,14 @@ This document tracks completion of 5 strategic evolution steps to establish idp-
   - Usage: `./scripts/framework-observability-export.sh <dry-run.yaml> prometheus`
 
 ### Status: ✅ COMPLETE
+
 - [x] Documentation published
 - [x] Export script implemented
 - [x] Tested with sample dry-run output
 - [x] Grafana dashboard JSON tested
 
 ### Evidence
+
 - Commit: 03a4265
 - Script: `bash scripts/framework-observability-export.sh --help` → ✅ Works
 
@@ -231,6 +253,7 @@ This document tracks completion of 5 strategic evolution steps to establish idp-
 ### Phase 4a: Pre-Pilot Preparation (Weeks of June 3-10)
 
 **Actions Required**:
+
 - [ ] **4.a.1** Finalize pilot team candidates
   - Target: 2-3 teams
   - Selection criteria: Section 6 of ADOPTION_PILOT_GUIDE.md
@@ -271,6 +294,7 @@ This document tracks completion of 5 strategic evolution steps to establish idp-
 ### Phase 4b: Active Pilot Execution (Weeks of June 17 - August 12)
 
 **Weekly Activities**:
+
 - [ ] **Weeks 1-2**: Async onboarding + Week 1 sync (documentation handoff)
 - [ ] **Weeks 2-4**: Weekly syncs + active support (high engagement)
 - [ ] **Weeks 5-6**: External integration testing + Helmfile/Crossplane validation
@@ -306,6 +330,7 @@ This document tracks completion of 5 strategic evolution steps to establish idp-
 **Total Time for Phase 4c**: ~15 hours
 
 ### Status: ⏳ READY TO LAUNCH
+
 - [x] Documentation complete & comprehensive (8K words)
 - [x] Week-by-week agenda templates provided
 - [x] Support SLA defined
@@ -314,6 +339,7 @@ This document tracks completion of 5 strategic evolution steps to establish idp-
 - [ ] Kick-off scheduled (action item)
 
 ### Timeline
+
 - **June 3-10**: Pre-pilot prep (Phase 4a)
 - **June 17 - August 12**: Active pilot (Phase 4b, 8 weeks)
 - **August 19-27**: Wrap-up (Phase 4c)
@@ -339,6 +365,7 @@ This document tracks completion of 5 strategic evolution steps to establish idp-
 ### Recommendation: ⏸️ DEFER
 
 **Rationale**:
+
 - Score is developer-centric; idp-concept is platform-centric (misaligned)
 - No customer demand signals (yet)
 - Score still in v1b1; ecosystem adoption unclear
@@ -348,12 +375,14 @@ This document tracks completion of 5 strategic evolution steps to establish idp-
 ### Re-evaluation Triggers
 
 Reconsider Score integration IF (Q4 2026):
+
 - ✅ Adoption pilot reveals teams want Score output
 - ✅ Score reaches v1.0.0 + 20K+ GitHub stars
 - ✅ Major cloud platforms adopt Score
 - ✅ Humanitec or similar vendor becomes key customer
 
 ### Status: ✅ COMPLETE
+
 - [x] Research completed
 - [x] Scenarios analyzed
 - [x] Decision documented
@@ -409,6 +438,7 @@ Reconsider Score integration IF (Q4 2026):
 ## Success Metrics (Overall)
 
 ### By End of June 2026
+
 - ✅ Step 1: Crossplane testing guide published (✅ DONE)
 - ✅ Step 3: Observability export tool released (✅ DONE)
 - ✅ Step 2: Framework v1.0.0 published to GHCR
@@ -417,6 +447,7 @@ Reconsider Score integration IF (Q4 2026):
 - ✅ All 5 golden snapshots passing (YAML, Helm, Kusion, etc.)
 
 ### By End of August 2026
+
 - ✅ ≥2 external teams successfully render framework configs
 - ✅ ≥1 team deploys workload to test environment
 - ✅ NPS ≥ 0 (promoters > detractors)
@@ -424,6 +455,7 @@ Reconsider Score integration IF (Q4 2026):
 - ✅ Zero regressions in framework
 
 ### By End of September 2026
+
 - ✅ Case studies published (if teams opt-in)
 - ✅ Roadmap adjusted based on pilot feedback
 - ✅ Score + other Q4 objectives re-evaluated with data
@@ -465,30 +497,35 @@ Reconsider Score integration IF (Q4 2026):
 ## Next Checkpoints
 
 ### Checkpoint 1: Step 2 Complete (June 10)
+
 - [ ] Framework v1.0.0 successfully published to GHCR
 - [ ] Internal projects updated + tests passing
 - [ ] Pilot teams have GHCR access
 - **Owner**: Technical Lead
 
 ### Checkpoint 2: Pilot Kick-off (June 10)
+
 - [ ] All 3 teams confirmed participation
 - [ ] Kick-off meeting 1 hour, all materials ready
 - [ ] Week 1 objectives communicated
 - **Owner**: Product Lead
 
 ### Checkpoint 3: Mid-Pilot Review (July 15 — Week 4)
+
 - [ ] ≥2 teams have rendered framework output
 - [ ] Feedback being collected (no blockers so far)
 - [ ] Case study candidates identified
 - **Owner**: Technical Lead
 
 ### Checkpoint 4: Pilot Wrap-up (August 27)
+
 - [ ] All feedback surveys completed
 - [ ] NPS calculated (target: ≥0)
 - [ ] Issues triaged for v1.0.1 / v1.1.0
 - **Owner**: Product Lead
 
 ### Checkpoint 5: Post-Pilot Analysis (September 3)
+
 - [ ] Case studies drafted (if teams opt-in)
 - [ ] Roadmap adjustments finalized
 - [ ] Score evaluation completed with adoption signals
@@ -522,20 +559,24 @@ Reconsider Score integration IF (Q4 2026):
 ## Final Notes
 
 ### What's Done
+
 ✅ **All strategic planning, documentation, and design complete.** 5 comprehensive documents provide clear path forward.
 
 ### What's Next (User Actions Required)
+
 1. Execute GHCR publishing (follow GHCR_PUBLISHING_GUIDE.md §3)
 2. Identify + contact pilot teams (use ADOPTION_PILOT_GUIDE.md §6 template)
 3. Schedule kick-off meeting (use agenda template from §10.1)
 4. Run active pilot weeks (reference week-by-week schedule from §3)
 
 ### Support
+
 - All templates provided; copy-paste ready
 - All processes documented; step-by-step instructions included
 - All success criteria explicit; easy to measure progress
 
 ### Timeline to Production Readiness
+
 - **June**: Publish v1.0.0, launch pilot
 - **August**: Pilot data collected
 - **September**: Roadmap updated, Score re-evaluated
@@ -547,4 +588,3 @@ Reconsider Score integration IF (Q4 2026):
 **Date**: 2026-06-03
 **Framework Version**: v1.0.0
 **Team**: Ready for external adoption pilot
-

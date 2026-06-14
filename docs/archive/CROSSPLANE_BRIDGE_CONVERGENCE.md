@@ -18,6 +18,7 @@ Stack (KCL)
 ```
 
 **Problem**: Teams must choose between:
+
 - Route 1: Full automation but low visibility / control plane (Object wrapping)
 - Route 2: Professional APIs but manual design + incomplete test coverage
 
@@ -49,8 +50,10 @@ Stack (KCL)
 **Goal**: `kcl_to_crossplane` detects which templates have curated APIs.
 
 **Changes**:
+
 1. Add `crossplane_api_available` marker to template metadata
 2. Update `framework/models/modules/component.k` and `.../accessory.k`:
+
    ```kcl
    schema Component {
        // ...
@@ -59,6 +62,7 @@ Stack (KCL)
        crossplane_api_group?: str = ""  # e.g., "xpostgres.koncept.bluesolution.es"
    }
    ```
+
 3. Update template instances in `framework/templates/*/`:
    - `postgresql/`: `crossplane_api = True, crossplane_api_group = "xpostgres.koncept.bluesolution.es"`
    - `kafka/`: `crossplane_api = True, crossplane_api_group = "xkafka.koncept.bluesolution.es"`
@@ -69,6 +73,7 @@ Stack (KCL)
 **Goal**: `kcl_to_crossplane` emits either XR or Object.
 
 **Changes to `framework/procedures/kcl_to_crossplane.k`**:
+
 ```kcl
 # Pseudo-code; actual implementation will use existing composition builder
 
@@ -88,6 +93,7 @@ _compose_accessory = lambda stack, acc -> {
 **Output Example** (before vs. after):
 
 **Before** (all Object):
+
 ```yaml
 apiVersion: postgresql.cnpg.io/v1
 kind: Cluster
@@ -103,6 +109,7 @@ spec:
 ```
 
 **After** (native API):
+
 ```yaml
 apiVersion: xpostgres.koncept.bluesolution.es/v1alpha1
 kind: XPostgresInstance
@@ -119,10 +126,12 @@ spec:
 **Goal**: Each curated Composition emits via native provider, not Object-wrapping.
 
 **Changes to `crossplane_v2/*/x_*.yaml`**:
+
 - Current: Composition pipeline with `provider-kubernetes` Object resource
 - Target: Direct provider-native resources (provider-helm Release, provider-postgresql Cluster, etc.)
 
 **Example for PostgreSQL**:
+
 ```yaml
 # Before: wrapping Object
 - name: create-cluster
@@ -163,6 +172,7 @@ spec:
 **Goal**: Prove each professional API actually reconciles end-to-end.
 
 **Test cases per API**:
+
 ```bash
 # Via scripts/acceptance_runtime.sh
 crossplane test <api> --profile lifecycle  # create → ready
@@ -183,6 +193,7 @@ crossplane test <api> --profile delete     # cleanup verified
 ## Detailed Checklist (by API)
 
 ### PostgreSQL/CNPG
+
 - [ ] **Phase 1**: Add `crossplane_api_available` marker
 - [ ] **Phase 2**: Update bridge logic for postgres
 - [ ] **Phase 3**: Verify professional Composition emits native resources  
@@ -190,6 +201,7 @@ crossplane test <api> --profile delete     # cleanup verified
 - [ ] **Phase 5**: Mark SUPPORTED in `PROMOTION_STATUS.md`
 
 ### Kafka/Strimzi
+
 - [ ] **Phase 1**: Add marker
 - [ ] **Phase 2**: Bridge logic
 - [ ] **Phase 3**: Professional Composition
@@ -197,13 +209,15 @@ crossplane test <api> --profile delete     # cleanup verified
 - [ ] **Phase 5**: Mark SUPPORTED (when Phase 4 passes)
 
 ### Keycloak (+PostgreSQL dependency)
+
 - [ ] **Phase 1**: Add marker
 - [ ] **Phase 2**: Bridge logic
 - [ ] **Phase 3**: Professional Composition
 - [ ] **Phase 4**: Coordinated reconciliation tests with PostgreSQL (pending)
 - [ ] **Phase 5**: Mark SUPPORTED (when Phase 4 passes)
 
-### MongoDB, RabbitMQ, Redis, OpenSearch, etc.
+### MongoDB, RabbitMQ, Redis, OpenSearch, etc
+
 - [ ] **Phase 1**: Add marker
 - [ ] **Phase 2**: Bridge logic (use generic Object fallback if Phase 3 incomplete)
 - [ ] **Phase 3**: Professional Composition (deferred)
@@ -215,12 +229,15 @@ crossplane test <api> --profile delete     # cleanup verified
 ## Risk Mitigation
 
 ### Risk 1: Generated bridge logic complexity
+
 **Mitigation**: Start with 3 APIs (postgres, kafka, keycloak); prove pattern before scaling.
 
 ### Risk 2: Professional Compositions incomplete
+
 **Mitigation**: Fall back to Object wrapping during transition (graceful degradation).
 
 ### Risk 3: Existing Crossplane deployments affected
+
 **Mitigation**: New emitted XRs/Objects coexist; migrate workloads incrementally; old Object-wrapped workloads keep working.
 
 ---
@@ -252,6 +269,7 @@ crossplane test <api> --profile delete     # cleanup verified
 ## Blocking Decision
 
 **Go/No-go checkpoint**: After Phase 2, decide:
+
 - **Go**: Professional Compositions ready for Phase 3
 - **No-go**: Defer convergence; keep Object wrapping for now
 
@@ -264,4 +282,3 @@ crossplane test <api> --profile delete     # cleanup verified
 - **Composition patterns**: `docs/CROSSPLANE_PATTERNS.md`
 - **Promotion gate**: `crossplane_v2/PROMOTION_STATUS.md`
 - **CLI integration**: `cmd/koncept/cmd/crossplane.go`
-

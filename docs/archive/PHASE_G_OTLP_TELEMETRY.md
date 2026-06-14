@@ -10,6 +10,7 @@
 ## Overview
 
 The koncept platform collects metrics locally (JSONL format). Phase G enables exporting these metrics to a central OpenTelemetry (OTLP) backend for:
+
 - Centralized observability
 - Real-time dashboards
 - Automated anomaly detection
@@ -61,135 +62,135 @@ The koncept platform collects metrics locally (JSONL format). Phase G enables ex
 package telemetry
 
 import (
-	"context"
-	"fmt"
-	"time"
+ "context"
+ "fmt"
+ "time"
 
-	"go.opentelemetry.io/sdk/metric"
-	"go.opentelemetry.io/sdk/metric/aggregation"
-	"go.opentelemetry.io/sdk/metric/view"
-	"go.opentelemetry.io/sdk/resource"
-	semconv "go.opentelemetry.io/semconv/v1.24.0"
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp"
-	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
-	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
-	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
-	"go.opentelemetry.io/otel/sdk/trace"
-	"os"
+ "go.opentelemetry.io/sdk/metric"
+ "go.opentelemetry.io/sdk/metric/aggregation"
+ "go.opentelemetry.io/sdk/metric/view"
+ "go.opentelemetry.io/sdk/resource"
+ semconv "go.opentelemetry.io/semconv/v1.24.0"
+ "go.opentelemetry.io/otel"
+ "go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp"
+ "go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
+ "go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
+ "go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
+ "go.opentelemetry.io/otel/sdk/trace"
+ "os"
 )
 
 // OTLPConfig holds OTLP backend configuration
 type OTLPConfig struct {
-	// Endpoint: OTLP backend URL (e.g., http://localhost:4318 or grpc://datadog-agent:4317)
-	Endpoint string
-	// Protocol: "http" or "grpc"
-	Protocol string
-	// Timeout: Connection timeout
-	Timeout time.Duration
-	// Insecure: Skip TLS verification
-	Insecure bool
-	// Headers: Custom headers (for authentication)
-	Headers map[string]string
-	// SamplingRate: Trace sampling (0.0-1.0, default 0.1)
-	SamplingRate float64
-	// BatchSize: Metric batch size
-	BatchSize int
-	// FlushInterval: How often to flush batches
-	FlushInterval time.Duration
+ // Endpoint: OTLP backend URL (e.g., http://localhost:4318 or grpc://datadog-agent:4317)
+ Endpoint string
+ // Protocol: "http" or "grpc"
+ Protocol string
+ // Timeout: Connection timeout
+ Timeout time.Duration
+ // Insecure: Skip TLS verification
+ Insecure bool
+ // Headers: Custom headers (for authentication)
+ Headers map[string]string
+ // SamplingRate: Trace sampling (0.0-1.0, default 0.1)
+ SamplingRate float64
+ // BatchSize: Metric batch size
+ BatchSize int
+ // FlushInterval: How often to flush batches
+ FlushInterval time.Duration
 }
 
 // InitializeOTLPExporter sets up metric and trace export to OTLP backend
 func InitializeOTLPExporter(config OTLPConfig) (func(context.Context) error, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), config.Timeout)
-	defer cancel()
+ ctx, cancel := context.WithTimeout(context.Background(), config.Timeout)
+ defer cancel()
 
-	res, err := resource.New(ctx,
-		resource.WithAttributes(
-			semconv.Service(
-				semconv.ServiceNameKey.String("koncept"),
-				semconv.ServiceVersionKey.String(os.Getenv("KONCEPT_VERSION")),
-				semconv.ServiceInstanceIDKey.String(fmt.Sprintf("%s-%d", os.Getenv("HOSTNAME"), os.Getpid())),
-			),
-		),
-	)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create resource: %w", err)
-	}
+ res, err := resource.New(ctx,
+  resource.WithAttributes(
+   semconv.Service(
+    semconv.ServiceNameKey.String("koncept"),
+    semconv.ServiceVersionKey.String(os.Getenv("KONCEPT_VERSION")),
+    semconv.ServiceInstanceIDKey.String(fmt.Sprintf("%s-%d", os.Getenv("HOSTNAME"), os.Getpid())),
+   ),
+  ),
+ )
+ if err != nil {
+  return nil, fmt.Errorf("failed to create resource: %w", err)
+ }
 
-	// Metric exporter
-	var metricExporter metric.Exporter
-	if config.Protocol == "grpc" {
-		metricExporter, err = otlpmetricgrpc.New(ctx,
-			otlpmetricgrpc.WithEndpoint(config.Endpoint),
-			otlpmetricgrpc.WithHeaders(config.Headers),
-			otlpmetricgrpc.WithInsecure(),
-		)
-	} else {
-		metricExporter, err = otlpmetrichttp.New(ctx,
-			otlpmetrichttp.WithEndpoint(config.Endpoint),
-			otlpmetrichttp.WithHeaders(config.Headers),
-			otlpmetrichttp.WithInsecure(),
-		)
-	}
-	if err != nil {
-		return nil, fmt.Errorf("failed to create metric exporter: %w", err)
-	}
+ // Metric exporter
+ var metricExporter metric.Exporter
+ if config.Protocol == "grpc" {
+  metricExporter, err = otlpmetricgrpc.New(ctx,
+   otlpmetricgrpc.WithEndpoint(config.Endpoint),
+   otlpmetricgrpc.WithHeaders(config.Headers),
+   otlpmetricgrpc.WithInsecure(),
+  )
+ } else {
+  metricExporter, err = otlpmetrichttp.New(ctx,
+   otlpmetrichttp.WithEndpoint(config.Endpoint),
+   otlpmetrichttp.WithHeaders(config.Headers),
+   otlpmetrichttp.WithInsecure(),
+  )
+ }
+ if err != nil {
+  return nil, fmt.Errorf("failed to create metric exporter: %w", err)
+ }
 
-	// Metric provider with views (customize what metrics are exported)
-	meterProvider := metric.NewMeterProvider(
-		metric.WithResource(res),
-		metric.WithReader(
-			metric.NewPeriodicReader(metricExporter,
-				metric.WithInterval(config.FlushInterval),
-			),
-		),
-		metric.WithView(
-			// Example: Rename internal metrics
-			view.New(
-				view.MatchInstrumentName("^koncept\\..*"),
-				view.WithSetName("platform.{{ .InstrumentName }}"),
-			),
-		),
-	)
-	otel.SetMeterProvider(meterProvider)
+ // Metric provider with views (customize what metrics are exported)
+ meterProvider := metric.NewMeterProvider(
+  metric.WithResource(res),
+  metric.WithReader(
+   metric.NewPeriodicReader(metricExporter,
+    metric.WithInterval(config.FlushInterval),
+   ),
+  ),
+  metric.WithView(
+   // Example: Rename internal metrics
+   view.New(
+    view.MatchInstrumentName("^koncept\\..*"),
+    view.WithSetName("platform.{{ .InstrumentName }}"),
+   ),
+  ),
+ )
+ otel.SetMeterProvider(meterProvider)
 
-	// Trace exporter
-	var traceExporter trace.SpanExporter
-	if config.Protocol == "grpc" {
-		traceExporter, err = otlptracegrpc.New(ctx,
-			otlptracegrpc.WithEndpoint(config.Endpoint),
-			otlptracegrpc.WithHeaders(config.Headers),
-			otlptracegrpc.WithInsecure(),
-		)
-	} else {
-		traceExporter, err = otlptracehttp.New(ctx,
-			otlptracehttp.WithEndpoint(config.Endpoint),
-			otlptracehttp.WithHeaders(config.Headers),
-			otlptracehttp.WithInsecure(),
-		)
-	}
-	if err != nil {
-		return nil, fmt.Errorf("failed to create trace exporter: %w", err)
-	}
+ // Trace exporter
+ var traceExporter trace.SpanExporter
+ if config.Protocol == "grpc" {
+  traceExporter, err = otlptracegrpc.New(ctx,
+   otlptracegrpc.WithEndpoint(config.Endpoint),
+   otlptracegrpc.WithHeaders(config.Headers),
+   otlptracegrpc.WithInsecure(),
+  )
+ } else {
+  traceExporter, err = otlptracehttp.New(ctx,
+   otlptracehttp.WithEndpoint(config.Endpoint),
+   otlptracehttp.WithHeaders(config.Headers),
+   otlptracehttp.WithInsecure(),
+  )
+ }
+ if err != nil {
+  return nil, fmt.Errorf("failed to create trace exporter: %w", err)
+ }
 
-	// Trace provider with sampling
-	traceProvider := trace.NewTracerProvider(
-		trace.WithResource(res),
-		trace.WithBatcher(traceExporter),
-		trace.WithSampler(trace.TraceIDRatioBased(config.SamplingRate)),
-	)
-	otel.SetTracerProvider(traceProvider)
+ // Trace provider with sampling
+ traceProvider := trace.NewTracerProvider(
+  trace.WithResource(res),
+  trace.WithBatcher(traceExporter),
+  trace.WithSampler(trace.TraceIDRatioBased(config.SamplingRate)),
+ )
+ otel.SetTracerProvider(traceProvider)
 
-	// Return shutdown function
-	return func(ctx context.Context) error {
-		return traceProvider.Shutdown(ctx)
-	}, nil
+ // Return shutdown function
+ return func(ctx context.Context) error {
+  return traceProvider.Shutdown(ctx)
+ }, nil
 }
 
 // GetMeterProvider returns the global meter provider
 func GetMeterProvider() metric.MeterProvider {
-	return otel.GetMeterProvider()
+ return otel.GetMeterProvider()
 }
 ```
 
@@ -200,35 +201,35 @@ func GetMeterProvider() metric.MeterProvider {
 ```go
 // Add to render command setup
 func runRender(cmd *cobra.Command, args []string) error {
-	// ... existing code ...
+ // ... existing code ...
 
-	// Initialize OTLP exporter if configured
-	otlpEndpoint := os.Getenv("OTLP_EXPORTER_OTLP_ENDPOINT")
-	if otlpEndpoint != "" {
-		config := telemetry.OTLPConfig{
-			Endpoint:      otlpEndpoint,
-			Protocol:      os.Getenv("OTLP_EXPORTER_OTLP_PROTOCOL"),
-			Timeout:       5 * time.Second,
-			Insecure:      os.Getenv("OTLP_EXPORTER_OTLP_INSECURE") == "true",
-			Headers:       parseHeaders(os.Getenv("OTLP_EXPORTER_OTLP_HEADERS")),
-			SamplingRate:  0.1,
-			BatchSize:     100,
-			FlushInterval: 10 * time.Second,
-		}
-		shutdown, err := telemetry.InitializeOTLPExporter(config)
-		if err != nil {
-			log.Printf("Warning: Failed to initialize OTLP exporter: %v", err)
-		} else {
-			defer shutdown(context.Background())
-		}
-	}
+ // Initialize OTLP exporter if configured
+ otlpEndpoint := os.Getenv("OTLP_EXPORTER_OTLP_ENDPOINT")
+ if otlpEndpoint != "" {
+  config := telemetry.OTLPConfig{
+   Endpoint:      otlpEndpoint,
+   Protocol:      os.Getenv("OTLP_EXPORTER_OTLP_PROTOCOL"),
+   Timeout:       5 * time.Second,
+   Insecure:      os.Getenv("OTLP_EXPORTER_OTLP_INSECURE") == "true",
+   Headers:       parseHeaders(os.Getenv("OTLP_EXPORTER_OTLP_HEADERS")),
+   SamplingRate:  0.1,
+   BatchSize:     100,
+   FlushInterval: 10 * time.Second,
+  }
+  shutdown, err := telemetry.InitializeOTLPExporter(config)
+  if err != nil {
+   log.Printf("Warning: Failed to initialize OTLP exporter: %v", err)
+  } else {
+   defer shutdown(context.Background())
+  }
+ }
 
-	// Record metric: render start
-	meter := otel.GetMeterProvider().Meter("koncept/render")
-	counter, _ := meter.Int64Counter("render.total")
-	counter.Add(context.Background(), 1)
+ // Record metric: render start
+ meter := otel.GetMeterProvider().Meter("koncept/render")
+ counter, _ := meter.Int64Counter("render.total")
+ counter.Add(context.Background(), 1)
 
-	// ... rest of render implementation ...
+ // ... rest of render implementation ...
 }
 ```
 
@@ -426,6 +427,7 @@ spec:
 ### Option 3: Managed Services
 
 #### Datadog
+
 ```bash
 export OTLP_EXPORTER_OTLP_ENDPOINT=https://api.datadoghq.com
 export OTLP_EXPORTER_OTLP_HEADERS="Authorization=Bearer YOUR_API_KEY"
@@ -433,6 +435,7 @@ export OTLP_EXPORTER_OTLP_PROTOCOL=http
 ```
 
 #### Honeycomb
+
 ```bash
 export OTLP_EXPORTER_OTLP_ENDPOINT=https://api.honeycomb.io:443
 export OTLP_EXPORTER_OTLP_HEADERS="x-honeycomb-team=YOUR_API_KEY"
@@ -440,6 +443,7 @@ export OTLP_EXPORTER_OTLP_PROTOCOL=http
 ```
 
 #### New Relic
+
 ```bash
 export OTLP_EXPORTER_OTLP_ENDPOINT=https://otlp.nr-data.net:4318
 export OTLP_EXPORTER_OTLP_HEADERS="api-key=YOUR_LICENSE_KEY"
@@ -680,4 +684,3 @@ curl 'http://localhost:9090/api/v1/query?query=platform_render_total'
 **Status**: ✅ PHASE G COMPLETE  
 **Files**: 4 (Go module + config + dashboards + alerts)  
 **Production Ready**: Yes, after deployment setup
-
