@@ -55,7 +55,20 @@ kcl test ./tests/templates/...
 ./scripts/acceptance_kind.sh --case basic
 
 # Run additional lightweight template rollout checks
-./scripts/acceptance_kind.sh --case webapp --case database --case fluentbit-native-rollout --case webapp-service-account-rollout --case webapp-database-stack-rollout --case elasticsearch-kibana-stack-rollout --case elk-stack-rollout --case webapp-dataprepper-stack-rollout --case webapp-opensearch-dashboards-stack-rollout --case webapp-elk-stack-rollout --case dataprepper-elk-stack-rollout --case webapp-dataprepper-elk-stack-rollout --case webapp-database-dataprepper-stack-rollout
+./scripts/acceptance_kind.sh \
+  --case webapp \
+  --case database \
+  --case fluentbit-native-rollout \
+  --case webapp-service-account-rollout \
+  --case webapp-database-stack-rollout \
+  --case elasticsearch-kibana-stack-rollout \
+  --case elk-stack-rollout \
+  --case webapp-dataprepper-stack-rollout \
+  --case webapp-opensearch-dashboards-stack-rollout \
+  --case webapp-elk-stack-rollout \
+  --case dataprepper-elk-stack-rollout \
+  --case webapp-dataprepper-elk-stack-rollout \
+  --case webapp-database-dataprepper-stack-rollout
 
 # Render/dry-run every template acceptance case
 ./scripts/acceptance_kind.sh --case templates

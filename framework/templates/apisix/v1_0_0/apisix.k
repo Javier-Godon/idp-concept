@@ -81,7 +81,12 @@ build_apisix_release = lambda spec: APIGatewaySpec -> any {
 
     _replicas_values: {str:str} = {"apisix.replicas" = str(_replicas), "etcd.replicaCount" = str(spec.etcdReplicas or _replicas)}
 
-    _resource_values: {str:str} = {if spec.cpuRequest: "apisix.resources.requests.cpu" = spec.cpuRequest if spec.memoryRequest: "apisix.resources.requests.memory" = spec.memoryRequest if spec.cpuLimit: "apisix.resources.limits.cpu" = spec.cpuLimit if spec.memoryLimit: "apisix.resources.limits.memory" = spec.memoryLimit}
+    _resource_values: {str:str} = (
+        {} | ({} if not spec.cpuRequest else {"apisix.resources.requests.cpu" = spec.cpuRequest})
+        | ({} if not spec.memoryRequest else {"apisix.resources.requests.memory" = spec.memoryRequest})
+        | ({} if not spec.cpuLimit else {"apisix.resources.limits.cpu" = spec.cpuLimit})
+        | ({} if not spec.memoryLimit else {"apisix.resources.limits.memory" = spec.memoryLimit})
+    )
 
     _etcd_values: {str:str} = {if spec.etcdStorageSize: "etcd.persistence.size" = spec.etcdStorageSize}
 

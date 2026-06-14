@@ -169,5 +169,10 @@ The recommended approach is:
 - run `./scripts/acceptance_runtime.sh --case runtime-rollouts --timeout 600s` when changing native Deployment/StatefulSet templates such as Data Prepper, OpenSearch Dashboards, Fluent Bit native mode, Elasticsearch v7, Kibana v7, Logstash v7, WebApp with probes, WebApp with ServiceAccount, or any mixture stack rollout fixture (up to 4-component `webapp-dataprepper-elk-stack-rollout`)
 - run heavier cases in nightly CI or before releases
 
-For true operator-backed deployment verification, use `./scripts/acceptance_runtime.sh --case <runtime-group>` against a cluster with real operators/controllers installed, or pass `--install-dependencies` for disposable kind/nightly runs where the runner should install known pinned dependencies.
+For true operator-backed deployment verification, use:
+```
+./scripts/acceptance_runtime.sh --case <runtime-group>
+```
 
+Run this against a cluster with real operators/controllers installed, or pass `--install-dependencies`
+for disposable kind/nightly runs where the runner should install known pinned dependencies.
