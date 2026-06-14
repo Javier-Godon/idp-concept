@@ -94,7 +94,8 @@ koncept changelog render --version v0.2.0 --file CHANGELOG.next.md
 ./scripts/acceptance_runtime.sh --case runtime-basic
 
 # Run real rollout checks for native Deployment/StatefulSet template fixtures
-# Existing 16 rollout cases verified on kind (kindest/node:v1.33.0); run fluentbit-native-rollout for the new Fluent Bit path:
+# Existing 16 rollout cases verified on kind (kindest/node:v1.33.0);
+# run fluentbit-native-rollout for the new Fluent Bit path:
 # Single-template: dataprepper-rollout, opensearch-dashboards-rollout, elasticsearch-rollout,
 #   kibana-rollout, logstash-rollout, fluentbit-native-rollout, webapp-probes-rollout, webapp-service-account-rollout
 # 2-template mixtures: webapp-database-stack-rollout, elasticsearch-kibana-stack-rollout,
@@ -108,7 +109,13 @@ koncept changelog render --version v0.2.0 --file CHANGELOG.next.md
 ./scripts/acceptance_runtime.sh --case runtime-all --install-dependencies
 ```
 
-See [ACCEPTANCE_DEPENDENCIES.md](ACCEPTANCE_DEPENDENCIES.md) for dependency requirements, [ACCEPTANCE_RUNTIME.md](ACCEPTANCE_RUNTIME.md) for the real deployment acceptance layer, [GOLDEN_OUTPUTS.md](GOLDEN_OUTPUTS.md) for snapshot review, [POLICY_EXEMPTIONS.md](../operations/POLICY_EXEMPTIONS.md) for owned/time-bounded policy waivers, [CHANGELOG_WORKFLOW.md](../operations/CHANGELOG_WORKFLOW.md) for platform release-note fragments, and [CROSSPLANE_PATTERNS.md](../integrations/CROSSPLANE_PATTERNS.md) for the Crossplane v2 management test bar.
+See [ACCEPTANCE_DEPENDENCIES.md](ACCEPTANCE_DEPENDENCIES.md) for dependency requirements,
+[ACCEPTANCE_RUNTIME.md](ACCEPTANCE_RUNTIME.md) for the real deployment acceptance layer,
+[GOLDEN_OUTPUTS.md](GOLDEN_OUTPUTS.md) for snapshot review,
+[POLICY_EXEMPTIONS.md](../operations/POLICY_EXEMPTIONS.md) for owned/time-bounded policy waivers,
+[CHANGELOG_WORKFLOW.md](../operations/CHANGELOG_WORKFLOW.md) for platform release-note fragments,
+and [CROSSPLANE_PATTERNS.md](../integrations/CROSSPLANE_PATTERNS.md) for the Crossplane v2 management
+test bar.
 
 ## CI Recommendation
 

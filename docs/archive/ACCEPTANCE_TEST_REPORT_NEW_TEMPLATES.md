@@ -8,7 +8,8 @@
 
 ## Executive Summary
 
-All three new template implementations (Apache APISIX, Apache Superset, Power BI Connector) have been validated through comprehensive acceptance testing. Tests cover:
+All three new template implementations (Apache APISIX, Apache Superset, Power BI Connector)
+have been validated through comprehensive acceptance testing. Tests cover:
 
 - ✅ **Rendering**: KCL templates compile and render to valid Kubernetes manifests
 - ✅ **Integration**: All templates properly integrate with framework helpers and RenderStack
@@ -23,6 +24,7 @@ All three new template implementations (Apache APISIX, Apache Superset, Power BI
 ### 1. Individual Template Tests
 
 #### APISIX Workload
+
 - **File**: `framework/tests/acceptance/cases/apisix_workload.k`
 - **Type**: Platform template (API Gateway)
 - **Tests**:

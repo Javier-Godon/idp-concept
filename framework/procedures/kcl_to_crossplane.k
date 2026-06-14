@@ -162,7 +162,7 @@ _process_namespaces = lambda namespaces: [k8snamespace.K8sNamespaceInstance], me
 }
 
 _comp_to_resources = lambda component: component.ComponentInstance, meta: any = Undefined -> [{str:}] {
-    [_wrap_in_object(_manifest_resource_name("comp", component.name, m), m, meta) for m in component.manifests]
+    [_wrap_in_object(_manifest_resource_name("comp", component.instance.name, m), m, meta) for m in component.instance.manifests]
 }
 
 _process_components = lambda components: [component.ComponentInstance], meta: any = Undefined -> [{str:}] {
