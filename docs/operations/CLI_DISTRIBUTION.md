@@ -305,7 +305,7 @@ This repository publishes **two consumable artifacts** to
 |---|---|---|
 | `koncept` CLI binaries + `SHA256SUMS` | GitHub Releases assets | Installable cross-platform CLI |
 | `koncept` CLI container image | `ghcr.io/javier-godon/idp-concept/koncept` | Pinned CI/runtime image (kcl bundled) |
-| Framework KCL module (OCI) | `oras://ghcr.io/javier-godon/idp-concept/framework` | The reusable `framework/` package — see [GHCR_PUBLISHING_GUIDE.md](GHCR_PUBLISHING_GUIDE.md) |
+| Framework KCL module (OCI) | `oras://ghcr.io/javier-godon/idp-concept-framework` | The reusable `framework/` package — see [GHCR_PUBLISHING_GUIDE.md](GHCR_PUBLISHING_GUIDE.md) |
 
 The `projects/` directory (`video_streaming`, `erp_back`, `pokedex`) is **not** a
 published artifact. Those are **reference example usages** of the framework that

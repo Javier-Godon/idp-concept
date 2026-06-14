@@ -413,7 +413,7 @@ The answer keeps the surface area small and explicit:
 
 | Item | Role | Published? | Reference |
 |---|---|---|---|
-| `framework/` | The reusable platform (schemas, builders, templates, procedures) | **Yes** — versioned OCI module | `oras://ghcr.io/javier-godon/idp-concept/framework:<version>` |
+| `framework/` | The reusable platform (schemas, builders, templates, procedures) | **Yes** — versioned OCI module | `oras://ghcr.io/javier-godon/idp-concept-framework:<version>` |
 | `cmd/koncept/` | The single CLI interface | **Yes** — binaries + container image | `ghcr.io/javier-godon/idp-concept/koncept:<version>` + GitHub Release assets |
 | `projects/video_streaming`, `projects/erp_back`, `projects/pokedex` | **Reference example usages** of the framework | **No** | Copy-as-starting-point; `erp_back` is the recommended template-first layout |
 | `crossplane_v2/` | Hand-authored cluster prerequisites + curated reference Crossplane APIs | **No** (applied per cluster) | See Section 5.7 |
@@ -541,7 +541,7 @@ The previous roadmap emphasized many future phases. Given the current state, the
 
 - [x] Define semantic versioning rules for `framework/`. (Patch/minor/major table in `docs/FRAMEWORK_VERSIONING.md`.)
 - [x] Add framework compatibility metadata to stacks/releases.
-- [x] Publish framework packages as versioned OCI artifacts or a clearly tagged KCL module distribution. (`scripts/publish_oci.sh framework <version>` packages `framework/` and pushes `oras://ghcr.io/javier-godon/idp-concept/framework:<version>`, authenticating from the git-ignored `credentials/ghcr.env` so no token is ever prompted/echoed; `.github/workflows/phase-d-publish-framework.yml` does the same in CI on release. Framework v1.0.0 is published under the repo-associated `idp-concept/framework` path. Remaining: switch consuming projects to the pinned reference once KCL `oras://` resolution is fully validated. See `docs/operations/GHCR_PUBLISHING_GUIDE.md`.)
+- [x] Publish framework packages as versioned OCI artifacts or a clearly tagged KCL module distribution. (`scripts/publish_oci.sh framework <version>` packages `framework/` and pushes `oras://ghcr.io/javier-godon/idp-concept-framework:<version>`, authenticating from the git-ignored `credentials/ghcr.env` so no token is ever prompted/echoed; `.github/workflows/phase-d-publish-framework.yml` does the same in CI on release. Framework v1.0.0 is published under the repo-associated `idp-concept/framework` path. Remaining: switch consuming projects to the pinned reference once KCL `oras://` resolution is fully validated. See `docs/operations/GHCR_PUBLISHING_GUIDE.md`.)
 - [x] Provide migration docs from local path dependencies to version-pinned dependencies. (Worked `kcl.mod` before/after example in `docs/FRAMEWORK_VERSIONING.md`.)
 - [x] Add `koncept deps` output suitable for troubleshooting module resolution.
 - [x] Define support windows and deprecation policy for templates and output procedures.

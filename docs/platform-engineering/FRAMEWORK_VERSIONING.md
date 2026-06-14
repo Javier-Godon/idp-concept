@@ -100,7 +100,7 @@ project pins a version instead:
 [dependencies]
 framework = "1.2.0"
 # or, explicitly via the published OCI artifact:
-# framework = "oras://ghcr.io/javier-godon/idp-concept/framework:v1.0.0"
+# framework = "oras://ghcr.io/javier-godon/idp-concept-framework:v1.0.0"
 ```
 
 Migration steps for one project:

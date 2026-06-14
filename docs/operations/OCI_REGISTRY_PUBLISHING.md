@@ -7,7 +7,7 @@
 ## 1. Overview
 
 > **Current state.** The idp-concept framework is already published to GitHub Container
-> Registry at `oras://ghcr.io/javier-godon/idp-concept/framework:v1.0.0`, associated with
+> Registry at `oras://ghcr.io/javier-godon/idp-concept-framework:v1.0.0`, associated with
 > the [Javier-Godon/idp-concept](https://github.com/Javier-Godon/idp-concept) repository.
 > The canonical, supported publishing path is `scripts/publish_oci.sh framework <version>`
 > (local, reads `credentials/ghcr.env`) and the `.github/workflows/phase-d-publish-framework.yml`
@@ -71,7 +71,7 @@ k8s = "1.31.2"     # Pin external dependencies
 ### Option A: Publish from Local Machine
 
 ```bash
-cd /path/to/idp-concept/framework
+cd /path/to/idp-concept-framework
 
 # Push to Docker registry
 kcl mod push --registry docker://myregistry.azurecr.io
@@ -271,11 +271,11 @@ kcl mod push --registry docker://dockerhub_username/framework
 docker login myenterprise-harbor.com
 
 # Publish to project
-kcl mod push --registry oras://myenterprise-harbor.com/idp-concept/framework
+kcl mod push --registry oras://myenterprise-harbor.com/idp-concept-framework
 
 # Reference
 # [dependencies]
-# framework = "oras://myenterprise-harbor.com/idp-concept/framework:1.0.0"
+# framework = "oras://myenterprise-harbor.com/idp-concept-framework:1.0.0"
 ```
 
 ### Artifactory/JFrog

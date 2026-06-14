@@ -31,7 +31,7 @@ REGISTRY="ghcr.io"
 ## Owner namespace on GHCR (lowercase). Repository: https://github.com/Javier-Godon/idp-concept
 OWNER="javier-godon"
 CLI_IMAGE="${REGISTRY}/${OWNER}/idp-concept/koncept"
-FRAMEWORK_PACKAGE="${REGISTRY}/${OWNER}/idp-concept/framework"
+FRAMEWORK_PACKAGE="${REGISTRY}/${OWNER}/idp-concept-framework"
 FRAMEWORK_MEDIA_TYPE="application/vnd.idp-concept.framework.v1+gzip"
 
 log()  { printf '\033[1;34m[publish]\033[0m %s\n' "$*"; }

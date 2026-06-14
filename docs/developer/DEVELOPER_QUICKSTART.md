@@ -102,7 +102,7 @@ development, or from the published OCI package when pinned distribution is neede
 framework = { path = "../../framework" }
 
 # Published package form:
-# framework = "oras://ghcr.io/javier-godon/idp-concept/framework:v1.0.0"
+# framework = "oras://ghcr.io/javier-godon/idp-concept-framework:v1.0.0"
 ```
 
 Do not change a project from a local path to an OCI framework package casually.

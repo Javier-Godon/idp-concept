@@ -113,7 +113,7 @@ jobs:
         run: |
           set -e
 
-          ARTIFACT_NAME="framework"
+          ARTIFACT_NAME="idp-concept-framework"
           IMAGE_NAME="${REGISTRY}/${ARTIFACT_NAME}"
           IMAGE_FULL="${IMAGE_NAME}:v${VERSION}"
 
@@ -130,7 +130,7 @@ jobs:
           # Create config descriptor
           cat > /tmp/config.json << 'CONFIG'
           {
-            "name": "idp-concept/framework",
+            "name": "idp-concept-framework",
             "version": "VERSION_PLACEHOLDER",
             "description": "KCL Framework Module for idp-concept Platform",            "author": "Platform Engineering",
             "type": "kcl-module"
@@ -155,7 +155,7 @@ jobs:
       - name: Verify Publication
         env:
           REGISTRY: ghcr.io/${{ github.repository }}
-          ARTIFACT_NAME: framework
+          ARTIFACT_NAME: idp-concept-framework
           VERSION: ${{ steps.version.outputs.version }}
         run: |
           IMAGE="${REGISTRY}/${ARTIFACT_NAME}:v${VERSION}"
@@ -168,7 +168,7 @@ jobs:
         run: |
           VERSION="${{ steps.version.outputs.version }}"
           REGISTRY="ghcr.io/${{ github.repository }}"
-          IMAGE_NAME="${REGISTRY}/framework"
+          IMAGE_NAME="${REGISTRY}/idp-concept-framework"
           IMAGE_FULL="${IMAGE_NAME}:v${VERSION}"
 
           mkdir -p docs
@@ -208,8 +208,8 @@ jobs:
             ## Framework Published to OCI Registry
 
             **Version**: ${{ steps.version.outputs.version }}  
-            **Registry**: ghcr.io/${{ github.repository }}/framework  
-            **Image**: ghcr.io/${{ github.repository }}/framework:v${{ steps.version.outputs.version }}
+            **Registry**: ghcr.io/${{ github.repository }}/idp-concept-framework  
+            **Image**: ghcr.io/${{ github.repository }}/idp-concept-framework:v${{ steps.version.outputs.version }}
 
             ### Usage
 
@@ -217,7 +217,7 @@ jobs:
 
             ```toml
             [dependencies]
-            framework = "ghcr.io/${{ github.repository }}/framework:v${{ steps.version.outputs.version }}"
+            framework = "ghcr.io/${{ github.repository }}/idp-concept-framework:v${{ steps.version.outputs.version }}"
             ```
 
             ### Changes Included
@@ -239,7 +239,7 @@ jobs:
           |-------|-------|
           | **Version** | ${{ steps.version.outputs.version }} |
           | **Registry** | ghcr.io/${{ github.repository }} |
-          | **Image** | `framework:v${{ steps.version.outputs.version }}` |
+          | **Image** | `idp-concept-framework:v${{ steps.version.outputs.version }}` |
           | **Status** | ✅ Published |
 
           ### Next Steps
