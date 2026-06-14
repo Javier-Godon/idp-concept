@@ -28,9 +28,7 @@ _NGINX_GATEWAY_VERSION = "1.4.0"
 
 build_gateway_controller = lambda spec: any {
     _chart = _ENVOY_GATEWAY_CHART if spec.provider == "envoy" else _NGINX_GATEWAY_CHART if spec.provider == "nginx" else _ENVOY_GATEWAY_CHART
-    _version = spec.chartVersion if spec.chartVersion is not Undefined else (
-        _ENVOY_GATEWAY_VERSION if spec.provider == "envoy" else _NGINX_GATEWAY_VERSION
-    )
+    _version = spec.chartVersion if spec.chartVersion is not Undefined else (_ENVOY_GATEWAY_VERSION if spec.provider == "envoy" else _NGINX_GATEWAY_VERSION)
 
     {
         apiVersion = "helm.toolkit.fluxcd.io/v2beta1"
