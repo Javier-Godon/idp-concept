@@ -142,7 +142,6 @@ build_timescaledb_cluster = lambda spec: TimescaleDBSpec -> any {
             name = spec.name
             namespace = spec.namespace
             kind = "THIRD_PARTY"
-            component = "timescaledb"
             manifests = _manifests
             leaders = [leader.build_accessory_leader(spec.name, spec.namespace, "Cluster", "postgresql.cnpg.io/v1")]
         }
@@ -205,6 +204,7 @@ schema TimescaleDBModule(accessory.Accessory):
 
     kind = "INFRASTRUCTURE"
     name = clusterName
+    namespace = namespace
     configurations = _ts_spec
     asset = {version = timescaleVersion}
     manifests = _ts_result.instance_manifest
