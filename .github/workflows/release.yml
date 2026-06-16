@@ -1,184 +1,139 @@
-name: Release koncept
-
-# Phase A of the IDP Evolution Plan: ship the Go CLI as the primary, packaged
-# interface. On a version tag this builds cross-platform binaries with
-# checksums, publishes them on the GitHub Release, and pushes a pinned CI
-# container image (kcl toolchain bundled) to GHCR.
+name: Full Platform Release
 
 on:
   push:
     tags:
-      - "v*"
+      - "v*.*.*"
   workflow_dispatch:
-    inputs:
-      tag:
-        description: "Version to build (e.g. v1.0.0). Binaries only; no publish."
-        required: false
-        default: "dev"
 
 permissions:
   contents: write
   packages: write
-  id-token: write # for cosign signing
 
 env:
-  IMAGE_NAME: ghcr.io/${{ github.repository }}/koncept
+  REGISTRY: ghcr.io
+  OWNER: javier-godon
 
 jobs:
-  binaries:
-    name: Build binaries and checksums
+
+  # ------------------------------------------------------------
+  # 1. BUILD CLI BINARIES
+  # ------------------------------------------------------------
+  build-cli:
     runs-on: ubuntu-latest
     outputs:
-      hashes: ${{ steps.hash.outputs.hashes }}
-      hash-file: ${{ steps.hash.outputs.file }}
+      version: ${{ steps.version.outputs.version }}
+
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
-      - name: Set up Go
+      - name: Extract version
+        id: version
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version-file: cmd/koncept/go.mod
+          go-version: "1.22"
 
-      - name: Cross-compile and checksum
-        working-directory: cmd/koncept
-        run: make checksums
-
-      - name: Test all binaries
-        working-directory: cmd/koncept
-        run: make test-binaries
-
-      - name: Create distribution archives
-        working-directory: cmd/koncept
-        run: make dist-archives
-
-      - name: Generate hashes for SLSA provenance
-        id: hash
+      - name: Build binaries
         run: |
-          set -euo pipefail
-          HASHFILE="cmd/koncept/bin/SHA256SUMS"
-          {
-            echo 'hashes<<EOF'
-            cat "$HASHFILE"
-            echo 'EOF'
-          } >> "$GITHUB_OUTPUT"
-          echo "file=$HASHFILE" >> "$GITHUB_OUTPUT"
+          mkdir -p dist
 
-      - name: Install syft for SBOM generation
-        uses: anchore/sbom-action/download-syft@v0
+          GOOS=linux GOARCH=amd64 go build -o dist/koncept-linux-amd64 ./cmd/koncept
+          GOOS=linux GOARCH=arm64 go build -o dist/koncept-linux-arm64 ./cmd/koncept
+          GOOS=darwin GOARCH=amd64 go build -o dist/koncept-darwin-amd64 ./cmd/koncept
 
-      - name: Generate SBOM (CycloneDX format)
-        run: |
-          mkdir -p cmd/koncept/sbom
-          for binary in cmd/koncept/bin/koncept-*; do
-            filename=$(basename "$binary")
-            syft "$binary" -o cyclonedx-xml > "cmd/koncept/sbom/${filename}.sbom.xml"
-          done
-
-      - name: Install cosign
-        uses: sigstore/cosign-installer@v3
-
-      - name: Sign binaries with cosign
-        if: startsWith(github.ref, 'refs/tags/v')
-        env:
-          COSIGN_EXPERIMENTAL: 1
-        run: |
-          for binary in cmd/koncept/bin/koncept-*; do
-            cosign sign-blob --yes \
-              --bundle "cmd/koncept/bin/$(basename "$binary").bundle" \
-              "$binary"
-          done
-
-      - name: Upload build artifacts
+      - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: koncept-binaries
-          path: |
-            cmd/koncept/bin/koncept-*
-            cmd/koncept/bin/SHA256SUMS
-            cmd/koncept/bin/*.bundle
-            cmd/koncept/sbom/*
-            cmd/koncept/dist/*
-          retention-days: 90
+          name: cli-binaries
+          path: dist/*
 
-      - name: Publish GitHub Release assets
-        if: startsWith(github.ref, 'refs/tags/v')
-        uses: softprops/action-gh-release@v2
-        with:
-          files: |
-            cmd/koncept/bin/koncept-*
-            cmd/koncept/bin/SHA256SUMS
-            cmd/koncept/bin/*.bundle
-            cmd/koncept/sbom/*
-            cmd/koncept/dist/*
-          prerelease: ${{ contains(github.ref, 'alpha') || contains(github.ref, 'beta') }}
-
-  image:
-    name: Build and push container image
+  # ------------------------------------------------------------
+  # 2. CREATE GITHUB RELEASE (FOR WGET INSTALL)
+  # ------------------------------------------------------------
+  github-release:
+    needs: build-cli
     runs-on: ubuntu-latest
-    needs: binaries
-    if: startsWith(github.ref, 'refs/tags/v')
+
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: cli-binaries
+          path: dist
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ needs.build-cli.outputs.version }}
+          name: Release v${{ needs.build-cli.outputs.version }}
+          files: |
+            dist/koncept-linux-amd64
+            dist/koncept-linux-arm64
+            dist/koncept-darwin-amd64
+
+  # ------------------------------------------------------------
+  # 3. BUILD & PUSH CLI CONTAINER IMAGE
+  # ------------------------------------------------------------
+  publish-image:
+    needs: build-cli
+    runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
 
-      - name: Log in to GHCR
+      - name: Login GHCR
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Derive image tags
-        id: meta
+      - name: Build & Push image
         run: |
-          set -euo pipefail
-          VERSION="${GITHUB_REF_NAME}"
-          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          VERSION=${{ needs.build-cli.outputs.version }}
 
-      - name: Build and push
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: cmd/koncept/Dockerfile
-          push: true
-          build-args: |
-            VERSION=${{ steps.meta.outputs.version }}
-          tags: |
-            ${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.version }}
-            ${{ env.IMAGE_NAME }}:latest
+          IMAGE=ghcr.io/${OWNER}/idp-concept/koncept
 
-  slsa-provenance:
-    name: Generate SLSA provenance
-    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v1.9.0
-    needs: binaries
-    if: startsWith(github.ref, 'refs/tags/v')
-    permissions:
-      contents: write
-      id-token: write
-    with:
-      base64-subjects: ${{ needs.binaries.outputs.hashes }}
-      provenance-name: "koncept.provenance.json"
-      upload: true
+          docker build -f cmd/koncept/Dockerfile \
+            -t $IMAGE:$VERSION \
+            -t $IMAGE:latest .
 
-  provenance:
-    name: Publish SLSA provenance
+          docker push $IMAGE:$VERSION
+          docker push $IMAGE:latest
+
+  # ------------------------------------------------------------
+  # 4. PUBLISH FRAMEWORK (ORAS / OCI)
+  # ------------------------------------------------------------
+  publish-framework:
+    needs: build-cli
     runs-on: ubuntu-latest
-    needs: [binaries, slsa-provenance]
-    if: startsWith(github.ref, 'refs/tags/v')
-    permissions:
-      contents: write
+
     steps:
       - uses: actions/checkout@v4
 
-      - name: Download artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: koncept-binaries
-          path: artifacts
+      - name: Install ORAS
+        run: |
+          curl -LO https://github.com/oras-project/oras/releases/download/v1.1.0/oras_1.1.0_linux_amd64.tar.gz
+          tar -xzf oras_1.1.0_linux_amd64.tar.gz
+          sudo mv oras /usr/local/bin/
 
-      - name: Publish SLSA provenance to release
-        uses: softprops/action-gh-release@v2
-        with:
-          files: |
-            koncept.provenance.json
+      - name: Login GHCR
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | oras login ghcr.io \
+            -u "${{ github.actor }}" --password-stdin
+
+      - name: Package framework
+        run: |
+          tar -czf framework.tar.gz -C framework .
+
+      - name: Push framework OCI artifact
+        run: |
+          VERSION=${{ needs.build-cli.outputs.version }}
+
+          oras push \
+            ghcr.io/${OWNER}/idp-concept-framework:$VERSION \
+            framework.tar.gz:application/vnd.oras.layer.v1.tar+gzip
