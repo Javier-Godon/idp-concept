@@ -540,6 +540,7 @@ credentials/
 # idp-concept
 .idea/
 **/output/
+!cmd/koncept/internal/output/
 cmd/koncept/bin/
 
 # Auto-generated KCL test files (kcl test tool)
