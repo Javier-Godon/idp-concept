@@ -41,7 +41,7 @@ func WriteKustomize(kustomizeData string, manifestsData string, outDir string) e
 
 	for _, entry := range manifests {
 		filename := manifestFilename(entry.doc)
-		if err := WriteYAML(entry.raw, filepath.Join(baseDir, filename)); err != nil {
+		if err := WriteYAML(entry.serialized, filepath.Join(baseDir, filename)); err != nil {
 			return err
 		}
 	}
@@ -50,13 +50,13 @@ func WriteKustomize(kustomizeData string, manifestsData string, outDir string) e
 }
 
 type yamlDoc struct {
-	raw string
-	doc map[string]any
+	serialized string
+	doc        map[string]any
 }
 
-// splitYAMLDocuments splits a multi-doc YAML stream into individual documents,
-// preserving the original text of each so we do not re-serialize unless
-// necessary.
+// splitYAMLDocuments splits a multi-doc YAML stream into individual documents.
+// Each document is round-tripped through the YAML encoder, so formatting is
+// normalized and comments are dropped in the serialized form.
 func splitYAMLDocuments(stream string) ([]yamlDoc, error) {
 	docs := []yamlDoc{}
 	dec := yaml.NewDecoder(strings.NewReader(stream))
@@ -75,21 +75,26 @@ func splitYAMLDocuments(stream string) ([]yamlDoc, error) {
 		if err != nil {
 			return nil, err
 		}
-		docs = append(docs, yamlDoc{raw: string(encoded), doc: raw})
+		docs = append(docs, yamlDoc{serialized: string(encoded), doc: raw})
 	}
 	return docs, nil
 }
 
 func manifestFilename(doc map[string]any) string {
 	kind := strings.ToLower(mapString(doc, "kind"))
+	if kind == "" {
+		kind = "unknown"
+	}
 	name := "unnamed"
+	namespace := ""
 	if meta, ok := doc["metadata"].(map[string]any); ok {
 		if n := mapString(meta, "name"); n != "" {
 			name = n
 		}
+		namespace = mapString(meta, "namespace")
 	}
-	if kind == "" {
-		kind = "unknown"
+	if namespace != "" {
+		return fmt.Sprintf("%s-%s-%s.yaml", namespace, kind, name)
 	}
 	return fmt.Sprintf("%s-%s.yaml", kind, name)
 }
