@@ -31,13 +31,18 @@ verify-checksums: checksums
 
 test-binaries: build-all
 	@echo "Testing binaries..."
-	@for binary in bin/$(BINARY_NAME)-*; do \
-		if [ "$$binary" != "bin/$(BINARY_NAME)-windows-amd64.exe" ]; then \
-			echo "Testing $$binary..."; \
-			$$binary --version || exit 1; \
-		fi; \
+	@HOST_OS=$$(uname -s | tr '[:upper:]' '[:lower:]'); \
+	HOST_ARCH=$$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/'); \
+	for binary in bin/$(BINARY_NAME)-*; do \
+		case "$$binary" in \
+			*.exe) echo "Skipping $$binary (Windows)" ;; \
+			*$$HOST_OS-$$HOST_ARCH*) \
+				echo "Testing $$binary..."; \
+				$$binary --version || exit 1 ;; \
+			*) echo "Skipping $$binary (cross-compiled)" ;; \
+		esac; \
 	done
-	@echo "✓ All binaries passed basic tests"
+	@echo "✓ All platform-native binaries passed basic tests"
 
 dist-archives: build-all
 	@echo "Creating distribution archives..."
