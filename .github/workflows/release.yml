@@ -22,7 +22,7 @@ permissions:
   id-token: write # for cosign signing
 
 env:
-  IMAGE_NAME: ghcr.io/${{ github.repository }}/koncept
+  GO_VERSION_FILE: cmd/koncept/go.mod
 
 jobs:
   binaries:
@@ -130,7 +130,9 @@ jobs:
         run: |
           set -euo pipefail
           VERSION="${GITHUB_REF_NAME}"
+          OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
           echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "image=ghcr.io/${OWNER}/idp-concept/koncept" >> "$GITHUB_OUTPUT"
 
       - name: Build and push
         uses: docker/build-push-action@v6
@@ -141,12 +143,12 @@ jobs:
           build-args: |
             VERSION=${{ steps.meta.outputs.version }}
           tags: |
-            ${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.version }}
-            ${{ env.IMAGE_NAME }}:latest
+            ${{ steps.meta.outputs.image }}:${{ steps.meta.outputs.version }}
+            ${{ steps.meta.outputs.image }}:latest
 
   slsa-provenance:
     name: Generate SLSA provenance
-    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v1.9.0
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2.1.0
     needs: binaries
     if: startsWith(github.ref, 'refs/tags/v')
     permissions:
