@@ -96,18 +96,16 @@ jobs:
           name: koncept-binaries
           path: |
             cmd/koncept/bin/koncept-*
-            cmd/koncept/bin/SHA256SUMS
             cmd/koncept/sbom/*
             cmd/koncept/dist/*
           retention-days: 90
 
       - name: Publish GitHub Release assets
         if: startsWith(github.ref, 'refs/tags/v')
-        uses: softprops/action-gh-release@v2.3.2
+        uses: softprops/action-gh-release@v3.0.1
         with:
           files: |
             cmd/koncept/bin/koncept-*
-            cmd/koncept/bin/SHA256SUMS
             cmd/koncept/sbom/*
             cmd/koncept/dist/*
           prerelease: ${{ contains(github.ref, 'alpha') || contains(github.ref, 'beta') }}
@@ -176,7 +174,7 @@ jobs:
           path: artifacts
 
       - name: Publish SLSA provenance to release
-        uses: softprops/action-gh-release@v2.3.2
+        uses: softprops/action-gh-release@v3.0.1
         with:
           files: |
             koncept.provenance.json
