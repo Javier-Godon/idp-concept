@@ -123,8 +123,8 @@ jobs:
         with:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
-          # Prefer PAT-based GHCR publish when configured; keep GHRC_TOKEN fallback
-          # for existing repositories that already use that secret name.
+          # Prefer PAT-based GHCR publish when configured; keep legacy typo secret
+          # GHRC_TOKEN as a backward-compatible fallback for existing repos.
           password: ${{ secrets.GHCR_TOKEN || secrets.GHRC_TOKEN || github.token }}
 
       - name: Derive image tags
