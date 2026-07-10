@@ -69,7 +69,7 @@ build_timescaledb_cluster = lambda spec: TimescaleDBSpec -> any {
             ]
             postInitApplicationSQLRefs = {
                 if spec.timescaleVersion:
-                    configMapRef = {name = "timescale-init", key = "init-timescale.sql"}
+                    configMapRefs = [{name = "timescale-init", key = "init-timescale.sql"}]
             }
         }
     }
@@ -121,7 +121,7 @@ build_timescaledb_cluster = lambda spec: TimescaleDBSpec -> any {
                 instances = _instances
                 imageName = spec.imageName
                 bootstrap = _bootstrap
-                postgresql = _postgresql | {parameters = _postgresql.postgresql.parameters}
+                postgresql = _postgresql.postgresql
                 storage = _storage
                 if spec.walStorageSize: walStorage = _wal_storage.walStorage
                 if spec.enableSuperuserAccess: superuserSecret = {name = "${spec.name}-superuser"}
@@ -141,9 +141,12 @@ build_timescaledb_cluster = lambda spec: TimescaleDBSpec -> any {
         instance: accessory.AccessoryInstance {
             name = spec.name
             namespace = spec.namespace
-            kind = "THIRD_PARTY"
+            kind = "CRD"
+            configurations = spec
+            asset = {version = spec.timescaleVersion}
             manifests = _manifests
             leaders = [leader.build_accessory_leader(spec.name, spec.namespace, "Cluster", "postgresql.cnpg.io/v1")]
+            dependsOn = []
         }
         instance_manifest: _manifests
     }
