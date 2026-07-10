@@ -123,7 +123,7 @@ jobs:
         with:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
-          # Prefer GHCR_TOKEN; keep legacy typo GHRC_TOKEN (letters transposed)
+          # Prefer GHCR_TOKEN; keep legacy typo GHRC_TOKEN (C/R transposed)
           # as a backward-compatible fallback for existing repositories.
           password: ${{ secrets.GHCR_TOKEN || secrets.GHRC_TOKEN || github.token }}
 
