@@ -609,8 +609,10 @@ prerequisites:
       koncept.io/support-contact: '#erp-platform-support'
   spec:
     package: xpkg.upbound.io/crossplane-contrib/function-auto-ready:v0.5.0
+managed_resources: []
 metadata:
   resourceCount: 7
+  managedResourceCount: 0
   sequencerRules: 5
   xrKind: XErpBack
   version: 1.0.0

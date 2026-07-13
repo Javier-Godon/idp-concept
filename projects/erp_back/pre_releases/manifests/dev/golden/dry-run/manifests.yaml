@@ -93,6 +93,7 @@ spec:
     crossplane:
       metadata:
         resourceCount: 7
+        managedResourceCount: 0
         sequencerRules: 5
         xrKind: XErpBack
         version: 1.0.0
