@@ -207,6 +207,18 @@ cleanup() {
   fi
 }
 
+fetch_kcl_deps() {
+  # Pre-warm the KCL dependency cache before rendering any cases.
+  # When the cache is cold and stdout is a non-TTY (e.g. redirected to a file),
+  # KCL writes "downloading '<pkg>' from '<registry>'" messages to stdout,
+  # which would contaminate the YAML output file and cause kubectl apply to fail
+  # with "yaml: line 2: mapping values are not allowed in this context".
+  # Running `kcl mod update` first downloads all declared dependencies into the
+  # local cache so subsequent `kcl run` calls produce clean YAML-only output.
+  echo "==> Pre-fetching KCL dependencies..."
+  (cd "$ROOT_DIR/framework" && kcl mod update >/dev/null 2>&1) || true
+}
+
 render_case() {
   local case_name="$1"
   local output_file="$2"
@@ -619,6 +631,8 @@ fi
 
 TMP_DIR="$(mktemp -d)"
 trap 'rm -rf "$TMP_DIR"; cleanup' EXIT
+
+fetch_kcl_deps
 
 for case_name in "${CASES[@]}"; do
   echo "==> Runtime acceptance case: $case_name"
