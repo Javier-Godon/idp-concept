@@ -8,14 +8,14 @@ Do not treat archived files as current runbooks. When an archived file conflicts
 
 | Topic | Active document |
 |---|---|
-| CLI usage | [../CLI_REFERENCE.md](../CLI_REFERENCE.md) |
-| Developer onboarding | [../DEVELOPER_QUICKSTART.md](../DEVELOPER_QUICKSTART.md) |
-| Developer/platform guide | [../DEVELOPER_GUIDE.md](../DEVELOPER_GUIDE.md) |
-| Architecture | [../PROJECT_ARCHITECTURE.md](../PROJECT_ARCHITECTURE.md) |
-| Workflows | [../WORKFLOWS.md](../WORKFLOWS.md) |
-| Acceptance testing | [../ACCEPTANCE_TESTING.md](../ACCEPTANCE_TESTING.md), [../ACCEPTANCE_RUNTIME.md](../ACCEPTANCE_RUNTIME.md), [../ACCEPTANCE_DEPENDENCIES.md](../ACCEPTANCE_DEPENDENCIES.md) |
-| OCI/GHCR publishing | [../OCI_REGISTRY_PUBLISHING.md](../OCI_REGISTRY_PUBLISHING.md), [../GHCR_PUBLISHING_GUIDE.md](../GHCR_PUBLISHING_GUIDE.md), [../CLI_DISTRIBUTION.md](../CLI_DISTRIBUTION.md) |
-| Forward-looking assessment | [../IDP_ASSESSMENT_2026H2.md](../IDP_ASSESSMENT_2026H2.md) |
+| CLI usage | [../developer/CLI_REFERENCE.md](../developer/CLI_REFERENCE.md) |
+| Developer onboarding | [../developer/DEVELOPER_QUICKSTART.md](../developer/DEVELOPER_QUICKSTART.md) |
+| Developer/platform guide | [../developer/DEVELOPER_GUIDE.md](../developer/DEVELOPER_GUIDE.md) |
+| Architecture | [../platform-engineering/PROJECT_ARCHITECTURE.md](../platform-engineering/PROJECT_ARCHITECTURE.md) |
+| Workflows | [../developer/WORKFLOWS.md](../developer/WORKFLOWS.md) |
+| Acceptance testing | [../testing/ACCEPTANCE_TESTING.md](../testing/ACCEPTANCE_TESTING.md), [../testing/ACCEPTANCE_RUNTIME.md](../testing/ACCEPTANCE_RUNTIME.md), [../testing/ACCEPTANCE_DEPENDENCIES.md](../testing/ACCEPTANCE_DEPENDENCIES.md) |
+| OCI/GHCR publishing | [../operations/OCI_REGISTRY_PUBLISHING.md](../operations/OCI_REGISTRY_PUBLISHING.md), [../operations/GHCR_PUBLISHING_GUIDE.md](../operations/GHCR_PUBLISHING_GUIDE.md), [../operations/CLI_DISTRIBUTION.md](../operations/CLI_DISTRIBUTION.md) |
+| Forward-looking assessment | [../strategy/IDP_ASSESSMENT_2026H2.md](../strategy/IDP_ASSESSMENT_2026H2.md) |
 
 ## Archived In The 2026-06-08 Cleanup
 
