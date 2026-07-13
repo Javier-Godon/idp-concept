@@ -50,7 +50,10 @@ jobs:
           kcl version
 
       - name: Warm KCL dependencies
-        run: cd framework && kcl test ./tests/builders
+        run: |
+          cd framework
+          kcl mod update
+          kcl test ./tests/builders
 
       - name: Run Go tests
         working-directory: cmd/koncept
