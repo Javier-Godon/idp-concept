@@ -190,8 +190,9 @@ test_accessory_wrapping = lambda {
     _acc = _xp_mk_accessory("postgres", "data", [])
     _result = xp._process_accessories([_acc])
     assert len(_result) == 1
-    assert _result[0].name == "acc-postgres-statefulset-postgres"
-    assert _result[0].base.spec.forProvider.manifest.kind == "StatefulSet"
+    assert _result[0]._type == "bridge"
+    assert _result[0]._resource.name == "acc-postgres-statefulset-postgres"
+    assert _result[0]._resource.base.spec.forProvider.manifest.kind == "StatefulSet"
 }
 
 # === Test: sequencer rules from dependsOn ===
