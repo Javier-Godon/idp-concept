@@ -197,7 +197,7 @@ _process_accessories = lambda accessories: [accessory.AccessoryInstance], meta: 
     # Track 2: Bridge objects (for unmodeled services)
     # Collect all manifests from non-curated accessories
     _non_curated_accessories = [acc for acc in (accessories if accessories else []) if not (_is_curated_service(acc.component) and _get_curated_api_info(acc.component))]
-    _bridge = [(_wrap_in_object(_manifest_resource_name("acc", acc.name, m), m, meta) | {_type = "bridge"}) for acc in _non_curated_accessories for m in acc.manifests]
+    _bridge = [{_type = "bridge", _resource = _wrap_in_object(_manifest_resource_name("acc", acc.name, m), m, meta)} for acc in _non_curated_accessories for m in acc.manifests]
 
     _curated + _bridge
 }
@@ -437,7 +437,7 @@ generate_crossplane_from_stack = lambda components: [component.ComponentInstance
         if r._type == "claim"
     ]
     _bridge_resources = [
-        r for r in _acc_resources_all
+        r._resource for r in _acc_resources_all
         if r._type == "bridge"
     ]
 
