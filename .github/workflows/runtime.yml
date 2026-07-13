@@ -62,9 +62,9 @@ jobs:
       - name: Install kind
         run: |
           set -euo pipefail
-          curl -fsSLo /usr/local/bin/kind \
+          curl -fsSLo /tmp/kind \
             "https://github.com/kubernetes-sigs/kind/releases/download/${KIND_VERSION}/kind-linux-amd64"
-          chmod +x /usr/local/bin/kind
+          sudo install -m 0755 /tmp/kind /usr/local/bin/kind
           kind version
 
       - name: Verify kubectl
