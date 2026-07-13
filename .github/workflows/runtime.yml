@@ -70,6 +70,11 @@ jobs:
       - name: Verify kubectl
         run: kubectl version --client=true
 
+      - name: Warm KCL dependencies
+        run: |
+          cd framework
+          kcl mod update
+
       - name: Run runtime acceptance
         env:
           RUNTIME_GROUP: ${{ github.event.inputs.group || 'runtime-rollouts' }}
