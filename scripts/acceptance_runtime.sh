@@ -43,7 +43,7 @@ RUNTIME_SEARCH_CASES=("opensearch" "opensearch-dashboards" "dataprepper-opensear
 RUNTIME_DATA_CASES=("database" "postgresql" "mongodb" "rabbitmq" "redis" "redis-cluster" "kafka" "minio-tenant" "minio-helm" "questdb" "valkey")
 RUNTIME_PLATFORM_CASES=("backstage" "observability" "opentelemetry" "fluentbit-native" "fluentbit-helm" "fluentbit-operator" "vault" "keycloak" "keycloak-postgresql" "openbao")
 RUNTIME_STORAGE_CASES=("longhorn" "ceph" "persistence-longhorn" "persistence-ceph")
-RUNTIME_INTEGRATION_CASES=("dataprepper-opensearch" "keycloak-postgresql" "persistence-longhorn" "persistence-ceph" "webapp-postgresql-stack" "webapp-kafka-stack" "webapp-rabbitmq-stack" "webapp-redis-stack" "webapp-mongodb-stack")
+RUNTIME_INTEGRATION_CASES=("dataprepper-opensearch" "keycloak-postgresql" "persistence-longhorn" "persistence-ceph" "webapp-postgresql-stack" "webapp-kafka-stack" "webapp-rabbitmq-stack" "webapp-redis-stack" "webapp-mongodb-stack" "questdb-superset-stack")
 RUNTIME_WEBAPP_STACKS_CASES=("webapp-postgresql-stack" "webapp-kafka-stack" "webapp-rabbitmq-stack" "webapp-redis-stack" "webapp-mongodb-stack")
 RUNTIME_ALL_CASES=("${RUNTIME_BASIC_CASES[@]}" "${RUNTIME_ROLLOUT_CASES[@]}" "${RUNTIME_SEARCH_CASES[@]}" "${RUNTIME_DATA_CASES[@]}" "${RUNTIME_PLATFORM_CASES[@]}" "${RUNTIME_STORAGE_CASES[@]}" "${RUNTIME_INTEGRATION_CASES[@]}")
 
@@ -78,7 +78,8 @@ Options:
                            webapp-kafka-stack,
                            webapp-rabbitmq-stack,
                            webapp-redis-stack,
-                           webapp-mongodb-stack).
+                           webapp-mongodb-stack,
+                           questdb-superset-stack).
                            Can be repeated.
   --install-dependencies   Install known pinned operators/controllers before apply.
                            Intended for disposable clusters.
@@ -405,7 +406,7 @@ install_dependencies_for_case() {
     opentelemetry) install_once flux install_flux; install_once opentelemetry install_otel_operator ;;
     longhorn|persistence-longhorn) install_once flux install_flux; install_once longhorn install_longhorn ;;
     ceph|persistence-ceph) install_once flux install_flux ;;
-    backstage|observability|minio-helm|questdb|valkey|openbao|fluentbit-helm) install_once flux install_flux ;;
+    backstage|observability|minio-helm|questdb|valkey|openbao|fluentbit-helm|questdb-superset-stack) install_once flux install_flux ;;
     fluentbit-operator) install_once flux install_flux; install_once fluent-operator install_fluent_operator ;;
     webapp-postgresql-stack) install_once cnpg install_cnpg ;;
     webapp-kafka-stack) install_once strimzi install_strimzi ;;
@@ -570,6 +571,35 @@ wait_case() {
       wait_condition "$namespace" helmrelease.helm.toolkit.fluxcd.io/acceptance-${case_name} Ready
       wait_all_rollouts "$namespace"
       wait_all_pvcs_bound "$namespace"
+      ;;
+    questdb-superset-stack)
+      # Both components deploy via Flux HelmRelease; wait for each to reconcile.
+      wait_condition "$namespace" helmrelease.helm.toolkit.fluxcd.io/acceptance-questdb Ready
+      wait_condition "$namespace" helmrelease.helm.toolkit.fluxcd.io/acceptance-superset Ready
+      wait_all_rollouts "$namespace"
+      wait_all_pvcs_bound "$namespace"
+      # Verify QuestDB PostgreSQL wire protocol port (8812) is reachable from
+      # within the cluster — this is the port Superset uses as a data source.
+      kubectl run questdb-connect-test \
+        --image=python:3.12.3-alpine3.20 \
+        --restart=Never \
+        --namespace="$namespace" \
+        --command -- python -c "
+import socket, sys
+host = 'acceptance-questdb.${namespace}.svc.cluster.local'
+port = 8812
+try:
+    s = socket.create_connection((host, port), timeout=10)
+    s.close()
+    print('OK: QuestDB PostgreSQL wire protocol port', port, 'reachable at', host)
+except Exception as e:
+    print('FAIL:', e, file=sys.stderr)
+    sys.exit(1)
+"
+      kubectl wait pod/questdb-connect-test --namespace="$namespace" \
+        --for=condition=Succeeded --timeout=60s
+      kubectl logs pod/questdb-connect-test --namespace="$namespace"
+      kubectl delete pod questdb-connect-test --namespace="$namespace" --ignore-not-found
       ;;
     observability)
       wait_condition "$namespace" helmrelease.helm.toolkit.fluxcd.io/acceptance-prometheus Ready
