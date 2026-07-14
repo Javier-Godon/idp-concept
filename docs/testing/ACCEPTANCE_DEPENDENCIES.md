@@ -109,6 +109,19 @@ Persistent templates need a Kubernetes storage provisioner when they create PVCs
 | `fluentbit-operator` | `FluentBitOperatorModule` + Fluent Operator CRs | Flux/Helm controller plus Fluent Operator CRDs/controller. |
 | `data-admin` | pgAdmin + mongo-express + RedisInsight Deployment/Service companions | Backing databases are not required for dry-run shape validation; real UI runtime needs reachable data services and Secrets. |
 | `release-notes` | `RenderStack.releaseNotes` ConfigMap | Built-in Kubernetes only. |
+| `questdb-superset-stack` | `QuestDBSpec` HelmRelease + `SupersetModule` HelmRelease | Flux/Helm controller. QuestDB ready on port 8812, then TCP connectivity test from within the cluster. See [QuestDB and Superset](#questdb-and-superset) section. |
+
+## QuestDB and Superset
+
+- QuestDB is deployed exclusively via Helm chart (no Kubernetes operator exists). It requires the Flux/Helm controller for real reconciliation.
+- QuestDB exposes three ports: HTTP REST API (default 9000), InfluxDB line protocol (default 9009), and a **PostgreSQL wire protocol endpoint (default 8812)**. Superset uses port 8812 to connect as a data source.
+- Superset is deployed via Helm chart and also requires Flux/Helm controller. It has its own metadata backend (a PostgreSQL database), which is separate from QuestDB's data-source role.
+- The `questdb-superset-stack` fixture co-deploys both modules in one namespace. Superset receives the QuestDB connection URI via `extraSecretEnv.QUESTDB_SQLALCHEMY_URI` so init or bootstrap scripts can register the connection.
+  - The SQLAlchemy URI format for QuestDB: `questdb+psycopg2://admin:quest@<host>:8812/qdb`
+  - The `questdb+psycopg2` dialect requires the `questdb-connect` Python package in the Superset image.
+- The dry-run acceptance case (`acceptance_kind.sh --case questdb-superset-stack`) validates manifest shapes.
+- The runtime acceptance case (`acceptance_runtime.sh --case questdb-superset-stack`) waits for both HelmReleases to reconcile and then verifies TCP connectivity to QuestDB's port 8812 from within the cluster using a lightweight Python pod.
+- Do not hardcode QuestDB credentials in fixtures. The default `admin`/`quest` shown is the QuestDB Helm chart default for development; production deployments should use Secrets.
 
 ## Runtime rollout fixtures
 

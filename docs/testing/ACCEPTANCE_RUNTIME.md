@@ -75,7 +75,7 @@ Keep each case's resources for debugging instead of cleaning them after success:
 | `runtime-data` | Database/data fixtures | Data services reconcile or roll out with real dependencies. |
 | `runtime-platform` | Backstage, Observability, OpenTelemetry, Vault, Keycloak, OpenBao | Platform/security/observability templates reconcile with real dependencies. |
 | `runtime-storage` | Longhorn, Ceph, persistence Longhorn/Ceph scenarios | Storage controllers/provisioners reconcile and PVC-producing workloads can bind. |
-| `runtime-integrations` | Dependency scenarios | Multi-module IDP stacks apply and reconcile together. |
+| `runtime-integrations` | Dependency scenarios including `questdb-superset-stack` | Multi-module IDP stacks apply and reconcile together. `questdb-superset-stack` also verifies TCP connectivity to QuestDB's PostgreSQL wire protocol port (8812) from within the cluster. |
 | `runtime-all` | Every runtime case, executed sequentially with cleanup between successful cases | Full opt-in/nightly runtime acceptance matrix without deploying all templates at once. |
 
 Individual fixture names can also be passed directly, for example:
