@@ -2,13 +2,12 @@ name: Runtime Acceptance (opt-in)
 
 # Phase E of the IDP Evolution Plan: prove that selected templates actually
 # reconcile in a real cluster, not only that they render. This is intentionally
-# kept OUT of the fast PR gate (validate.yml) and runs on a nightly schedule or
-# on manual dispatch so the default developer loop stays fast.
+# kept OUT of the fast PR gate (validate.yml). It runs automatically on each
+# published release and can be triggered manually at any time.
 
 on:
-  schedule:
-    # Nightly at 02:30 UTC.
-    - cron: "30 2 * * *"
+  release:
+    types: [published]
   workflow_dispatch:
     inputs:
       group:
