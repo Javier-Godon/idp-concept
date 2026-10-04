@@ -157,6 +157,10 @@ spec:
                 fromFieldPath: spec.tlsDisable
                 toFieldPath: spec.forProvider.values.global.tlsDisable
 
+    - step: automatically-detect-readiness
+      functionRef:
+        name: function-auto-ready
+
     - step: sequence-creation
       functionRef:
         name: function-sequencer
@@ -167,8 +171,4 @@ spec:
           - sequence:
               - ns-openbao
               - openbao-helm-release
-
-    - step: automatically-detect-readiness
-      functionRef:
-        name: function-auto-ready
 

@@ -138,6 +138,10 @@ spec:
                 fromFieldPath: spec.owner
                 toFieldPath: spec.forProvider.manifest.metadata.labels["koncept.io/owner"]
 
+    - step: automatically-detect-readiness
+      functionRef:
+        name: function-auto-ready
+
     - step: sequence-creation
       functionRef:
         name: function-sequencer
@@ -148,8 +152,4 @@ spec:
           - sequence:
               - ns-elasticsearch
               - elasticsearch-cluster
-
-    - step: automatically-detect-readiness
-      functionRef:
-        name: function-auto-ready
 

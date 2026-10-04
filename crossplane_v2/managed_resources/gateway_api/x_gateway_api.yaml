@@ -1,7 +1,7 @@
 apiVersion: apiextensions.crossplane.io/v1
 kind: Composition
 metadata:
-  name: x_gateway_api
+  name: x-gateway-api
   namespace: crossplane-system
 spec:
   compositeTypeRef:

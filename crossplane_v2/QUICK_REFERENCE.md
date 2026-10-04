@@ -208,12 +208,23 @@ spec:
 |---------|----------|-----------------|
 | MongoDB | MongoDB Community Operator | `helm install mongodb mongodb/community-operator -n mongodb --create-namespace` |
 | RabbitMQ | RabbitMQ Cluster Operator | `helm install rabbitmq bitnami/rabbitmq-cluster-operator -n rabbitmq --create-namespace` |
-| Redis | OT-CONTAINER-KIT Redis | `helm install redis-operator opstree-charts/redis-operator -n redis-operator --create-namespace` |
+| Redis | OT-CONTAINER-KIT Redis | `helm repo add ot-helm https://ot-container-kit.github.io/helm-charts && helm install redis-operator ot-helm/redis-operator -n redis-operator --create-namespace` |
 | OpenSearch | OpenSearch K8s Operator | (CRDs only or via Helm) |
 | MinIO | MinIO Operator | (Archived March 2026; use Helm chart instead) |
 | Vault | Vault Secrets Operator | `helm install vault-secrets-operator hashicorp/vault-secrets-operator -n vault --create-namespace` |
 | QuestDB | Bitnami Helm | Helm chart; Crossplane provider-helm handles install |
 | Elasticsearch | ECK | `helm install elastic-operator elastic/eck-operator -n elastic-system --create-namespace` |
+
+> **Valkey** reuses the OT-CONTAINER-KIT Redis Operator above (same install command) via its
+> `Redis`/`RedisCluster` CRDs with the container image swapped to `valkey/valkey`. This is not
+> officially documented/tested by the operator maintainers for Valkey specifically — it works
+> because Valkey is wire/CLI-compatible with Redis OSS at the point it forked — but is not a
+> vendor-endorsed combination. The official `valkey-io/valkey-operator` exists but its own README
+> states it is still in early development and "not ready for production use"; re-evaluate once it
+> reaches a stable release. Note: the OT-CONTAINER-KIT redis-operator itself is actively maintained
+> (check `github.com/OT-CONTAINER-KIT/redis-operator` releases or `quay.io/opstree/redis-operator`
+> tags — its Docker Hub mirror has been stale for years because the project publishes to Quay.io
+> instead, not because it's abandoned).
 
 ---
 

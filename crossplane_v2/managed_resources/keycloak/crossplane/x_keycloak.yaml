@@ -40,7 +40,15 @@ spec:
                 fromFieldPath: spec.namespace
                 toFieldPath: spec.forProvider.manifest.metadata.name
 
-    # Step 2: Enforce ordering — namespace must be ready before Keycloak CRD
+    # Step 2: Detect readiness before sequencing — function-sequencer only withholds
+    # downstream resources once a predecessor is marked Ready, so auto-ready must run
+    # before the sequencer step evaluates it (see function-sequencer's own reference
+    # composition: detect-readiness precedes sequence-creation).
+    - step: detect-namespace-readiness
+      functionRef:
+        name: function-auto-ready
+
+    # Step 3: Enforce ordering — namespace must be ready before Keycloak CRD
     - step: enforce-ordering
       functionRef:
         name: function-sequencer
@@ -52,7 +60,7 @@ spec:
               - ns-keycloak
               - keycloak-instance
 
-    # Step 3: Create Keycloak CRD instance (operator-native — keycloak-operator manages pods/secrets)
+    # Step 4: Create Keycloak CRD instance (operator-native — keycloak-operator manages pods/secrets)
     - step: create-keycloak
       functionRef:
         name: function-patch-and-transform
@@ -142,7 +150,7 @@ spec:
                 policy:
                   fromFieldPath: Optional
 
-    # Step 4: Auto-detect readiness from managed resources
+    # Step 5: Auto-detect readiness from managed resources
     - step: automatically-detect-readiness
       functionRef:
         name: function-auto-ready

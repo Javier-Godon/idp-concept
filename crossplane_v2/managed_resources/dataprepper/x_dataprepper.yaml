@@ -144,16 +144,15 @@ spec:
               - type: FromCompositeFieldPath
                 fromFieldPath: spec.replicas
                 toFieldPath: spec.forProvider.manifest.spec.replicas
-              - type: FromCompositeFieldPath
-                fromFieldPath: spec.image
+              - type: CombineFromComposite
                 toFieldPath: spec.forProvider.manifest.spec.template.spec.containers[0].image
-                transforms:
-                  - type: string
-                    string:
-                      fmt: "%s:%s"
-                      args:
-                        - spec.image
-                        - spec.imageTag
+                combine:
+                  variables:
+                    - fromFieldPath: spec.image
+                    - fromFieldPath: spec.imageTag
+                  strategy: string
+                  string:
+                    fmt: "%s:%s"
               - type: FromCompositeFieldPath
                 fromFieldPath: spec.sourcePort
                 toFieldPath: spec.forProvider.manifest.spec.template.spec.containers[0].ports[0].containerPort
@@ -203,6 +202,10 @@ spec:
                 fromFieldPath: spec.servicePort
                 toFieldPath: spec.forProvider.manifest.spec.ports[0].port
 
+    - step: automatically-detect-readiness
+      functionRef:
+        name: function-auto-ready
+
     - step: sequence-creation
       functionRef:
         name: function-sequencer
@@ -215,8 +218,4 @@ spec:
               - dataprepper-configmap
               - dataprepper-deployment
               - dataprepper-service
-
-    - step: automatically-detect-readiness
-      functionRef:
-        name: function-auto-ready
 

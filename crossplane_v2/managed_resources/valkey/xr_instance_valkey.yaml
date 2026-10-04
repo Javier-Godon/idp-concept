@@ -11,7 +11,7 @@ spec:
   nodeCount: 1
   storageSize: "50Gi"
   storageClass: "fast-nvme"
-  image: "valkey/valkey:latest"
+  image: "valkey/valkey:8.1.10"
   resourceCpuRequest: "250m"
   resourceMemoryRequest: "512Mi"
   resourceCpuLimit: "1"
@@ -31,7 +31,7 @@ spec:
   nodeCount: 6
   storageSize: "100Gi"
   storageClass: "fast-nvme"
-  image: "valkey/valkey:latest"
+  image: "valkey/valkey:8.1.10"
   resourceCpuRequest: "500m"
   resourceMemoryRequest: "1Gi"
   resourceCpuLimit: "2"
@@ -49,7 +49,7 @@ spec:
   mode: standalone
   nodeCount: 1
   storageSize: "5Gi"
-  image: "valkey/valkey:latest"
+  image: "valkey/valkey:8.1.10"
   environment: development
   owner: dev-team
 

@@ -1,11 +1,21 @@
 ## Valkey Composition — OT-CONTAINER-KIT Operator pattern
 ##
-## Valkey is Redis-compatible open-source cache (GPL vs Redis SSPL).
-## Uses the same OT-CONTAINER-KIT Redis Operator.
+## Valkey is a Redis-protocol-compatible open-source cache (BSD-3-Clause; forked from Redis
+## after Redis's 2024 license change to SSPL/RSALv2).
+##
+## Operator choice: this composition reuses OT-CONTAINER-KIT/redis-operator (actively maintained —
+## verify via github.com/OT-CONTAINER-KIT/redis-operator releases or quay.io/opstree/redis-operator
+## tags, NOT its stale/abandoned Docker Hub mirror) rather than valkey-io/valkey-operator, the
+## official Valkey project operator, because that operator's own README states it is still in
+## "early development" and "not ready for production use" (pre-1.0 as of this writing). Valkey
+## works with the Redis operator's `Redis`/`RedisCluster` CRDs via image substitution only — this
+## is not officially documented/tested by the OT-CONTAINER-KIT maintainers for Valkey specifically,
+## but is functionally sound since Valkey is wire/CLI-compatible with Redis OSS at the fork point.
+## Revisit this choice once valkey-io/valkey-operator reaches a stable release.
 ##
 ## Prerequisite: OT-CONTAINER-KIT Redis Operator must be installed on the cluster.
-## Install via Helm: helm repo add opstree-charts https://charts.opstree.io
-##                  helm install redis-operator opstree-charts/redis-operator -n redis-operator
+## Install via Helm: helm repo add ot-helm https://ot-container-kit.github.io/helm-charts
+##                  helm install redis-operator ot-helm/redis-operator -n redis-operator
 
 apiVersion: apiextensions.crossplane.io/v1
 kind: Composition
@@ -15,7 +25,7 @@ metadata:
     koncept.io/operator: "ot-redis"
     koncept.io/pattern: "operator-native-crd"
     koncept.io/bridge-pattern: "false"
-    koncept.io/note: "Valkey uses Redis-compatible operator (OT-CONTAINER-KIT)"
+    koncept.io/note: "Valkey uses Redis-compatible operator (OT-CONTAINER-KIT). Mode selection (standalone vs cluster) is handled by function-kcl, which renders exactly one resource variant — function-patch-and-transform has no mechanism to conditionally exclude a resource."
 spec:
   compositeTypeRef:
     apiVersion: koncept.bluesolution.es/v1alpha1
@@ -25,197 +35,101 @@ spec:
 
     - step: render-resources
       functionRef:
-        name: function-patch-and-transform
+        name: function-kcl
       input:
-        apiVersion: pt.fn.crossplane.io/v1beta1
-        kind: Resources
-        resources:
+        apiVersion: krm.kcl.dev/v1alpha1
+        kind: KCLInput
+        spec:
+          source: |
+            _oxr = option("params").oxr
+            _ox = _oxr.spec
+            _base_name = _ox.clusterName if _ox.clusterName else _oxr.metadata.name
 
-          - name: ns-valkey
-            base:
-              apiVersion: kubernetes.crossplane.io/v1alpha2
-              kind: Object
-              spec:
-                providerConfigRef:
-                  name: provider-kubernetes
-                forProvider:
-                  manifest:
-                    apiVersion: v1
-                    kind: Namespace
-                    metadata:
-                      name: valkey
-                      labels:
-                        koncept.io/managed-by: crossplane
-            patches:
-              - type: FromCompositeFieldPath
-                fromFieldPath: spec.namespace
-                toFieldPath: spec.forProvider.manifest.metadata.name
-              - type: FromCompositeFieldPath
-                fromFieldPath: spec.owner
-                toFieldPath: spec.forProvider.manifest.metadata.labels["koncept.io/owner"]
+            _labels = {
+                "koncept.io/managed-by" = "crossplane"
+                "koncept.io/owner" = _ox.owner
+            }
 
-          # --- Standalone Valkey ---
-          - name: valkey-standalone
-            base:
-              apiVersion: kubernetes.crossplane.io/v1alpha2
-              kind: Object
-              spec:
-                providerConfigRef:
-                  name: provider-kubernetes
-                forProvider:
-                  manifest:
-                    apiVersion: redis.redis.opstreelabs.in/v1beta2
-                    kind: Valkey
-                    metadata:
-                      name: valkey
-                      namespace: valkey
-                      labels:
-                        koncept.io/managed-by: crossplane
-                    spec:
-                      image: "valkey/valkey:latest"
-                      storage:
-                        image:
-                          tag: latest
-                      volumeClaimTemplate:
-                        spec:
-                          accessModes:
-                            - ReadWriteOnce
-                          resources:
-                            requests:
-                              storage: 10Gi
-                      resources:
-                        requests:
-                          cpu: "100m"
-                          memory: "256Mi"
-                        limits:
-                          cpu: "1"
-                          memory: "2Gi"
-            patches:
-              - type: FromCompositeFieldPath
-                fromFieldPath: spec.namespace
-                toFieldPath: spec.forProvider.manifest.metadata.namespace
-              - type: FromCompositeFieldPath
-                fromFieldPath: spec.clusterName
-                toFieldPath: spec.forProvider.manifest.metadata.name
-                policy:
-                  fromFieldPath: Optional
-              - type: FromCompositeFieldPath
-                fromFieldPath: metadata.name
-                toFieldPath: spec.forProvider.manifest.metadata.name
-                policy:
-                  fromFieldPath: Optional
-              - type: FromCompositeFieldPath
-                fromFieldPath: spec.image
-                toFieldPath: spec.forProvider.manifest.spec.image
-              - type: FromCompositeFieldPath
-                fromFieldPath: spec.storageSize
-                toFieldPath: spec.forProvider.manifest.spec.volumeClaimTemplate.spec.resources.requests.storage
-              - type: FromCompositeFieldPath
-                fromFieldPath: spec.storageClass
-                toFieldPath: spec.forProvider.manifest.spec.volumeClaimTemplate.spec.storageClassName
-                policy:
-                  fromFieldPath: Optional
-              - type: FromCompositeFieldPath
-                fromFieldPath: spec.resourceCpuRequest
-                toFieldPath: spec.forProvider.manifest.spec.resources.requests.cpu
-              - type: FromCompositeFieldPath
-                fromFieldPath: spec.resourceMemoryRequest
-                toFieldPath: spec.forProvider.manifest.spec.resources.requests.memory
-              - type: FromCompositeFieldPath
-                fromFieldPath: spec.resourceCpuLimit
-                toFieldPath: spec.forProvider.manifest.spec.resources.limits.cpu
-              - type: FromCompositeFieldPath
-                fromFieldPath: spec.resourceMemoryLimit
-                toFieldPath: spec.forProvider.manifest.spec.resources.limits.memory
-              - type: FromCompositeFieldPath
-                fromFieldPath: spec.owner
-                toFieldPath: spec.forProvider.manifest.metadata.labels["koncept.io/owner"]
+            _wrap = lambda name: str, manifest: {str:} -> {str:} {
+                {
+                    apiVersion = "kubernetes.crossplane.io/v1alpha2"
+                    kind = "Object"
+                    metadata.annotations = {
+                        "krm.kcl.dev/composition-resource-name" = name
+                    }
+                    spec = {
+                        providerConfigRef.name = "provider-kubernetes"
+                        forProvider.manifest = manifest
+                    }
+                }
+            }
 
-          # --- Cluster Valkey ---
-          - name: valkey-cluster
-            base:
-              apiVersion: kubernetes.crossplane.io/v1alpha2
-              kind: Object
-              spec:
-                providerConfigRef:
-                  name: provider-kubernetes
-                forProvider:
-                  manifest:
-                    apiVersion: redis.redis.opstreelabs.in/v1beta2
-                    kind: ValkeyCluster
-                    metadata:
-                      name: valkey-cluster
-                      namespace: valkey
-                      labels:
-                        koncept.io/managed-by: crossplane
-                    spec:
-                      image: "valkey/valkey:latest"
-                      clusterSize: 3
-                      volumeClaimTemplate:
-                        spec:
-                          accessModes:
-                            - ReadWriteOnce
-                          resources:
-                            requests:
-                              storage: 10Gi
-                      resources:
-                        requests:
-                          cpu: "100m"
-                          memory: "256Mi"
-                        limits:
-                          cpu: "1"
-                          memory: "2Gi"
-            patches:
-              - type: FromCompositeFieldPath
-                fromFieldPath: spec.namespace
-                toFieldPath: spec.forProvider.manifest.metadata.namespace
-              - type: FromCompositeFieldPath
-                fromFieldPath: spec.clusterName
-                toFieldPath: spec.forProvider.manifest.metadata.name
-                transforms:
-                  - type: string
-                    string:
-                      fmt: "%s-cluster"
-                policy:
-                  fromFieldPath: Optional
-              - type: FromCompositeFieldPath
-                fromFieldPath: metadata.name
-                toFieldPath: spec.forProvider.manifest.metadata.name
-                transforms:
-                  - type: string
-                    string:
-                      fmt: "%s-cluster"
-                policy:
-                  fromFieldPath: Optional
-              - type: FromCompositeFieldPath
-                fromFieldPath: spec.image
-                toFieldPath: spec.forProvider.manifest.spec.image
-              - type: FromCompositeFieldPath
-                fromFieldPath: spec.nodeCount
-                toFieldPath: spec.forProvider.manifest.spec.clusterSize
-              - type: FromCompositeFieldPath
-                fromFieldPath: spec.storageSize
-                toFieldPath: spec.forProvider.manifest.spec.volumeClaimTemplate.spec.resources.requests.storage
-              - type: FromCompositeFieldPath
-                fromFieldPath: spec.storageClass
-                toFieldPath: spec.forProvider.manifest.spec.volumeClaimTemplate.spec.storageClassName
-                policy:
-                  fromFieldPath: Optional
-              - type: FromCompositeFieldPath
-                fromFieldPath: spec.resourceCpuRequest
-                toFieldPath: spec.forProvider.manifest.spec.resources.requests.cpu
-              - type: FromCompositeFieldPath
-                fromFieldPath: spec.resourceMemoryRequest
-                toFieldPath: spec.forProvider.manifest.spec.resources.requests.memory
-              - type: FromCompositeFieldPath
-                fromFieldPath: spec.resourceCpuLimit
-                toFieldPath: spec.forProvider.manifest.spec.resources.limits.cpu
-              - type: FromCompositeFieldPath
-                fromFieldPath: spec.resourceMemoryLimit
-                toFieldPath: spec.forProvider.manifest.spec.resources.limits.memory
-              - type: FromCompositeFieldPath
-                fromFieldPath: spec.owner
-                toFieldPath: spec.forProvider.manifest.metadata.labels["koncept.io/owner"]
+            _namespace = _wrap("ns-valkey", {
+                apiVersion = "v1"
+                kind = "Namespace"
+                metadata = {
+                    name = _ox.namespace
+                    labels = _labels
+                }
+            })
+
+            _resources_spec = {
+                requests = {
+                    cpu = _ox.resourceCpuRequest
+                    memory = _ox.resourceMemoryRequest
+                }
+                limits = {
+                    cpu = _ox.resourceCpuLimit
+                    memory = _ox.resourceMemoryLimit
+                }
+            }
+
+            _vct_spec = {
+                accessModes = ["ReadWriteOnce"]
+                resources = {
+                    requests = {
+                        storage = _ox.storageSize
+                    }
+                }
+            } | ({storageClassName = _ox.storageClass} if _ox.storageClass else {})
+
+            _standalone = _wrap("valkey-standalone", {
+                apiVersion = "redis.redis.opstreelabs.in/v1beta2"
+                kind = "Redis"
+                metadata = {
+                    name = _base_name
+                    namespace = _ox.namespace
+                    labels = _labels
+                }
+                spec = {
+                    image = _ox.image
+                    storage.image.tag = "latest"
+                    volumeClaimTemplate.spec = _vct_spec
+                    resources = _resources_spec
+                }
+            }) if _ox.mode == "standalone" else None
+
+            _cluster = _wrap("valkey-cluster", {
+                apiVersion = "redis.redis.opstreelabs.in/v1beta2"
+                kind = "RedisCluster"
+                metadata = {
+                    name = "${_base_name}-cluster"
+                    namespace = _ox.namespace
+                    labels = _labels
+                }
+                spec = {
+                    image = _ox.image
+                    clusterSize = _ox.nodeCount
+                    volumeClaimTemplate.spec = _vct_spec
+                    resources = _resources_spec
+                }
+            }) if _ox.mode == "cluster" else None
+
+            items = [r for r in [_namespace, _standalone, _cluster] if r is not None]
+
+    - step: automatically-detect-readiness
+      functionRef:
+        name: function-auto-ready
 
     - step: sequence-creation
       functionRef:
@@ -227,9 +141,6 @@ spec:
           - sequence:
               - ns-valkey
               - valkey-standalone
+          - sequence:
+              - ns-valkey
               - valkey-cluster
-
-    - step: automatically-detect-readiness
-      functionRef:
-        name: function-auto-ready
-

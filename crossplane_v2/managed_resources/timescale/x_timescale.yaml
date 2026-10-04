@@ -124,6 +124,7 @@ spec:
                   transforms:
                     - type: string
                       string:
+                        type: Format
                         fmt: "CREATE EXTENSION IF NOT EXISTS timescaledb VERSION '%s' CASCADE;"
                 - fromFieldPath: spec.walStorageSize
                   toFieldPath: spec.walStorage.size

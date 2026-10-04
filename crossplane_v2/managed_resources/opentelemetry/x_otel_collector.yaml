@@ -111,6 +111,10 @@ spec:
                 fromFieldPath: spec.resourceMemoryLimit
                 toFieldPath: spec.forProvider.values.manager.resources.limits.memory
 
+    - step: automatically-detect-readiness
+      functionRef:
+        name: function-auto-ready
+
     - step: sequence-creation
       functionRef:
         name: function-sequencer
@@ -121,8 +125,4 @@ spec:
           - sequence:
               - ns-otel
               - otel-operator-helm-release
-
-    - step: automatically-detect-readiness
-      functionRef:
-        name: function-auto-ready
 

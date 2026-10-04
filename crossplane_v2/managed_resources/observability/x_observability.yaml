@@ -1,3 +1,14 @@
+## Observability Composition — Prometheus + Grafana + Alertmanager via FluxCD HelmRelease
+##
+## Prerequisite: FluxCD source-controller + helm-controller must be installed, with a
+## HelmRepository named "bitnami" in crossplane-system providing the referenced charts.
+##
+## function-kcl renders exactly the HelmRelease resources whose toggle is enabled
+## (prometheusEnabled / grafanaEnabled / alertmanagerEnabled) — function-patch-and-transform
+## has no mechanism to conditionally exclude a resource, so previously all three releases were
+## always created regardless of their toggle (e.g. Alertmanager deployed even though disabled
+## by default).
+
 apiVersion: apiextensions.crossplane.io/v1
 kind: Composition
 metadata:
@@ -11,208 +22,113 @@ spec:
     kind: XObservabilityProvisioner
   mode: Pipeline
   pipeline:
-    - step: setup-namespace
+    - step: render-resources
       functionRef:
-        name: function-patch-and-transform
+        name: function-kcl
       input:
-        apiVersion: pt.crossplane.io/v1beta1
-        kind: Resources
-        metadata:
-          name: setup-namespace
+        apiVersion: krm.kcl.dev/v1alpha1
+        kind: KCLInput
         spec:
-          resources:
-            - name: namespace
-              base:
-                apiVersion: v1
-                kind: Namespace
-                metadata:
-                  labels:
-                    app.kubernetes.io/managed-by: crossplane
-                    app.kubernetes.io/component: observability-infrastructure
-              patches:
-                - fromFieldPath: spec.namespace
-                  toFieldPath: metadata.name
-    - step: deploy-prometheus
-      functionRef:
-        name: function-patch-and-transform
-      input:
-        apiVersion: pt.crossplane.io/v1beta1
-        kind: Resources
-        metadata:
-          name: deploy-prometheus
-        spec:
-          resources:
-            - name: prometheus-release
-              base:
-                apiVersion: helm.toolkit.fluxcd.io/v2beta1
-                kind: HelmRelease
-                metadata:
-                  labels:
-                    app.kubernetes.io/component: prometheus
-                    app.kubernetes.io/managed-by: crossplane
-                spec:
-                  interval: 5m
-                  chart:
-                    spec:
-                      chart: kube-prometheus
-                      sourceRef:
-                        kind: HelmRepository
-                        name: bitnami
-                        namespace: crossplane-system
-                      version: "10.2.0"
-                  values:
-                    prometheus:
-                      persistence:
-                        enabled: true
-                        size: 50Gi
-                        storageClassName: rook-ceph-block
-                      retention: 15d
-                      replicas: 1
-                      resources:
-                        requests:
-                          cpu: 500m
-                          memory: 512Mi
-                        limits:
-                          cpu: 1000m
-                          memory: 1Gi
-                    nodeExporter:
-                      enabled: true
-                    alertmanager:
-                      enabled: false
-                    kubeStateMetrics:
-                      enabled: true
-              patches:
-                - fromFieldPath: spec.namespace
-                  toFieldPath: metadata.namespace
-                - fromFieldPath: spec.prometheusChartVersion
-                  toFieldPath: spec.chart.spec.version
-                - fromFieldPath: spec.prometheusStorageSize
-                  toFieldPath: spec.values.prometheus.persistence.size
-                - fromFieldPath: spec.prometheusRetentionDays
-                  toFieldPath: spec.values.prometheus.retention
-                  transforms:
-                    - type: string
-                      string:
-                        fmt: "%dd"
-                - fromFieldPath: spec.nodeExporterEnabled
-                  toFieldPath: spec.values.nodeExporter.enabled
-    - step: deploy-grafana
-      functionRef:
-        name: function-patch-and-transform
-      input:
-        apiVersion: pt.crossplane.io/v1beta1
-        kind: Resources
-        metadata:
-          name: deploy-grafana
-        spec:
-          resources:
-            - name: grafana-release
-              base:
-                apiVersion: helm.toolkit.fluxcd.io/v2beta1
-                kind: HelmRelease
-                metadata:
-                  labels:
-                    app.kubernetes.io/component: grafana
-                    app.kubernetes.io/managed-by: crossplane
-                spec:
-                  interval: 5m
-                  chart:
-                    spec:
-                      chart: grafana
-                      sourceRef:
-                        kind: HelmRepository
-                        name: bitnami
-                        namespace: crossplane-system
-                      version: "12.0.0"
-                  values:
-                    admin:
-                      password: admin
-                    persistence:
-                      enabled: true
-                      size: 10Gi
-                      storageClassName: rook-ceph-block
-                    datasources:
-                      prometheus:
-                        enabled: true
-                        url: http://prometheus-kube-prometheus-prometheus:9090
-                    ingress:
-                      enabled: false
-                    resources:
-                      requests:
-                        cpu: 250m
-                        memory: 256Mi
-                      limits:
-                        cpu: 500m
-                        memory: 512Mi
-              patches:
-                - fromFieldPath: spec.namespace
-                  toFieldPath: metadata.namespace
-                - fromFieldPath: spec.grafanaChartVersion
-                  toFieldPath: spec.chart.spec.version
-                - fromFieldPath: spec.grafanaAdminPassword
-                  toFieldPath: spec.values.admin.password
-                - fromFieldPath: spec.grafanaIngressEnabled
-                  toFieldPath: spec.values.ingress.enabled
-                - fromFieldPath: spec.grafanaIngressHost
-                  toFieldPath: spec.values.ingress.hosts[0]
-                  transforms:
-                    - type: string
-                      string:
-                        type: Regexp
-                        regexp:
-                          match: '^$'
-                          replaceWith: grafana.local
-    - step: deploy-alertmanager
-      functionRef:
-        name: function-patch-and-transform
-      input:
-        apiVersion: pt.crossplane.io/v1beta1
-        kind: Resources
-        metadata:
-          name: deploy-alertmanager
-        spec:
-          resources:
-            - name: alertmanager-release
-              base:
-                apiVersion: helm.toolkit.fluxcd.io/v2beta1
-                kind: HelmRelease
-                metadata:
-                  labels:
-                    app.kubernetes.io/component: alertmanager
-                    app.kubernetes.io/managed-by: crossplane
-                spec:
-                  interval: 5m
-                  chart:
-                    spec:
-                      chart: alertmanager
-                      sourceRef:
-                        kind: HelmRepository
-                        name: bitnami
-                        namespace: crossplane-system
-                      version: "1.8.0"
-                  values:
-                    replicaCount: 1
-                    persistence:
-                      enabled: true
-                      size: 5Gi
-                      storageClassName: rook-ceph-block
-              patches:
-                - fromFieldPath: spec.namespace
-                  toFieldPath: metadata.namespace
-                - fromFieldPath: spec.alertmanagerEnabled
-                  toFieldPath: spec.suspend
-                  transforms:
-                    - type: math
-                      math:
-                        type: Convert
-                        convert:
-                          toType: bool
-                - fromFieldPath: spec.alertmanagerReplicas
-                  toFieldPath: spec.values.replicaCount
-    - step: status-and-ready
+          source: |
+            _oxr = option("params").oxr
+            _ox = _oxr.spec
+            _release_name = _ox.releaseName if _ox.releaseName else _oxr.metadata.name
+
+            _mark = lambda name: str, manifest: {str:} -> {str:} {
+                manifest | {
+                    metadata.annotations = {
+                        "krm.kcl.dev/composition-resource-name" = name
+                    }
+                }
+            }
+
+            _namespace = _mark("namespace", {
+                apiVersion = "v1"
+                kind = "Namespace"
+                metadata = {
+                    name = _ox.namespace
+                    labels = {
+                        "app.kubernetes.io/managed-by" = "crossplane"
+                        "app.kubernetes.io/component" = "observability-infrastructure"
+                    }
+                }
+            })
+
+            _helm_release = lambda name: str, component: str, chart: str, version: str, values: {str:} -> {str:} {
+                _mark(name, {
+                    apiVersion = "helm.toolkit.fluxcd.io/v2beta1"
+                    kind = "HelmRelease"
+                    metadata = {
+                        name = "${_release_name}-${component}"
+                        namespace = _ox.namespace
+                        labels = {
+                            "app.kubernetes.io/component" = component
+                            "app.kubernetes.io/managed-by" = "crossplane"
+                        }
+                    }
+                    spec = {
+                        interval = "5m"
+                        chart.spec = {
+                            chart = chart
+                            sourceRef = { kind = "HelmRepository", name = "bitnami", namespace = "crossplane-system" }
+                            version = version
+                        }
+                        values = values
+                    }
+                })
+            }
+
+            _prometheus = _helm_release("prometheus-release", "prometheus", "kube-prometheus", _ox.prometheusChartVersion, {
+                prometheus = {
+                    persistence = {
+                        enabled = True
+                        size = _ox.prometheusStorageSize
+                        storageClassName = "rook-ceph-block"
+                    }
+                    retention = "${_ox.prometheusRetentionDays}d"
+                    replicas = 1
+                    resources = {
+                        requests = { cpu = "500m", memory = "512Mi" }
+                        limits = { cpu = "1000m", memory = "1Gi" }
+                    }
+                }
+                nodeExporter.enabled = _ox.nodeExporterEnabled
+                alertmanager.enabled = False
+                kubeStateMetrics.enabled = True
+            }) if _ox.prometheusEnabled else None
+
+            _grafana = _helm_release("grafana-release", "grafana", "grafana", _ox.grafanaChartVersion, {
+                admin.password = _ox.grafanaAdminPassword
+                persistence = {
+                    enabled = True
+                    size = "10Gi"
+                    storageClassName = "rook-ceph-block"
+                }
+                datasources.prometheus = {
+                    enabled = True
+                    url = "http://prometheus-kube-prometheus-prometheus:9090"
+                }
+                ingress = {
+                    enabled = _ox.grafanaIngressEnabled
+                    hosts = [_ox.grafanaIngressHost if _ox.grafanaIngressHost else "grafana.local"]
+                }
+                resources = {
+                    requests = { cpu = "250m", memory = "256Mi" }
+                    limits = { cpu = "500m", memory = "512Mi" }
+                }
+            }) if _ox.grafanaEnabled else None
+
+            _alertmanager = _helm_release("alertmanager-release", "alertmanager", "alertmanager", "1.8.0", {
+                replicaCount = _ox.alertmanagerReplicas
+                persistence = {
+                    enabled = True
+                    size = "5Gi"
+                    storageClassName = "rook-ceph-block"
+                }
+            }) if _ox.alertmanagerEnabled else None
+
+            items = [r for r in [_namespace, _prometheus, _grafana, _alertmanager] if r is not None]
+
+    - step: automatically-detect-readiness
       functionRef:
         name: function-auto-ready
-      input:
-        apiVersion: autoready.crossplane.io/v1alpha1
-        kind: AutoReadyConfig
-

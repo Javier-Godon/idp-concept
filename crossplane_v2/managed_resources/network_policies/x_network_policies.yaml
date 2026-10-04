@@ -1,7 +1,7 @@
 apiVersion: apiextensions.crossplane.io/v1
 kind: Composition
 metadata:
-  name: x_network_policies
+  name: x-network-policies
   namespace: crossplane-system
 spec:
   compositeTypeRef:

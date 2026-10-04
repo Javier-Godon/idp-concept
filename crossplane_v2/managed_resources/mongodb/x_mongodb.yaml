@@ -143,6 +143,7 @@ spec:
                 transforms:
                   - type: string
                     string:
+                      type: Format
                       fmt: "%s-cluster"
                 policy:
                   fromFieldPath: Optional
@@ -181,6 +182,10 @@ spec:
                 toFieldPath: spec.forProvider.manifest.metadata.labels["koncept.io/owner"]
 
     # Step 2: Enforce namespace-before-cluster creation order
+    - step: automatically-detect-readiness
+      functionRef:
+        name: function-auto-ready
+
     - step: sequence-creation
       functionRef:
         name: function-sequencer
@@ -193,7 +198,3 @@ spec:
               - mongodb-cluster
 
     # Step 3: Detect readiness from composed resources
-    - step: automatically-detect-readiness
-      functionRef:
-        name: function-auto-ready
-

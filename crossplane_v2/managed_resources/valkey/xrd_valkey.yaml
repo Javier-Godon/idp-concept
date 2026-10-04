@@ -84,7 +84,7 @@ spec:
                 image:
                   type: string
                   description: Valkey Docker image to use.
-                  default: "valkey/valkey:latest"
+                  default: "valkey/valkey:8.1.10"
                   pattern: "^[a-z0-9/@:._-]+$"
                 resourceCpuRequest:
                   type: string

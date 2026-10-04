@@ -1,7 +1,7 @@
 apiVersion: apiextensions.crossplane.io/v1
 kind: Composition
 metadata:
-  name: x_external_dns
+  name: x-external-dns
   namespace: crossplane-system
 spec:
   compositeTypeRef:
