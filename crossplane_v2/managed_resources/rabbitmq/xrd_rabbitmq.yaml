@@ -13,9 +13,6 @@ spec:
   names:
     kind: XRabbitMQCluster
     plural: xrabbitmqclusters
-  claimNames:
-    kind: RabbitMQCluster
-    plural: rabbitmqclusters
   defaultCompositionRef:
     name: xrabbitmqcluster-operator-composition
   versions:
@@ -55,7 +52,7 @@ spec:
                   description: Kubernetes namespace where RabbitMQ runs.
                 clusterName:
                   type: string
-                  description: Name of the RabbitMQ cluster (Claim name if unset).
+                  description: Name of the RabbitMQ cluster (XR name if unset).
                   default: ""
                 replicas:
                   type: integer

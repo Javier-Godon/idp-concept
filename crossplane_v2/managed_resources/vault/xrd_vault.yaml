@@ -14,9 +14,6 @@ spec:
   names:
     kind: XVaultInstance
     plural: xvaultinstances
-  claimNames:
-    kind: VaultInstance
-    plural: vaultinstances
   defaultCompositionRef:
     name: xvaultinstance-vso-composition
   versions:

@@ -13,9 +13,6 @@ spec:
   names:
     kind: XOpenSearchCluster
     plural: xopensearchclusters
-  claimNames:
-    kind: OpenSearchCluster
-    plural: opensearchclusters
   defaultCompositionRef:
     name: xopensearchcluster-operator-composition
   versions:
@@ -58,7 +55,7 @@ spec:
                   description: Kubernetes namespace where OpenSearch runs.
                 clusterName:
                   type: string
-                  description: Name of the OpenSearch cluster (Claim name if unset).
+                  description: Name of the OpenSearch cluster (XR name if unset).
                   default: ""
                 version:
                   type: string

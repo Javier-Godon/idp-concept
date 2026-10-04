@@ -1,8 +1,7 @@
 apiVersion: koncept.bluesolution.es/v1alpha1
-kind: ObservabilityProvisioner
+kind: XObservabilityProvisioner
 metadata:
   name: production-observability
-  namespace: monitoring
   labels:
     environment: production
 spec:
@@ -12,7 +11,7 @@ spec:
 
   # Prometheus
   prometheusEnabled: true
-  prometheusCha rtVersion: "10.2.0"
+  prometheusChartVersion: "10.2.0"
   prometheusStorageSize: "100Gi"
   prometheusRetentionDays: 30
   prometheusFootprint: production
@@ -31,10 +30,9 @@ spec:
 
 ---
 apiVersion: koncept.bluesolution.es/v1alpha1
-kind: ObservabilityProvisioner
+kind: XObservabilityProvisioner
 metadata:
   name: dev-observability
-  namespace: monitoring-dev
   labels:
     environment: development
 spec:
@@ -44,7 +42,7 @@ spec:
 
   # Prometheus: smaller retention
   prometheusEnabled: true
-  prometheusCha rtVersion: "10.2.0"
+  prometheusChartVersion: "10.2.0"
   prometheusStorageSize: "10Gi"
   prometheusRetentionDays: 7
   prometheusFootprint: development
@@ -66,7 +64,6 @@ apiVersion: koncept.bluesolution.es/v1alpha1
 kind: XObservabilityProvisioner
 metadata:
   name: infrastructure-observability
-  namespace: crossplane-system
   labels:
     tier: platform-infrastructure
 spec:
@@ -76,7 +73,7 @@ spec:
 
   # Prometheus: enterprise retention
   prometheusEnabled: true
-  prometheusCha rtVersion: "10.2.0"
+  prometheusChartVersion: "10.2.0"
   prometheusStorageSize: "500Gi"
   prometheusRetentionDays: 90
   prometheusFootprint: production

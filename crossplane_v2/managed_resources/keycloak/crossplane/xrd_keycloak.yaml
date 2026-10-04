@@ -13,10 +13,6 @@ spec:
   names:
     kind: XKeycloak
     plural: xkeycloaks
-  # Namespace-scoped Claims for product teams
-  claimNames:
-    kind: Keycloak
-    plural: keycloaks
   defaultCompositionRef:
     name: xkeycloaks.koncept.bluesolution.es
   versions:

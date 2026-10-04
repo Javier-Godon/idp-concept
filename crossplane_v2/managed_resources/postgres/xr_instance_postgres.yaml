@@ -1,4 +1,4 @@
-## PostgreSQL XR/Claim instance examples
+## PostgreSQL XR instance examples
 ##
 ## Cluster-scoped XR (platform-owned):
 ---
@@ -19,12 +19,11 @@ spec:
   enableBackups: true
   backupSchedule: "0 2 * * *"
 ---
-## Namespace-scoped Claim (product-team usage — preferred):
+## Additional XR example (product-team usage; RBAC-scoped, not a Claim):
 apiVersion: koncept.bluesolution.es/v1alpha1
-kind: PostgresInstance
+kind: XPostgresInstance
 metadata:
   name: erp-back-postgres
-  namespace: erp-back-data
 spec:
   namespace: erp-back-data
   dbName: erp_back
@@ -36,10 +35,9 @@ spec:
 ---
 ## Development / local single-instance example:
 apiVersion: koncept.bluesolution.es/v1alpha1
-kind: PostgresInstance
+kind: XPostgresInstance
 metadata:
   name: erp-back-postgres-dev
-  namespace: erp-back-dev
 spec:
   namespace: erp-back-dev
   dbName: erp_back

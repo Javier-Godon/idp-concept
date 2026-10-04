@@ -12,7 +12,7 @@
 ##   - function-auto-ready for composite readiness detection
 ##
 ## The CNPG operator manages Pods, Services, PVCs, and Secrets automatically.
-## The connection Secret (named <claim-name>-<owner>-connection) is written by CNPG.
+## The connection Secret (named <xr-name>-<owner>-connection) is written by CNPG.
 
 apiVersion: apiextensions.crossplane.io/v1
 kind: Composition

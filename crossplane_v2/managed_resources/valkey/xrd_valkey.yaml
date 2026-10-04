@@ -14,9 +14,6 @@ spec:
   names:
     kind: XValkeyInstance
     plural: xvalkeyinstances
-  claimNames:
-    kind: ValkeyInstance
-    plural: valkeyinstances
   defaultCompositionRef:
     name: xvalkeyinstance-operator-composition
   versions:
@@ -60,7 +57,7 @@ spec:
                   description: Kubernetes namespace where Valkey runs.
                 clusterName:
                   type: string
-                  description: Name of the Valkey instance (Claim name if unset).
+                  description: Name of the Valkey instance (XR name if unset).
                   default: ""
                 mode:
                   type: string

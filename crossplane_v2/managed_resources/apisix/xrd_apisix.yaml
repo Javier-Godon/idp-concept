@@ -13,9 +13,6 @@ spec:
   names:
     kind: XAPIGateway
     plural: xapigateways
-  claimNames:
-    kind: APIGateway
-    plural: apigateways
   defaultCompositionRef:
     name: xapigateway-helm-composition
   versions:
@@ -53,7 +50,7 @@ spec:
                   description: Kubernetes namespace where APISIX runs.
                 clusterName:
                   type: string
-                  description: Release name / cluster identifier (Claim name if unset).
+                  description: Release name / cluster identifier (XR name if unset).
                   default: ""
                 chartVersion:
                   type: string

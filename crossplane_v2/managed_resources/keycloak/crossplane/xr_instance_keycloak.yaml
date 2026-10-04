@@ -24,12 +24,11 @@ spec:
   owner: platform-team
 
 ---
-# Development Claim — product team deploys namespace-scoped
+# Development XR — product team deploys via RBAC-scoped access, namespace-targeted
 apiVersion: koncept.bluesolution.es/v1alpha1
-kind: Keycloak
+kind: XKeycloak
 metadata:
   name: dev-keycloak
-  namespace: team-alpha
   labels:
     koncept.io/environment: development
     koncept.io/owner: team-alpha

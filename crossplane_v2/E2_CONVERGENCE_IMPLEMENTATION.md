@@ -6,14 +6,14 @@
 
 ## Overview
 
-E2 Convergence updates `framework/procedures/kcl_to_crossplane.k` to emit **typed Claim instances** for the 23 hand-authored infrastructure services in `crossplane_v2/managed_resources/`, while maintaining a **bridge layer** for unmodeled services and application workloads.
+E2 Convergence updates `framework/procedures/kcl_to_crossplane.k` to emit **typed XR instances** for the 23 hand-authored infrastructure services in `crossplane_v2/managed_resources/`, while maintaining a **bridge layer** for unmodeled services and application workloads.
 
 This closes the gap between the generated path and the professional hand-authored APIs, implementing the **two-track convergence** model from the architecture instructions.
 
 ## Two-Track Architecture (Updated)
 
 ### Track 1: Curated Managed Resources (Professional APIs)
-- **What**: Typed Claim instances (`MongoDBInstance`, `KafkaStrimzi`, `PostgresInstance`, etc.)
+- **What**: Typed XR instances (`XMongoDBInstance`, `XKafkaStrimzi`, `XPostgresInstance`, etc.) — Crossplane v2 has no Claims
 - **Where**: Output in `managed_resources/` directory
 - **Goal**: Self-service control-plane APIs with schema validation, status wiring, and operator orchestration
 - **Services**: 23 infrastructure control-plane services (databases, queues, identity, storage, observability)
@@ -61,7 +61,7 @@ This closes the gap between the generated path and the professional hand-authore
 #### `_CURATED_SERVICES` (Mapping)
 ```kcl
 _CURATED_SERVICES = {
-    "postgresql" = {xrd_kind = "XPostgresInstance", claim_kind = "PostgresInstance", ...}
+    "postgresql" = {xrd_kind = "XPostgresInstance", api_group = "koncept.bluesolution.es"}
     # ... 22 more services
 }
 ```
@@ -71,21 +71,21 @@ _CURATED_SERVICES = {
 - Used in filtering logic
 
 #### `_get_curated_api_info(component: str) → {str:}`
-- Returns XRD/Claim metadata for a service
+- Returns XRD metadata for a service
 - Empty dict if not curated
 
-#### `_generate_curated_claim(...) → {str:}`
-- Creates typed Claim instance for a curated service
-- Includes apiVersion, kind, metadata, empty spec (for future expansion)
+#### `_generate_curated_instance(...) → {str:}`
+- Creates a typed XR instance for a curated service (no Claim kind; Crossplane v2 doesn't support Claims)
+- Includes apiVersion, kind, metadata, `spec.namespace` (for future expansion)
 
 #### Updated `_process_accessories(...) → [{str:}]`
 - Separates curated (Track 1) from unmodeled (Track 2) accessories
-- Returns mixed list with `_type = "claim"` or `_type = "bridge"` tags
+- Returns mixed list with `_type = "managed"` or `_type = "bridge"` tags
 - Two sub-lists: `_curated` and `_bridge`
 
 #### Updated Main: `generate_crossplane_from_stack(...)`
-- Filters managed resources by `_type == "claim"`
-- Returns new key: `managed_resources` (list of Claims)
+- Filters managed resources by `_type == "managed"`
+- Returns new key: `managed_resources` (list of XR instances)
 - Passes only bridge resources to Composition
 - Updated metadata: `managedResourceCount`, `resourceCount`
 
@@ -97,11 +97,11 @@ The CLI (`koncept render crossplane`) now outputs:
 output/crossplane/
 ├── xrd.yaml                  # Stack composite intent
 ├── composition.yaml          # Pipeline: patch-and-transform → sequencer → auto-ready
-├── xr.yaml                   # XR instance (claim orchestrator)
-├── managed_resources/        # NEW: Curated Infrastructure Claims
-│   ├── postgresql_claim.yaml
-│   ├── kafka_claim.yaml
-│   ├── keycloak_claim.yaml
+├── xr.yaml                   # XR instance (stack orchestrator)
+├── managed_resources/        # NEW: Curated Infrastructure XR instances
+│   ├── postgresql_instance.yaml
+│   ├── kafka_instance.yaml
+│   ├── keycloak_instance.yaml
 │   └── ... (22 more)
 └── prerequisites/
     ├── providers.yaml        # Provider + ProviderConfig
@@ -111,14 +111,14 @@ output/crossplane/
 ## Behavior Changes
 
 ### For Stacks with Only Modeled Services
-- All infrastructure emitted as typed Claims
+- All infrastructure emitted as typed XR instances
 - Bridge Composition is minimal (may be empty if no Components)
-- XR deployment = Claims reconcile → ready
+- XR deployment = curated XRs reconcile → ready
 
 ### For Stacks with Mixed Modeled + Unmodeled
-- Modeled services: Track 1 Claims → `managed_resources/`
+- Modeled services: Track 1 XR instances → `managed_resources/`
 - Unmodeled + Components: Track 2 Objects → Composition pipeline
-- XR deployment = Claims + Objects reconcile → ready
+- XR deployment = curated XRs + Objects reconcile → ready
 
 ### For Stacks with No Modeled Services (legacy stacks)
 - All objects bridge-wrapped (backward compatible)
@@ -133,7 +133,7 @@ output/crossplane/
    
 2. **New stacks**: Can start using typed APIs immediately
    - Mark infrastructure as `component="postgresql"`, `component="kafka"`, etc.
-   - CLI automatically detects and routes to Claims
+   - CLI automatically detects and routes to the curated XR kind
    
 3. **Existing stacks + new infrastructure**: Mix seamlessly
    - Curated + bridge resources coexist in same stack
@@ -145,11 +145,11 @@ output/crossplane/
 - `framework/tests/kcl_to_crossplane/convergence_test.k`
   - Verify 23 services are curated
   - Verify unmodeled services bridge-wrapped
-  - Verify Claims generated with correct kind/apiVersion
+  - Verify curated XR instances generated with correct kind/apiVersion
   
 ### Integration Tests
 - `framework/tests/acceptance/cases/crossplane_convergence_*` fixtures
-  - `crossplane_convergence_mixed_stack`: PostgreSQL (claim) + WebApp (object)
+  - `crossplane_convergence_mixed_stack`: PostgreSQL (curated XR) + WebApp (object)
   - `crossplane_convergence_all_curated`: All 23 in one stack
   - `crossplane_convergence_legacy`: No curated services (backward compat)
 
@@ -161,11 +161,11 @@ output/crossplane/
 ## Known Limitations & Future Work
 
 1. **Spec Auto-Population** (Q3)
-   - Claims currently emit empty `spec {}`
+   - Curated XR instances currently only populate `spec.namespace`
    - XRD Composition functions (KCL function in crossplane_v2/) will populate from parent XR fields
 
 2. **Status Wiring** (Q3)
-   - Claims ready status not yet auto-wired to XR
+   - Curated XR readiness not yet auto-wired to the stack XR
    - Requires `function-auto-ready` enhancement or hand-authored status policy
 
 3. **Additional Services** (Backlog)
@@ -198,5 +198,5 @@ Example:
 
 ---
 
-**Next Phase**: E3 Convergence — enhance Composition functions to populate Claim specs from XR fields and wire status.
+**Next Phase**: E3 Convergence — enhance Composition functions to populate curated XR specs from the stack XR's fields and wire status.
 

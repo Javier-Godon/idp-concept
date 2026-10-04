@@ -1,4 +1,4 @@
-## MinIO XR/Claim instance examples
+## MinIO XR instance examples
 ---
 apiVersion: koncept.bluesolution.es/v1alpha1
 kind: XMinIOTenant
@@ -18,10 +18,9 @@ spec:
   owner: storage-team
 ---
 apiVersion: koncept.bluesolution.es/v1alpha1
-kind: MinIOTenant
+kind: XMinIOTenant
 metadata:
   name: dev-minio
-  namespace: dev-storage
 spec:
   namespace: dev-storage
   servers: 1

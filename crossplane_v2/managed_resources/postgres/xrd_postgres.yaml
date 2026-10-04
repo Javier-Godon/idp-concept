@@ -13,10 +13,6 @@ spec:
   names:
     kind: XPostgresInstance
     plural: xpostgresinstances
-  # Namespace-scoped Claims for product teams: one claim per database
-  claimNames:
-    kind: PostgresInstance
-    plural: postgresinstances
   defaultCompositionRef:
     name: xpostgresinstance-cnpg-composition
   versions:
@@ -112,7 +108,7 @@ spec:
                   type: string
                   description: >
                     Override the default name of the Kubernetes Secret that CNPG writes
-                    connection credentials into. Defaults to <claim-name>-connection.
+                    connection credentials into. Defaults to <xr-name>-connection.
                   default: ""
             status:
               type: object

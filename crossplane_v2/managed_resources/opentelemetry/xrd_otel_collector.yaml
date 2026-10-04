@@ -13,9 +13,6 @@ spec:
   names:
     kind: XOpenTelemetryCollector
     plural: xopentelemetrycollectors
-  claimNames:
-    kind: OpenTelemetryCollector
-    plural: opentelemetrycollectors
   defaultCompositionRef:
     name: xopentelemetrycollector-helm-composition
   versions:
@@ -55,7 +52,7 @@ spec:
                   description: Kubernetes namespace where OpenTelemetry Collector runs.
                 clusterName:
                   type: string
-                  description: Release name / cluster identifier (Claim name if unset).
+                  description: Release name / cluster identifier (XR name if unset).
                   default: ""
                 chartVersion:
                   type: string

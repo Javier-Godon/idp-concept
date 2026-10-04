@@ -20,7 +20,7 @@ import (
 //	<outDir>/crossplane/prerequisites/infrastructure.yaml   (all pkg resources)
 //	<outDir>/crossplane/prerequisites/providers.yaml         (Provider + ProviderConfig)
 //	<outDir>/crossplane/prerequisites/functions.yaml         (Function packages)
-//	<outDir>/crossplane/managed_resources/<claim>.yaml       (curated Track 1 Claims)
+//	<outDir>/crossplane/managed_resources/<kind-name>.yaml   (curated Track 1 XR instances)
 func WriteCrossplane(rendered string, outDir string) error {
 	var doc map[string]any
 	if err := yaml.Unmarshal([]byte(rendered), &doc); err != nil {
@@ -86,7 +86,7 @@ func WriteCrossplane(rendered string, outDir string) error {
 			return err
 		}
 		for _, resource := range managed {
-			name := claimFilename(resource)
+			name := managedResourceFilename(resource)
 			if err := writeYAMLDoc(filepath.Join(managedDir, name), resource); err != nil {
 				return err
 			}
@@ -96,7 +96,7 @@ func WriteCrossplane(rendered string, outDir string) error {
 	return nil
 }
 
-func claimFilename(resource map[string]any) string {
+func managedResourceFilename(resource map[string]any) string {
 	kind := strings.ToLower(mapString(resource, "kind"))
 	name := ""
 	if meta, ok := resource["metadata"].(map[string]any); ok {

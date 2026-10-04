@@ -80,9 +80,10 @@ test_xrd_structure = lambda {
     assert _result.spec.names.plural == "xmystacks"
 }
 
-test_xrd_has_claim_names = lambda {
+test_xrd_no_claim_names = lambda {
+    # Crossplane v2 does not support Claims; the generated XRD must not declare claimNames.
     _result = xp.generate_xrd("erp-back", "XErpBack")
-    assert _result.spec.claimNames.plural == "erp-backs"
+    assert not ("claimNames" in _result.spec)
 }
 
 test_xrd_has_version = lambda {
@@ -193,6 +194,27 @@ test_accessory_wrapping = lambda {
     assert _result[0]._type == "bridge"
     assert _result[0]._resource.name == "acc-postgres-statefulset-postgres"
     assert _result[0]._resource.base.spec.forProvider.manifest.kind == "StatefulSet"
+}
+
+# === Test: curated accessories emit the XR kind directly (no Claims in Crossplane v2) ===
+test_curated_accessory_emits_xr_not_claim = lambda {
+    _acc = accessory.AccessoryInstance {
+        name = "app-mongodb"
+        kind = "CRD"
+        namespace = "app-data"
+        component = "mongodb"
+        configurations = {}
+        asset = { version = "7.0" }
+        leaders = [{ name = "app-mongodb", kind = "StatefulSet", apiVersion = "apps/v1", namespace = "app-data" }]
+        manifests = []
+        dependsOn = []
+    }
+    _result = xp._process_accessories([_acc])
+    assert len(_result) == 1
+    assert _result[0]._type == "managed"
+    assert _result[0]._resource.kind == "XMongoDBInstance"
+    assert not ("namespace" in _result[0]._resource.metadata)
+    assert _result[0]._resource.spec.namespace == "app-data"
 }
 
 # === Test: sequencer rules from dependsOn ===

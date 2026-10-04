@@ -13,9 +13,6 @@ spec:
   names:
     kind: XMongoDBInstance
     plural: xmongodbinstances
-  claimNames:
-    kind: MongoDBInstance
-    plural: mongodbinstances
   defaultCompositionRef:
     name: xmongodbinstance-community-composition
   versions:
@@ -58,7 +55,7 @@ spec:
                   description: Kubernetes namespace where MongoDB runs.
                 clusterName:
                   type: string
-                  description: Name of the MongoDB cluster (Claim name if unset).
+                  description: Name of the MongoDB cluster (XR name if unset).
                   default: ""
                 mongodbVersion:
                   type: string

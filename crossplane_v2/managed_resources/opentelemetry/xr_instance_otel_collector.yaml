@@ -1,4 +1,4 @@
-## OpenTelemetry Collector XR/Claim instance examples
+## OpenTelemetry Collector XR instance examples
 ---
 apiVersion: koncept.bluesolution.es/v1alpha1
 kind: XOpenTelemetryCollector
@@ -31,10 +31,9 @@ spec:
   owner: observability-team
 ---
 apiVersion: koncept.bluesolution.es/v1alpha1
-kind: OpenTelemetryCollector
+kind: XOpenTelemetryCollector
 metadata:
   name: dev-otel-collector
-  namespace: dev-observability
 spec:
   namespace: dev-observability
   chartVersion: "0.100.0"
@@ -51,10 +50,9 @@ spec:
 ---
 ## DaemonSet mode for node-level collection
 apiVersion: koncept.bluesolution.es/v1alpha1
-kind: OpenTelemetryCollector
+kind: XOpenTelemetryCollector
 metadata:
   name: prod-otel-daemonset
-  namespace: observability-system
 spec:
   namespace: observability-system
   chartVersion: "0.100.0"

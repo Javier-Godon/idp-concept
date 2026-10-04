@@ -12,9 +12,6 @@ spec:
   names:
     kind: XFluentBitInstance
     plural: xfluentbitinstances
-  claimNames:
-    kind: FluentBitInstance
-    plural: fluentbitinstances
   defaultCompositionRef:
     name: xfluentbitinstance-native-composition
   versions:
@@ -53,7 +50,7 @@ spec:
                   description: Kubernetes namespace where Fluent Bit runs.
                 clusterName:
                   type: string
-                  description: Instance name (Claim name if unset).
+                  description: Instance name (XR name if unset).
                   default: ""
                 mode:
                   type: string

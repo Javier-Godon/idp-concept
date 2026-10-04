@@ -13,9 +13,6 @@ spec:
   names:
     kind: XRedisInstance
     plural: xredisinstances
-  claimNames:
-    kind: RedisInstance
-    plural: redisinstances
   defaultCompositionRef:
     name: xredisinstance-operator-composition
   versions:
@@ -59,7 +56,7 @@ spec:
                   description: Kubernetes namespace where Redis runs.
                 clusterName:
                   type: string
-                  description: Name of the Redis cluster/instance (Claim name if unset).
+                  description: Name of the Redis cluster/instance (XR name if unset).
                   default: ""
                 mode:
                   type: string

@@ -14,9 +14,6 @@ spec:
   names:
     kind: XLonghornInstance
     plural: xlonghorninstances
-  claimNames:
-    kind: LonghornInstance
-    plural: longhorninstances
   defaultCompositionRef:
     name: xlonghorninstance-helm-composition
   versions:
@@ -54,7 +51,7 @@ spec:
                   description: Kubernetes namespace where Longhorn manager components run.
                 releaseName:
                   type: string
-                  description: Helm release name (Claim name if unset).
+                  description: Helm release name (XR name if unset).
                   default: ""
                 chartVersion:
                   type: string

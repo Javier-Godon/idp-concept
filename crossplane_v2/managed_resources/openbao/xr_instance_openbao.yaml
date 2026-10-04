@@ -1,4 +1,4 @@
-## OpenBao XR/Claim instance examples
+## OpenBao XR instance examples
 ---
 apiVersion: koncept.bluesolution.es/v1alpha1
 kind: XOpenBaoInstance
@@ -20,10 +20,9 @@ spec:
 ---
 ## Standalone mode (simpler, development)
 apiVersion: koncept.bluesolution.es/v1alpha1
-kind: OpenBaoInstance
+kind: XOpenBaoInstance
 metadata:
   name: dev-openbao
-  namespace: dev-security
 spec:
   namespace: dev-security
   chartVersion: "0.8.1"

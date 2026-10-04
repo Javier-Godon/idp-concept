@@ -7,7 +7,7 @@
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$SCRIPT_DIR/../.."
+PROJECT_ROOT="$SCRIPT_DIR/.."
 FRAMEWORK_DIR="$PROJECT_ROOT/framework"
 OUTPUT_DIR="$PROJECT_ROOT/output/e2-tests"
 
@@ -43,10 +43,10 @@ echo -e "${GREEN}✓ TEST 1 PASSED: Stack rendered successfully${NC}"
 echo ""
 
 ###############################################################################
-# Test 2: Verify Track 1 (Curated Claims) Output
+# Test 2: Verify Track 1 (Curated Managed Resources) Output
 ###############################################################################
 
-echo -e "${YELLOW}TEST 2: Track 1 Verification (Curated Claims)${NC}"
+echo -e "${YELLOW}TEST 2: Track 1 Verification (Curated Managed Resources)${NC}"
 echo "────────────────────────────────────────────────────────────────────"
 
 # Render a test project that includes curated services
@@ -198,10 +198,10 @@ _fake_app_acc = models.modules.accessory.AccessoryInstance {
     }]
 }
 
-# Process it (should return wrapped Object, not Claim)
+# Process it (should return wrapped Object, not a curated XR instance)
 _result = crossplane_proc._process_accessories([_fake_app_acc])
 
-# Verify it's wrapped, not a Claim
+# Verify it's wrapped, not a curated XR instance
 {
     numResults = len(_result)
     hasWrappedObjects = len([r for r in _result if "base" in r and r.base.kind == "Object"]) > 0
@@ -228,7 +228,7 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo ""
 echo "✅ All core acceptance tests passed:"
 echo "   ✓ Mixed service stack rendering"
-echo "   ✓ Track 1 (curated Claims) verification"
+echo "   ✓ Track 1 (curated managed resources) verification"
 echo "   ✓ Backward compatibility (Track 2 bridge)"
 echo "   ✓ Convergence mapping (23 services)"
 echo "   ✓ No regression in bridge wrapping"

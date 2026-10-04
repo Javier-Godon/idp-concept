@@ -1,4 +1,4 @@
-## MongoDB XR/Claim instance examples
+## MongoDB XR instance examples
 ##
 ## Cluster-scoped XR (platform-owned):
 ---
@@ -16,12 +16,11 @@ spec:
   environment: production
   owner: erp-back-team
 ---
-## Namespace-scoped Claim (product-team usage — preferred):
+## Additional XR example (product-team usage; RBAC-scoped, not a Claim):
 apiVersion: koncept.bluesolution.es/v1alpha1
-kind: MongoDBInstance
+kind: XMongoDBInstance
 metadata:
   name: app-mongodb
-  namespace: app-data
 spec:
   namespace: app-data
   mongodbVersion: "7.0.12"
@@ -32,10 +31,9 @@ spec:
 ---
 ## Development / local single-instance example:
 apiVersion: koncept.bluesolution.es/v1alpha1
-kind: MongoDBInstance
+kind: XMongoDBInstance
 metadata:
   name: dev-mongodb
-  namespace: dev-data
 spec:
   namespace: dev-data
   mongodbVersion: "7.0.12"

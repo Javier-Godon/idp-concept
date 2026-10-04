@@ -27,7 +27,7 @@ You are creating a new Crossplane managed resource in idp-concept.
 2. Create exactly three canonical files (no legacy/duplicate variants):
    - `xrd_<resource>.yaml` — CompositeResourceDefinition (API definition)
    - `x_<resource>.yaml` — Composition (how to provision)
-   - `xr_instance_<resource>.yaml` — Example instance (claim)
+   - `xr_instance_<resource>.yaml` — Example instance (`scope: Cluster` XR; Crossplane v2 has no Claims)
 3. XRDs use `apiVersion: apiextensions.crossplane.io/v2` and model **intent** (no raw `manifest` inputs).
 4. XRDs define the API group under `koncept.bluesolution.es`.
 5. Compositions MUST use `mode: Pipeline`.

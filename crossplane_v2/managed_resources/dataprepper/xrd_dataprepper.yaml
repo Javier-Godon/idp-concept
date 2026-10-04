@@ -12,9 +12,6 @@ spec:
   names:
     kind: XDataPrepperPipeline
     plural: xdataprepperpipelines
-  claimNames:
-    kind: DataPrepperPipeline
-    plural: dataprepperpipelines
   defaultCompositionRef:
     name: xdataprepperpipeline-native-composition
   versions:
@@ -53,7 +50,7 @@ spec:
                   description: Kubernetes namespace where Data Prepper runs.
                 clusterName:
                   type: string
-                  description: Release name / cluster identifier (Claim name if unset).
+                  description: Release name / cluster identifier (XR name if unset).
                   default: ""
                 replicas:
                   type: integer

@@ -1,0 +1,16 @@
+## Example Kafka (Strimzi) XR instance
+##
+## Usage: kubectl apply -f crossplane_xr_instance.yaml
+## This creates an XKafkaStrimzi composite resource that triggers the Strimzi composition.
+apiVersion: koncept.bluesolution.es/v1alpha1
+kind: XKafkaStrimzi
+metadata:
+  name: kafka-strimzi-workload
+spec:
+  namespace: strimzi
+  clusterName: kafka-strimzi
+  replicas: 3
+  kafkaVersion: "3.9.0"
+  storageSize: "20Gi"
+  environment: production
+  owner: platform-team

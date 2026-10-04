@@ -1,4 +1,4 @@
-## Example Superset Claim (XR Consumer)
+## Example Superset XR instances
 ##
 ## Usage: kubectl apply -f xr_instance_superset.yaml
 ## Prerequisites:
@@ -6,7 +6,7 @@
 ##   - Redis instance for caching/Celery broker
 
 apiVersion: koncept.bluesolution.es/v1alpha1
-kind: Superset
+kind: XSuperset
 metadata:
   name: prod-superset
 spec:
@@ -31,7 +31,7 @@ spec:
 ---
 ## Example: Development Superset cluster
 apiVersion: koncept.bluesolution.es/v1alpha1
-kind: Superset
+kind: XSuperset
 metadata:
   name: dev-superset
 spec:
@@ -53,7 +53,7 @@ spec:
 ---
 ## Example: Local/testing Superset cluster
 apiVersion: koncept.bluesolution.es/v1alpha1
-kind: Superset
+kind: XSuperset
 metadata:
   name: local-superset
 spec:

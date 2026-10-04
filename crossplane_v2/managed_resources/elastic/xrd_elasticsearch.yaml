@@ -14,9 +14,6 @@ spec:
   names:
     kind: XElasticsearchCluster
     plural: xelasticsearchclusters
-  claimNames:
-    kind: ElasticsearchCluster
-    plural: elasticsearchclusters
   defaultCompositionRef:
     name: xelasticsearchcluster-eck-composition
   versions:
@@ -58,7 +55,7 @@ spec:
                   description: Kubernetes namespace where Elasticsearch runs.
                 clusterName:
                   type: string
-                  description: Name of the Elasticsearch cluster (Claim name if unset).
+                  description: Name of the Elasticsearch cluster (XR name if unset).
                   default: ""
                 version:
                   type: string

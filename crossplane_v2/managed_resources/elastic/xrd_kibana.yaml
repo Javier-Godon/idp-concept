@@ -1,7 +1,7 @@
 apiVersion: apiextensions.crossplane.io/v2
 kind: CompositeResourceDefinition
 metadata:
-  name: xkibanaintances.koncept.bluesolution.es
+  name: xkibanainstances.koncept.bluesolution.es
   annotations:
     koncept.io/tier: "2"
     koncept.io/operator: "eck"
@@ -13,9 +13,6 @@ spec:
   names:
     kind: XKibanaInstance
     plural: xkibanainstances
-  claimNames:
-    kind: KibanaInstance
-    plural: kibanainstances
   defaultCompositionRef:
     name: xkibanainstance-eck-composition
   versions:
@@ -55,7 +52,7 @@ spec:
                   description: Kubernetes namespace where Kibana runs.
                 clusterName:
                   type: string
-                  description: Name of the Kibana instance (Claim name if unset).
+                  description: Name of the Kibana instance (XR name if unset).
                   default: ""
                 version:
                   type: string

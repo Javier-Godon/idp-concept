@@ -1,8 +1,7 @@
 apiVersion: koncept.bluesolution.es/v1alpha1
-kind: LonghornInstance
+kind: XLonghornInstance
 metadata:
   name: production-longhorn
-  namespace: storage
   labels:
     environment: production
 spec:
@@ -29,10 +28,9 @@ spec:
 
 ---
 apiVersion: koncept.bluesolution.es/v1alpha1
-kind: LonghornInstance
+kind: XLonghornInstance
 metadata:
   name: dev-longhorn
-  namespace: storage-dev
   labels:
     environment: development
 spec:
@@ -61,7 +59,6 @@ apiVersion: koncept.bluesolution.es/v1alpha1
 kind: XLonghornInstance
 metadata:
   name: infrastructure-longhorn
-  namespace: crossplane-system
   labels:
     tier: platform-infrastructure
 spec:

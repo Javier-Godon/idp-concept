@@ -5,8 +5,8 @@ Two-track architecture (Phase E2 Convergence):
 
 Track 1: Curated Managed Resources (professional control-plane APIs)
   - For 23 infrastructure services with hand-authored XRDs in crossplane_v2/managed_resources/
-  - Generates typed XR/Claim instances referencing the curated APIs
-  - Example: MongoDB → XMongoDBInstance Claim
+  - Generates typed XR instances referencing the curated APIs directly (Crossplane v2 has no Claims)
+  - Example: MongoDB → XMongoDBInstance
 
 Track 2: Bridge (manifest wrapping, backward compatibility)
   - For unmodeled services and application workloads (WebAppModule, etc.)
@@ -19,8 +19,8 @@ Output structure (written by CLI):
     ├── xrd.yaml                  # CompositeResourceDefinition
     ├── composition.yaml          # Composition with pipeline
     ├── xr.yaml                   # Composite Resource instance
-    ├── managed_resources/        # Curated XR/Claim instances (Track 1)
-    │   ├── <service>_claim.yaml  # e.g., mongodb_claim.yaml
+    ├── managed_resources/        # Curated XR instances (Track 1)
+    │   ├── <service>_instance.yaml  # e.g., mongodb_instance.yaml
     │   └── ...
     └── prerequisites/
         ├── providers.yaml        # Provider + ProviderConfig manifests
@@ -58,34 +58,35 @@ _PROVIDER_HELM = "helm-provider"
 
 # --- Curated Managed Resources (Phase E2 Convergence) ---
 # Services with hand-authored XRDs in crossplane_v2/managed_resources/
-# These emit XR/Claim instances instead of Object wrappers
+# These emit the curated XR kind directly instead of Object wrappers
+# (Crossplane v2 does not support Claims; there is no separate claim kind)
 
 _CURATED_SERVICES = {
     # Tier 0: Platform foundation
-    "ceph" = {xrd_kind = "XCephCluster", claim_kind = "CephCluster", api_group = "koncept.bluesolution.es"}
+    "ceph" = {xrd_kind = "XCephCluster", api_group = "koncept.bluesolution.es"}
     # Tier 1: Operator-managed infrastructure
-    "postgresql" = {xrd_kind = "XPostgresInstance", claim_kind = "PostgresInstance", api_group = "koncept.bluesolution.es"}
-    "timescaledb" = {xrd_kind = "XTimescaleDBInstance", claim_kind = "TimescaleDBInstance", api_group = "koncept.bluesolution.es"}
-    "kafka" = {xrd_kind = "XKafkaStrimzi", claim_kind = "KafkaStrimzi", api_group = "koncept.bluesolution.es"}
-    "keycloak" = {xrd_kind = "XKeycloak", claim_kind = "Keycloak", api_group = "koncept.bluesolution.es"}
-    "longhorn" = {xrd_kind = "XLonghornInstance", claim_kind = "LonghornInstance", api_group = "koncept.bluesolution.es"}
-    "mongodb" = {xrd_kind = "XMongoDBInstance", claim_kind = "MongoDBInstance", api_group = "koncept.bluesolution.es"}
-    "rabbitmq" = {xrd_kind = "XRabbitMQCluster", claim_kind = "RabbitMQCluster", api_group = "koncept.bluesolution.es"}
-    "redis" = {xrd_kind = "XRedisInstance", claim_kind = "RedisInstance", api_group = "koncept.bluesolution.es"}
-    "valkey" = {xrd_kind = "XValkeyInstance", claim_kind = "ValkeyInstance", api_group = "koncept.bluesolution.es"}
-    "opensearch" = {xrd_kind = "XOpenSearchCluster", claim_kind = "OpenSearchCluster", api_group = "koncept.bluesolution.es"}
-    "minio" = {xrd_kind = "XMinIOTenant", claim_kind = "MinIOTenant", api_group = "koncept.bluesolution.es"}
-    "vault" = {xrd_kind = "XVaultInstance", claim_kind = "VaultInstance", api_group = "koncept.bluesolution.es"}
-    "openbao" = {xrd_kind = "XOpenBaoInstance", claim_kind = "OpenBaoInstance", api_group = "koncept.bluesolution.es"}
+    "postgresql" = {xrd_kind = "XPostgresInstance", api_group = "koncept.bluesolution.es"}
+    "timescaledb" = {xrd_kind = "XTimescaleDBInstance", api_group = "koncept.bluesolution.es"}
+    "kafka" = {xrd_kind = "XKafkaStrimzi", api_group = "koncept.bluesolution.es"}
+    "keycloak" = {xrd_kind = "XKeycloak", api_group = "koncept.bluesolution.es"}
+    "longhorn" = {xrd_kind = "XLonghornInstance", api_group = "koncept.bluesolution.es"}
+    "mongodb" = {xrd_kind = "XMongoDBInstance", api_group = "koncept.bluesolution.es"}
+    "rabbitmq" = {xrd_kind = "XRabbitMQCluster", api_group = "koncept.bluesolution.es"}
+    "redis" = {xrd_kind = "XRedisInstance", api_group = "koncept.bluesolution.es"}
+    "valkey" = {xrd_kind = "XValkeyInstance", api_group = "koncept.bluesolution.es"}
+    "opensearch" = {xrd_kind = "XOpenSearchCluster", api_group = "koncept.bluesolution.es"}
+    "minio" = {xrd_kind = "XMinIOTenant", api_group = "koncept.bluesolution.es"}
+    "vault" = {xrd_kind = "XVaultInstance", api_group = "koncept.bluesolution.es"}
+    "openbao" = {xrd_kind = "XOpenBaoInstance", api_group = "koncept.bluesolution.es"}
     # Tier 2: Application-level infrastructure
-    "questdb" = {xrd_kind = "XQuestDBInstance", claim_kind = "QuestDBInstance", api_group = "koncept.bluesolution.es"}
-    "elasticsearch" = {xrd_kind = "XElasticsearchCluster", claim_kind = "ElasticsearchCluster", api_group = "koncept.bluesolution.es"}
-    "kibana" = {xrd_kind = "XKibanaInstance", claim_kind = "KibanaInstance", api_group = "koncept.bluesolution.es"}
-    "logstash" = {xrd_kind = "XLogstashInstance", claim_kind = "LogstashInstance", api_group = "koncept.bluesolution.es"}
-    "opentelemetry" = {xrd_kind = "XOpenTelemetryCollector", claim_kind = "OpenTelemetryCollector", api_group = "koncept.bluesolution.es"}
-    "dataprepper" = {xrd_kind = "XDataPrepperPipeline", claim_kind = "DataPrepperPipeline", api_group = "koncept.bluesolution.es"}
-    "fluentbit" = {xrd_kind = "XFluentBitInstance", claim_kind = "FluentBitInstance", api_group = "koncept.bluesolution.es"}
-    "observability" = {xrd_kind = "XObservabilityProvisioner", claim_kind = "ObservabilityProvisioner", api_group = "koncept.bluesolution.es"}
+    "questdb" = {xrd_kind = "XQuestDBInstance", api_group = "koncept.bluesolution.es"}
+    "elasticsearch" = {xrd_kind = "XElasticsearchCluster", api_group = "koncept.bluesolution.es"}
+    "kibana" = {xrd_kind = "XKibanaInstance", api_group = "koncept.bluesolution.es"}
+    "logstash" = {xrd_kind = "XLogstashInstance", api_group = "koncept.bluesolution.es"}
+    "opentelemetry" = {xrd_kind = "XOpenTelemetryCollector", api_group = "koncept.bluesolution.es"}
+    "dataprepper" = {xrd_kind = "XDataPrepperPipeline", api_group = "koncept.bluesolution.es"}
+    "fluentbit" = {xrd_kind = "XFluentBitInstance", api_group = "koncept.bluesolution.es"}
+    "observability" = {xrd_kind = "XObservabilityProvisioner", api_group = "koncept.bluesolution.es"}
 }
 
 _is_curated_service = lambda service_name: str -> bool {
@@ -94,7 +95,7 @@ _is_curated_service = lambda service_name: str -> bool {
 }
 
 _get_curated_api_info = lambda service_name: str -> {str:} {
-    """Get XRD/Claim info for a curated service, or empty dict if not curated."""
+    """Get XRD info for a curated service, or empty dict if not curated."""
     _lower = service_name.lower()
     (_CURATED_SERVICES[_lower] if _lower in _CURATED_SERVICES else {})
 }
@@ -169,30 +170,30 @@ _process_components = lambda components: [component.ComponentInstance], meta: an
     [r for comp in (components if components else []) for r in _comp_to_resources(comp, meta)]
 }
 
-# --- Convergence Logic: Generate curated XR/Claim or bridge Object ---
+# --- Convergence Logic: Generate curated XR or bridge Object ---
 
-_generate_curated_claim = lambda accessory_name: str, namespace: str, component: str, api_info: {str:}, meta: any = Undefined -> {str:} {
-    """Generate a Claim instance for a curated managed resource.
-    Example: MongoDB accessory → MongoDBInstance Claim"""
-    _claim_kind = (api_info["claim_kind"] if "claim_kind" in api_info else "")
+_generate_curated_instance = lambda accessory_name: str, namespace: str, component: str, api_info: {str:}, meta: any = Undefined -> {str:} {
+    """Generate a composite resource (XR) instance for a curated managed resource.
+    Crossplane v2 has no Claims, so the curated XR kind is emitted directly.
+    Example: MongoDB accessory → XMongoDBInstance"""
+    _xrd_kind = (api_info["xrd_kind"] if "xrd_kind" in api_info else "")
     _api_group = (api_info["api_group"] if "api_group" in api_info else "koncept.bluesolution.es")
     yaml_proc.apply_stack_metadata({
         apiVersion = "${_api_group}/v1alpha1"
-        kind = _claim_kind
+        kind = _xrd_kind
         metadata.name = _sanitize(accessory_name)
-        metadata.namespace = namespace
-        spec = {}
-    }, meta) if _claim_kind else {}
+        spec.namespace = namespace
+    }, meta) if _xrd_kind else {}
 }
 
 _process_accessories = lambda accessories: [accessory.AccessoryInstance], meta: any = Undefined -> [{str:}] {
     """Process accessories into Crossplane resources.
 
-    Track 1 (Curated): Generates Claim instances for infrastructure services with hand-authored XRDs
+    Track 1 (Curated): Generates XR instances for infrastructure services with hand-authored XRDs
     Track 2 (Bridge): Wraps remaining manifests in Object resources for backward compatibility
     """
-    # Track 1: Curated managed resources (Claims for infrastructure services)
-    _curated = [{_type = "claim", _resource = _generate_curated_claim(acc.name, acc.namespace, acc.component, _get_curated_api_info(acc.component), meta)} for acc in (accessories if accessories else []) if _is_curated_service(acc.component) and _get_curated_api_info(acc.component)]
+    # Track 1: Curated managed resources (XR instances for infrastructure services)
+    _curated = [{_type = "managed", _resource = _generate_curated_instance(acc.name, acc.namespace, acc.component, _get_curated_api_info(acc.component), meta)} for acc in (accessories if accessories else []) if _is_curated_service(acc.component) and _get_curated_api_info(acc.component)]
 
     # Track 2: Bridge objects (for unmodeled services)
     # Collect all manifests from non-curated accessories
@@ -258,10 +259,6 @@ generate_xrd = lambda stack_name: str, xr_kind: str, meta: any = Undefined -> {s
             names = {
                 kind = xr_kind
                 plural = _plural
-            }
-            claimNames = {
-                kind = stack_name.replace("-", " ").replace("_", " ").title().replace(" ", "")
-                plural = _sanitize(stack_name) + "s"
             }
             versions = [{
                 name = "v1alpha1"
@@ -409,7 +406,7 @@ generate_crossplane_from_stack = lambda components: [component.ComponentInstance
     """Generate complete Crossplane output (XRD + Composition + XR + prerequisites + managed resources) from stack data.
 
     Phase E2 Convergence:
-    - Track 1 (Curated): Emits typed Claim instances for 23 infrastructure services with hand-authored XRDs
+    - Track 1 (Curated): Emits typed XR instances for 23 infrastructure services with hand-authored XRDs
     - Track 2 (Bridge): Wraps remaining manifests in Object resources for backward compatibility
     - Composition uses only bridge resources; managed resources are returned separately for CLI output
 
@@ -421,7 +418,7 @@ generate_crossplane_from_stack = lambda components: [component.ComponentInstance
         version: Stack version (e.g. '1.0.0')
 
     Returns:
-        Dict with keys: xrd, composition, xr, prerequisites, managed_resources (curated Claims), metadata
+        Dict with keys: xrd, composition, xr, prerequisites, managed_resources (curated XR instances), metadata
     """
     _xr_kind = _to_xr_kind(stack_name)
     _instance_name = "${_sanitize(stack_name)}-workload"
@@ -434,7 +431,7 @@ generate_crossplane_from_stack = lambda components: [component.ComponentInstance
     # Separate curated (Track 1) from bridge (Track 2) resources
     _managed_resources = [
         r._resource for r in _acc_resources_all
-        if r._type == "claim"
+        if r._type == "managed"
     ]
     _bridge_resources = [
         r._resource for r in _acc_resources_all

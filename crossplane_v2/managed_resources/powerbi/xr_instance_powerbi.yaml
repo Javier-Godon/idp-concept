@@ -1,11 +1,11 @@
-## Example Power BI Connector Claim (XR Consumer)
+## Example Power BI Connector XR instances
 ##
 ## Usage: kubectl apply -f xr_instance_powerbi.yaml
 ## This creates configuration maps that operations can use to configure Power BI
 ## to connect to QuestDB, Superset, and PostgreSQL.
 
 apiVersion: koncept.bluesolution.es/v1alpha1
-kind: PowerBIConnector
+kind: XPowerBIConnector
 metadata:
   name: prod-analytics-connector
 spec:
@@ -31,7 +31,7 @@ spec:
 ---
 ## Example: Development analytics connector
 apiVersion: koncept.bluesolution.es/v1alpha1
-kind: PowerBIConnector
+kind: XPowerBIConnector
 metadata:
   name: dev-analytics-connector
 spec:
@@ -54,7 +54,7 @@ spec:
 ---
 ## Example: Local/testing connector
 apiVersion: koncept.bluesolution.es/v1alpha1
-kind: PowerBIConnector
+kind: XPowerBIConnector
 metadata:
   name: local-analytics-connector
 spec:

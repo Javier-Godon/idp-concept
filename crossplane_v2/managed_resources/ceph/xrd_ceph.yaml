@@ -14,9 +14,6 @@ spec:
   names:
     kind: XCephCluster
     plural: xcephphylaxes
-  claimNames:
-    kind: CephCluster
-    plural: cephclusters
   defaultCompositionRef:
     name: xcephphylax-helm-composition
   versions:
@@ -58,7 +55,7 @@ spec:
                   description: Kubernetes namespace where Rook Ceph operator and cluster resources run.
                 clusterName:
                   type: string
-                  description: Ceph cluster name (Claim name if unset).
+                  description: Ceph cluster name (XR name if unset).
                   default: ""
                 chartVersion:
                   type: string

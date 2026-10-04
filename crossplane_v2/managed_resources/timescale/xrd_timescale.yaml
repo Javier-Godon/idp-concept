@@ -14,10 +14,6 @@ spec:
   names:
     kind: XTimescaleDBInstance
     plural: xtimescaledbinstances
-  # Namespace-scoped Claims for product teams
-  claimNames:
-    kind: TimescaleDBInstance
-    plural: timescaledbinstances
   defaultCompositionRef:
     name: xtimescaledbinstance-cnpg-composition
   versions:
@@ -59,7 +55,7 @@ spec:
                   description: Kubernetes namespace where the TimescaleDB cluster runs.
                 clusterName:
                   type: string
-                  description: Release name / cluster identifier (Claim name if unset).
+                  description: Release name / cluster identifier (XR name if unset).
                   default: ""
                 instances:
                   type: integer

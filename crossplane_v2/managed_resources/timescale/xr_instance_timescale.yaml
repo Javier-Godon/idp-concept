@@ -1,8 +1,7 @@
-apiVersion: konzept.bluesolution.es/v1alpha1
-kind: TimescaleDBInstance
+apiVersion: koncept.bluesolution.es/v1alpha1
+kind: XTimescaleDBInstance
 metadata:
   name: example-timescale
-  namespace: data
   labels:
     environment: production
 spec:
@@ -56,11 +55,10 @@ spec:
     bgwriter_lru_maxpages: "100"
 
 ---
-apiVersion: konzept.bluesolution.es/v1alpha1
-kind: TimescaleDBInstance
+apiVersion: koncept.bluesolution.es/v1alpha1
+kind: XTimescaleDBInstance
 metadata:
   name: example-timescale-dev
-  namespace: data
   labels:
     environment: development
 spec:
@@ -95,11 +93,10 @@ apiVersion: koncept.bluesolution.es/v1alpha1
 kind: XTimescaleDBInstance
 metadata:
   name: infrastructure-timescale-production
-  namespace: crossplane-system
   labels:
     tier: platform-infrastructure
 spec:
-  # Cluster-scoped XR for platform team (not a Claim)
+  # Cluster-scoped XR for platform team (Crossplane v2 has no Claims)
   clusterName: platform-timescale
   namespace: timescaledb-system
 

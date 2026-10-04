@@ -17,14 +17,14 @@
 |------|---------|--------|
 | `xrd_mongodb.yaml` | CompositeResourceDefinition for `XMongoDBInstance` | ✅ Complete |
 | `x_mongodb.yaml` | Composition + function pipeline | ✅ Complete |
-| `xr_instance_mongodb.yaml` | Cluster XR + Namespace Claim examples | ✅ Complete |
+| `xr_instance_mongodb.yaml` | Multiple XR examples (platform & product-team sizes) | ✅ Complete |
 
 ### NEW ✅ RabbitMQ (`crossplane_v2/managed_resources/rabbitmq/`)
 | File | Purpose | Status |
 |------|---------|--------|
 | `xrd_rabbitmq.yaml` | CompositeResourceDefinition for `XRabbitMQCluster` | ✅ Complete |
 | `x_rabbitmq.yaml` | Composition + function pipeline | ✅ Complete |
-| `xr_instance_rabbitmq.yaml` | Cluster XR + Namespace Claim examples | ✅ Complete |
+| `xr_instance_rabbitmq.yaml` | Multiple XR examples (platform & product-team sizes) | ✅ Complete |
 
 ### NEW ✅ Redis (`crossplane_v2/managed_resources/redis/`)
 | File | Purpose | Status |
@@ -119,22 +119,19 @@
 ### All Resources
 - **API Group**: `koncept.bluesolution.es`
 - **API Version**: `v1alpha1`
-- **Scope**: Mix of Cluster-scoped XRDs + Namespace-scoped Claims
+- **Scope**: All XRDs are `scope: Cluster` (Crossplane v2 does not support Claims)
 
 ### Example APIs Available
 ```bash
-# Cluster-scoped (platform-owned)
+# Cluster-scoped (all APIs; self-service via RBAC on the X<Resource> kind, not a claim)
 kubectl get xpostgresinstances.koncept.bluesolution.es
 kubectl get xkafkazustrizmis.koncept.bluesolution.es
 kubectl get xmongodbinstances.koncept.bluesolution.es
 kubectl get xredisinstances.koncept.bluesolution.es
 # ... etc
 
-# Namespace-scoped (product team claims)
-kubectl get postgresinstance -n myapp
-kubectl get mongodbinstance -n myapp
-kubectl get redisinstance -n myapp
-# ... etc
+# Each XR targets a namespace via its own spec.namespace field
+kubectl get xpostgresinstance -o jsonpath='{.items[*].spec.namespace}'
 ```
 
 ---
@@ -157,7 +154,7 @@ kubectl get redisinstance -n myapp
 
 ### All Examples Include ✅
 - Cluster-scoped XR (platform usage)
-- Namespace-scoped Claim (product team usage)
+- Additional XR example (product-team usage; RBAC-scoped, not a Claim)
 - Production configuration (HA, proper sizing)
 - Development configuration (minimal resources)
 
@@ -211,13 +208,12 @@ kubectl apply -f crossplane_v2/managed_resources/mongodb/xr_instance_mongodb.yam
 koncept render argocd --factory projects/myapp/pre_releases/factory/ | kubectl apply -f -
 ```
 
-### Namespace-Scoped Claim (Recommended for Product Teams)
+### Product-Team Self-Service (RBAC-Scoped XR, not a Claim)
 ```yaml
 apiVersion: koncept.bluesolution.es/v1alpha1
-kind: MongoDBInstance
+kind: XMongoDBInstance
 metadata:
   name: app-db
-  namespace: myapp
 spec:
   namespace: myapp
   mongodbVersion: "7.0.12"
@@ -228,7 +224,7 @@ spec:
 
 ### Monitoring & Troubleshooting
 ```bash
-kubectl describe mongodbinstance app-db -n myapp
+kubectl describe xmongodbinstance app-db
 kubectl get objects.kubernetes.crossplane.io -n myapp
 kubectl logs -n crossplane-system -f deployment/crossplane
 ```
@@ -342,7 +338,7 @@ kubectl logs -n crossplane-system -f deployment/crossplane
 All 8 core infrastructure services have been implemented with:
 - ✅ CompositeResourceDefinitions (XRDs)
 - ✅ Compositions (function pipelines)
-- ✅ Example instances (both XR and claim patterns)
+- ✅ Example instances (Cluster-scoped XR pattern; Crossplane v2 has no Claims)
 - ✅ Comprehensive documentation
 
 Kibana XRD is defined and ready for Composition work.

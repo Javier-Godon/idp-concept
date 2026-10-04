@@ -2,7 +2,6 @@ apiVersion: koncept.bluesolution.es/v1alpha1
 kind: XExternalDNS
 metadata:
   name: example-external-dns
-  namespace: crossplane-system
 spec:
   provider: aws
   namespace: external-dns

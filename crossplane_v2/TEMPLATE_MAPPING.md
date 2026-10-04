@@ -146,7 +146,7 @@ spec:
 The generated `kcl_to_crossplane` output path should be updated to:
 
 1. **Detect curated APIs**: When rendering a stack that includes MongoDB, RabbitMQ, etc., check if managed resource exists
-2. **Emit managed-resource references**: Instead of wrapping manifests in Object, emit XR/Claim instances
+2. **Emit managed-resource references**: Instead of wrapping manifests in Object, emit XR instances directly (Crossplane v2 has no Claims)
 3. **Fall back to bridge**: For services without curated APIs, use provider-kubernetes Object
 
 ### Before (Today): All manifests wrapped

@@ -1,4 +1,4 @@
-## Valkey XR/Claim instance examples
+## Valkey XR instance examples
 ---
 apiVersion: koncept.bluesolution.es/v1alpha1
 kind: XValkeyInstance
@@ -39,12 +39,11 @@ spec:
   environment: production
   owner: cache-team
 ---
-## Namespace-scoped Claim (product-team usage — preferred)
+## Additional XR example (product-team usage; RBAC-scoped, not a Claim):
 apiVersion: koncept.bluesolution.es/v1alpha1
-kind: ValkeyInstance
+kind: XValkeyInstance
 metadata:
   name: dev-cache
-  namespace: dev-apps
 spec:
   namespace: dev-apps
   mode: standalone

@@ -1,4 +1,4 @@
-## RabbitMQ XR/Claim instance examples
+## RabbitMQ XR instance examples
 ##
 ## Cluster-scoped XR (platform-owned):
 ---
@@ -20,12 +20,11 @@ spec:
   environment: production
   owner: event-team
 ---
-## Namespace-scoped Claim (product-team usage — preferred):
+## Additional XR example (product-team usage; RBAC-scoped, not a Claim):
 apiVersion: koncept.bluesolution.es/v1alpha1
-kind: RabbitMQCluster
+kind: XRabbitMQCluster
 metadata:
   name: messaging-rabbitmq
-  namespace: messaging-system
 spec:
   namespace: messaging-system
   replicas: 3
@@ -37,10 +36,9 @@ spec:
 ---
 ## Development single-node example:
 apiVersion: koncept.bluesolution.es/v1alpha1
-kind: RabbitMQCluster
+kind: XRabbitMQCluster
 metadata:
   name: dev-rabbitmq
-  namespace: dev-messaging
 spec:
   namespace: dev-messaging
   replicas: 1

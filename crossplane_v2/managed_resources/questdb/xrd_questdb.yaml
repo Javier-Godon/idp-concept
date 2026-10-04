@@ -13,9 +13,6 @@ spec:
   names:
     kind: XQuestDBInstance
     plural: xquestdbinstances
-  claimNames:
-    kind: QuestDBInstance
-    plural: questdbinstances
   defaultCompositionRef:
     name: xquestdbinstance-helm-composition
   versions:
@@ -54,7 +51,7 @@ spec:
                   description: Kubernetes namespace where QuestDB runs.
                 clusterName:
                   type: string
-                  description: Release name / cluster identifier (Claim name if unset).
+                  description: Release name / cluster identifier (XR name if unset).
                   default: ""
                 chartVersion:
                   type: string

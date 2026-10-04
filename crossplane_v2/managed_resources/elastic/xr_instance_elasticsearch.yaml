@@ -1,4 +1,4 @@
-## Elasticsearch XR/Claim instance examples
+## Elasticsearch XR instance examples
 ---
 apiVersion: koncept.bluesolution.es/v1alpha1
 kind: XElasticsearchCluster
@@ -19,10 +19,9 @@ spec:
   owner: logging-team
 ---
 apiVersion: koncept.bluesolution.es/v1alpha1
-kind: ElasticsearchCluster
+kind: XElasticsearchCluster
 metadata:
   name: dev-elasticsearch
-  namespace: dev-logging
 spec:
   namespace: dev-logging
   version: "9.4.1"

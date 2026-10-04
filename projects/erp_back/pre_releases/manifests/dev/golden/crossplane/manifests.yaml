@@ -19,9 +19,6 @@ xrd:
     names:
       kind: XErpBack
       plural: xerpbacks
-    claimNames:
-      kind: ErpBack
-      plural: erp backs
     versions:
     - name: v1alpha1
       served: true

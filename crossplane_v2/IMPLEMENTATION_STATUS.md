@@ -13,23 +13,23 @@ The following infrastructure services now have complete Crossplane APIs (XRD + C
 ### 1. **MongoDB** (`mongodb/`)
 - **XRD**: `xrd_mongodb.yaml` — MongoDB Community operator pattern
 - **Composition**: `x_mongodb.yaml` — Provider-kubernetes Object for MongoDBCommunity CRD
-- **Instances**: `xr_instance_mongodb.yaml` — Cluster and Namespace-scoped examples
+- **Instances**: `xr_instance_mongodb.yaml` — multiple XR examples (platform and product-team sizes)
 - **Operator**: MongoDB Community Kubernetes Operator
-- **API**: `koncept.bluesolution.es/v1alpha1` → `XMongoDBInstance` / `MongoDBInstance` (claim)
+- **API**: `koncept.bluesolution.es/v1alpha1` → `XMongoDBInstance`
 
 ### 2. **RabbitMQ** (`rabbitmq/`)
 - **XRD**: `xrd_rabbitmq.yaml` — RabbitMQ Cluster Operator pattern
 - **Composition**: `x_rabbitmq.yaml` — Provider-kubernetes Object for RabbitmqCluster CRD
-- **Instances**: `xr_instance_rabbitmq.yaml` — Cluster and Namespace-scoped examples
+- **Instances**: `xr_instance_rabbitmq.yaml` — multiple XR examples (platform and product-team sizes)
 - **Operator**: RabbitMQ Cluster Operator (Bitnami)
-- **API**: `koncept.bluesolution.es/v1alpha1` → `XRabbitMQCluster` / `RabbitMQCluster` (claim)
+- **API**: `koncept.bluesolution.es/v1alpha1` → `XRabbitMQCluster`
 
 ### 3. **Redis** (`redis/`)
 - **XRD**: `xrd_redis.yaml` — OT-CONTAINER-KIT Redis Operator pattern (standalone + cluster modes)
 - **Composition**: `x_redis.yaml` — Provider-kubernetes Object for Redis/RedisCluster CRD (mode-aware)
 - **Instances**: `xr_instance_redis.yaml` — Standalone and cluster-mode examples
 - **Operator**: OT-CONTAINER-KIT Redis Operator
-- **API**: `koncept.bluesolution.es/v1alpha1` → `XRedisInstance` / `RedisInstance` (claim)
+- **API**: `koncept.bluesolution.es/v1alpha1` → `XRedisInstance`
 - **Features**: Supports `mode: standalone | cluster` with footprint awareness
 
 ### 4. **OpenSearch** (`opensearch/`)
@@ -37,7 +37,7 @@ The following infrastructure services now have complete Crossplane APIs (XRD + C
 - **Composition**: `x_opensearch.yaml` — Provider-kubernetes Object for OpenSearchCluster CRD
 - **Instances**: `xr_instance_opensearch.yaml` — Production and development examples
 - **Operator**: OpenSearch K8s Operator
-- **API**: `koncept.bluesolution.es/v1alpha1` → `XOpenSearchCluster` / `OpenSearchCluster` (claim)
+- **API**: `koncept.bluesolution.es/v1alpha1` → `XOpenSearchCluster`
 - **Features**: Includes integrated Dashboards support
 
 ### 5. **MinIO** (`minio/`)
@@ -45,7 +45,7 @@ The following infrastructure services now have complete Crossplane APIs (XRD + C
 - **Composition**: `x_minio.yaml` — Provider-kubernetes Object for Tenant CRD
 - **Instances**: `xr_instance_minio.yaml` — Production and development examples
 - **Operator**: MinIO Operator (archived March 2026; Helm chart recommended for new deployments)
-- **API**: `koncept.bluesolution.es/v1alpha1` → `XMinIOTenant` / `MinIOTenant` (claim)
+- **API**: `koncept.bluesolution.es/v1alpha1` → `XMinIOTenant`
 - **Note**: Consider migration to Helm chart-based approach for new deployments
 
 ### 6. **Vault/VSO** (`vault/`)
@@ -53,7 +53,7 @@ The following infrastructure services now have complete Crossplane APIs (XRD + C
 - **Composition**: `x_vault.yaml` — Provider-kubernetes Object for VaultConnection/VaultAuth CRDs
 - **Instances**: `xr_instance_vault.yaml` — Kubernetes auth and JWT auth examples
 - **Operator**: HashiCorp Vault Secrets Operator (BUSL-1.1)
-- **API**: `koncept.bluesolution.es/v1alpha1` → `XVaultInstance` / `VaultInstance` (claim)
+- **API**: `koncept.bluesolution.es/v1alpha1` → `XVaultInstance`
 - **Features**: Supports multiple auth methods (kubernetes, jwt, approle)
 - **License Note**: BUSL-1.1 (not fully open-source); consider ExternalSecrets Operator for Apache-2.0 alternative
 
@@ -62,7 +62,7 @@ The following infrastructure services now have complete Crossplane APIs (XRD + C
 - **Composition**: `x_questdb.yaml` — Provider-helm Release (no native operator)
 - **Instances**: `xr_instance_questdb.yaml` — Production and development examples
 - **Deployment**: Bitnami Helm chart (no Kubernetes operator available)
-- **API**: `koncept.bluesolution.es/v1alpha1` → `XQuestDBInstance` / `QuestDBInstance` (claim)
+- **API**: `koncept.bluesolution.es/v1alpha1` → `XQuestDBInstance`
 - **Features**: Time-series database; storage, ports, and resources configurable
 
 ### 8. **Elasticsearch** (`elastic/xrd_elasticsearch.yaml` + `x_elasticsearch.yaml`)
@@ -70,7 +70,7 @@ The following infrastructure services now have complete Crossplane APIs (XRD + C
 - **Composition**: `x_elasticsearch.yaml` — Provider-kubernetes Object for Elasticsearch CRD (v9.x via ECK)
 - **Instances**: `xr_instance_elasticsearch.yaml` — Production and development examples
 - **Operator**: ECK (Elastic's official Kubernetes operator)
-- **API**: `koncept.bluesolution.es/v1alpha1` → `XElasticsearchCluster` / `ElasticsearchCluster` (claim)
+- **API**: `koncept.bluesolution.es/v1alpha1` → `XElasticsearchCluster`
 - **License**: Elastic v2 (not fully CNCF-open)
 
 ### 9. **Kibana** (`elastic/x_kibana.yaml`)
@@ -78,35 +78,35 @@ The following infrastructure services now have complete Crossplane APIs (XRD + C
 - **Composition**: `x_kibana.yaml` — Provider-kubernetes Object for Kibana CRD (ECK)
 - **Instances**: `xr_instance_kibana.yaml` — Production and development examples
 - **Operator**: ECK (Elastic Cloud on Kubernetes)
-- **API**: `koncept.bluesolution.es/v1alpha1` → `XKibanaInstance` / `KibanaInstance` (claim)
+- **API**: `koncept.bluesolution.es/v1alpha1` → `XKibanaInstance`
 
 ### 10. **Logstash** (`elastic/x_logstash.yaml`)
 - **XRD**: `xrd_logstash.yaml` — API definition (XLogstashInstance)
 - **Composition**: `x_logstash.yaml` — Provider-kubernetes Object for Logstash CRD (ECK)
 - **Instances**: `xr_instance_logstash.yaml` — Production and development examples
 - **Operator**: ECK (Elastic Cloud on Kubernetes)
-- **API**: `koncept.bluesolution.es/v1alpha1` → `XLogstashInstance` / `LogstashInstance` (claim)
+- **API**: `koncept.bluesolution.es/v1alpha1` → `XLogstashInstance`
 
 ### 11. **OpenTelemetry Collector** (`opentelemetry/x_otel_collector.yaml`)
 - **XRD**: `xrd_otel_collector.yaml` — API definition (XOpenTelemetryCollector, mode-aware)
 - **Composition**: `x_otel_collector.yaml` — Provider-helm Release for operator
 - **Instances**: `xr_instance_otel_collector.yaml` — Deployment, DaemonSet, StatefulSet modes
 - **Deployment Method**: Helm chart (open-telemetry/opentelemetry-operator)
-- **API**: `koncept.bluesolution.es/v1alpha1` → `XOpenTelemetryCollector` / `OpenTelemetryCollector` (claim)
+- **API**: `koncept.bluesolution.es/v1alpha1` → `XOpenTelemetryCollector`
 
 ### 12. **Data Prepper** (`dataprepper/x_dataprepper.yaml`)
 - **XRD**: `xrd_dataprepper.yaml` — API definition (XDataPrepperPipeline)
 - **Composition**: `x_dataprepper.yaml` — Kubernetes-native Deployment + Service + ConfigMap
 - **Instances**: `xr_instance_dataprepper.yaml` — Production and development examples
 - **Deployment Method**: Native Kubernetes (no dedicated operator)
-- **API**: `koncept.bluesolution.es/v1alpha1` → `XDataPrepperPipeline` / `DataPrepperPipeline` (claim)
+- **API**: `koncept.bluesolution.es/v1alpha1` → `XDataPrepperPipeline`
 
 ### 13. **Valkey** (`valkey/x_valkey.yaml`)
 - **XRD**: `xrd_valkey.yaml` — API definition (XValkeyInstance, mode-aware)
 - **Composition**: `x_valkey.yaml` — Provider-kubernetes Object for Valkey/ValkeyCluster CRD
 - **Instances**: `xr_instance_valkey.yaml` — Standalone, Cluster-mode, and dev examples
 - **Operator**: OT-CONTAINER-KIT Redis Operator (Redis-compatible)
-- **API**: `koncept.bluesolution.es/v1alpha1` → `XValkeyInstance` / `ValkeyInstance` (claim)
+- **API**: `koncept.bluesolution.es/v1alpha1` → `XValkeyInstance`
 - **License**: GPL (vs Redis SSPL)
 
 ---
@@ -162,7 +162,7 @@ The following infrastructure services now have complete Crossplane APIs (XRD + C
 
 3. **Storage Classes**: All XRDs accept optional `storageClass` fields. Default to cluster default if unset.
 
-4. **RBAC & Least Privilege**: Each XR includes `owner` label for team-based RBAC. Document namespace-scoped claim usage for product teams.
+4. **RBAC & Least Privilege**: Each XR includes `owner` label for team-based RBAC. Grant product teams RBAC on the specific `X<Resource>` kind rather than a separate claim kind (Crossplane v2 has no Claims).
 
 ---
 
@@ -282,7 +282,7 @@ The generated `framework/procedures/kcl_to_crossplane.k` should be updated to:
 - **Composition**: `x_openbao.yaml` — Provider-helm Release (open-telemetry/opentelemetry-operator)
 - **Instances**: `xr_instance_openbao.yaml` — Production and development examples
 - **Deployment**: Helm chart (openbao/openbao - CNCF open-source)
-- **API**: `koncept.bluesolution.es/v1alpha1` → `XOpenBaoInstance` / `OpenBaoInstance` (claim)
+- **API**: `koncept.bluesolution.es/v1alpha1` → `XOpenBaoInstance`
 - **Features**: Mode-aware (standalone/ha), TLS configurable, UI support
 - **License**: CNCF/Apache 2.0 (open-source alternative to Vault BUSL-1.1)
 
@@ -291,7 +291,7 @@ The generated `framework/procedures/kcl_to_crossplane.k` should be updated to:
 - **Composition**: `x_fluentbit.yaml` — Provider-kubernetes Object for Deployment + DaemonSet + ConfigMap
 - **Instances**: `xr_instance_fluentbit.yaml` — Single-instance, DaemonSet, and dev examples
 - **Deployment**: Kubernetes-native (no operator)
-- **API**: `koncept.bluesolution.es/v1alpha1` → `XFluentBitInstance` / `FluentBitInstance` (claim)
+- **API**: `koncept.bluesolution.es/v1alpha1` → `XFluentBitInstance`
 - **Features**: Mode-aware (deployment/daemonset), metrics exposure, version-pinning enforced
 - **License**: Apache 2.0 (open-source)
 
@@ -302,7 +302,7 @@ The generated `framework/procedures/kcl_to_crossplane.k` should be updated to:
 - **Composition**: `x_timescale.yaml` — Provider-kubernetes Object for CNPG Cluster CRD with TimescaleDB extension
 - **Instances**: `xr_instance_timescale.yaml` — Production, development, and infrastructure examples
 - **Deployment**: CloudNativePG operator with TimescaleDB extension
-- **API**: `koncept.bluesolution.es/v1alpha1` → `XTimescaleDBInstance` / `TimescaleDBInstance` (claim)
+- **API**: `koncept.bluesolution.es/v1alpha1` → `XTimescaleDBInstance`
 - **Features**: Time-series DB (PostgreSQL+TimescaleDB), footprint-aware, WAL storage separation, Pod Disruption Budgets
 - **License**: Apache 2.0 (TimescaleDB extension)
 
@@ -311,7 +311,7 @@ The generated `framework/procedures/kcl_to_crossplane.k` should be updated to:
 - **Composition**: `x_ceph.yaml` — Provider-helm Release + Operator CRD for Ceph cluster
 - **Instances**: `xr_instance_ceph.yaml` — Production, development, and infrastructure examples
 - **Deployment**: Rook Ceph operator via Helm, creates CephCluster + CephBlockPool + StorageClass
-- **API**: `koncept.bluesolution.es/v1alpha1` → `XCephCluster` / `CephCluster` (claim)
+- **API**: `koncept.bluesolution.es/v1alpha1` → `XCephCluster`
 - **Features**: Distributed block storage, replication control (1–3), Ceph Dashboard, CSI drivers, device discovery modes
 - **License**: Apache 2.0 (Rook + Ceph)
 - **Tier**: Platform Tier 0 (infrastructure foundation)
@@ -321,7 +321,7 @@ The generated `framework/procedures/kcl_to_crossplane.k` should be updated to:
 - **Composition**: `x_longhorn.yaml` — Provider-helm Release for Longhorn storage manager
 - **Instances**: `xr_instance_longhorn.yaml` — Production, development, and infrastructure examples
 - **Deployment**: Longhorn via Helm (Bitnami chart), creates StorageClass for dynamic provisioning
-- **API**: `koncept.bluesolution.es/v1alpha1` → `XLonghornInstance` / `LonghornInstance` (claim)
+- **API**: `koncept.bluesolution.es/v1alpha1` → `XLonghornInstance`
 - **Features**: Lightweight distributed storage, replica control, snapshots/backups, volume expansion, HA failover
 - **License**: Apache 2.0 (Longhorn)
 - **Tier**: Platform Tier 1 (operators/control-plane services)
@@ -331,7 +331,7 @@ The generated `framework/procedures/kcl_to_crossplane.k` should be updated to:
 - **Composition**: `x_observability.yaml` — Provider-helm Composite (Prometheus + Grafana + Alertmanager)
 - **Instances**: `xr_instance_observability.yaml` — Production, development, and infrastructure examples
 - **Deployment**: Three Helm releases (kube-prometheus + Grafana + Alertmanager)
-- **API**: `koncept.bluesolution.es/v1alpha1` → `XObservabilityProvisioner` / `ObservabilityProvisioner` (claim)
+- **API**: `koncept.bluesolution.es/v1alpha1` → `XObservabilityProvisioner`
 - **Features**: Full monitoring stack, all 3 components configurable, footprint-aware retention (1–90d), HA Alertmanager
 - **License**: Apache 2.0 / AGPL (Prometheus, Grafana, Alertmanager)
 - **Tier**: Platform Tier 2 (observability services)
@@ -343,7 +343,7 @@ The generated `framework/procedures/kcl_to_crossplane.k` should be updated to:
 - **Composition**: `x_cert_manager.yaml` — Provider-helm Release
 - **Instances**: `xr_instance_cert_manager.yaml` — Production example with Let's Encrypt ACME
 - **Deployment**: Bitnami Helm chart (cert-manager)
-- **API**: `koncept.bluesolution.es/v1alpha1` → `XCertManager` / `CertManager` (claim)
+- **API**: `koncept.bluesolution.es/v1alpha1` → `XCertManager`
 - **Features**: ACME certificate provisioning, automatic renewal, webhook + API + controller HA
 - **License**: Apache 2.0 (cert-manager)
 - **Tier**: Platform Tier 0 (security infrastructure - certificates required by most workloads)
@@ -353,7 +353,7 @@ The generated `framework/procedures/kcl_to_crossplane.k` should be updated to:
 - **Composition**: `x_external_dns.yaml` — Provider-helm Release
 - **Instances**: `xr_instance_external_dns.yaml` — AWS Route 53 example
 - **Deployment**: Bitnami Helm chart (external-dns)
-- **API**: `koncept.bluesolution.es/v1alpha1` → `XExternalDNS` / `ExternalDNS` (claim)
+- **API**: `koncept.bluesolution.es/v1alpha1` → `XExternalDNS`
 - **Features**: Multi-provider support (AWS/Azure/GCP/Cloudflare), automatic DNS record sync, multiple sources (Ingress/Service/Gateway)
 - **License**: Apache 2.0 (external-dns)
 - **Tier**: Platform Tier 0 (essential for DNS automation)
@@ -363,7 +363,7 @@ The generated `framework/procedures/kcl_to_crossplane.k` should be updated to:
 - **Composition**: `x_gateway_api.yaml` — Provider-helm Release + Gateway API CRD
 - **Instances**: `xr_instance_gateway_api.yaml` — Envoy Gateway example
 - **Deployment**: Helm chart (envoy-gateway, nginx-gateway, or istio)
-- **API**: `koncept.bluesolution.es/v1alpha1` → `XGateway` / `Gateway` (claim)
+- **API**: `koncept.bluesolution.es/v1alpha1` → `XGateway`
 - **Features**: Modern API Gateway API (replaces legacy Ingress), multiple implementations (Envoy/NGINX/Istio), L7 routing,cross-namespace routing
 - **License**: Apache 2.0 (Gateway API spec + implementations)
 - **Tier**: Platform Tier 1 (ingress/API gateway infrastructure)
@@ -373,7 +373,7 @@ The generated `framework/procedures/kcl_to_crossplane.k` should be updated to:
 - **Composition**: `x_network_policies.yaml` — KCL function-based generation of NetworkPolicy resources
 - **Instances**: `xr_instance_network_policies.yaml` — Zero-trust namespaced example
 - **Deployment**: Kubernetes-native NetworkPolicy (requires CNI with NetworkPolicy support: Calico, Cilium, Weave)
-- **API**: `koncept.bluesolution.es/v1alpha1` → `XNetworkPolicies` / `NetworkPolicies` (claim)
+- **API**: `koncept.bluesolution.es/v1alpha1` → `XNetworkPolicies`
 - **Features**: Zero-trust networking, deny-by-default, allow-from ingress/egress, Prometheus monitoring allowlist, DNS egress control
 - **License**: N/A (Kubernetes native) 
 - **Tier**: Platform Tier 0 (security - network isolation/zero-trust)

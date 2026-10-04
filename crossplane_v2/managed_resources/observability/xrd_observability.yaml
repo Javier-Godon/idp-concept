@@ -12,9 +12,6 @@ spec:
   names:
     kind: XObservabilityProvisioner
     plural: xobservabilityprovisioners
-  claimNames:
-    kind: ObservabilityProvisioner
-    plural: observabilityprovisioners
   defaultCompositionRef:
     name: xobservabilityprovisioner-helm-composition
   versions:
@@ -55,13 +52,13 @@ spec:
                   description: Kubernetes namespace where monitoring components run (typically monitoring or observability).
                 releaseName:
                   type: string
-                  description: Helm release name (Claim name if unset).
+                  description: Helm release name (XR name if unset).
                   default: ""
-                promotheusEnabled:
+                prometheusEnabled:
                   type: boolean
                   description: Deploy Prometheus (metrics collection and storage).
                   default: true
-                prometheusCha rtVersion:
+                prometheusChartVersion:
                   type: string
                   description: Bitnami kube-prometheus chart version.
                   default: "10.2.0"
@@ -124,7 +121,7 @@ spec:
                 alertmanagerPods:
                   type: integer
                   description: Number of Alertmanager Pods running.
-                prometheus Url:
+                prometheusUrl:
                   type: string
                   description: Internal Prometheus service URL.
                 grafanaUrl:

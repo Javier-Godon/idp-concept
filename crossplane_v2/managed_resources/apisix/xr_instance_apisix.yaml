@@ -1,10 +1,10 @@
-## Example APISIX Claim (XR Consumer)
+## Example APISIX XR instances
 ##
 ## Usage: kubectl apply -f xr_instance_apisix.yaml
-## This creates an APIGateway claim that triggers the XAPIGateway composition.
+## This creates an XAPIGateway composite resource that triggers the APISIX composition.
 
 apiVersion: koncept.bluesolution.es/v1alpha1
-kind: APIGateway
+kind: XAPIGateway
 metadata:
   name: prod-apisix
 spec:
@@ -24,7 +24,7 @@ spec:
 ---
 ## Example: Development APISIX cluster
 apiVersion: koncept.bluesolution.es/v1alpha1
-kind: APIGateway
+kind: XAPIGateway
 metadata:
   name: dev-apisix
 spec:

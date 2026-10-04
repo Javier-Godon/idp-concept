@@ -39,13 +39,12 @@ kubectl get xmongodbinstances.koncept.bluesolution.es
 kubectl get xredisinstances.koncept.bluesolution.es
 # ... etc
 
-# Create a MongoDB instance (namespace-scoped claim)
+# Create a MongoDB instance (Crossplane v2 has no Claims — apply the XR kind directly)
 kubectl apply -f - <<EOF
 apiVersion: koncept.bluesolution.es/v1alpha1
-kind: MongoDBInstance
+kind: XMongoDBInstance
 metadata:
   name: app-db
-  namespace: app-team
 spec:
   namespace: app-team
   mongodbVersion: "7.0.12"
@@ -56,7 +55,7 @@ spec:
 EOF
 
 # Watch composition reconciliation
-kubectl get mongodbinstance app-db -n app-team -w
+kubectl get xmongodbinstance app-db -w
 
 # Check generated resources
 kubectl get mongodbcommunity -n app-team
@@ -223,7 +222,7 @@ spec:
 ### Upgrade Instance Configuration
 ```bash
 # Change MongoDB from 1 to 3 replicas
-kubectl patch mongodbinstance myapp-db -n myapp --type=merge -p '{"spec":{"members":3}}'
+kubectl patch xmongodbinstance myapp-db --type=merge -p '{"spec":{"members":3}}'
 
 # Watch reconciliation
 kubectl get mongodbcommunity -n myapp -w
@@ -238,7 +237,7 @@ kubectl get pod -n myapp -l app=mongodb
 kubectl get secrets -n app-team | grep -i mongo
 
 # Or check XR status
-kubectl describe mongodbinstance myapp-db -n myapp
+kubectl describe xmongodbinstance myapp-db
 ```
 
 ### Troubleshooting
@@ -246,9 +245,8 @@ kubectl describe mongodbinstance myapp-db -n myapp
 # Check composition status
 kubectl get composition
 
-# Check XR/claim detailed status
+# Check XR detailed status
 kubectl describe xmongodbinstance <name>
-kubectl describe mongodbinstance <name> -n <namespace>
 
 # Check composed resources
 kubectl get objects.kubernetes.crossplane.io -n <namespace>
@@ -270,7 +268,7 @@ NAME    NAMESPACE          SIZE/MEMBERS    VERSION    STORAGE    READY   AGE
 
 View full status:
 ```bash
-kubectl get mongodbinstance -n app-team -o wide
+kubectl get xmongodbinstance -o wide
 kubectl get xmongodbinstance -o yaml  # Full XR detail
 ```
 

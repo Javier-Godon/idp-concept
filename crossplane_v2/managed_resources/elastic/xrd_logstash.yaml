@@ -13,9 +13,6 @@ spec:
   names:
     kind: XLogstashInstance
     plural: xlogstashinstances
-  claimNames:
-    kind: LogstashInstance
-    plural: logstashinstances
   defaultCompositionRef:
     name: xlogstashinstance-eck-composition
   versions:
@@ -54,7 +51,7 @@ spec:
                   description: Kubernetes namespace where Logstash runs.
                 clusterName:
                   type: string
-                  description: Name of the Logstash instance (Claim name if unset).
+                  description: Name of the Logstash instance (XR name if unset).
                   default: ""
                 version:
                   type: string

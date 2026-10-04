@@ -13,9 +13,6 @@ spec:
   names:
     kind: XPowerBIConnector
     plural: xpowerbiconnectors
-  claimNames:
-    kind: PowerBIConnector
-    plural: powerbiconnectors
   defaultCompositionRef:
     name: xpowerbiconnector-configmap-composition
   versions:

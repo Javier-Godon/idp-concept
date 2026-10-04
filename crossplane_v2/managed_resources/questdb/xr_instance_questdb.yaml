@@ -1,4 +1,4 @@
-## QuestDB XR/Claim instance examples
+## QuestDB XR instance examples
 ---
 apiVersion: koncept.bluesolution.es/v1alpha1
 kind: XQuestDBInstance
@@ -22,10 +22,9 @@ spec:
   owner: analytics-team
 ---
 apiVersion: koncept.bluesolution.es/v1alpha1
-kind: QuestDBInstance
+kind: XQuestDBInstance
 metadata:
   name: dev-questdb
-  namespace: dev-analytics
 spec:
   namespace: dev-analytics
   chartVersion: "0.32.0"

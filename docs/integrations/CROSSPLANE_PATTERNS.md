@@ -11,7 +11,7 @@ The Crossplane layer provides **Kubernetes-native platform APIs** for infrastruc
 
 ```
 ┌──────────────────────────────────────────────────┐
-│              Platform APIs (XRDs + Claims)        │
+│                 Platform APIs (XRDs)              │
 │  ┌──────────────┐  ┌──────────────────────────┐  │
 │  │ XCertManager │  │ XPostgresInstance         │  │
 │  │ XKafkaStrimzi│  │ XKeycloak                 │  │
@@ -92,7 +92,11 @@ XRDs define the custom API that platform users interact with.
 ### Design Rules
 
 - Model **intent**, not implementation YAML. Inputs should describe database size, HA mode, version, backup policy, exposure, SLO tier, environment, and ownership; they should not expose raw `manifest` blobs.
-- Prefer `scope: Namespaced` plus `claimNames` for tenant-facing APIs. Use `scope: Cluster` only for platform-owned global infrastructure.
+- Use `scope: Cluster` for every managed resource in this repo. Crossplane v2 does **not** support Claims
+  for any XRD scope (`apiextensions.crossplane.io/v2` removed `claimNames` entirely — see
+  [Crossplane v2: What's New](https://docs.crossplane.io/latest/whats-new/)). Self-service for product
+  teams is achieved by granting RBAC on the `X<Resource>` kind directly and targeting the tenant's
+  namespace via the XR's own `spec.namespace` field, not by a separate claim kind.
 - Use OpenAPI validation aggressively: `required`, `enum`, `default`, `minimum`, `maximum`, descriptions, and nested objects for related settings.
 - Add `additionalPrinterColumns` for the fields operators need during `kubectl get`: version, namespace, Ready/synced status, endpoint, revision, and age.
 - Add status fields with `ToCompositeFieldPath` or function-generated status updates so the XR shows the important outputs without digging through composed resources.
@@ -111,10 +115,6 @@ spec:
   names:
     kind: X<Resource>
     plural: x<resource>s
-  # Optional: claimNames for namespace-scoped claims
-  claimNames:
-    kind: <Resource>
-    plural: <resource>s
   scope: Cluster
   versions:
     - name: v1alpha1
@@ -173,8 +173,6 @@ spec:
   group: koncept.bluesolution.es
   names:
     kind: XPostgresInstance
-  claimNames:
-    kind: PostgresInstance
   versions:
     - name: v1alpha1
       additionalPrinterColumns: [NAMESPACE, INSTANCES, STORAGE, PG-VERSION, READY, AGE]
@@ -369,9 +367,12 @@ pipeline:
 
 ---
 
-## 5. XR Instance (Claim) Pattern
+## 5. XR Instance Pattern
 
-Create instances of the composite resources. Prefer namespace-scoped Claims for product teams and reserve cluster-scoped XRs for platform-owned operations.
+Create instances of the composite resources directly. Crossplane v2 does not support Claims (see §3), so
+every managed resource in this repo is instantiated as a `scope: Cluster` XR; the XR's own `spec.namespace`
+field targets where composed resources land. Self-service for product teams is granted via RBAC on the
+`X<Resource>` kind, not a separate claim kind.
 
 ```yaml
 apiVersion: koncept.bluesolution.es/v1alpha1
@@ -413,8 +414,8 @@ Crossplane v2 compositions must model connection and status data explicitly:
 
 | Patch Type | Direction | Usage |
 |---|---|---|
-| `FromCompositeFieldPath` | XR → Resource | Inject values from the claim into resources |
-| `ToCompositeFieldPath` | Resource → XR | Expose resource values back to the claim |
+| `FromCompositeFieldPath` | XR → Resource | Inject values from the composite into resources |
+| `ToCompositeFieldPath` | Resource → XR | Expose resource values back to the composite |
 | `CombineFromComposite` | Multiple XR fields → Resource | Combine fields into one |
 
 ### Standard Patch (Most Common)
@@ -501,8 +502,8 @@ No Crossplane v2 API is considered supported until it has tests at these levels:
 | Static render | `koncept render crossplane` or `kcl run ... -D output=crossplane` produces XRD, Composition, XR, prerequisites, and no forbidden large `Object` wrappers. |
 | Local composition render | `crossplane render xr.yaml composition.yaml functions.yaml --include-function-results` succeeds and shows expected desired composed resources. Use `--observed-resources`, `--required-resources`, `--context-files`, or `--context-values` for scenarios that need observed state. |
 | Schema/API checks | XRD OpenAPI has required fields, defaults, enums where appropriate, descriptions, printer columns, and status/connection fields. |
-| Reconciliation test | A kind or real test cluster installs Crossplane, pinned providers/functions, applies the package, creates an XR/Claim, and verifies Synced/Ready plus expected composed resources. |
-| Management test | The test updates a field, verifies the composed resource changes, then deletes the XR/Claim and verifies composed resources are cleaned up or intentionally orphaned. |
+| Reconciliation test | A kind or real test cluster installs Crossplane, pinned providers/functions, applies the package, creates an XR, and verifies Synced/Ready plus expected composed resources. |
+| Management test | The test updates a field, verifies the composed resource changes, then deletes the XR and verifies composed resources are cleaned up or intentionally orphaned. |
 | Drift/upgrade test | Composition changes are rendered through golden snapshots and, for supported APIs, tested against composition revisions or pinned `compositionRevisionRef` rollback. |
 
 Recommended tooling:
@@ -565,7 +566,7 @@ Future scope can extend this same entrypoint with optional cluster reconciliatio
 ## 10. Adding a New Crossplane Managed Resource
 
 1. **Create XRD** (`xrd_<resource>.yaml`):
-   - Define the API group, kind, scope, claimNames, versions, schema, defaults, descriptions, status, connection contract, and printer columns.
+   - Define the API group, kind, scope, versions, schema, defaults, descriptions, status, connection contract, and printer columns.
    - Include only intent-level configurable properties. Do not accept arbitrary raw manifests.
 
 2. **Create Composition** (`x_<resource>.yaml`):
@@ -575,7 +576,7 @@ Future scope can extend this same entrypoint with optional cluster reconciliatio
    - Use provider-kubernetes Object only for small reviewed cluster glue.
 
 3. **Create Instance** (`xr_instance_<resource>.yaml`):
-   - Instantiate the XR or Claim with concrete values and expected status/connection outcomes.
+   - Instantiate the XR with concrete values and expected status/connection outcomes.
 
 4. **Register Functions** (if new functions needed):
    - Add function YAML in `functions/`
@@ -619,7 +620,7 @@ This generates:
 
 - `output/crossplane/xrd.yaml` — CompositeResourceDefinition with `koncept.bluesolution.es/v1alpha1`
 - `output/crossplane/composition.yaml` — Pipeline composition (patch-and-transform → function-sequencer → auto-ready)
-- `output/crossplane/xr.yaml` — Composite Resource claim instance
+- `output/crossplane/xr.yaml` — Composite Resource (XR) instance
 - `output/crossplane/prerequisites/infrastructure.yaml` — Provider + function installs
 
 ### How It Works

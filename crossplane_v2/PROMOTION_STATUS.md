@@ -10,9 +10,9 @@ Before a Crossplane API can be marked **supported**, it must satisfy:
 
 - [ ] **Render Fixture**: Compiles via `crossplane render` without errors
 - [ ] **XRD Schema Review**: Intent-level fields, not raw manifests; OpenAPI validation; meaningful status fields
-- [ ] **Reconciliation Test**: Create XR/Claim → observe Synced=True, Ready=True (real controller running)
+- [ ] **Reconciliation Test**: Create XR → observe Synced=True, Ready=True (real controller running)
 - [ ] **Update Test**: Modify XR field → observe changes propagate to composed resources (no side effects)
-- [ ] **Delete Test**: Delete XR/Claim → observe cleanup or intentional orphaning per policy
+- [ ] **Delete Test**: Delete XR → observe cleanup or intentional orphaning per policy
 - [ ] **Revision Test**: Bump composition revision → observe rollout strategy + proven rollback path
 - [ ] **Documentation**: API reference, example values, troubleshooting guide in `crossplane_v2/<resource>/README.md`
 - [ ] **Production readiness**: Security audit (no overly permissive RBAC), resource limits, observability
@@ -161,12 +161,12 @@ When a new Crossplane API candidate emerges ask:
 Brief description of what this API does and when to use it.
 
 ## Prerequisites
-- Crossplane v1.14+
+- Crossplane v2.0+ (Composite Resources are Cluster-scoped XRs; Claims are not supported)
 - Provider: [specific version]
 - Function: [specific version]
 
 ## Quick Start
-Example XR/Claim creation.
+Example XR creation.
 
 ## Schema Reference
 [Fields, validation rules, defaults]

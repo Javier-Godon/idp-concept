@@ -14,9 +14,6 @@ spec:
   names:
     kind: XOpenBaoInstance
     plural: xopenbaoinstances
-  claimNames:
-    kind: OpenBaoInstance
-    plural: openbaoinstances
   defaultCompositionRef:
     name: xopenbaoinstance-helm-composition
   versions:
@@ -55,7 +52,7 @@ spec:
                   description: Kubernetes namespace where OpenBao runs.
                 clusterName:
                   type: string
-                  description: Release name / cluster identifier (Claim name if unset).
+                  description: Release name / cluster identifier (XR name if unset).
                   default: ""
                 chartVersion:
                   type: string

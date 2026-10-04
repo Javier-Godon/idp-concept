@@ -1,4 +1,4 @@
-## Vault XR/Claim instance examples
+## Vault XR instance examples
 ---
 apiVersion: koncept.bluesolution.es/v1alpha1
 kind: XVaultInstance
@@ -17,10 +17,9 @@ spec:
   owner: vault-team
 ---
 apiVersion: koncept.bluesolution.es/v1alpha1
-kind: VaultInstance
+kind: XVaultInstance
 metadata:
   name: dev-vault
-  namespace: dev-secrets
 spec:
   namespace: dev-secrets
   vaultAddress: "https://vault.dev.internal:8200"

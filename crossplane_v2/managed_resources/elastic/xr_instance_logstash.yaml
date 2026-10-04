@@ -1,4 +1,4 @@
-## Logstash XR/Claim instance examples
+## Logstash XR instance examples
 ---
 apiVersion: koncept.bluesolution.es/v1alpha1
 kind: XLogstashInstance
@@ -19,10 +19,9 @@ spec:
   owner: logging-team
 ---
 apiVersion: koncept.bluesolution.es/v1alpha1
-kind: LogstashInstance
+kind: XLogstashInstance
 metadata:
   name: dev-logstash
-  namespace: dev-logging
 spec:
   namespace: dev-logging
   version: "9.4.1"
