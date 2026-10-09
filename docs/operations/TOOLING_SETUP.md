@@ -9,8 +9,8 @@
 
 | Tool | Used For | Required? | Version Needed |
 |---|---|---|---|
-| **koncept Go CLI** | Primary scaffold/render/validate/policy interface | **REQUIRED** | Build from `cmd/koncept` until release binaries are published |
-| **Go** (`go`) | Builds the `koncept` CLI from source | Required until release binaries are published | v1.23+ |
+| **koncept Go CLI** | Primary scaffold/render/validate/policy interface | **REQUIRED** | Download a [GitHub Release](https://github.com/Javier-Godon/idp-concept/releases) binary (published since `v1.0.0`) |
+| **Go** (`go`) | Builds the `koncept` CLI from source | Optional (contributors only) | v1.23+ |
 | **KCL** (`kcl`) | Direct KCL troubleshooting; installed in the CI image | Recommended locally | v0.11+ |
 | **kubeconform** | Validates rendered K8s manifests against schemas | Recommended | Latest |
 | **Helm** (`helm`) | Lints and templates Helm charts | Recommended | v3+ |
@@ -30,12 +30,13 @@ For Windows/company laptops, prefer WSL2 + Docker Desktop + kind and see [../dev
 Install everything you need for this project without root access, into your user account:
 
 ```bash
-# 1. koncept Go CLI — build until release binaries are published
-# Requires Go on PATH; use your OS package manager, mise, or https://go.dev/doc/install.
-cd cmd/koncept
-make build
+# 1. koncept Go CLI — prebuilt release binary (linux-amd64 shown; also linux-arm64,
+#    darwin-amd64, darwin-arm64, windows-amd64.exe)
+KONCEPT_VERSION="v1.0.0"  # latest at https://github.com/Javier-Godon/idp-concept/releases
 mkdir -p ~/.local/bin
-ln -sf "$(pwd)/bin/koncept" ~/.local/bin/koncept
+curl -fsSL -o ~/.local/bin/koncept \
+  "https://github.com/Javier-Godon/idp-concept/releases/download/${KONCEPT_VERSION}/koncept-linux-amd64"
+chmod +x ~/.local/bin/koncept
 
 # 2. KCL — useful for direct troubleshooting
 #   OR user-local (no root):
@@ -117,16 +118,39 @@ Install tools for all users on the machine. Requires `sudo`.
 
 **Why**: This is the primary supported interface for product teams. It includes project/module/env/release scaffolding, rendering, validation, policy checks, golden drift checks, changelog fragments, dependency diagnostics, and `doctor`.
 
+### Install: Release Binary (Recommended)
+
+Each [GitHub Release](https://github.com/Javier-Godon/idp-concept/releases) publishes, per platform (`linux-amd64`, `linux-arm64`, `darwin-amd64`, `darwin-arm64`, `windows-amd64.exe`): the raw binary, a `.tar.gz`/`.zip` archive, a cosign `.bundle`, a CycloneDX `.sbom.xml`, and a `SHA256SUMS` file.
+
+```bash
+KONCEPT_VERSION="v1.0.0"
+OS=linux ARCH=amd64   # linux|darwin, amd64|arm64
+mkdir -p ~/.local/bin
+curl -fsSL -o ~/.local/bin/koncept \
+  "https://github.com/Javier-Godon/idp-concept/releases/download/${KONCEPT_VERSION}/koncept-${OS}-${ARCH}"
+chmod +x ~/.local/bin/koncept
+koncept --version
+mkdir -p ~/.local/share/bash-completion/completions
+koncept completion bash > ~/.local/share/bash-completion/completions/koncept
+```
+
+Verify with the cosign `.bundle` (see [SUPPLY_CHAIN_SECURITY.md](SUPPLY_CHAIN_SECURITY.md)) or against `SHA256SUMS`.
+
+> **Known issue in `v1.0.0`:** the published `SHA256SUMS` does not match the uploaded binaries
+> (each `make` target rebuilt them with a new timestamp). Verify `v1.0.0` with the cosign bundle;
+> releases built after the reproducible-build fix in `cmd/koncept/Makefile` match `SHA256SUMS`.
+
+### Install: Build From Source (contributors)
+
 ```bash
 cd /path/to/idp-concept/cmd/koncept
 make build
 mkdir -p ~/.local/bin
 ln -sf "$(pwd)/bin/koncept" ~/.local/bin/koncept
 koncept --version
-koncept completion bash > ~/.local/share/bash-completion/completions/koncept
 ```
 
-Release packaging is partially implemented with `make build-all`, `make checksums`, and `make docker`; publishing signed release artifacts is still pending.
+Release packaging: `make build-all`, `make checksums`, `make dist-archives`, `make docker`. Pushing a `v*` tag runs [release.yml](../../.github/workflows/release.yml), which publishes binaries, SBOMs and cosign bundles to the GitHub Release and pushes the image to `ghcr.io/javier-godon/idp-concept/koncept` (not anonymously pullable unless the GHCR package is made public).
 
 ---
 

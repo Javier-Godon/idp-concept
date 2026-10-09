@@ -1,23 +1,26 @@
 BINARY_NAME = koncept
 VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
-BUILD_TIME = $(shell date -u '+%Y-%m-%dT%H:%M:%SZ')
+# Derived from the HEAD commit so repeated builds (checksums, test-binaries,
+# dist-archives) produce byte-identical binaries and SHA256SUMS stays valid.
+BUILD_TIME ?= $(shell TZ=UTC git log -1 --format=%cd --date=format-local:'%Y-%m-%dT%H:%M:%SZ' 2>/dev/null || date -u '+%Y-%m-%dT%H:%M:%SZ')
+GOFLAGS_BUILD = -trimpath
 LDFLAGS = -ldflags "-X github.com/idp-concept/koncept/cmd.version=$(VERSION) -X github.com/idp-concept/koncept/cmd.buildTime=$(BUILD_TIME)"
 
 .PHONY: build build-all build-linux build-darwin build-windows clean test fmt lint install docker checksums verify-checksums test-binaries dist-archives
 
 build:
-	go build $(LDFLAGS) -o bin/$(BINARY_NAME) .
+	go build $(GOFLAGS_BUILD) $(LDFLAGS) -o bin/$(BINARY_NAME) .
 
 build-linux:
-	GOOS=linux GOARCH=amd64 go build $(LDFLAGS) -o bin/$(BINARY_NAME)-linux-amd64 .
-	GOOS=linux GOARCH=arm64 go build $(LDFLAGS) -o bin/$(BINARY_NAME)-linux-arm64 .
+	GOOS=linux GOARCH=amd64 go build $(GOFLAGS_BUILD) $(LDFLAGS) -o bin/$(BINARY_NAME)-linux-amd64 .
+	GOOS=linux GOARCH=arm64 go build $(GOFLAGS_BUILD) $(LDFLAGS) -o bin/$(BINARY_NAME)-linux-arm64 .
 
 build-darwin:
-	GOOS=darwin GOARCH=amd64 go build $(LDFLAGS) -o bin/$(BINARY_NAME)-darwin-amd64 .
-	GOOS=darwin GOARCH=arm64 go build $(LDFLAGS) -o bin/$(BINARY_NAME)-darwin-arm64 .
+	GOOS=darwin GOARCH=amd64 go build $(GOFLAGS_BUILD) $(LDFLAGS) -o bin/$(BINARY_NAME)-darwin-amd64 .
+	GOOS=darwin GOARCH=arm64 go build $(GOFLAGS_BUILD) $(LDFLAGS) -o bin/$(BINARY_NAME)-darwin-arm64 .
 
 build-windows:
-	GOOS=windows GOARCH=amd64 go build $(LDFLAGS) -o bin/$(BINARY_NAME)-windows-amd64.exe .
+	GOOS=windows GOARCH=amd64 go build $(GOFLAGS_BUILD) $(LDFLAGS) -o bin/$(BINARY_NAME)-windows-amd64.exe .
 
 build-all: build-linux build-darwin build-windows
 	@echo "✓ All platform binaries built successfully"
