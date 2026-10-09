@@ -35,7 +35,7 @@ As of 2026-06-07, the `.github/workflows/release.yml` now includes:
 ### For Teams Installing the CLI
 
 ```bash
-VERSION=v1.0.4
+VERSION=v1.0.5
 BASE=https://github.com/Javier-Godon/idp-concept/releases/download/$VERSION
 
 # Checksums (reliable from v1.0.4; v1.0.0 SHA256SUMS does not match its binaries)
@@ -51,7 +51,7 @@ cosign verify-blob \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com \
   koncept-linux-amd64
 
-# SLSA provenance (releases after v1.0.4; requires slsa-verifier)
+# SLSA provenance (v1.0.5+; requires slsa-verifier)
 curl -fsSLO $BASE/koncept.intoto.jsonl
 slsa-verifier verify-artifact koncept-linux-amd64 \
   --provenance-path koncept.intoto.jsonl \
