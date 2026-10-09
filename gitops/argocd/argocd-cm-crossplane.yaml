@@ -1,0 +1,36 @@
+# Argo CD settings for syncing Crossplane composite resources (XRs).
+# Merge into the existing argocd-cm (do not replace it):
+#   kubectl -n argocd patch configmap argocd-cm --type merge --patch-file gitops/argocd/argocd-cm-crossplane.yaml
+# See https://docs.crossplane.io/latest/guides/crossplane-with-argo-cd/
+data:
+  # Crossplane copies labels onto composed resources; annotation tracking keeps
+  # Argo CD from claiming them as part of the Application.
+  application.resourceTrackingMethod: annotation
+  # Health for koncept XRs: Degraded when composition fails (Synced=False),
+  # Healthy when Ready=True, otherwise Progressing.
+  # ConfigMap keys cannot contain "*", so the group wildcard uses the block format.
+  resource.customizations: |
+    koncept.bluesolution.es/*:
+      health.lua: |
+        health_status = {status = "Progressing", message = "Waiting for Crossplane to reconcile"}
+        if obj.status == nil or obj.status.conditions == nil then
+          return health_status
+        end
+        for _, condition in ipairs(obj.status.conditions) do
+          if condition.type == "Synced" and condition.status == "False" then
+            health_status.status = "Degraded"
+            health_status.message = condition.message or condition.reason
+            return health_status
+          end
+        end
+        for _, condition in ipairs(obj.status.conditions) do
+          if condition.type == "Ready" then
+            if condition.status == "True" then
+              health_status.status = "Healthy"
+              health_status.message = "Resource is up-to-date"
+            else
+              health_status.message = condition.message or condition.reason
+            end
+          end
+        end
+        return health_status

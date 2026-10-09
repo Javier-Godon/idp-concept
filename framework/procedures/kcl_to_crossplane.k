@@ -172,9 +172,11 @@ _process_components = lambda components: [component.ComponentInstance], meta: an
 
 # --- Convergence Logic: Generate curated XR or bridge Object ---
 
-_generate_curated_instance = lambda accessory_name: str, namespace: str, component: str, api_info: {str:}, meta: any = Undefined -> {str:} {
+_generate_curated_instance = lambda accessory_name: str, namespace: str, component: str, api_info: {str:}, meta: any = Undefined, xr_spec: {str:} = {} -> {str:} {
     """Generate a composite resource (XR) instance for a curated managed resource.
     Crossplane v2 has no Claims, so the curated XR kind is emitted directly.
+    `xr_spec` carries the template's typed settings (AccessoryInstance.crossplaneSpec);
+    fields it omits fall back to the XRD defaults.
     Example: MongoDB accessory → XMongoDBInstance"""
     _xrd_kind = (api_info["xrd_kind"] if "xrd_kind" in api_info else "")
     _api_group = (api_info["api_group"] if "api_group" in api_info else "koncept.bluesolution.es")
@@ -182,7 +184,7 @@ _generate_curated_instance = lambda accessory_name: str, namespace: str, compone
         apiVersion = "${_api_group}/v1alpha1"
         kind = _xrd_kind
         metadata.name = _sanitize(accessory_name)
-        spec.namespace = namespace
+        spec = {namespace = namespace} | (xr_spec or {})
     }, meta) if _xrd_kind else {}
 }
 
@@ -193,7 +195,7 @@ _process_accessories = lambda accessories: [accessory.AccessoryInstance], meta: 
     Track 2 (Bridge): Wraps remaining manifests in Object resources for backward compatibility
     """
     # Track 1: Curated managed resources (XR instances for infrastructure services)
-    _curated = [{_type = "managed", _resource = _generate_curated_instance(acc.name, acc.namespace, acc.component, _get_curated_api_info(acc.component), meta)} for acc in (accessories if accessories else []) if _is_curated_service(acc.component) and _get_curated_api_info(acc.component)]
+    _curated = [{_type = "managed", _resource = _generate_curated_instance(acc.name, acc.namespace, acc.component, _get_curated_api_info(acc.component), meta, acc.crossplaneSpec)} for acc in (accessories if accessories else []) if _is_curated_service(acc.component) and _get_curated_api_info(acc.component)]
 
     # Track 2: Bridge objects (for unmodeled services)
     # Collect all manifests from non-curated accessories

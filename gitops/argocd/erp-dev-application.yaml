@@ -1,0 +1,23 @@
+# Syncs the rendered erp dev crossplane output (`koncept render crossplane`
+# in projects/erp/pre_releases/manifests/dev) from Git. Crossplane then
+# reconciles each XR through crossplane_v2/managed_resources.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: erp-dev
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: erp
+  source:
+    repoURL: https://github.com/Javier-Godon/idp-concept.git
+    targetRevision: main
+    path: projects/erp/pre_releases/manifests/dev/output/crossplane/managed_resources
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: erp-data
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

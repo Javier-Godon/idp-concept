@@ -1,21 +1,23 @@
-## Valkey Composition — OT-CONTAINER-KIT Operator pattern
+## Valkey Composition — OT-CONTAINER-KIT redis-operator pattern
 ##
 ## Valkey is a Redis-protocol-compatible open-source cache (BSD-3-Clause; forked from Redis
 ## after Redis's 2024 license change to SSPL/RSALv2).
 ##
-## Operator choice: this composition reuses OT-CONTAINER-KIT/redis-operator (actively maintained —
-## verify via github.com/OT-CONTAINER-KIT/redis-operator releases or quay.io/opstree/redis-operator
-## tags, NOT its stale/abandoned Docker Hub mirror) rather than valkey-io/valkey-operator, the
-## official Valkey project operator, because that operator's own README states it is still in
-## "early development" and "not ready for production use" (pre-1.0 as of this writing). Valkey
-## works with the Redis operator's `Redis`/`RedisCluster` CRDs via image substitution only — this
-## is not officially documented/tested by the OT-CONTAINER-KIT maintainers for Valkey specifically,
-## but is functionally sound since Valkey is wire/CLI-compatible with Redis OSS at the fork point.
-## Revisit this choice once valkey-io/valkey-operator reaches a stable release.
+## Operator choice: OT-CONTAINER-KIT/redis-operator (quay.io/opstree/redis-operator) rather than
+## valkey-io/valkey-operator, which its README still describes as early development. The operator's
+## `Redis` (standalone) and `RedisReplication` CRDs run the stock `valkey/valkey` image unchanged
+## (verified on operator v0.26.0 with valkey/valkey:8.1.10: PING, persistence, replica link up).
+## `RedisCluster` is intentionally NOT offered: it relies on the opstree image entrypoint to set
+## `cluster-enabled yes`, so with the stock Valkey image pods turn Ready but the cluster never forms.
 ##
-## Prerequisite: OT-CONTAINER-KIT Redis Operator must be installed on the cluster.
-## Install via Helm: helm repo add ot-helm https://ot-container-kit.github.io/helm-charts
-##                  helm install redis-operator ot-helm/redis-operator -n redis-operator
+## Readiness: the operator CRs expose no Ready condition, so an observe-only Object watches the
+## StatefulSet the operator creates and is Ready only when all replicas are ready.
+##
+## Prerequisites (cluster bootstrap, see crossplane_v2/functions and providers):
+##   - redis-operator:  helm repo add ot-helm https://ot-container-kit.github.io/helm-charts
+##                      helm install redis-operator ot-helm/redis-operator --version 0.26.1 -n redis-operator --create-namespace
+##   - provider-kubernetes with ProviderConfig `provider-kubernetes`
+##   - function-kcl, function-auto-ready
 
 apiVersion: apiextensions.crossplane.io/v1
 kind: Composition
@@ -25,7 +27,6 @@ metadata:
     koncept.io/operator: "ot-redis"
     koncept.io/pattern: "operator-native-crd"
     koncept.io/bridge-pattern: "false"
-    koncept.io/note: "Valkey uses Redis-compatible operator (OT-CONTAINER-KIT). Mode selection (standalone vs cluster) is handled by function-kcl, which renders exactly one resource variant — function-patch-and-transform has no mechanism to conditionally exclude a resource."
 spec:
   compositeTypeRef:
     apiVersion: koncept.bluesolution.es/v1alpha1
@@ -41,16 +42,24 @@ spec:
         kind: KCLInput
         spec:
           source: |
-            _oxr = option("params").oxr
+            _params = option("params")
+            _oxr = _params.oxr
+            _ocds = _params.ocds or {}
             _ox = _oxr.spec
-            _base_name = _ox.clusterName if _ox.clusterName else _oxr.metadata.name
+            _name = _ox.clusterName if _ox.clusterName else _oxr.metadata.name
+            _ns = _ox.namespace
+            _is_replication = _ox.mode == "replication"
 
             _labels = {
+                "app.kubernetes.io/name" = "valkey"
+                "app.kubernetes.io/instance" = _name
                 "koncept.io/managed-by" = "crossplane"
-                "koncept.io/owner" = _ox.owner
+                "koncept.io/environment" = _ox.environment
+                if _ox.owner:
+                    "koncept.io/owner" = _ox.owner
             }
 
-            _wrap = lambda name: str, manifest: {str:} -> {str:} {
+            _object = lambda name: str, manifest: {str:}, extra: {str:} -> {str:} {
                 {
                     apiVersion = "kubernetes.crossplane.io/v1alpha2"
                     kind = "Object"
@@ -60,87 +69,99 @@ spec:
                     spec = {
                         providerConfigRef.name = "provider-kubernetes"
                         forProvider.manifest = manifest
-                    }
+                    } | extra
                 }
             }
 
-            _namespace = _wrap("ns-valkey", {
+            _is_ready = lambda name: str -> bool {
+                _conditions = _ocds[name]?.Resource?.status?.conditions or []
+                any c in _conditions {
+                    c.type == "Ready" and c.status == "True"
+                }
+            }
+
+            _namespace = _object("namespace", {
                 apiVersion = "v1"
                 kind = "Namespace"
                 metadata = {
-                    name = _ox.namespace
+                    name = _ns
                     labels = _labels
+                }
+            }, {})
+
+            _spec = {
+                kubernetesConfig = {
+                    image = _ox.image
+                    imagePullPolicy = "IfNotPresent"
+                    resources = {
+                        requests = {cpu = _ox.resourceCpuRequest, memory = _ox.resourceMemoryRequest}
+                        limits = {cpu = _ox.resourceCpuLimit, memory = _ox.resourceMemoryLimit}
+                    }
+                }
+                storage.volumeClaimTemplate.spec = {
+                    accessModes = ["ReadWriteOnce"]
+                    resources.requests.storage = _ox.storageSize
+                    if _ox.storageClass:
+                        storageClassName = _ox.storageClass
+                }
+                # valkey/valkey runs as uid/gid 999 and skips its root-only chown step when non-root.
+                podSecurityContext = {
+                    runAsNonRoot = True
+                    runAsUser = 999
+                    runAsGroup = 999
+                    fsGroup = 999
+                    seccompProfile.$type = "RuntimeDefault"
+                }
+                securityContext = {
+                    allowPrivilegeEscalation = False
+                    capabilities.drop = ["ALL"]
+                }
+                if _is_replication:
+                    clusterSize = _ox.nodeCount
+            }
+
+            _valkey = _object("valkey", {
+                apiVersion = "redis.redis.opstreelabs.in/v1beta2"
+                kind = "RedisReplication" if _is_replication else "Redis"
+                metadata = {
+                    name = _name
+                    namespace = _ns
+                    labels = _labels
+                }
+                spec = _spec
+            }, {})
+
+            _statefulset = _object("statefulset", {
+                apiVersion = "apps/v1"
+                kind = "StatefulSet"
+                metadata = {
+                    name = _name
+                    namespace = _ns
+                }
+            }, {
+                managementPolicies = ["Observe"]
+                readiness = {
+                    policy = "DeriveFromCelQuery"
+                    celQuery = "has(object.status.readyReplicas) && object.status.readyReplicas == object.spec.replicas"
                 }
             })
 
-            _resources_spec = {
-                requests = {
-                    cpu = _ox.resourceCpuRequest
-                    memory = _ox.resourceMemoryRequest
-                }
-                limits = {
-                    cpu = _ox.resourceCpuLimit
-                    memory = _ox.resourceMemoryLimit
+            # Create the operator CR only after the namespace exists; never drop it once composed,
+            # otherwise Crossplane would delete it when the namespace Object flaps.
+            _create_valkey = _is_ready("namespace") or "valkey" in _ocds
+            _sts_status = _ocds["statefulset"]?.Resource?.status?.atProvider?.manifest?.status or {}
+
+            _dxr = {
+                **_params.dxr
+                status = {
+                    clusterName = _name
+                    serviceEndpoint = "${_name}.${_ns}.svc.cluster.local:6379"
+                    readyNodes = _sts_status.readyReplicas or 0
                 }
             }
 
-            _vct_spec = {
-                accessModes = ["ReadWriteOnce"]
-                resources = {
-                    requests = {
-                        storage = _ox.storageSize
-                    }
-                }
-            } | ({storageClassName = _ox.storageClass} if _ox.storageClass else {})
-
-            _standalone = _wrap("valkey-standalone", {
-                apiVersion = "redis.redis.opstreelabs.in/v1beta2"
-                kind = "Redis"
-                metadata = {
-                    name = _base_name
-                    namespace = _ox.namespace
-                    labels = _labels
-                }
-                spec = {
-                    image = _ox.image
-                    storage.image.tag = "latest"
-                    volumeClaimTemplate.spec = _vct_spec
-                    resources = _resources_spec
-                }
-            }) if _ox.mode == "standalone" else None
-
-            _cluster = _wrap("valkey-cluster", {
-                apiVersion = "redis.redis.opstreelabs.in/v1beta2"
-                kind = "RedisCluster"
-                metadata = {
-                    name = "${_base_name}-cluster"
-                    namespace = _ox.namespace
-                    labels = _labels
-                }
-                spec = {
-                    image = _ox.image
-                    clusterSize = _ox.nodeCount
-                    volumeClaimTemplate.spec = _vct_spec
-                    resources = _resources_spec
-                }
-            }) if _ox.mode == "cluster" else None
-
-            items = [r for r in [_namespace, _standalone, _cluster] if r is not None]
+            items = [_namespace, _dxr] + ([_valkey, _statefulset] if _create_valkey else [])
 
     - step: automatically-detect-readiness
       functionRef:
         name: function-auto-ready
-
-    - step: sequence-creation
-      functionRef:
-        name: function-sequencer
-      input:
-        apiVersion: sequencer.fn.crossplane.io/v1beta1
-        kind: Input
-        rules:
-          - sequence:
-              - ns-valkey
-              - valkey-standalone
-          - sequence:
-              - ns-valkey
-              - valkey-cluster

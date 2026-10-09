@@ -52,7 +52,9 @@ Current parity (update when you change `managed_resources/`):
 
 - ✅ PostgreSQL (`postgres/*`, CNPG-native), Kafka (`kafka_strimzi/*`), Keycloak (`keycloak/*`),
   cert-manager (`cert_manager/*`).
-- ⬜ Gaps to evaluate: mongodb, rabbitmq, redis/valkey, opensearch, minio, vault/openbao, questdb,
+- 🧪 Valkey (`valkey/*`, OT redis-operator `Redis`/`RedisReplication`): render, reconcile and delete
+  verified on a live cluster; consumed by `projects/erp` through Argo CD.
+- ⬜ Gaps to evaluate: mongodb, rabbitmq, redis, opensearch, minio, vault/openbao, questdb,
   elastic, opentelemetry.
 - 🚫 Excluded by design: webapp, generic database.
 

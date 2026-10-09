@@ -19,16 +19,16 @@ spec:
   environment: production
   owner: app-team
 ---
-## Cluster mode Valkey
+## Replicated Valkey (1 primary + 2 replicas)
 apiVersion: koncept.bluesolution.es/v1alpha1
 kind: XValkeyInstance
 metadata:
-  name: distributed-cache-valkey
+  name: replicated-cache-valkey
 spec:
   namespace: cache-system
-  clusterName: distributed-cache
-  mode: cluster
-  nodeCount: 6
+  clusterName: replicated-cache
+  mode: replication
+  nodeCount: 3
   storageSize: "100Gi"
   storageClass: "fast-nvme"
   image: "valkey/valkey:8.1.10"

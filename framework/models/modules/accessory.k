@@ -12,6 +12,7 @@ schema AccessoryInstance:
     kind: str
     namespace: str
     component?: str = ""
+    crossplaneSpec?: {str:} = {}
     configurations: any
     asset: AccessoryAsset
     leaders: [AccessoryLeader]
@@ -24,6 +25,7 @@ schema Accessory:
         kind = kind
         namespace = namespace
         component = component
+        crossplaneSpec = crossplaneSpec
         configurations = configurations
         asset = asset
         leaders = leaders
@@ -34,6 +36,9 @@ schema Accessory:
     name: str
     namespace: str
     component?: str = ""
+    # XR spec fields for the curated Crossplane API selected by `component`
+    # (see procedures.kcl_to_crossplane). Ignored by every other output format.
+    crossplaneSpec?: {str:} = {}
     configurations: any
     asset: AccessoryAsset
     leaders: [AccessoryLeader]

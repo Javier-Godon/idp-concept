@@ -118,6 +118,10 @@ Install tools for all users on the machine. Requires `sudo`.
 
 **Why**: This is the primary supported interface for product teams. It includes project/module/env/release scaffolding, rendering, validation, policy checks, golden drift checks, changelog fragments, dependency diagnostics, and `doctor`.
 
+> "koncept" and "koncept Go CLI" are the same single binary (written in Go). If you already ran
+> step 1 of the TL;DR, it is installed — this section only adds details and alternatives.
+> You do **not** need Go installed to use it; Go is only needed to build from source.
+
 ### Install: Release Binary (Recommended)
 
 Each [GitHub Release](https://github.com/Javier-Godon/idp-concept/releases) publishes, per platform (`linux-amd64`, `linux-arm64`, `darwin-amd64`, `darwin-arm64`, `windows-amd64.exe`): the raw binary, a `.tar.gz`/`.zip` archive, a cosign `.bundle`, a CycloneDX `.sbom.xml`, and a `SHA256SUMS` file.

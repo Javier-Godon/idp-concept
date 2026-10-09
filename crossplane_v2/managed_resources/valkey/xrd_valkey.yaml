@@ -5,9 +5,9 @@ metadata:
   annotations:
     koncept.io/tier: "2"
     koncept.io/operator: "ot-redis"
-    koncept.io/operator-version: "0.15.x"
-    koncept.io/last-reviewed: "2026-06-04"
-    koncept.io/note: "Valkey uses OT-CONTAINER-KIT Redis Operator (compatible with Redis API)"
+    koncept.io/operator-version: "0.26.x"
+    koncept.io/last-reviewed: "2026-10-09"
+    koncept.io/note: "Valkey on the OT-CONTAINER-KIT Redis Operator with the stock valkey/valkey image. Only standalone and replication are offered: RedisCluster needs the opstree image entrypoint to enable cluster mode."
 spec:
   scope: Cluster
   group: koncept.bluesolution.es
@@ -27,7 +27,7 @@ spec:
         - name: MODE
           type: string
           jsonPath: .spec.mode
-          description: Standalone or Cluster mode
+          description: standalone or replication
         - name: SIZE
           type: integer
           jsonPath: .spec.nodeCount
@@ -35,6 +35,9 @@ spec:
         - name: STORAGE
           type: string
           jsonPath: .spec.storageSize
+        - name: ENDPOINT
+          type: string
+          jsonPath: .status.serviceEndpoint
         - name: READY
           type: string
           jsonPath: .status.conditions[?(@.type=="Ready")].status
@@ -47,7 +50,10 @@ spec:
           properties:
             spec:
               type: object
-              description: Valkey instance (Redis-compatible cache) via OT operator.
+              description: Valkey instance (Redis-compatible cache) via the OT redis-operator.
+              x-kubernetes-validations:
+                - rule: "self.mode != 'replication' || self.nodeCount >= 2"
+                  message: "replication mode requires nodeCount >= 2"
               required:
                 - namespace
                 - mode
@@ -57,21 +63,21 @@ spec:
                   description: Kubernetes namespace where Valkey runs.
                 clusterName:
                   type: string
-                  description: Name of the Valkey instance (XR name if unset).
+                  description: Name of the operator Redis/RedisReplication resource and its Service (XR name if unset).
                   default: ""
                 mode:
                   type: string
-                  description: "Valkey deployment mode: standalone or cluster."
+                  description: "standalone = one node; replication = one primary plus (nodeCount - 1) replicas."
                   enum:
                     - standalone
-                    - cluster
+                    - replication
                   default: standalone
                 nodeCount:
                   type: integer
-                  description: "Number of nodes. Cluster requires 3+."
-                  default: 3
+                  description: "Total nodes in replication mode (primary + replicas, 2+). Ignored in standalone mode."
+                  default: 2
                   minimum: 1
-                  maximum: 32
+                  maximum: 9
                 storageSize:
                   type: string
                   description: PVC storage size per node (e.g., 10Gi, 100Gi).
@@ -135,7 +141,7 @@ spec:
                         type: string
                 clusterName:
                   type: string
-                  description: The name of the generated Valkey/ValkeyCluster resource.
+                  description: The name of the generated Redis/RedisReplication resource.
                 readyNodes:
                   type: integer
                   description: Number of Valkey nodes currently Ready.

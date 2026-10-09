@@ -216,10 +216,10 @@ spec:
 | Elasticsearch | ECK | `helm install elastic-operator elastic/eck-operator -n elastic-system --create-namespace` |
 
 > **Valkey** reuses the OT-CONTAINER-KIT Redis Operator above (same install command) via its
-> `Redis`/`RedisCluster` CRDs with the container image swapped to `valkey/valkey`. This is not
-> officially documented/tested by the operator maintainers for Valkey specifically — it works
-> because Valkey is wire/CLI-compatible with Redis OSS at the point it forked — but is not a
-> vendor-endorsed combination. The official `valkey-io/valkey-operator` exists but its own README
+> `Redis` (standalone) and `RedisReplication` CRDs with the stock `valkey/valkey` image. Verified
+> on operator v0.26.0 with `valkey/valkey:8.1.10`. `RedisCluster` is not offered: it relies on the
+> opstree image entrypoint to enable cluster mode, so with the stock image the cluster never forms.
+> This combination is not officially documented by the operator maintainers. The official `valkey-io/valkey-operator` exists but its own README
 > states it is still in early development and "not ready for production use"; re-evaluate once it
 > reaches a stable release. Note: the OT-CONTAINER-KIT redis-operator itself is actively maintained
 > (check `github.com/OT-CONTAINER-KIT/redis-operator` releases or `quay.io/opstree/redis-operator`

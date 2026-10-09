@@ -102,9 +102,9 @@ The following infrastructure services now have complete Crossplane APIs (XRD + C
 - **API**: `koncept.bluesolution.es/v1alpha1` → `XDataPrepperPipeline`
 
 ### 13. **Valkey** (`valkey/x_valkey.yaml`)
-- **XRD**: `xrd_valkey.yaml` — API definition (XValkeyInstance, mode-aware)
-- **Composition**: `x_valkey.yaml` — Provider-kubernetes Object for Valkey/ValkeyCluster CRD
-- **Instances**: `xr_instance_valkey.yaml` — Standalone, Cluster-mode, and dev examples
+- **XRD**: `xrd_valkey.yaml` — API definition (XValkeyInstance; `standalone` or `replication`)
+- **Composition**: `x_valkey.yaml` — function-kcl renders the OT operator `Redis`/`RedisReplication` CR plus an observe-only StatefulSet Object for readiness; XR status exposes `serviceEndpoint` and `readyNodes`
+- **Instances**: `xr_instance_valkey.yaml` — Standalone, replication, and dev examples
 - **Operator**: OT-CONTAINER-KIT Redis Operator (Redis-compatible)
 - **API**: `koncept.bluesolution.es/v1alpha1` → `XValkeyInstance`
 - **License**: GPL (vs Redis SSPL)

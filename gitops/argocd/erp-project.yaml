@@ -1,0 +1,20 @@
+# Least-privilege Argo CD project for erp: it may only sync this repository and
+# only create the curated Crossplane XR kinds the erp stack renders.
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: erp
+  namespace: argocd
+spec:
+  description: erp project (koncept crossplane output)
+  sourceRepos:
+    - https://github.com/Javier-Godon/idp-concept.git
+  destinations:
+    - server: https://kubernetes.default.svc
+      namespace: erp-data
+  clusterResourceWhitelist:
+    - group: koncept.bluesolution.es
+      kind: XValkeyInstance
+  namespaceResourceBlacklist:
+    - group: "*"
+      kind: "*"

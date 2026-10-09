@@ -541,6 +541,10 @@ credentials/
 .idea/
 **/output/
 !cmd/koncept/internal/output/
+# erp is deployed by Argo CD from its rendered crossplane output (see gitops/argocd/)
+!projects/erp/pre_releases/manifests/*/output/
+projects/erp/pre_releases/manifests/*/output/*
+!projects/erp/pre_releases/manifests/*/output/crossplane/
 cmd/koncept/bin/
 
 # Auto-generated KCL test files (kcl test tool)

@@ -44,12 +44,37 @@ schema ValkeySpec:
         replicas >= 2 if mode == "replication" and replicas is not Undefined, "replicas must be >= 2 in replication mode"
         serviceType in ["ClusterIP", "NodePort", "LoadBalancer"] if serviceType is not Undefined, "serviceType must be ClusterIP, NodePort, or LoadBalancer"
 
+schema ValkeySettings:
+    """Effective mode/replicas/storage after footprint defaults; shared by every output path."""
+    spec: ValkeySpec
+    mode: str = "standalone" if spec.footprint in ["local", "development"] and spec.mode == "replication" else spec.mode
+    replicas: int = spec.replicas if spec.replicas is not Undefined else fp.replicas(spec.footprint, 1, 1, 2, 3)
+    storageSize: str = spec.storageSize if spec.storageSize is not Undefined else fp.storage_size(spec.footprint, "512Mi", "1Gi", "4Gi", "8Gi")
+    storageClass?: str = spec.storageClassName if spec.storageClassName is not Undefined else fp.storage_class(spec.footprint)
+
+build_valkey_xr_spec = lambda spec: ValkeySpec -> {str:} {
+    """XValkeyInstance spec (crossplane_v2/managed_resources/valkey) for the crossplane output.
+    `replicas` counts replicas besides the primary, as in the Helm chart, so nodeCount = replicas + 1."""
+    _s = ValkeySettings {spec = spec}
+    {
+        clusterName = spec.name
+        mode = _s.mode
+        if _s.mode == "replication":
+            nodeCount = _s.replicas + 1
+        storageSize = _s.storageSize
+        if _s.storageClass:
+            storageClass = _s.storageClass
+        environment = spec.footprint
+    }
+}
+
 build_valkey_release = lambda spec: ValkeySpec -> any {
-    _mode = "standalone" if spec.footprint in ["local", "development"] and spec.mode == "replication" else spec.mode
+    _s = ValkeySettings {spec = spec}
+    _mode = _s.mode
     _is_replication = _mode == "replication"
-    _replicas = spec.replicas if spec.replicas is not Undefined else fp.replicas(spec.footprint, 1, 1, 2, 3)
-    _storage_size = spec.storageSize if spec.storageSize is not Undefined else fp.storage_size(spec.footprint, "512Mi", "1Gi", "4Gi", "8Gi")
-    _storage_class = spec.storageClassName if spec.storageClassName is not Undefined else fp.storage_class(spec.footprint)
+    _replicas = _s.replicas
+    _storage_size = _s.storageSize
+    _storage_class = _s.storageClass
     _base_values: {str:str} = {
         "architecture" = _mode
         "replica.replicaCount" = str(_replicas)
@@ -86,8 +111,10 @@ build_valkey_release = lambda spec: ValkeySpec -> any {
 }
 
 schema ValkeyModule(accessory.Accessory):
-    """Accessory wrapper for deploying Valkey HelmRelease in a stack."""
+    """Accessory wrapper for deploying Valkey in a stack.
+    YAML/Helm outputs emit a HelmRelease; the crossplane output emits an XValkeyInstance XR."""
     kind = "CRD"
+    component = "valkey"
 
     valkeyName: str
     chartVersion?: str = "2.1.3"
@@ -102,7 +129,7 @@ schema ValkeyModule(accessory.Accessory):
     adminUi?: admin.RedisInsightSpec
     leaders = [leader.build_accessory_leader(valkeyName, namespace, "HelmRelease", _HELM_RELEASE_API)]
 
-    _valkey_manifest = build_valkey_release(ValkeySpec {
+    _valkey_spec = ValkeySpec {
         name = valkeyName
         namespace = namespace
         chartVersion = chartVersion
@@ -114,7 +141,9 @@ schema ValkeyModule(accessory.Accessory):
         serviceType = serviceType
         authEnabled = authEnabled
         extraValues = extraValues
-    })
+    }
+    _valkey_manifest = build_valkey_release(_valkey_spec)
+    crossplaneSpec = build_valkey_xr_spec(_valkey_spec)
 
     _admin_manifests = admin.build_redis_insight_resources(adminUi) if adminUi else []
 

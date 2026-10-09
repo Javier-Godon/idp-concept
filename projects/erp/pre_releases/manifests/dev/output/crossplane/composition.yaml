@@ -1,0 +1,20 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+    name: xerp-composition
+spec:
+    compositeTypeRef:
+        apiVersion: koncept.bluesolution.es/v1alpha1
+        kind: XErp
+    mode: Pipeline
+    pipeline:
+        - functionRef:
+            name: function-patch-and-transform
+          input:
+            apiVersion: pt.fn.crossplane.io/v1beta1
+            kind: Resources
+            resources: []
+          step: render-manifests
+        - functionRef:
+            name: function-auto-ready
+          step: automatically-detect-readiness

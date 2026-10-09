@@ -231,6 +231,17 @@ kubectl apply -f crossplane_v2/functions/
 kubectl apply -f crossplane_v2/managed_resources/postgres/
 ```
 
+### GitOps For Curated XRs (Argo CD)
+
+`koncept render crossplane` writes typed XRs for curated services to `output/crossplane/managed_resources/`. Commit that directory and let Argo CD sync it; Crossplane reconciles each XR through the matching `crossplane_v2/managed_resources/<service>/` API. `projects/erp` is the reference (Valkey):
+
+```bash
+kubectl -n argocd patch configmap argocd-cm --type merge --patch-file gitops/argocd/argocd-cm-crossplane.yaml
+kubectl apply -f gitops/argocd/erp-project.yaml -f gitops/argocd/erp-dev-application.yaml
+```
+
+The `argocd-cm` patch sets annotation resource tracking and a health check for `koncept.bluesolution.es` XRs. The `erp` AppProject only allows the XR kinds the project renders.
+
 The curated hand-authored `crossplane_v2/` APIs are separate from generated `koncept render crossplane` output. Do not turn every application workload into a Crossplane API. Follow [../integrations/CROSSPLANE_PATTERNS.md](../integrations/CROSSPLANE_PATTERNS.md).
 
 ## 7. Production Readiness Checklist

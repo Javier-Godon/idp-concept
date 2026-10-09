@@ -1,0 +1,11 @@
+apiVersion: koncept.bluesolution.es/v1alpha1
+kind: XValkeyInstance
+metadata:
+    name: erp-cache
+spec:
+    clusterName: erp-cache
+    environment: local
+    mode: standalone
+    namespace: erp-data
+    storageClass: local-path
+    storageSize: 512Mi

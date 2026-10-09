@@ -1,0 +1,24 @@
+apiVersion: koncept.bluesolution.es/v1
+kind: ProjectConfig
+metadata:
+  name: erp
+  version: "0.1.0"
+spec:
+  frameworkPath: "../../framework"
+  framework:
+    source: local
+    version: dev
+    versionConstraint: ">=0.1.0 <1.0.0"
+    supportTier: "tier-1"
+    supportWindow: "until next minor framework release"
+    testedVersions:
+      - dev
+  defaultOutput: yaml
+  factory:
+    seedFile: factory_seed.k
+    renderFile: render.k
+  output:
+    defaultDir: output
+  backstage:
+    owner: erp-team
+    lifecycle: experimental

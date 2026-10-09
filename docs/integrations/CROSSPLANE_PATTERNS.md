@@ -70,7 +70,8 @@ There are **two distinct Crossplane concerns** in this repository. Keeping them 
 | `kafka` (Strimzi) | `kafka_strimzi/*` | ✅ Helm/operator-based |
 | `keycloak` | `keycloak/*` | ✅ operator CRD + glue |
 | (cluster infra, no template) | `cert_manager/*` | ✅ Helm Release |
-| `mongodb`, `rabbitmq`, `redis`/`valkey`, `opensearch`, `minio`, `vault`/`openbao`, `questdb`, `elastic`, `opentelemetry` | — | ⬜ gap: add only where the selection policy justifies a control-plane API |
+| `valkey` (OT redis-operator) | `valkey/*` | 🧪 operator CRD; reconcile + delete verified, consumed by `projects/erp` |
+| `mongodb`, `rabbitmq`, `redis`, `opensearch`, `minio`, `vault`/`openbao`, `questdb`, `elastic`, `opentelemetry` | — | ⬜ gap: add only where the selection policy justifies a control-plane API |
 | `webapp`, generic `database` | — | 🚫 intentionally excluded (Tier-1 GitOps/YAML) |
 
 The two tracks must **converge, not duplicate**: the generated path should emit/reference the curated provider-native/operator APIs for templates that have one, falling back to the bridge only for unmodeled resources. This work and its checklist are tracked in `docs/IDP_EVOLUTION_PLAN.md` Section 5.7 and Phase E2.
