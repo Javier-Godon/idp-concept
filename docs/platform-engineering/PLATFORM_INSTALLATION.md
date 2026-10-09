@@ -242,6 +242,8 @@ kubectl apply -f gitops/argocd/erp-project.yaml -f gitops/argocd/erp-dev-applica
 
 The `argocd-cm` patch sets annotation resource tracking and a health check for `koncept.bluesolution.es` XRs. The `erp` AppProject only allows the XR kinds the project renders.
 
+If an XR is deleted and Argo CD self-heals it immediately, the new XR can see its namespace while it is still terminating. It then converges on the next provider-kubernetes poll (default 10 minutes).
+
 The curated hand-authored `crossplane_v2/` APIs are separate from generated `koncept render crossplane` output. Do not turn every application workload into a Crossplane API. Follow [../integrations/CROSSPLANE_PATTERNS.md](../integrations/CROSSPLANE_PATTERNS.md).
 
 ## 7. Production Readiness Checklist
