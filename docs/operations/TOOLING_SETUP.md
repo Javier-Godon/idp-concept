@@ -32,7 +32,7 @@ Install everything you need for this project without root access, into your user
 ```bash
 # 1. koncept Go CLI — prebuilt release binary (linux-amd64 shown; also linux-arm64,
 #    darwin-amd64, darwin-arm64, windows-amd64.exe)
-KONCEPT_VERSION="v1.0.0"  # latest at https://github.com/Javier-Godon/idp-concept/releases
+KONCEPT_VERSION="v1.0.4"  # latest at https://github.com/Javier-Godon/idp-concept/releases
 mkdir -p ~/.local/bin
 curl -fsSL -o ~/.local/bin/koncept \
   "https://github.com/Javier-Godon/idp-concept/releases/download/${KONCEPT_VERSION}/koncept-linux-amd64"
@@ -123,7 +123,7 @@ Install tools for all users on the machine. Requires `sudo`.
 Each [GitHub Release](https://github.com/Javier-Godon/idp-concept/releases) publishes, per platform (`linux-amd64`, `linux-arm64`, `darwin-amd64`, `darwin-arm64`, `windows-amd64.exe`): the raw binary, a `.tar.gz`/`.zip` archive, a cosign `.bundle`, a CycloneDX `.sbom.xml`, and a `SHA256SUMS` file.
 
 ```bash
-KONCEPT_VERSION="v1.0.0"
+KONCEPT_VERSION="v1.0.4"
 OS=linux ARCH=amd64   # linux|darwin, amd64|arm64
 mkdir -p ~/.local/bin
 curl -fsSL -o ~/.local/bin/koncept \
@@ -134,11 +134,18 @@ mkdir -p ~/.local/share/bash-completion/completions
 koncept completion bash > ~/.local/share/bash-completion/completions/koncept
 ```
 
-Verify with the cosign `.bundle` (see [SUPPLY_CHAIN_SECURITY.md](SUPPLY_CHAIN_SECURITY.md)) or against `SHA256SUMS`.
+Verify the download (run next to the downloaded binary):
 
-> **Known issue in `v1.0.0`:** the published `SHA256SUMS` does not match the uploaded binaries
-> (each `make` target rebuilt them with a new timestamp). Verify `v1.0.0` with the cosign bundle;
-> releases built after the reproducible-build fix in `cmd/koncept/Makefile` match `SHA256SUMS`.
+```bash
+curl -fsSLO "https://github.com/Javier-Godon/idp-concept/releases/download/${KONCEPT_VERSION}/SHA256SUMS"
+sha256sum --ignore-missing -c SHA256SUMS
+```
+
+For cosign signature and SLSA provenance verification see [SUPPLY_CHAIN_SECURITY.md](SUPPLY_CHAIN_SECURITY.md).
+
+> **Use `v1.0.4` or later.** In `v1.0.0` the published `SHA256SUMS` does not match the binaries
+> (fixed by the reproducible build in `cmd/koncept/Makefile`); only its cosign bundle verifies.
+> `v1.0.4` has no SLSA provenance asset; later releases include `koncept.intoto.jsonl`.
 
 ### Install: Build From Source (contributors)
 

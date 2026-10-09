@@ -12,7 +12,7 @@ As of 2026-06-07, the `.github/workflows/release.yml` now includes:
 
 - Generated automatically for every tagged release via `slsa-github-generator`
 - Proves the artifact was built from the tagged commit, not injected later
-- File: `koncept.provenance.json` on GitHub Release
+- File: `koncept.intoto.jsonl` on GitHub Release
 
 ### 2. **Software Bill of Materials (SBOM)** using Syft
 
@@ -26,7 +26,7 @@ As of 2026-06-07, the `.github/workflows/release.yml` now includes:
 - Each binary signed using Sigstore keyless signing (OIDC + Fulcio)
 - No manual key management; GitHub OIDC token is the identity
 - Files: `koncept-<platform>.bundle` (signature + cert chain)
-- Verification: `cosign verify-blob --bundle koncept.bundle --public-key=<key> binary`
+- Verification: `cosign verify-blob --bundle <binary>.bundle --certificate-identity <release.yml@tag> --certificate-oidc-issuer https://token.actions.githubusercontent.com <binary>` (see below)
 
 ---
 
@@ -35,27 +35,37 @@ As of 2026-06-07, the `.github/workflows/release.yml` now includes:
 ### For Teams Installing the CLI
 
 ```bash
-# Download and verify checksum (existing)
-curl -L -O https://github.com/Javier-Godon/idp-concept/releases/download/v1.0.0/koncept-linux-amd64
-curl -L -O https://github.com/Javier-Godon/idp-concept/releases/download/v1.0.0/SHA256SUMS
-sha256sum --check SHA256SUMS
+VERSION=v1.0.4
+BASE=https://github.com/Javier-Godon/idp-concept/releases/download/$VERSION
 
-# NEW: Verify cryptographic signature (Sigstore keyless)
-curl -L -O https://github.com/Javier-Godon/idp-concept/releases/download/v1.0.0/koncept-linux-amd64.bundle
-cosign verify-blob-experimental \
+# Checksums (reliable from v1.0.4; v1.0.0 SHA256SUMS does not match its binaries)
+curl -fsSLO $BASE/koncept-linux-amd64
+curl -fsSLO $BASE/SHA256SUMS
+sha256sum --ignore-missing -c SHA256SUMS
+
+# Sigstore keyless signature (cosign v2+)
+curl -fsSLO $BASE/koncept-linux-amd64.bundle
+cosign verify-blob \
   --bundle koncept-linux-amd64.bundle \
-  --certificate-github-workflow-repository Javier-Godon/idp-concept \
-  --certificate-github-workflow-trigger push \
+  --certificate-identity "https://github.com/Javier-Godon/idp-concept/.github/workflows/release.yml@refs/tags/$VERSION" \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com \
   koncept-linux-amd64
 
-# NEW: Review SBOM for known vulnerabilities (requires Grype or Snyk scan)
-curl -L -O https://github.com/Javier-Godon/idp-concept/releases/download/v1.0.0/koncept-linux-amd64.sbom.xml
-grype --from konzept-linux-amd64.sbom.xml
+# SLSA provenance (releases after v1.0.4; requires slsa-verifier)
+curl -fsSLO $BASE/koncept.intoto.jsonl
+slsa-verifier verify-artifact koncept-linux-amd64 \
+  --provenance-path koncept.intoto.jsonl \
+  --source-uri github.com/Javier-Godon/idp-concept \
+  --source-tag $VERSION
+
+# Review SBOM for known vulnerabilities (requires Grype or Snyk scan)
+curl -fsSLO $BASE/koncept-linux-amd64.sbom.xml
+grype sbom:koncept-linux-amd64.sbom.xml
 ```
 
 ### For Enterprise/Air-Gapped Deployments
 
-- Store `koncept.provenance.json` in your artifact repository as proof of build integrity
+- Store `koncept.intoto.jsonl` in your artifact repository as proof of build integrity
 - Store SBOM for quarterly vulnerability reviews and license audits
 - Validate provenance before deploying to high-security environments
 
@@ -84,7 +94,7 @@ docker pull ghcr.io/javier-godon/idp-concept/koncept:v1.0.0
 ### Provenance Job (`release.yml`)
 
 - ✅ Generates SLSA v1.0 provenance for all binaries
-- ✅ Publishes `koncept.provenance.json` to GitHub Release
+- ✅ Uploads `koncept.intoto.jsonl` to the GitHub Release (generator `upload-assets`)
 - ✅ Requires explicit `id-token: write` permission (OIDC)
 
 ### Artifact Publishing
@@ -95,7 +105,7 @@ docker pull ghcr.io/javier-godon/idp-concept/koncept:v1.0.0
   - Signatures (`.bundle` files, one per binary)
   - SBOMs (`.sbom.xml` files, one per binary)
   - Tarballs/archives (`.tar.gz`, `.zip`)
-  - SLSA provenance (`koncept.provenance.json`)
+  - SLSA provenance (`koncept.intoto.jsonl`)
 
 ---
 
@@ -104,10 +114,10 @@ docker pull ghcr.io/javier-godon/idp-concept/koncept:v1.0.0
 Before adopting a new version, teams should:
 
 - [ ] Download the release artifacts from GitHub Release page
-- [ ] Verify checksums: `sha256sum --check SHA256SUMS`
-- [ ] Verify signature with Sigstore: `cosign verify-blob-experimental ...` (see examples above)
+- [ ] Verify checksums: `sha256sum --ignore-missing -c SHA256SUMS`
+- [ ] Verify signature with Sigstore: `cosign verify-blob ...` (see examples above)
 - [ ] Review SBOM: `grype --from koncept.sbom.xml` (if using Grype)
-- [ ] Check SLSA provenance digest matches the binary: `jq .subject[] koncept.provenance.json`
+- [ ] Verify SLSA provenance: `slsa-verifier verify-artifact ...` (see examples above)
 
 ---
 
@@ -137,7 +147,7 @@ Before adopting a new version, teams should:
 
 ### "Provenance JSON doesn't match my binary"
 
-- Hash the binary and compare to `subject.digest.sha256` in provenance JSON
+- Run `slsa-verifier verify-artifact` (above); it checks the binary digest against the provenance subjects
 - If mismatch, binary may have been mutated; do not use
 
 ---
