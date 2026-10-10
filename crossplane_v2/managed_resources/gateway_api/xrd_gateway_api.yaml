@@ -2,66 +2,171 @@ apiVersion: apiextensions.crossplane.io/v2
 kind: CompositeResourceDefinition
 metadata:
   name: xgateways.koncept.bluesolution.es
+  annotations:
+    koncept.io/tier: "2"
+    koncept.io/controller: "envoy-gateway"
+    koncept.io/controller-version: "v1.9.x"
+    koncept.io/gateway-api-version: "v1.6.1"
+    koncept.io/last-reviewed: "2026-10-10"
 spec:
+  scope: Cluster
   group: koncept.bluesolution.es
   names:
     kind: XGateway
     plural: xgateways
-  scope: Cluster
+  defaultCompositionRef:
+    name: xgateway-envoy-composition
   versions:
     - name: v1alpha1
       served: true
       referenceable: true
+      additionalPrinterColumns:
+        - name: GATEWAY
+          type: string
+          jsonPath: .status.gatewayRef
+        - name: ADDRESS
+          type: string
+          jsonPath: .status.addresses[0]
+        - name: CONTROLLER
+          type: string
+          jsonPath: .spec.controller.version
+        - name: READY
+          type: string
+          jsonPath: .status.conditions[?(@.type=="Ready")].status
+        - name: AGE
+          type: date
+          jsonPath: .metadata.creationTimestamp
       schema:
         openAPIV3Schema:
           type: object
           properties:
             spec:
               type: object
-              required:
-                - provider
-                - port
+              description: >-
+                Shared platform API gateway (Kubernetes Gateway API) implemented by Envoy Gateway.
+                Applications attach HTTPRoutes to listener "https" (TLS hostnames) or "http".
+              x-kubernetes-validations:
+                - rule: "!self.tls.selfSignedCA || !has(self.tls.issuerRef)"
+                  message: "set either tls.selfSignedCA or tls.issuerRef, not both"
+                - rule: "size(self.tls.hostnames) == 0 || self.tls.selfSignedCA || has(self.tls.issuerRef)"
+                  message: "tls.hostnames requires tls.issuerRef or tls.selfSignedCA"
               properties:
-                provider:
-                  type: string
-                  enum: [envoy, nginx, istio]
-                  description: "Gateway controller provider"
-                port:
-                  type: integer
-                  minimum: 1
-                  maximum: 65535
                 namespace:
                   type: string
-                  default: "gateway-system"
-                replicas:
-                  type: integer
-                  minimum: 1
-                  default: 2
-                protocol:
+                  description: Namespace for the Gateway, its EnvoyProxy settings and TLS certificate.
+                  default: gateway-system
+                gatewayName:
                   type: string
-                  enum: [HTTP, HTTPS]
-                  default: "HTTP"
-                hostname:
-                  type: string
-                  description: "Hostname for the gateway (wildcard allowed)"
+                  description: Name of the Gateway resource routes reference (XR name if empty).
+                  default: ""
+                controller:
+                  type: object
+                  default: {}
+                  description: Envoy Gateway controller installed with its pinned Helm chart (includes Gateway API CRDs).
+                  properties:
+                    namespace:
+                      type: string
+                      default: envoy-gateway-system
+                    version:
+                      type: string
+                      description: oci://docker.io/envoyproxy/gateway-helm chart version.
+                      default: v1.9.2
+                      pattern: "^v[0-9]+\\.[0-9]+\\.[0-9]+$"
+                addresses:
+                  type: array
+                  description: >-
+                    IPs the gateway listens on, set as the proxy Service externalIPs (for example a
+                    local cluster node IP). Leave empty to rely on a LoadBalancer implementation.
+                  default: []
+                  items:
+                    type: string
+                    format: ipv4
                 serviceType:
                   type: string
-                  enum: [LoadBalancer, NodePort, ClusterIP]
-                  default: "LoadBalancer"
+                  enum: [LoadBalancer, NodePort]
+                  default: LoadBalancer
+                replicas:
+                  type: integer
+                  description: Envoy proxy replicas.
+                  default: 2
+                  minimum: 1
+                  maximum: 10
+                allowedRoutes:
+                  type: string
+                  description: Namespaces whose routes may attach (All, or Same = gateway namespace only).
+                  enum: [All, Same]
+                  default: All
+                http:
+                  type: object
+                  default: {}
+                  properties:
+                    redirectToHttps:
+                      type: boolean
+                      description: Redirect plain-HTTP requests for tls.hostnames to HTTPS (301).
+                      default: true
+                tls:
+                  type: object
+                  default: {}
+                  properties:
+                    hostnames:
+                      type: array
+                      description: Hostnames served by the "https" listener (one cert-manager certificate with these SANs).
+                      default: []
+                      items:
+                        type: string
+                    issuerRef:
+                      type: object
+                      description: Existing cert-manager issuer for the gateway certificate.
+                      required: [name]
+                      properties:
+                        name:
+                          type: string
+                        kind:
+                          type: string
+                          enum: [ClusterIssuer, Issuer]
+                          default: ClusterIssuer
+                    selfSignedCA:
+                      type: boolean
+                      description: >-
+                        Create a local CA ClusterIssuer and issue the gateway certificate from it.
+                        For local/development clusters only; browsers will not trust it by default.
+                      default: false
+                    caNamespace:
+                      type: string
+                      description: cert-manager cluster resource namespace (where the local CA secret lives).
+                      default: cert-manager
+                environment:
+                  type: string
+                  enum: [local, development, staging, production]
+                  default: production
+                owner:
+                  type: string
+                  default: ""
             status:
               type: object
               properties:
-                ready:
-                  type: boolean
-                gatewayClass:
-                  type: string
-                addresses:
+                conditions:
                   type: array
                   items:
                     type: object
                     properties:
-                      ip:
+                      type:
                         type: string
-                      hostname:
+                      status:
                         type: string
-
+                      reason:
+                        type: string
+                      message:
+                        type: string
+                      lastTransitionTime:
+                        type: string
+                gatewayRef:
+                  type: string
+                  description: <namespace>/<name> of the Gateway for HTTPRoute parentRefs.
+                addresses:
+                  type: array
+                  items:
+                    type: string
+                caIssuer:
+                  type: string
+                  description: Name of the local CA ClusterIssuer when tls.selfSignedCA is true.

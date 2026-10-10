@@ -1,36 +1,238 @@
+## XGateway Composition — Envoy Gateway (Kubernetes Gateway API)
+##
+## Envoy Gateway is the platform's standard API gateway (replaces Ingress; ingress-nginx is retired
+## upstream since March 2026). It is a CNCF Envoy project, Apache-2.0, and passes the Gateway API
+## conformance suite. One XGateway composes:
+##   - Envoy Gateway controller (pinned oci://docker.io/envoyproxy/gateway-helm; ships Gateway API CRDs)
+##   - GatewayClass + EnvoyProxy (proxy Service type / replicas) + Gateway with "http" and "https" listeners
+##   - cert-manager Certificate for tls.hostnames (+ optional local self-signed CA ClusterIssuer)
+##   - HTTPRoute redirecting plain HTTP to HTTPS for tls.hostnames
+## Gateway API objects are created only after the controller Release is Ready (its CRDs exist), and
+## never dropped once composed.
+##
+## Prerequisites: provider-helm (ProviderConfig helm-provider), provider-kubernetes (ProviderConfig
+## provider-kubernetes), cert-manager, function-kcl, function-auto-ready.
+
 apiVersion: apiextensions.crossplane.io/v1
 kind: Composition
 metadata:
-  name: x-gateway-api
-  namespace: crossplane-system
+  name: xgateway-envoy-composition
+  annotations:
+    koncept.io/controller: "envoy-gateway"
+    koncept.io/pattern: "helm-release-plus-gateway-api"
+    koncept.io/bridge-pattern: "false"
 spec:
   compositeTypeRef:
     apiVersion: koncept.bluesolution.es/v1alpha1
     kind: XGateway
   mode: Pipeline
   pipeline:
-    - step: deploy-gateway-controller
-      functionRef:
-        name: function-helm
-      input:
-        apiVersion: helm.fn.crossplane.io/v1beta1
-        kind: Release
-        metadata:
-          name: gateway-controller
-        spec:
-          chart:
-            name: gateway
-            repository:
-              url: "oci://registry-1.docker.io"
-          namespace:
-            name: "gateway-system"  # or from XR spec
-          values:
-            provider: "envoy"  # patch from XR
-            replicaCount: 2
-            service:
-              type: "LoadBalancer"
 
-    - step: ready
+    - step: render-resources
+      functionRef:
+        name: function-kcl
+      input:
+        apiVersion: krm.kcl.dev/v1alpha1
+        kind: KCLInput
+        spec:
+          source: |
+            _params = option("params")
+            _oxr = _params.oxr
+            _ocds = _params.ocds or {}
+            _x = _oxr.spec
+            _xr_name = _oxr.metadata.name
+            _gw = _x.gatewayName if _x.gatewayName else _xr_name
+            _ns = _x.namespace
+            _tls_hosts = _x.tls?.hostnames or []
+            _has_tls = len(_tls_hosts) > 0
+            _local_ca = _has_tls and (_x.tls?.selfSignedCA or False)
+            _ca_issuer = "${_xr_name}-local-ca"
+            _issuer = {name = _ca_issuer, kind = "ClusterIssuer"} if _local_ca else (_x.tls?.issuerRef or {})
+            _tls_secret = "${_gw}-tls"
+
+            _labels = {
+                "app.kubernetes.io/part-of" = "koncept-platform-gateway"
+                "koncept.io/managed-by" = "crossplane"
+                "koncept.io/environment" = _x.environment
+                if _x.owner:
+                    "koncept.io/owner" = _x.owner
+            }
+
+            _object = lambda name: str, manifest: {str:}, readiness: {str:} -> {str:} {
+                {
+                    apiVersion = "kubernetes.crossplane.io/v1alpha2"
+                    kind = "Object"
+                    metadata.annotations = {"krm.kcl.dev/composition-resource-name" = name}
+                    spec = {
+                        providerConfigRef.name = "provider-kubernetes"
+                        forProvider.manifest = manifest
+                        if readiness:
+                            readiness = readiness
+                    }
+                }
+            }
+
+            _condition_true = lambda cond: str -> {str:} {
+                {
+                    policy = "DeriveFromCelQuery"
+                    celQuery = "has(object.status.conditions) && object.status.conditions.exists(c, c.type == '${cond}' && c.status == 'True')"
+                }
+            }
+
+            _is_ready = lambda name: str -> bool {
+                _conditions = _ocds[name]?.Resource?.status?.conditions or []
+                any c in _conditions {
+                    c.type == "Ready" and c.status == "True"
+                }
+            }
+
+            # Sticky gate: once a resource has been composed it stays desired.
+            _gate = lambda ready: bool, name: str -> bool {
+                ready or name in _ocds
+            }
+
+            _controller = {
+                apiVersion = "helm.crossplane.io/v1beta1"
+                kind = "Release"
+                metadata.annotations = {"krm.kcl.dev/composition-resource-name" = "controller"}
+                spec = {
+                    providerConfigRef.name = "helm-provider"
+                    forProvider = {
+                        chart = {
+                            repository = "oci://docker.io/envoyproxy"
+                            name = "gateway-helm"
+                            version = _x.controller.version
+                        }
+                        namespace = _x.controller.namespace
+                        wait = True
+                        waitTimeout = "10m"
+                    }
+                }
+            }
+            _crds_ready = _is_ready("controller")
+
+            _gateway_ns = _object("gateway-namespace", {
+                apiVersion = "v1"
+                kind = "Namespace"
+                metadata = {name = _ns, labels = _labels}
+            }, {})
+
+            _ca_resources = [
+                _object("ca-bootstrap-issuer", {
+                    apiVersion = "cert-manager.io/v1"
+                    kind = "ClusterIssuer"
+                    metadata = {name = "${_xr_name}-selfsigned", labels = _labels}
+                    spec.selfSigned = {}
+                }, _condition_true("Ready"))
+                _object("ca-certificate", {
+                    apiVersion = "cert-manager.io/v1"
+                    kind = "Certificate"
+                    metadata = {name = _ca_issuer, namespace = _x.tls.caNamespace, labels = _labels}
+                    spec = {
+                        isCA = True
+                        commonName = "${_xr_name} local CA"
+                        secretName = _ca_issuer
+                        duration = "87600h"
+                        privateKey = {algorithm = "ECDSA", size = 256}
+                        issuerRef = {name = "${_xr_name}-selfsigned", kind = "ClusterIssuer", group = "cert-manager.io"}
+                    }
+                }, _condition_true("Ready"))
+                _object("ca-issuer", {
+                    apiVersion = "cert-manager.io/v1"
+                    kind = "ClusterIssuer"
+                    metadata = {name = _ca_issuer, labels = _labels}
+                    spec.ca.secretName = _ca_issuer
+                }, _condition_true("Ready"))
+            ] if _local_ca else []
+
+            _issuer_ready = (not _local_ca) or _is_ready("ca-issuer")
+            _certificate = [_object("certificate", {
+                apiVersion = "cert-manager.io/v1"
+                kind = "Certificate"
+                metadata = {name = _tls_secret, namespace = _ns, labels = _labels}
+                spec = {
+                    secretName = _tls_secret
+                    dnsNames = _tls_hosts
+                    issuerRef = _issuer | {group = "cert-manager.io"}
+                }
+            }, _condition_true("Ready"))] if _has_tls and _gate(_issuer_ready and _is_ready("gateway-namespace"), "certificate") else []
+
+            _gateway_api = [
+                _object("gatewayclass", {
+                    apiVersion = "gateway.networking.k8s.io/v1"
+                    kind = "GatewayClass"
+                    metadata = {name = _gw, labels = _labels}
+                    spec.controllerName = "gateway.envoyproxy.io/gatewayclass-controller"
+                }, _condition_true("Accepted"))
+                _object("envoyproxy", {
+                    apiVersion = "gateway.envoyproxy.io/v1alpha1"
+                    kind = "EnvoyProxy"
+                    metadata = {name = _gw, namespace = _ns, labels = _labels}
+                    spec.provider = {
+                        $type = "Kubernetes"
+                        kubernetes = {
+                            envoyService.$type = _x.serviceType
+                            envoyDeployment.replicas = _x.replicas
+                        }
+                    }
+                }, {})
+                _object("gateway", {
+                    apiVersion = "gateway.networking.k8s.io/v1"
+                    kind = "Gateway"
+                    metadata = {name = _gw, namespace = _ns, labels = _labels}
+                    spec = {
+                        gatewayClassName = _gw
+                        infrastructure.parametersRef = {group = "gateway.envoyproxy.io", kind = "EnvoyProxy", name = _gw}
+                        if _x.addresses:
+                            addresses = [{$type = "IPAddress", value = a} for a in _x.addresses]
+                        listeners = [
+                            {
+                                name = "http"
+                                port = 80
+                                protocol = "HTTP"
+                                allowedRoutes.namespaces.from = _x.allowedRoutes
+                            }
+                        ] + ([
+                            {
+                                name = "https"
+                                port = 443
+                                protocol = "HTTPS"
+                                tls = {
+                                    mode = "Terminate"
+                                    certificateRefs = [{kind = "Secret", name = _tls_secret}]
+                                }
+                                allowedRoutes.namespaces.from = _x.allowedRoutes
+                            }
+                        ] if _has_tls else [])
+                    }
+                }, _condition_true("Programmed"))
+            ] + ([
+                _object("https-redirect", {
+                    apiVersion = "gateway.networking.k8s.io/v1"
+                    kind = "HTTPRoute"
+                    metadata = {name = "${_gw}-https-redirect", namespace = _ns, labels = _labels}
+                    spec = {
+                        parentRefs = [{name = _gw, sectionName = "http"}]
+                        hostnames = _tls_hosts
+                        rules = [{filters = [{$type = "RequestRedirect", requestRedirect = {scheme = "https", statusCode = 301}}]}]
+                    }
+                }, _condition_true("Accepted") | {celQuery = "has(object.status.parents) && object.status.parents.all(p, p.conditions.exists(c, c.type == 'Accepted' && c.status == 'True'))"})
+            ] if _has_tls and _x.http.redirectToHttps else []) if _gate(_crds_ready and _is_ready("gateway-namespace"), "gateway") else []
+
+            _observed_addresses = _ocds["gateway"]?.Resource?.status?.atProvider?.manifest?.status?.addresses or []
+
+            _dxr = {
+                **_params.dxr
+                status = {
+                    gatewayRef = "${_ns}/${_gw}"
+                    addresses = [a.value for a in _observed_addresses]
+                    if _local_ca:
+                        caIssuer = _ca_issuer
+                }
+            }
+
+            items = [_controller, _gateway_ns, _dxr] + _ca_resources + _certificate + _gateway_api
+
+    - step: automatically-detect-readiness
       functionRef:
         name: function-auto-ready
-

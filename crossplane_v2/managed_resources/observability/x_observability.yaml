@@ -108,15 +108,32 @@ spec:
                     enabled = True
                     url = "http://prometheus-kube-prometheus-prometheus:9090"
                 }
-                ingress = {
-                    enabled = _ox.grafanaIngressEnabled
-                    hosts = [_ox.grafanaIngressHost if _ox.grafanaIngressHost else "grafana.local"]
-                }
                 resources = {
                     requests = { cpu = "250m", memory = "256Mi" }
                     limits = { cpu = "500m", memory = "512Mi" }
                 }
             }) if _ox.grafanaEnabled else None
+
+            _grafana_hosts = _ox.grafanaRoute?.hostnames or []
+            _grafana_route = _mark("grafana-route", {
+                apiVersion = "gateway.networking.k8s.io/v1"
+                kind = "HTTPRoute"
+                metadata = {
+                    name = "${_release_name}-grafana"
+                    namespace = _ox.namespace
+                    labels = {"app.kubernetes.io/managed-by" = "crossplane"}
+                }
+                spec = {
+                    parentRefs = [{
+                        name = _ox.grafanaRoute.gatewayName
+                        namespace = _ox.grafanaRoute.gatewayNamespace
+                        sectionName = _ox.grafanaRoute.listener
+                    }]
+                    hostnames = _grafana_hosts
+                    # Bitnami grafana Service: <release>-grafana, port 3000
+                    rules = [{backendRefs = [{name = "${_release_name}-grafana", port = 3000}]}]
+                }
+            }) if _ox.grafanaEnabled and _grafana_hosts else None
 
             _alertmanager = _helm_release("alertmanager-release", "alertmanager", "alertmanager", "1.8.0", {
                 replicaCount = _ox.alertmanagerReplicas
@@ -127,7 +144,7 @@ spec:
                 }
             }) if _ox.alertmanagerEnabled else None
 
-            items = [r for r in [_namespace, _prometheus, _grafana, _alertmanager] if r is not None]
+            items = [r for r in [_namespace, _prometheus, _grafana, _grafana_route, _alertmanager] if r is not None]
 
     - step: automatically-detect-readiness
       functionRef:

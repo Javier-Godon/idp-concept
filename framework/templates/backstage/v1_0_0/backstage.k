@@ -18,6 +18,7 @@ Usage:
         catalogLocations = ["https://github.com/org/repo/blob/main/catalog-info.yaml"]
     }
     _manifest = bs.build_backstage_release(_spec)
+    _routes = bs.build_backstage_routes(_spec)   # HTTPRoute on the platform gateway for `host`
 
     # With PostgreSQL via CloudNativePG:
     import templates.postgresql.v1_0_0.postgresql as pg
@@ -32,13 +33,18 @@ Usage:
 """
 
 import models.modules.thirdparty_helm as th
+import builders.route as route_builder
+
+_BACKSTAGE_PORT = 7007
 
 schema BackstageHelmSpec:
     """Specification for deploying Backstage via the official Helm chart."""
     name: str
     namespace: str
     chartVersion: str = "2.3.0"
+    # Public hostname: sets the app/backend base URLs and the gateway HTTPRoute.
     host?: str
+    routeListener?: "https" | "http" = "https"
     # PostgreSQL connection (external DB recommended — use CloudNativePG template)
     postgresHost?: str
     postgresPort: int = 5432
@@ -106,13 +112,7 @@ build_backstage_release = lambda spec: BackstageHelmSpec -> any {
             "backstage.resources.limits.memory" = spec.memoryLimit
     }
 
-    _ingress_values: {str:str} = {
-        if spec.host:
-            "ingress.enabled" = "true"
-            "ingress.host" = spec.host
-    }
-
-    _all_values: {str:str} = _base_values | _postgres_values | _techdocs_values | _resource_values | _ingress_values | (spec.extraValues or {})
+    _all_values: {str:str} = _base_values | _postgres_values | _techdocs_values | _resource_values | (spec.extraValues or {})
 
     _helm_spec = th.ThirdPartyHelmSpec {
         name = spec.name
@@ -124,4 +124,15 @@ build_backstage_release = lambda spec: BackstageHelmSpec -> any {
     }
 
     th.build_thirdparty_helm(_helm_spec)
+}
+
+build_backstage_routes = lambda spec: BackstageHelmSpec -> [{str:}] {
+    """HTTPRoute exposing the Backstage chart Service on the platform gateway (empty without host)."""
+    [route_builder.build_http_route(route_builder.HTTPRouteSpec {
+        name = spec.name
+        namespace = spec.namespace
+        serviceName = route_builder.helm_fullname(spec.name, "backstage")
+        servicePort = _BACKSTAGE_PORT
+        route = route_builder.RouteSpec {hostnames = [spec.host], listener = spec.routeListener}
+    })] if spec.host else []
 }

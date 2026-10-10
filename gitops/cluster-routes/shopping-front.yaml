@@ -1,0 +1,47 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: shopping-front
+  namespace: shopping
+  labels:
+    app.kubernetes.io/name: shopping-front
+spec:
+  parentRefs:
+    - name: platform-gateway
+      namespace: gateway-system
+      sectionName: https
+  hostnames:
+    - shop.railway.es
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /shopping/api
+      # shopping/railway-service is an ExternalName Service, which Envoy Gateway does not
+      # accept as a backend; target the real Service (allowed by the ReferenceGrant below).
+      backendRefs:
+        - name: railway-service
+          namespace: railroad
+          port: 8089
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - name: shopping-front
+          port: 80
+---
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: ReferenceGrant
+metadata:
+  name: shopping-routes-to-railway-service
+  namespace: railroad
+spec:
+  from:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      namespace: shopping
+  to:
+    - group: ""
+      kind: Service
+      name: railway-service

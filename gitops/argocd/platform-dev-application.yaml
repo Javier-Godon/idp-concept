@@ -1,0 +1,35 @@
+# Syncs the rendered platform dev crossplane output (`koncept render crossplane` in
+# projects/platform/pre_releases/manifests/dev). prerequisites/ (providers, functions) are
+# cluster bootstrap and applied from crossplane_v2/ instead.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: platform-dev
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: platform
+  source:
+    repoURL: https://github.com/Javier-Godon/idp-concept.git
+    targetRevision: main
+    path: projects/platform/pre_releases/manifests/dev/output/crossplane
+    directory:
+      recurse: true
+      exclude: "prerequisites/*"
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: gateway-system
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      # XPlatform's kind only exists once its XRD (same sync) is established.
+      - SkipDryRunOnMissingResource=true
+    retry:
+      limit: 10
+      backoff:
+        duration: 10s
+        factor: 2
+        maxDuration: 3m

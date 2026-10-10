@@ -19,8 +19,9 @@ spec:
   http:
     tlsSecret: keycloak-tls-secret
     httpEnabled: true
-  # ingress:
-  #   enabled: false
+  # Exposed through the platform API gateway (HTTPRoute from projects/platform), not an Ingress.
+  ingress:
+    enabled: false
   hostname:
     hostname: bluesolution.es
   proxy:

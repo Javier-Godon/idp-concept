@@ -1,0 +1,9 @@
+# Serve Argo CD under https://bluesolution.es/argocd through the platform API gateway.
+# TLS terminates at the gateway, so argocd-server serves plain HTTP inside the cluster.
+#   kubectl -n argocd patch configmap argocd-cmd-params-cm --type merge --patch-file gitops/argocd/argocd-cmd-params-cm.yaml
+#   kubectl -n argocd rollout restart deployment argocd-server
+# Port-forward access then lives under /argocd too: http://localhost:8080/argocd
+data:
+  server.insecure: "true"
+  server.basehref: /argocd
+  server.rootpath: /argocd

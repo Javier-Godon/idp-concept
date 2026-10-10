@@ -1,6 +1,7 @@
 """
 WebApp Module Template — pre-built web application pattern.
-Generates: Deployment + Service + ConfigMap (optional) + ServiceAccount (optional).
+Generates: Deployment + Service + ConfigMap (optional) + ServiceAccount (optional)
++ HTTPRoute on the platform API gateway (optional, `route`).
 
 Usage:
     import framework.templates.webapp.v1_0_0.webapp as webapp
@@ -17,6 +18,7 @@ import builders.service as svc
 import builders.configmap as cm
 import builders.service_account as sa
 import builders.leader as leader
+import builders.route as route_builder
 
 schema WebAppModule(component.Component):
     kind = "APPLICATION"
@@ -38,6 +40,8 @@ schema WebAppModule(component.Component):
     imagePullPolicy?: str = "IfNotPresent"
     extraVolumes?: [any]
     extraVolumeMounts?: [any]
+    # Expose the service through the platform API gateway (Gateway API HTTPRoute).
+    route?: route_builder.RouteSpec
 
     # Auto-computed
     leaders = [leader.build_component_leader(name, namespace)]
@@ -89,4 +93,12 @@ schema WebAppModule(component.Component):
         imagePullSecretName = imagePullSecretName
     })] if imagePullSecretName else []
 
-    manifests = [_deployment, _service] + _configmap_list + _sa_list
+    _route_list = [route_builder.build_http_route(route_builder.HTTPRouteSpec {
+        name = name
+        namespace = namespace
+        serviceName = name
+        servicePort = port
+        route = route
+    })] if route else []
+
+    manifests = [_deployment, _service] + _configmap_list + _sa_list + _route_list

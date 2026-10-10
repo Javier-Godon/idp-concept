@@ -1,0 +1,6 @@
+apiVersion: koncept.bluesolution.es/v1alpha1
+kind: XPlatform
+metadata:
+    name: platform-workload
+spec:
+    id: platform-workload

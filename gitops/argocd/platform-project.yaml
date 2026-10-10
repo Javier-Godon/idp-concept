@@ -1,0 +1,26 @@
+# Argo CD project for projects/platform (koncept crossplane output): the shared API gateway
+# (XGateway) and the bridge XR wrapping platform tool HTTPRoutes (XPlatform + its XRD/Composition).
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: platform
+  namespace: argocd
+spec:
+  description: Platform services (koncept crossplane output)
+  sourceRepos:
+    - https://github.com/Javier-Godon/idp-concept.git
+  destinations:
+    - server: https://kubernetes.default.svc
+      namespace: gateway-system
+  clusterResourceWhitelist:
+    - group: apiextensions.crossplane.io
+      kind: CompositeResourceDefinition
+    - group: apiextensions.crossplane.io
+      kind: Composition
+    - group: koncept.bluesolution.es
+      kind: XGateway
+    - group: koncept.bluesolution.es
+      kind: XPlatform
+  namespaceResourceBlacklist:
+    - group: "*"
+      kind: "*"

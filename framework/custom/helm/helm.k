@@ -41,7 +41,6 @@ schema HelmChartValues:
     replicaCount?: int
     image?: Image
     service?: Service
-    ingress?: Ingress
     resources?: Resources
     nodeSelector?: {str:str}
     tolerations?: [any]
@@ -55,25 +54,6 @@ schema Image:
 schema Service:
     type: str
     port: int
-
-schema Ingress:
-    enabled: bool
-    className?: str
-    annotations?: {str:str}
-    hosts?: [Host]
-    tls?: [TLS]
-
-schema Host:
-    host: str
-    paths: [Path]
-
-schema Path:
-    path: str
-    pathType: str
-
-schema TLS:
-    hosts: [str]
-    secretName: str
 
 schema Resources:
     limits?: ResourceQuantity

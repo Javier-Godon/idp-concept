@@ -2,7 +2,8 @@
 External-DNS Template — Automatic DNS Management for Kubernetes
 
 Deploys external-dns to automatically manage DNS records in external DNS providers
-(AWS Route 53, Azure DNS, Google Cloud DNS, etc.) based on Kubernetes Ingress and Service resources.
+(AWS Route 53, Azure DNS, Google Cloud DNS, etc.) from Gateway API HTTPRoute hostnames and Service
+resources (the framework does not generate Ingress).
 
 Charts:
 - external-dns (Bitnami): DNS provider integration, automatic record synchronization
@@ -46,6 +47,7 @@ build_external_dns = lambda spec: any {
                 "policy" = spec.policy if spec.policy is not Undefined else "sync"
                 "registry" = spec.registry if spec.registry is not Undefined else "txt"
                 "replicaCount" = str(spec.replicas if spec.replicas is not Undefined else 2)
+                "sources" = spec.sources if spec.sources is not Undefined else ["service", "gateway-httproute"]
             }
             serviceAccountName = spec.name
         }

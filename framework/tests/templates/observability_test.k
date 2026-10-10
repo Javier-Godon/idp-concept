@@ -80,16 +80,19 @@ test_grafana_custom = lambda {
     assert _result.spec.values["persistence.size"] == "20Gi"
 }
 
-test_grafana_ingress = lambda {
+test_grafana_route = lambda {
     _spec = obs.GrafanaSpec {
-        name = "grafana"
+        name = "dashboards"
         namespace = "monitoring"
-        ingressEnabled = True
-        ingressHost = "grafana.example.com"
+        route = {hostnames = ["grafana.example.com"], listener = "http"}
     }
-    _result = obs.build_grafana(_spec)
-    assert _result.spec.values["ingress.enabled"] == "true"
-    assert _result.spec.values["ingress.hostname"] == "grafana.example.com"
+    assert "ingress.enabled" not in obs.build_grafana(_spec).spec.values
+    _routes = obs.build_grafana_routes(_spec)
+    assert len(_routes) == 1
+    assert _routes[0].spec.hostnames == ["grafana.example.com"]
+    assert _routes[0].spec.parentRefs[0].sectionName == "http"
+    assert _routes[0].spec.rules[0].backendRefs[0].name == "dashboards-grafana"
+    assert _routes[0].spec.rules[0].backendRefs[0].port == 3000
 }
 
 test_grafana_local_footprint = lambda {

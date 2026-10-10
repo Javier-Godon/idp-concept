@@ -22,10 +22,20 @@ test_backstage_with_host = lambda {
         host = "backstage.example.com"
     }
     _result = bs.build_backstage_release(_spec)
-    assert _result.spec.values["ingress.enabled"] == "true"
-    assert _result.spec.values["ingress.host"] == "backstage.example.com"
+    assert "ingress.enabled" not in _result.spec.values
     assert _result.spec.values["backstage.appConfig.app.baseUrl"] == "https://backstage.example.com"
     assert _result.spec.values["backstage.appConfig.backend.baseUrl"] == "https://backstage.example.com"
+    _routes = bs.build_backstage_routes(_spec)
+    assert len(_routes) == 1
+    assert _routes[0].kind == "HTTPRoute"
+    assert _routes[0].spec.hostnames == ["backstage.example.com"]
+    assert _routes[0].spec.parentRefs[0].sectionName == "https"
+    assert _routes[0].spec.rules[0].backendRefs[0].name == "backstage"
+    assert _routes[0].spec.rules[0].backendRefs[0].port == 7007
+}
+
+test_backstage_without_host_has_no_route = lambda {
+    assert bs.build_backstage_routes(bs.BackstageHelmSpec {name = "portal", namespace = "portal"}) == []
 }
 
 test_backstage_with_postgres = lambda {

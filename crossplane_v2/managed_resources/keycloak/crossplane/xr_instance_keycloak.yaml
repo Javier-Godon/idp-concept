@@ -18,8 +18,8 @@ spec:
     secretRef:
       name: keycloak-db-credentials
       namespace: keycloak
-  ingressEnabled: true
-  tlsEnabled: true
+  route:
+    listener: https
   environment: production
   owner: platform-team
 
@@ -43,7 +43,7 @@ spec:
     secretRef:
       name: keycloak-dev-db-credentials
       namespace: keycloak-dev
-  ingressEnabled: true
-  tlsEnabled: false
+  route:
+    listener: http
   environment: development
   owner: team-alpha

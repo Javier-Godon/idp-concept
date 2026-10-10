@@ -92,13 +92,28 @@ spec:
                   type: string
                   description: Grafana admin password (use SecretRef reference in production, not hardcoded).
                   default: "admin"
-                grafanaIngressEnabled:
-                  type: boolean
-                  description: Expose Grafana via Ingress.
-                  default: false
-                grafanaIngressHost:
-                  type: string
-                  description: FQDN for Grafana Ingress (e.g., grafana.example.com).
+                grafanaRoute:
+                  type: object
+                  description: >-
+                    Expose Grafana on the platform API gateway (Gateway API HTTPRoute; Ingress is not used).
+                    Omit hostnames to keep Grafana cluster-internal.
+                  default: {}
+                  properties:
+                    hostnames:
+                      type: array
+                      items:
+                        type: string
+                      default: []
+                    gatewayName:
+                      type: string
+                      default: platform-gateway
+                    gatewayNamespace:
+                      type: string
+                      default: gateway-system
+                    listener:
+                      type: string
+                      enum: [https, http]
+                      default: https
                 alertmanagerEnabled:
                   type: boolean
                   description: Deploy Alertmanager (alert routing and management).
@@ -126,7 +141,7 @@ spec:
                   description: Internal Prometheus service URL.
                 grafanaUrl:
                   type: string
-                  description: Grafana service URL or Ingress endpoint.
+                  description: Grafana service URL or public gateway URL.
                 monitoredNamespaces:
                   type: integer
                   description: Number of namespaces with ServiceMonitors.

@@ -1,0 +1,86 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+    name: xplatform-composition
+spec:
+    compositeTypeRef:
+        apiVersion: koncept.bluesolution.es/v1alpha1
+        kind: XPlatform
+    mode: Pipeline
+    pipeline:
+        - functionRef:
+            name: function-patch-and-transform
+          input:
+            apiVersion: pt.fn.crossplane.io/v1beta1
+            kind: Resources
+            resources:
+                - base:
+                    apiVersion: kubernetes.crossplane.io/v1alpha2
+                    kind: Object
+                    metadata:
+                        name: acc-argocd-httproute-argocd
+                    spec:
+                        forProvider:
+                            manifest:
+                                apiVersion: gateway.networking.k8s.io/v1
+                                kind: HTTPRoute
+                                metadata:
+                                    labels:
+                                        app: argocd-server
+                                    name: argocd
+                                    namespace: argocd
+                                spec:
+                                    hostnames:
+                                        - bluesolution.es
+                                    parentRefs:
+                                        - name: platform-gateway
+                                          namespace: gateway-system
+                                          sectionName: https
+                                    rules:
+                                        - backendRefs:
+                                            - name: argocd-server
+                                              port: 80
+                                          matches:
+                                            - path:
+                                                type: PathPrefix
+                                                value: /argocd
+                        providerConfigRef:
+                            name: provider-kubernetes
+                  name: acc-argocd-httproute-argocd
+                - base:
+                    apiVersion: kubernetes.crossplane.io/v1alpha2
+                    kind: Object
+                    metadata:
+                        name: acc-keycloak-httproute-keycloak
+                    spec:
+                        forProvider:
+                            manifest:
+                                apiVersion: gateway.networking.k8s.io/v1
+                                kind: HTTPRoute
+                                metadata:
+                                    labels:
+                                        app: blue-keycloak-service
+                                    name: keycloak
+                                    namespace: keycloak
+                                spec:
+                                    hostnames:
+                                        - bluesolution.es
+                                    parentRefs:
+                                        - name: platform-gateway
+                                          namespace: gateway-system
+                                          sectionName: https
+                                    rules:
+                                        - backendRefs:
+                                            - name: blue-keycloak-service
+                                              port: 8080
+                                          matches:
+                                            - path:
+                                                type: PathPrefix
+                                                value: /
+                        providerConfigRef:
+                            name: provider-kubernetes
+                  name: acc-keycloak-httproute-keycloak
+          step: render-manifests
+        - functionRef:
+            name: function-auto-ready
+          step: automatically-detect-readiness

@@ -5,7 +5,7 @@ metadata:
   annotations:
     koncept.io/tier: "2"
     koncept.io/operator: "keycloak-operator"
-    koncept.io/last-reviewed: "2026-06-01"
+    koncept.io/last-reviewed: "2026-10-10"
 spec:
   compositeTypeRef:
     apiVersion: koncept.bluesolution.es/v1alpha1
@@ -59,6 +59,9 @@ spec:
           - sequence:
               - ns-keycloak
               - keycloak-instance
+          - sequence:
+              - ns-keycloak
+              - keycloak-route
 
     # Step 4: Create Keycloak CRD instance (operator-native — keycloak-operator manages pods/secrets)
     - step: create-keycloak
@@ -95,9 +98,15 @@ spec:
                         passwordSecret:
                           name: placeholder
                           key: password
+                      # Exposed through the platform gateway HTTPRoute below, never an Ingress.
                       ingress:
-                        enabled: true
+                        enabled: false
+                      hostname:
                         hostname: placeholder
+                      http:
+                        httpEnabled: true
+                      proxy:
+                        headers: xforwarded
                       instances: 1
             patches:
               # Identity
@@ -111,13 +120,10 @@ spec:
               - type: FromCompositeFieldPath
                 fromFieldPath: spec.instances
                 toFieldPath: spec.forProvider.manifest.spec.instances
-              # Ingress
+              # Hostname (TLS terminates at the gateway; X-Forwarded-* headers are trusted)
               - type: FromCompositeFieldPath
                 fromFieldPath: spec.hostname
-                toFieldPath: spec.forProvider.manifest.spec.ingress.hostname
-              - type: FromCompositeFieldPath
-                fromFieldPath: spec.ingressEnabled
-                toFieldPath: spec.forProvider.manifest.spec.ingress.enabled
+                toFieldPath: spec.forProvider.manifest.spec.hostname.hostname
               # Database — host, database name, vendor
               - type: FromCompositeFieldPath
                 fromFieldPath: spec.db.host
@@ -149,6 +155,66 @@ spec:
                 toFieldPath: spec.forProvider.manifest.spec.db.passwordSecret.namespace
                 policy:
                   fromFieldPath: Optional
+          - name: keycloak-route
+            base:
+              apiVersion: kubernetes.crossplane.io/v1alpha2
+              kind: Object
+              spec:
+                providerConfigRef:
+                  name: provider-kubernetes
+                forProvider:
+                  manifest:
+                    apiVersion: gateway.networking.k8s.io/v1
+                    kind: HTTPRoute
+                    metadata:
+                      name: placeholder
+                      namespace: placeholder
+                    spec:
+                      parentRefs:
+                        - name: platform-gateway
+                          namespace: gateway-system
+                          sectionName: https
+                      hostnames:
+                        - placeholder
+                      rules:
+                        - matches:
+                            - path:
+                                type: PathPrefix
+                                value: /
+                          backendRefs:
+                            - name: placeholder
+                              port: 8080
+            patches:
+              - type: FromCompositeFieldPath
+                fromFieldPath: metadata.name
+                toFieldPath: spec.forProvider.manifest.metadata.name
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.namespace
+                toFieldPath: spec.forProvider.manifest.metadata.namespace
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.hostname
+                toFieldPath: spec.forProvider.manifest.spec.hostnames[0]
+              # keycloak-operator names the HTTP Service <keycloak>-service (port 8080)
+              - type: FromCompositeFieldPath
+                fromFieldPath: metadata.name
+                toFieldPath: spec.forProvider.manifest.spec.rules[0].backendRefs[0].name
+                transforms:
+                  - type: string
+                    string:
+                      type: Format
+                      fmt: "%s-service"
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.route.gatewayName
+                toFieldPath: spec.forProvider.manifest.spec.parentRefs[0].name
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.route.gatewayNamespace
+                toFieldPath: spec.forProvider.manifest.spec.parentRefs[0].namespace
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.route.listener
+                toFieldPath: spec.forProvider.manifest.spec.parentRefs[0].sectionName
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.route.path
+                toFieldPath: spec.forProvider.manifest.spec.rules[0].matches[0].path.value
 
     # Step 5: Auto-detect readiness from managed resources
     - step: automatically-detect-readiness

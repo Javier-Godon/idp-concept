@@ -1,0 +1,24 @@
+apiVersion: koncept.bluesolution.es/v1alpha1
+kind: XGateway
+metadata:
+    name: platform-gateway
+spec:
+    addresses:
+        - 192.168.49.2
+    allowedRoutes: All
+    controller:
+        version: v1.9.2
+    environment: local
+    gatewayName: platform-gateway
+    http:
+        redirectToHttps: true
+    namespace: gateway-system
+    owner: platform-team
+    replicas: 1
+    serviceType: NodePort
+    tls:
+        caNamespace: cert-manager
+        hostnames:
+            - bluesolution.es
+            - shop.railway.es
+        selfSignedCA: true

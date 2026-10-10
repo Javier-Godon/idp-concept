@@ -21,8 +21,8 @@ spec:
   grafanaEnabled: true
   grafanaChartVersion: "12.0.0"
   grafanaAdminPassword: ""  # Use SecretRef in production
-  grafanaIngressEnabled: true
-  grafanaIngressHost: "grafana.example.com"
+  grafanaRoute:
+    hostnames: ["grafana.example.com"]
 
   # Alertmanager
   alertmanagerEnabled: true
@@ -52,8 +52,6 @@ spec:
   grafanaEnabled: true
   grafanaChartVersion: "12.0.0"
   grafanaAdminPassword: "changeme"
-  grafanaIngressEnabled: false
-  grafanaIngressHost: ""
 
   # Alertmanager
   alertmanagerEnabled: false
@@ -83,8 +81,8 @@ spec:
   grafanaEnabled: true
   grafanaChartVersion: "12.0.0"
   grafanaAdminPassword: ""  # Must use SecretRef
-  grafanaIngressEnabled: true
-  grafanaIngressHost: "observability.infrastructure.example.com"
+  grafanaRoute:
+    hostnames: ["observability.infrastructure.example.com"]
 
   # Alertmanager: HA
   alertmanagerEnabled: true

@@ -18,12 +18,13 @@ Usage:
         retentionDays = 15
     })
 
-    _grafana = obs.build_grafana(obs.GrafanaSpec {
+    _grafana_spec = obs.GrafanaSpec {
         name = "grafana"
         namespace = "monitoring"
-        ingressEnabled = True
-        ingressHost = "grafana.example.com"
-    })
+        route = {hostnames = ["grafana.example.com"]}
+    }
+    _grafana = obs.build_grafana(_grafana_spec)
+    _grafana_routes = obs.build_grafana_routes(_grafana_spec)   # HTTPRoute on the platform gateway
 
     _monitor = obs.build_service_monitor(obs.ServiceMonitorSpec {
         name = "my-app"
@@ -36,6 +37,9 @@ Usage:
 import builders.leader as leader
 import models.modules.accessory as accessory
 import templates.footprints.v1_0_0.footprint as fp
+import builders.route as route_builder
+
+_GRAFANA_PORT = 3000
 
 # --- Prometheus (kube-prometheus-stack via Bitnami) ---
 
@@ -110,13 +114,12 @@ schema GrafanaSpec:
     adminPasswordSecret?: str
     persistence?: bool
     storageSize?: str
-    ingressEnabled?: bool = False
-    ingressHost?: str
+    # Expose Grafana on the platform API gateway (Gateway API HTTPRoute).
+    route?: route_builder.RouteSpec
     extraValues?: {str:str}
 
     check:
         footprint in ["local", "development", "staging", "production"], "footprint must be local, development, staging, or production"
-        ingressHost if ingressEnabled, "ingressHost is required when ingressEnabled is True"
 
 build_grafana = lambda spec: GrafanaSpec -> any {
     _persistence_enabled = spec.persistence if spec.persistence is not Undefined else fp.persistence_enabled(spec.footprint, True)
@@ -127,10 +130,6 @@ build_grafana = lambda spec: GrafanaSpec -> any {
         "persistence.enabled" = "true"
         "persistence.size" = _storage_size
     } if _persistence_enabled else {"persistence.enabled" = "false"}
-    _ingress_values: {str:str} = {
-        "ingress.enabled" = "true"
-        "ingress.hostname" = spec.ingressHost
-    } if spec.ingressEnabled else {}
     {
         apiVersion = "helm.toolkit.fluxcd.io/v2beta1"
         kind = "HelmRelease"
@@ -149,9 +148,20 @@ build_grafana = lambda spec: GrafanaSpec -> any {
             createNamespace = True
             wait = True
             timeout = "10m"
-            values = _base_values | _secret_values | _persistence_values | _ingress_values | (spec.extraValues or {})
+            values = _base_values | _secret_values | _persistence_values | (spec.extraValues or {})
         }
     }
+}
+
+build_grafana_routes = lambda spec: GrafanaSpec -> [{str:}] {
+    """HTTPRoute exposing the Grafana chart Service on the platform gateway (empty without route)."""
+    [route_builder.build_http_route(route_builder.HTTPRouteSpec {
+        name = spec.name
+        namespace = spec.namespace
+        serviceName = route_builder.helm_fullname(spec.name, "grafana")
+        servicePort = _GRAFANA_PORT
+        route = spec.route
+    })] if spec.route else []
 }
 
 schema PrometheusModule(accessory.Accessory):
@@ -176,11 +186,11 @@ schema GrafanaModule(accessory.Accessory):
     adminPasswordSecret?: str
     persistence?: bool
     storageSize?: str
-    ingressEnabled?: bool = False
-    ingressHost?: str
+    route?: route_builder.RouteSpec
     extraValues?: {str:str}
     leaders = [leader.build_accessory_leader(grafanaName, namespace, "HelmRelease", "helm.toolkit.fluxcd.io/v2beta1")]
-    manifests = [build_grafana(GrafanaSpec {name = grafanaName, namespace = namespace, footprint = footprint, chartVersion = chartVersion, adminPasswordSecret = adminPasswordSecret, persistence = persistence, storageSize = storageSize, ingressEnabled = ingressEnabled, ingressHost = ingressHost, extraValues = extraValues})]
+    _grafana_spec = GrafanaSpec {name = grafanaName, namespace = namespace, footprint = footprint, chartVersion = chartVersion, adminPasswordSecret = adminPasswordSecret, persistence = persistence, storageSize = storageSize, route = route, extraValues = extraValues}
+    manifests = [build_grafana(_grafana_spec)] + build_grafana_routes(_grafana_spec)
 
 # --- ServiceMonitor (Prometheus Operator CRD) ---
 
