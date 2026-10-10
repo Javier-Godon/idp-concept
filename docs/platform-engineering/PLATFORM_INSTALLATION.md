@@ -249,7 +249,7 @@ Argo CD is served at `https://<platform host>/argocd`: apply `gitops/argocd/argo
 
 ### GitOps For Curated XRs (Argo CD)
 
-`koncept render crossplane` writes typed XRs for curated services to `output/crossplane/managed_resources/`. Commit that directory and let Argo CD sync it; Crossplane reconciles each XR through the matching `crossplane_v2/managed_resources/<service>/` API. `projects/erp` is the reference (Valkey):
+`koncept render crossplane` writes typed XRs for curated services to `output/crossplane/managed_resources/`. Commit that directory and let Argo CD sync it; Crossplane reconciles each XR through the matching `crossplane_v2/managed_resources/<service>/` API. `projects/erp` is the reference (Valkey cache and a single-instance CloudNativePG PostgreSQL):
 
 ```bash
 kubectl -n argocd patch configmap argocd-cm --type merge --patch-file gitops/argocd/argocd-cm.yaml
@@ -257,6 +257,19 @@ kubectl -n argocd patch configmap argocd-cmd-params-cm --type merge --patch-file
 kubectl -n argocd rollout restart deployment argocd-server
 kubectl apply -f gitops/argocd/erp-project.yaml -f gitops/argocd/erp-dev-application.yaml
 ```
+
+PostgreSQL needs the CloudNativePG operator and, for superuser access, a Secret created out of band (credentials never live in Git):
+
+```bash
+helm repo add cnpg https://cloudnative-pg.github.io/charts
+helm install cnpg cnpg/cloudnative-pg --version 0.29.1 -n cnpg-system --create-namespace
+kubectl apply -f crossplane_v2/managed_resources/postgres/xrd_postgres.yaml -f crossplane_v2/managed_resources/postgres/x_postgres.yaml
+kubectl create namespace erp-postgres
+kubectl -n erp-postgres create secret generic erp-postgres-superuser --type=kubernetes.io/basic-auth \
+  --from-literal=username=postgres --from-literal=password='<password>'
+```
+
+On the dev site the primary is exposed on NodePort 31543 (`postgresNodePort`), so `jdbc:postgresql://<node ip>:31543/blue_postgres` reaches it with user `postgres` and the Secret's password; the application role's generated credentials are in Secret `erp-postgres-app`.
 
 The `argocd-cm` patch sets the public URL, annotation resource tracking and a health check for `koncept.bluesolution.es` XRs; `argocd-cmd-params-cm` serves Argo CD under `/argocd` behind the gateway. The `erp` AppProject only allows the XR kinds the project renders.
 

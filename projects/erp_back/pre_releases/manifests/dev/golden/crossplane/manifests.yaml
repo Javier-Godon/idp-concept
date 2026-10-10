@@ -139,159 +139,6 @@ composition:
                       koncept.io/support-contact: '#erp-platform-support'
                     labels: {}
                     name: erp-postgres
-        - name: acc-erp-postgres-cluster-erp-postgres
-          base:
-            apiVersion: kubernetes.crossplane.io/v1alpha2
-            kind: Object
-            metadata:
-              name: acc-erp-postgres-cluster-erp-postgres
-              labels: {}
-              annotations:
-                koncept.io/owner: erp-platform-team
-                koncept.io/team: erp-platform
-                koncept.io/lifecycle: production
-                koncept.io/slo-tier: tier-1
-                koncept.io/criticality: high
-                koncept.io/data-classification: internal
-                koncept.io/cost-center: CC-ERP-001
-                koncept.io/runbook: https://runbooks.bluesolution.es/erp-back
-                koncept.io/support-contact: '#erp-platform-support'
-            spec:
-              providerConfigRef:
-                name: provider-kubernetes
-              forProvider:
-                manifest:
-                  apiVersion: postgresql.cnpg.io/v1
-                  kind: Cluster
-                  metadata:
-                    name: erp-postgres
-                    namespace: erp-postgres
-                    labels: {}
-                    annotations:
-                      koncept.io/owner: erp-platform-team
-                      koncept.io/team: erp-platform
-                      koncept.io/lifecycle: production
-                      koncept.io/slo-tier: tier-1
-                      koncept.io/criticality: high
-                      koncept.io/data-classification: internal
-                      koncept.io/cost-center: CC-ERP-001
-                      koncept.io/runbook: https://runbooks.bluesolution.es/erp-back
-                      koncept.io/support-contact: '#erp-platform-support'
-                  spec:
-                    instances: 3
-                    enableSuperuserAccess: false
-                    enablePDB: true
-                    storage:
-                      size: 20Gi
-                      storageClass: local-path
-                    bootstrap:
-                      initdb:
-                        database: erp_db
-                        owner: erp_app
-                    monitoring:
-                      enablePodMonitor: true
-                    backup:
-                      retentionPolicy: 7d
-                    imageName: postgres:16.4-alpine
-                    resources:
-                      requests:
-                        cpu: 500m
-                        memory: 1Gi
-                      limits:
-                        cpu: '2'
-                        memory: 4Gi
-                    primaryUpdateStrategy: unsupervised
-        - name: acc-erp-postgres-scheduledbackup-erp-postgres-daily-backup
-          base:
-            apiVersion: kubernetes.crossplane.io/v1alpha2
-            kind: Object
-            metadata:
-              name: acc-erp-postgres-scheduledbackup-erp-postgres-daily-backup
-              labels: {}
-              annotations:
-                koncept.io/owner: erp-platform-team
-                koncept.io/team: erp-platform
-                koncept.io/lifecycle: production
-                koncept.io/slo-tier: tier-1
-                koncept.io/criticality: high
-                koncept.io/data-classification: internal
-                koncept.io/cost-center: CC-ERP-001
-                koncept.io/runbook: https://runbooks.bluesolution.es/erp-back
-                koncept.io/support-contact: '#erp-platform-support'
-            spec:
-              providerConfigRef:
-                name: provider-kubernetes
-              forProvider:
-                manifest:
-                  apiVersion: postgresql.cnpg.io/v1
-                  kind: ScheduledBackup
-                  metadata:
-                    name: erp-postgres-daily-backup
-                    namespace: erp-postgres
-                    labels: {}
-                    annotations:
-                      koncept.io/owner: erp-platform-team
-                      koncept.io/team: erp-platform
-                      koncept.io/lifecycle: production
-                      koncept.io/slo-tier: tier-1
-                      koncept.io/criticality: high
-                      koncept.io/data-classification: internal
-                      koncept.io/cost-center: CC-ERP-001
-                      koncept.io/runbook: https://runbooks.bluesolution.es/erp-back
-                      koncept.io/support-contact: '#erp-platform-support'
-                  spec:
-                    cluster:
-                      name: erp-postgres
-                    schedule: 0 0 2 * * *
-                    immediate: true
-                    backupOwnerReference: cluster
-                    method: barmanObjectStore
-                    suspend: false
-        - name: acc-erp-postgres-pooler-erp-postgres-rw
-          base:
-            apiVersion: kubernetes.crossplane.io/v1alpha2
-            kind: Object
-            metadata:
-              name: acc-erp-postgres-pooler-erp-postgres-rw
-              labels: {}
-              annotations:
-                koncept.io/owner: erp-platform-team
-                koncept.io/team: erp-platform
-                koncept.io/lifecycle: production
-                koncept.io/slo-tier: tier-1
-                koncept.io/criticality: high
-                koncept.io/data-classification: internal
-                koncept.io/cost-center: CC-ERP-001
-                koncept.io/runbook: https://runbooks.bluesolution.es/erp-back
-                koncept.io/support-contact: '#erp-platform-support'
-            spec:
-              providerConfigRef:
-                name: provider-kubernetes
-              forProvider:
-                manifest:
-                  apiVersion: postgresql.cnpg.io/v1
-                  kind: Pooler
-                  metadata:
-                    name: erp-postgres-rw
-                    namespace: erp-postgres
-                    labels: {}
-                    annotations:
-                      koncept.io/owner: erp-platform-team
-                      koncept.io/team: erp-platform
-                      koncept.io/lifecycle: production
-                      koncept.io/slo-tier: tier-1
-                      koncept.io/criticality: high
-                      koncept.io/data-classification: internal
-                      koncept.io/cost-center: CC-ERP-001
-                      koncept.io/runbook: https://runbooks.bluesolution.es/erp-back
-                      koncept.io/support-contact: '#erp-platform-support'
-                  spec:
-                    cluster:
-                      name: erp-postgres
-                    instances: 2
-                    type: rw
-                    pgbouncer:
-                      poolMode: session
         - name: comp-erp-api-deployment-erp-api
           base:
             apiVersion: kubernetes.crossplane.io/v1alpha2
@@ -606,10 +453,39 @@ prerequisites:
       koncept.io/support-contact: '#erp-platform-support'
   spec:
     package: xpkg.upbound.io/crossplane-contrib/function-auto-ready:v0.5.0
-managed_resources: []
+managed_resources:
+- apiVersion: koncept.bluesolution.es/v1alpha1
+  kind: XPostgresInstance
+  metadata:
+    name: erp-postgres
+    labels: {}
+    annotations:
+      koncept.io/owner: erp-platform-team
+      koncept.io/team: erp-platform
+      koncept.io/lifecycle: production
+      koncept.io/slo-tier: tier-1
+      koncept.io/criticality: high
+      koncept.io/data-classification: internal
+      koncept.io/cost-center: CC-ERP-001
+      koncept.io/runbook: https://runbooks.bluesolution.es/erp-back
+      koncept.io/support-contact: '#erp-platform-support'
+  spec:
+    namespace: erp-postgres
+    clusterName: erp-postgres
+    dbName: erp_db
+    ownerUsername: erp_app
+    instances: 3
+    storageSize: 20Gi
+    storageClass: local-path
+    image: postgres:16.4-alpine
+    resourceCpuRequest: 500m
+    resourceMemoryRequest: 1Gi
+    resourceCpuLimit: '2'
+    resourceMemoryLimit: 4Gi
+    environment: production
 metadata:
-  resourceCount: 7
-  managedResourceCount: 0
+  resourceCount: 4
+  managedResourceCount: 1
   sequencerRules: 5
   xrKind: XErpBack
   version: 1.0.0

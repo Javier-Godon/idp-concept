@@ -5,8 +5,8 @@ metadata:
   annotations:
     koncept.io/tier: "2"
     koncept.io/operator: "cloudnative-pg"
-    koncept.io/operator-version: "1.24.x"
-    koncept.io/last-reviewed: "2026-06-01"
+    koncept.io/operator-version: "1.30.x"
+    koncept.io/last-reviewed: "2026-10-10"
 spec:
   scope: Cluster
   group: koncept.bluesolution.es
@@ -26,13 +26,12 @@ spec:
         - name: INSTANCES
           type: integer
           jsonPath: .spec.instances
-          description: Number of PostgreSQL instances in the cluster
         - name: STORAGE
           type: string
           jsonPath: .spec.storageSize
-        - name: PG-VERSION
+        - name: ENDPOINT
           type: string
-          jsonPath: .spec.postgresVersion
+          jsonPath: .status.primaryEndpoint
         - name: READY
           type: string
           jsonPath: .status.conditions[?(@.type=="Ready")].status
@@ -45,55 +44,67 @@ spec:
           properties:
             spec:
               type: object
-              description: PostgresInstance configures a CloudNativePG-managed PostgreSQL cluster.
+              x-kubernetes-validations:
+                - rule: "self.nodePort == 0 || (self.nodePort >= 30000 && self.nodePort <= 32767)"
+                  message: "nodePort must be 0 (disabled) or within the Kubernetes NodePort range 30000-32767"
               required:
                 - namespace
                 - dbName
               properties:
                 namespace:
                   type: string
-                  description: Kubernetes namespace where the PostgreSQL cluster runs.
+                  description: Namespace that holds the CNPG Cluster (created by the composition).
+                clusterName:
+                  type: string
+                  default: ""
+                  description: CNPG Cluster name. Defaults to the XR name.
                 dbName:
                   type: string
-                  description: Name of the primary database created on bootstrap.
                   pattern: "^[a-z][a-z0-9_]{0,62}$"
+                  description: Database created by initdb.
                 ownerUsername:
                   type: string
-                  description: PostgreSQL username for the database owner. Defaults to the dbName.
                   default: ""
+                  description: Owner role of the database; its credentials live in the <cluster>-app Secret. Defaults to dbName.
                 instances:
                   type: integer
-                  description: "Number of PostgreSQL instances (1 = standalone, 3+ = HA)."
                   default: 1
                   minimum: 1
                   maximum: 9
                 storageSize:
                   type: string
-                  description: PVC storage size for each instance (e.g. 10Gi, 50Gi).
                   default: "10Gi"
                   pattern: "^[0-9]+(Mi|Gi|Ti)$"
                 storageClass:
                   type: string
-                  description: StorageClass name. Leave empty for the cluster default.
                   default: ""
-                postgresVersion:
-                  type: integer
-                  description: "Major PostgreSQL version to deploy (16, 17)."
-                  default: 16
-                  enum:
-                    - 16
-                    - 17
-                enableBackups:
-                  type: boolean
-                  description: Whether to enable Barman-based object-store backups.
-                  default: false
-                backupSchedule:
+                image:
                   type: string
-                  description: Cron schedule for scheduled backups (requires enableBackups).
-                  default: "0 0 * * *"
+                  default: "ghcr.io/cloudnative-pg/postgresql:18.4"
+                  pattern: "^[a-z0-9/@:._-]+$"
+                  description: CNPG-compatible PostgreSQL image (pinned tag).
+                superuserSecretName:
+                  type: string
+                  default: ""
+                  description: Name of an existing kubernetes.io/basic-auth Secret (username postgres) in the XR namespace. When set, superuser access is enabled with those credentials. The Secret is never rendered into Git.
+                nodePort:
+                  type: integer
+                  default: 0
+                  description: When non-zero, a NodePort Service exposes the primary on this node port (development clusters only).
+                resourceCpuRequest:
+                  type: string
+                  default: "100m"
+                resourceMemoryRequest:
+                  type: string
+                  default: "256Mi"
+                resourceCpuLimit:
+                  type: string
+                  default: "1"
+                resourceMemoryLimit:
+                  type: string
+                  default: "1Gi"
                 environment:
                   type: string
-                  description: "Target environment tier: local, development, staging, production."
                   default: production
                   enum:
                     - local
@@ -102,13 +113,6 @@ spec:
                     - production
                 owner:
                   type: string
-                  description: "Team or system that owns this database (for labeling/RBAC)."
-                  default: ""
-                connectionSecretName:
-                  type: string
-                  description: >
-                    Override the default name of the Kubernetes Secret that CNPG writes
-                    connection credentials into. Defaults to <xr-name>-connection.
                   default: ""
             status:
               type: object
@@ -130,16 +134,11 @@ spec:
                         type: string
                 clusterName:
                   type: string
-                  description: The name of the generated CNPG Cluster resource.
                 connectionSecretRef:
                   type: string
-                  description: The name of the Secret containing PostgreSQL credentials.
                 primaryEndpoint:
                   type: string
-                  description: Read-write service endpoint for PostgreSQL connections.
                 readonlyEndpoint:
                   type: string
-                  description: Read-only service endpoint for replica connections.
                 readyInstances:
                   type: integer
-                  description: Number of instances currently Ready.

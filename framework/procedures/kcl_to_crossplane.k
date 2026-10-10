@@ -34,7 +34,7 @@ Pipeline architecture:
 Curated Services (Track 1 — no Object wrapping):
     PostgreSQL, Timescale, Kafka, Keycloak, Cert-Manager, MongoDB, RabbitMQ, Redis, Valkey,
     OpenSearch, MinIO, Vault, OpenBao, QuestDB, Elasticsearch, Kibana, Logstash,
-    OpenTelemetry, Data Prepper, Fluent Bit, Ceph, Longhorn, Observability, Gateway (XGateway)
+    OpenTelemetry, Data Prepper, Fluent Bit, Ceph, Longhorn, Observability
 
 Usage:
     import procedures.kcl_to_crossplane as crossplane_proc
@@ -64,7 +64,6 @@ _PROVIDER_HELM = "helm-provider"
 _CURATED_SERVICES = {
     # Tier 0: Platform foundation
     "ceph" = {xrd_kind = "XCephCluster", api_group = "koncept.bluesolution.es"}
-    "gateway" = {xrd_kind = "XGateway", api_group = "koncept.bluesolution.es"}
     # Tier 1: Operator-managed infrastructure
     "postgresql" = {xrd_kind = "XPostgresInstance", api_group = "koncept.bluesolution.es"}
     "timescaledb" = {xrd_kind = "XTimescaleDBInstance", api_group = "koncept.bluesolution.es"}
@@ -112,7 +111,7 @@ _FUNC_AUTO_READY_VERSION = "xpkg.upbound.io/crossplane-contrib/function-auto-rea
 # --- Name sanitization ---
 
 _sanitize = lambda name: str -> str {
-    name.lower().replace("_", "-").replace(" ", "-")
+    name.lower().replace("_", "-")
 }
 
 _to_xr_kind = lambda name: str -> str {
@@ -258,9 +257,6 @@ generate_xrd = lambda stack_name: str, xr_kind: str, meta: any = Undefined -> {s
         kind = "CompositeResourceDefinition"
         metadata.name = "${_plural}.${_API_GROUP}"
         spec = {
-            # Bridge resources are cluster-scoped provider-kubernetes Objects, which only
-            # cluster-scoped XRs may compose in Crossplane v2 (XRDs default to Namespaced).
-            scope = "Cluster"
             group = _API_GROUP
             names = {
                 kind = xr_kind

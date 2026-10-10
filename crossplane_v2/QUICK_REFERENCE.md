@@ -299,7 +299,7 @@ kubectl get xmongodbinstance -o yaml  # Full XR detail
 
 | Infrastructure Service | Crossplane API Status | Framework Template | Notes |
 |---|---|---|---|
-| PostgreSQL (CNPG) | ✅ `postgres/*` | `postgresql/` | Previously implemented |
+| PostgreSQL (CNPG) | ✅ `postgres/*` | `postgresql/` | `helm install cnpg cnpg/cloudnative-pg --version 0.29.1 -n cnpg-system --create-namespace` (repo `https://cloudnative-pg.github.io/charts`); consumed by `projects/erp` |
 | Kafka (Strimzi) | ✅ `kafka_strimzi/*` | `kafka/` | Previously implemented |
 | Keycloak | ✅ `keycloak/*` | `keycloak/` | Previously implemented |
 | Cert-Manager | ✅ `cert_manager/*` | (cluster infra) | Previously implemented |

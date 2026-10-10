@@ -71,6 +71,7 @@ There are **two distinct Crossplane concerns** in this repository. Keeping them 
 | `keycloak` | `keycloak/*` | ✅ operator CRD + glue |
 | (cluster infra, no template) | `cert_manager/*` | ✅ Helm Release |
 | `gateway_api` (Envoy Gateway) | `gateway_api/*` | ✅ Helm Release + Gateway API objects; live-verified, consumed by `projects/platform` |
+| `postgresql` (CloudNativePG) | `postgres/*` | 🧪 operator CRD; reconcile + NodePort access + delete verified on CNPG 1.30, consumed by `projects/erp` |
 | `valkey` (OT redis-operator) | `valkey/*` | 🧪 operator CRD; reconcile + delete verified, consumed by `projects/erp` |
 | `mongodb`, `rabbitmq`, `redis`, `opensearch`, `minio`, `vault`/`openbao`, `questdb`, `elastic`, `opentelemetry` | — | ⬜ gap: add only where the selection policy justifies a control-plane API |
 | `webapp`, generic `database` | — | 🚫 intentionally excluded (Tier-1 GitOps/YAML) |
@@ -177,7 +178,7 @@ spec:
     kind: XPostgresInstance
   versions:
     - name: v1alpha1
-      additionalPrinterColumns: [NAMESPACE, INSTANCES, STORAGE, PG-VERSION, READY, AGE]
+      additionalPrinterColumns: [NAMESPACE, INSTANCES, STORAGE, ENDPOINT, READY, AGE]
       schema:
         openAPIV3Schema:
           properties:
@@ -188,10 +189,12 @@ spec:
                 dbName: { type: string, pattern: "^[a-z][a-z0-9_]{0,62}$" }
                 instances: { type: integer, default: 1, minimum: 1, maximum: 9 }
                 storageSize: { type: string, default: "10Gi" }
-                postgresVersion: { type: string }
+                image: { type: string, default: "ghcr.io/cloudnative-pg/postgresql:18.4" }
+                superuserSecretName: { type: string, default: "" }   # existing basic-auth Secret, never in Git
+                nodePort: { type: integer, default: 0 }               # dev-only external access
 ```
 
-This XRD models intent (database name, instance count, storage, version) with defaults, enums,
+This XRD models intent (database name, instance count, storage, image, optional NodePort) with defaults, enums,
 printer columns, and a status-backed `READY` column. It is the quality bar for promoting any new
 Crossplane API.
 
@@ -561,7 +564,7 @@ Future scope can extend this same entrypoint with optional cluster reconciliatio
 | **cert-manager** | `xcertmanagers.koncept.bluesolution.es` | Namespace + Helm Release | Jetstack cert-manager v1.17.2 |
 | **Kafka (Strimzi)** | `xkafkastrimzis.koncept.bluesolution.es` | Helm Release (Strimzi operator) | Strimzi 0.46.0 OCI chart |
 | **Keycloak** | `xkeycloaks.koncept.bluesolution.es` | Namespace + Auto-ready + CRD instance | Keycloak CRD (keycloak-operator 26.4.0) |
-| **PostgreSQL** | `xpostgresinstances.koncept.bluesolution.es` | Namespace + CNPG `Cluster` (provider-native via operator CRD) | CloudNativePG operator 1.24.x |
+| **PostgreSQL** | `xpostgresinstances.koncept.bluesolution.es` | Namespace + CNPG `Cluster` (provider-native via operator CRD) | CloudNativePG operator 1.30.x (+ optional NodePort Service, function-kcl composition) |
 
 ---
 

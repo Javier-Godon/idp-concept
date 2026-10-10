@@ -1,0 +1,19 @@
+apiVersion: koncept.bluesolution.es/v1alpha1
+kind: XPostgresInstance
+metadata:
+    name: erp-postgres
+spec:
+    clusterName: erp-postgres
+    dbName: blue_postgres
+    environment: development
+    image: ghcr.io/cloudnative-pg/postgresql:18.4
+    instances: 1
+    namespace: erp-postgres
+    nodePort: 31543
+    resourceCpuLimit: "1"
+    resourceCpuRequest: 100m
+    resourceMemoryLimit: 1Gi
+    resourceMemoryRequest: 256Mi
+    storageClass: local-path
+    storageSize: 2Gi
+    superuserSecretName: erp-postgres-superuser

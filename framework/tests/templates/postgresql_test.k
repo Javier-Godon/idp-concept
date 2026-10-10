@@ -9,6 +9,8 @@ Workaround: Test the build_* lambdas and schema fields indirectly.
 Template integration is validated via `kcl run` in the CI pipeline.
 """
 import templates.postgresql.v1_0_0.postgresql as pg
+import procedures.kcl_to_crossplane as crossplane_proc
+import models.modules.accessory as accessory
 import runtime
 
 # === Test: build_cnpg_cluster generates correct Cluster CRD ===
@@ -178,4 +180,96 @@ test_cnpg_cluster_spec_rejects_empty_storage = lambda {
         }
     })
     assert _err, "Expected validation error for empty storageSize"
+}
+
+# === Test: superuser secret enables superuser access in the YAML Cluster ===
+test_build_cnpg_cluster_superuser_secret = lambda {
+    _result = pg.build_cnpg_cluster(pg.CNPGClusterSpec {
+        name = "db"
+        namespace = "data"
+        superuserSecretName = "db-superuser"
+    })
+    assert _result.spec.enableSuperuserAccess == True
+    assert _result.spec.superuserSecret.name == "db-superuser"
+}
+
+# === Test: crossplane XR spec for a development single instance ===
+test_cnpg_xr_spec_development = lambda {
+    _xr = pg.build_cnpg_xr_spec(pg.CNPGClusterSpec {
+        name = "erp-postgres"
+        namespace = "erp-postgres"
+        footprint = "development"
+        databaseName = "blue_postgres"
+        superuserSecretName = "erp-postgres-superuser"
+    }, 31543)
+    assert _xr.clusterName == "erp-postgres"
+    assert _xr.dbName == "blue_postgres"
+    assert _xr.instances == 1
+    assert _xr.storageSize == "2Gi"
+    assert _xr.superuserSecretName == "erp-postgres-superuser"
+    assert _xr.nodePort == 31543
+    assert _xr.resourceMemoryLimit == "1Gi"
+    assert _xr.environment == "development"
+    assert "storageClass" not in _xr
+    assert "ownerUsername" not in _xr
+}
+
+# === Test: explicit resources win over footprint defaults; nodePort omitted when unset ===
+test_cnpg_xr_spec_explicit_resources = lambda {
+    _xr = pg.build_cnpg_xr_spec(pg.CNPGClusterSpec {
+        name = "db"
+        namespace = "data"
+        instances = 3
+        storageClass = "fast-ssd"
+        imageName = "ghcr.io/cloudnative-pg/postgresql:17.9"
+        resources = {requests = {cpu = "2", memory = "4Gi"}}
+    })
+    assert _xr.instances == 3
+    assert _xr.storageClass == "fast-ssd"
+    assert _xr.image == "ghcr.io/cloudnative-pg/postgresql:17.9"
+    assert _xr.resourceCpuRequest == "2"
+    assert _xr.resourceMemoryRequest == "4Gi"
+    assert _xr.resourceCpuLimit == "2"
+    assert _xr.dbName == "db"
+    assert "nodePort" not in _xr
+}
+
+# === Test: NodePort Service targets the CNPG primary ===
+test_cnpg_nodeport_service = lambda {
+    _svc = pg.build_nodeport_service("db-nodeport", "data", "db", 30543)
+    assert _svc.kind == "Service"
+    assert _svc.spec["type"] == "NodePort"
+    assert _svc.spec.ports[0].nodePort == 30543
+    assert _svc.spec.selector["cnpg.io/cluster"] == "db"
+    assert _svc.spec.selector["cnpg.io/instanceRole"] == "primary"
+}
+
+# === Test: crossplane output emits a typed XPostgresInstance from crossplaneSpec (no Object wrapping) ===
+test_postgresql_crossplane_output_uses_xr_spec = lambda {
+    _spec = pg.CNPGClusterSpec {
+        name = "db"
+        namespace = "data"
+        footprint = "development"
+        databaseName = "app"
+    }
+    _acc = accessory.AccessoryInstance {
+        name = "db"
+        kind = "CRD"
+        namespace = "data"
+        component = "postgresql"
+        crossplaneSpec = pg.build_cnpg_xr_spec(_spec, 30543)
+        configurations = {}
+        asset = {version = "18.4"}
+        leaders = []
+        manifests = [pg.build_cnpg_cluster(_spec)]
+        dependsOn = []
+    }
+    _out = crossplane_proc.generate_crossplane_from_stack([], [_acc], [], "erp", "0.1.0")
+    assert len(_out.managed_resources) == 1
+    _xr = _out.managed_resources[0]
+    assert _xr.kind == "XPostgresInstance"
+    assert _xr.spec.namespace == "data"
+    assert _xr.spec.dbName == "app"
+    assert _xr.spec.nodePort == 30543
+    assert _out.metadata.resourceCount == 0
 }

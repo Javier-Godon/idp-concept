@@ -1,18 +1,18 @@
-## PostgreSQL Composition — CloudNativePG (CNPG) Provider-Native Pattern
+## PostgreSQL Composition — CloudNativePG (CNPG) operator pattern
 ##
-## Prerequisite: CNPG operator must be installed on the cluster.
-## Install via: kubectl apply -f https://raw.githubusercontent.com/cloudnative-pg/cloudnative-pg/release-1.24/releases/cnpg-1.24.0.yaml
-## Or use the cnpg-controller Helm chart (see docs/CROSSPLANE_PATTERNS.md section 4).
+## The composition creates the namespace, a CNPG `Cluster` (operator-native CRD, reconciled by
+## CNPG into Pods, Services, PVCs and Secrets) and, only when `spec.nodePort` is set, a NodePort
+## Service that selects the CNPG primary. Credentials are never rendered: the application role gets
+## a generated `<cluster>-app` Secret, and an optional pre-created basic-auth Secret
+## (`spec.superuserSecretName`) enables superuser access.
 ##
-## This composition uses:
-##   - provider-kubernetes Object for the Namespace (small cluster glue, acceptable per patterns)
-##   - provider-kubernetes Object for the CNPG Cluster CRD (operator-native resource, not a raw Deployment)
-##   - FromCompositeFieldPath patches to inject all XR spec fields into the Cluster
-##   - function-sequencer to ensure namespace is ready before the Cluster is created
-##   - function-auto-ready for composite readiness detection
+## Readiness: the Cluster Object is Ready only when status.readyInstances equals spec.instances.
 ##
-## The CNPG operator manages Pods, Services, PVCs, and Secrets automatically.
-## The connection Secret (named <xr-name>-<owner>-connection) is written by CNPG.
+## Prerequisites (cluster bootstrap, see docs/platform-engineering/PLATFORM_INSTALLATION.md):
+##   - CNPG operator:  helm repo add cnpg https://cloudnative-pg.github.io/charts
+##                     helm install cnpg cnpg/cloudnative-pg --version 0.29.1 -n cnpg-system --create-namespace
+##   - provider-kubernetes with ProviderConfig `provider-kubernetes`
+##   - function-kcl, function-auto-ready
 
 apiVersion: apiextensions.crossplane.io/v1
 kind: Composition
@@ -29,133 +29,136 @@ spec:
   mode: Pipeline
   pipeline:
 
-    # Step 1: Create all composed resources (namespace + CNPG Cluster)
     - step: render-resources
       functionRef:
-        name: function-patch-and-transform
+        name: function-kcl
       input:
-        apiVersion: pt.fn.crossplane.io/v1beta1
-        kind: Resources
-        resources:
+        apiVersion: krm.kcl.dev/v1alpha1
+        kind: KCLInput
+        spec:
+          source: |
+            _params = option("params")
+            _oxr = _params.oxr
+            _ocds = _params.ocds or {}
+            _ox = _oxr.spec
+            _name = _ox.clusterName if _ox.clusterName else _oxr.metadata.name
+            _ns = _ox.namespace
 
-          # --- Namespace (small cluster glue: allowed provider-kubernetes Object) ---
-          - name: ns-postgres
-            base:
-              apiVersion: kubernetes.crossplane.io/v1alpha2
-              kind: Object
-              spec:
-                providerConfigRef:
-                  name: provider-kubernetes
-                forProvider:
-                  manifest:
-                    apiVersion: v1
-                    kind: Namespace
-                    metadata:
-                      name: postgres  # overridden by patch
-                      labels:
-                        koncept.io/managed-by: crossplane
-            patches:
-              - type: FromCompositeFieldPath
-                fromFieldPath: spec.namespace
-                toFieldPath: spec.forProvider.manifest.metadata.name
-                policy:
-                  fromFieldPath: Required
-              - type: FromCompositeFieldPath
-                fromFieldPath: spec.owner
-                toFieldPath: spec.forProvider.manifest.metadata.labels["koncept.io/owner"]
+            _labels = {
+                "app.kubernetes.io/name" = "postgresql"
+                "app.kubernetes.io/instance" = _name
+                "koncept.io/managed-by" = "crossplane"
+                "koncept.io/environment" = _ox.environment
+                if _ox.owner:
+                    "koncept.io/owner" = _ox.owner
+            }
 
-          # --- CNPG Cluster (operator-native CRD — not a raw Deployment wrapper) ---
-          # CNPG operator reconciles this CRD into Pods, Services, PVCs, and Secrets.
-          - name: cnpg-cluster
-            base:
-              apiVersion: kubernetes.crossplane.io/v1alpha2
-              kind: Object
-              spec:
-                providerConfigRef:
-                  name: provider-kubernetes
-                forProvider:
-                  manifest:
-                    apiVersion: postgresql.cnpg.io/v1
-                    kind: Cluster
-                    metadata:
-                      name: postgres-cluster  # overridden by patch
-                      namespace: postgres      # overridden by patch
-                      labels:
-                        koncept.io/managed-by: crossplane
-                    spec:
-                      instances: 1             # overridden by patch
-                      storage:
-                        size: 10Gi             # overridden by patch
-                      postgresql:
-                        parameters:
-                          max_connections: "200"
-                          shared_buffers: "256MB"
-                      bootstrap:
-                        initdb:
-                          database: mydb       # overridden by patch
-                          owner: mydb          # overridden by patch
-                      managed:
-                        roles: []
-            patches:
-              # Target namespace
-              - type: FromCompositeFieldPath
-                fromFieldPath: spec.namespace
-                toFieldPath: spec.forProvider.manifest.metadata.namespace
-                policy:
-                  fromFieldPath: Required
-              # Cluster name derived from XR name
-              - type: FromCompositeFieldPath
-                fromFieldPath: metadata.name
-                toFieldPath: spec.forProvider.manifest.metadata.name
-                transforms:
-                  - type: string
-                    string:
-                      type: Format
-                      fmt: "%s-cluster"
-              # Instance count
-              - type: FromCompositeFieldPath
-                fromFieldPath: spec.instances
-                toFieldPath: spec.forProvider.manifest.spec.instances
-              # Storage size
-              - type: FromCompositeFieldPath
-                fromFieldPath: spec.storageSize
-                toFieldPath: spec.forProvider.manifest.spec.storage.size
-              # Storage class (optional — leave unset to use cluster default)
-              - type: FromCompositeFieldPath
-                fromFieldPath: spec.storageClass
-                toFieldPath: spec.forProvider.manifest.spec.storage.storageClass
-                policy:
-                  fromFieldPath: Optional
-              # Database name
-              - type: FromCompositeFieldPath
-                fromFieldPath: spec.dbName
-                toFieldPath: spec.forProvider.manifest.spec.bootstrap.initdb.database
-                policy:
-                  fromFieldPath: Required
-              # Database owner (use ownerUsername if set, otherwise fall back to dbName)
-              - type: FromCompositeFieldPath
-                fromFieldPath: spec.ownerUsername
-                toFieldPath: spec.forProvider.manifest.spec.bootstrap.initdb.owner
-                policy:
-                  fromFieldPath: Optional
-              # Owner label
-              - type: FromCompositeFieldPath
-                fromFieldPath: spec.owner
-                toFieldPath: spec.forProvider.manifest.metadata.labels["koncept.io/owner"]
+            _object = lambda name: str, manifest: {str:}, extra: {str:} -> {str:} {
+                {
+                    apiVersion = "kubernetes.crossplane.io/v1alpha2"
+                    kind = "Object"
+                    metadata.annotations = {
+                        "krm.kcl.dev/composition-resource-name" = name
+                    }
+                    spec = {
+                        providerConfigRef.name = "provider-kubernetes"
+                        forProvider.manifest = manifest
+                    } | extra
+                }
+            }
 
-    # Step 2: Enforce namespace-before-cluster creation order
+            _is_ready = lambda name: str -> bool {
+                _conditions = _ocds[name]?.Resource?.status?.conditions or []
+                any c in _conditions {
+                    c.type == "Ready" and c.status == "True"
+                }
+            }
+
+            _namespace = _object("namespace", {
+                apiVersion = "v1"
+                kind = "Namespace"
+                metadata = {
+                    name = _ns
+                    labels = _labels
+                }
+            }, {})
+
+            _cluster = _object("cluster", {
+                apiVersion = "postgresql.cnpg.io/v1"
+                kind = "Cluster"
+                metadata = {
+                    name = _name
+                    namespace = _ns
+                    labels = _labels
+                }
+                spec = {
+                    instances = _ox.instances
+                    imageName = _ox.image
+                    storage = {
+                        size = _ox.storageSize
+                        if _ox.storageClass:
+                            storageClass = _ox.storageClass
+                    }
+                    resources = {
+                        requests = {cpu = _ox.resourceCpuRequest, memory = _ox.resourceMemoryRequest}
+                        limits = {cpu = _ox.resourceCpuLimit, memory = _ox.resourceMemoryLimit}
+                    }
+                    bootstrap.initdb = {
+                        database = _ox.dbName
+                        owner = _ox.ownerUsername if _ox.ownerUsername else _ox.dbName
+                    }
+                    if _ox.superuserSecretName:
+                        enableSuperuserAccess = True
+                        superuserSecret.name = _ox.superuserSecretName
+                }
+            }, {
+                readiness = {
+                    policy = "DeriveFromCelQuery"
+                    celQuery = "has(object.status.readyInstances) && object.status.readyInstances == object.spec.instances"
+                }
+            })
+
+            _nodeport_service = _object("nodeport-service", {
+                apiVersion = "v1"
+                kind = "Service"
+                metadata = {
+                    name = "${_name}-nodeport"
+                    namespace = _ns
+                    labels = _labels
+                }
+                spec = {
+                    $type = "NodePort"
+                    selector = {
+                        "cnpg.io/cluster" = _name
+                        "cnpg.io/instanceRole" = "primary"
+                    }
+                    ports = [{
+                        name = "postgres"
+                        port = 5432
+                        targetPort = 5432
+                        nodePort = _ox.nodePort
+                    }]
+                }
+            }, {})
+
+            # Create the operator CR only after the namespace exists; never drop it once composed,
+            # otherwise Crossplane would delete it when the namespace Object flaps.
+            _create = _is_ready("namespace") or "cluster" in _ocds
+            _cluster_status = _ocds["cluster"]?.Resource?.status?.atProvider?.manifest?.status or {}
+
+            _dxr = {
+                **_params.dxr
+                status = {
+                    clusterName = _name
+                    connectionSecretRef = "${_name}-app"
+                    primaryEndpoint = "${_name}-rw.${_ns}.svc.cluster.local:5432"
+                    readonlyEndpoint = "${_name}-ro.${_ns}.svc.cluster.local:5432"
+                    readyInstances = _cluster_status.readyInstances or 0
+                }
+            }
+
+            items = [_namespace, _dxr] + ([_cluster] + ([_nodeport_service] if _ox.nodePort else []) if _create else [])
+
     - step: automatically-detect-readiness
       functionRef:
         name: function-auto-ready
-    - step: sequence-creation
-      functionRef:
-        name: function-sequencer
-      input:
-        apiVersion: sequencer.fn.crossplane.io/v1beta1
-        kind: Input
-        rules:
-          - sequence:
-              - ns-postgres
-              - cnpg-cluster
-
-    # Step 3: Detect readiness from composed resources

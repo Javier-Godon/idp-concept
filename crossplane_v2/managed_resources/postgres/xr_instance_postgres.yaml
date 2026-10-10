@@ -1,6 +1,6 @@
-## PostgreSQL XR instance examples
+## PostgreSQL XR instance examples (cluster-scoped, platform-owned XRs)
 ##
-## Cluster-scoped XR (platform-owned):
+## Production: HA cluster with backups-ready storage.
 ---
 apiVersion: koncept.bluesolution.es/v1alpha1
 kind: XPostgresInstance
@@ -13,27 +13,13 @@ spec:
   instances: 3
   storageSize: "50Gi"
   storageClass: "fast-nvme"
-  postgresVersion: 16
-  environment: production
-  owner: erp-back-team
-  enableBackups: true
-  backupSchedule: "0 2 * * *"
----
-## Additional XR example (product-team usage; RBAC-scoped, not a Claim):
-apiVersion: koncept.bluesolution.es/v1alpha1
-kind: XPostgresInstance
-metadata:
-  name: erp-back-postgres
-spec:
-  namespace: erp-back-data
-  dbName: erp_back
-  instances: 3
-  storageSize: "50Gi"
-  postgresVersion: 16
   environment: production
   owner: erp-back-team
 ---
-## Development / local single-instance example:
+## Development / local single instance, reachable from outside the cluster on a NodePort.
+## The superuser Secret (kubernetes.io/basic-auth, username "postgres") is created out of band:
+##   kubectl -n erp-back-dev create secret generic erp-back-postgres-dev-superuser \
+##     --type=kubernetes.io/basic-auth --from-literal=username=postgres --from-literal=password=<password>
 apiVersion: koncept.bluesolution.es/v1alpha1
 kind: XPostgresInstance
 metadata:
@@ -43,6 +29,7 @@ spec:
   dbName: erp_back
   instances: 1
   storageSize: "2Gi"
-  postgresVersion: 16
+  superuserSecretName: erp-back-postgres-dev-superuser
+  nodePort: 31543
   environment: development
   owner: erp-back-team

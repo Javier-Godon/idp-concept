@@ -6,6 +6,7 @@ Profile-specific folders override only the values that differ.
 import framework.models.stack
 import framework.models.compatibility as compat
 import erp.modules.data.erp_cache.erp_cache_module_def as erp_cache
+import erp.modules.data.erp_postgres.erp_postgres_module_def as erp_postgres
 # koncept:imports:end
 
 schema ErpStack(stack.Stack):
@@ -17,7 +18,7 @@ schema ErpStack(stack.Stack):
         supportWindow = "until next minor framework release"
     }
 
-    # No stack-level namespace: the XValkeyInstance composition owns its namespace.
+    # No stack-level namespace: each curated XR composition owns its namespace.
     k8snamespaces = []
 
     _cache = erp_cache.ErpCacheModule {
@@ -28,7 +29,15 @@ schema ErpStack(stack.Stack):
         dependsOn = []
     }.instance
 
+    _postgres = erp_postgres.ErpPostgresModule {
+        name = "erp-postgres"
+        namespace = instanceConfigurations.postgresNamespace
+        asset = {version = "18.4"}
+        configurations = instanceConfigurations
+        dependsOn = []
+    }.instance
+
     # koncept:modules:end
 
     components = []  # koncept:components
-    accessories = [_cache]  # koncept:accessories
+    accessories = [_cache, _postgres]  # koncept:accessories
