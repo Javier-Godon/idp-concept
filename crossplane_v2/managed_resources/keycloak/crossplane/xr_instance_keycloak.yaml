@@ -1,5 +1,6 @@
 ---
-# Production XR — platform team deploys cluster-scoped
+# Production XR — platform team deploys cluster-scoped. Served at https://bluesolution.es/iam
+# `namespace` is the keycloak-operator namespace; the db Secret (username/password) must exist there.
 apiVersion: koncept.bluesolution.es/v1alpha1
 kind: XKeycloak
 metadata:
@@ -8,7 +9,7 @@ metadata:
     koncept.io/environment: production
     koncept.io/owner: platform-team
 spec:
-  hostname: keycloak.bluesolution.es
+  hostname: bluesolution.es
   namespace: keycloak
   instances: 2
   db:
@@ -17,14 +18,14 @@ spec:
     vendor: postgres
     secretRef:
       name: keycloak-db-credentials
-      namespace: keycloak
   route:
     listener: https
+    path: /iam
   environment: production
   owner: platform-team
 
 ---
-# Development XR — product team deploys via RBAC-scoped access, namespace-targeted
+# Development XR — single instance, plain HTTP listener, served at the root of its own hostname.
 apiVersion: koncept.bluesolution.es/v1alpha1
 kind: XKeycloak
 metadata:
@@ -42,7 +43,6 @@ spec:
     vendor: postgres
     secretRef:
       name: keycloak-dev-db-credentials
-      namespace: keycloak-dev
   route:
     listener: http
   environment: development

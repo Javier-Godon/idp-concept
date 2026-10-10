@@ -47,39 +47,6 @@ spec:
                         providerConfigRef:
                             name: provider-kubernetes
                   name: acc-argocd-httproute-argocd
-                - base:
-                    apiVersion: kubernetes.crossplane.io/v1alpha2
-                    kind: Object
-                    metadata:
-                        name: acc-keycloak-httproute-keycloak
-                    spec:
-                        forProvider:
-                            manifest:
-                                apiVersion: gateway.networking.k8s.io/v1
-                                kind: HTTPRoute
-                                metadata:
-                                    labels:
-                                        app: blue-keycloak-service
-                                    name: keycloak
-                                    namespace: keycloak
-                                spec:
-                                    hostnames:
-                                        - bluesolution.es
-                                    parentRefs:
-                                        - name: platform-gateway
-                                          namespace: gateway-system
-                                          sectionName: https
-                                    rules:
-                                        - backendRefs:
-                                            - name: blue-keycloak-service
-                                              port: 8080
-                                          matches:
-                                            - path:
-                                                type: PathPrefix
-                                                value: /
-                        providerConfigRef:
-                            name: provider-kubernetes
-                  name: acc-keycloak-httproute-keycloak
           step: render-manifests
         - functionRef:
             name: function-auto-ready

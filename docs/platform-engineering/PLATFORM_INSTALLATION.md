@@ -249,7 +249,7 @@ Argo CD is served at `https://<platform host>/argocd`: apply `gitops/argocd/argo
 
 ### GitOps For Curated XRs (Argo CD)
 
-`koncept render crossplane` writes typed XRs for curated services to `output/crossplane/managed_resources/`. Commit that directory and let Argo CD sync it; Crossplane reconciles each XR through the matching `crossplane_v2/managed_resources/<service>/` API. `projects/erp` is the reference (Valkey cache and a single-instance CloudNativePG PostgreSQL):
+`koncept render crossplane` writes typed XRs for curated services to `output/crossplane/managed_resources/`. Commit that directory and let Argo CD sync it; Crossplane reconciles each XR through the matching `crossplane_v2/managed_resources/<service>/` API. `projects/erp` is the reference (Valkey cache, a single-instance CloudNativePG PostgreSQL and a single-instance Keycloak):
 
 ```bash
 kubectl -n argocd patch configmap argocd-cm --type merge --patch-file gitops/argocd/argocd-cm.yaml
@@ -270,6 +270,17 @@ kubectl -n erp-postgres create secret generic erp-postgres-superuser --type=kube
 ```
 
 On the dev site the primary is exposed on NodePort 31543 (`postgresNodePort`), so `jdbc:postgresql://<node ip>:31543/blue_postgres` reaches it with user `postgres` and the Secret's password; the application role's generated credentials are in Secret `erp-postgres-app`.
+
+Keycloak (`XKeycloak`, served at `https://<platform host>/iam` through the gateway) needs the Keycloak operator, which watches only the namespace it runs in, so the XR targets the operator namespace (`keycloak`). The database Secret is created out of band in that namespace; Keycloak keeps its realms, users and clients in the PostgreSQL database and schema named by the XR (`blue_postgres`, schema `keycloak`):
+
+```bash
+kubectl apply -f crossplane_v2/managed_resources/keycloak/crd/ -f crossplane_v2/managed_resources/keycloak/kubernetes/
+kubectl apply -f crossplane_v2/managed_resources/keycloak/crossplane/xrd_keycloak.yaml -f crossplane_v2/managed_resources/keycloak/crossplane/x_keycloak.yaml
+kubectl -n keycloak create secret generic keycloak-db-secret \
+  --from-literal=username=postgres --from-literal=password='<password>'
+```
+
+When Keycloak moves under a path (`route.path: /iam`), every realm that sets a `frontendUrl` must use the same public URL (`https://<platform host>/iam`); otherwise issuer, login and redirect URLs point at the old address. Relying parties must use the issuer `https://<platform host>/iam/realms/<realm>`.
 
 The `argocd-cm` patch sets the public URL, annotation resource tracking and a health check for `koncept.bluesolution.es` XRs; `argocd-cmd-params-cm` serves Argo CD under `/argocd` behind the gateway. The `erp` AppProject only allows the XR kinds the project renders.
 

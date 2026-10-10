@@ -1,5 +1,5 @@
 """
-Routes for platform tools installed outside the framework (Argo CD, Keycloak operator).
+Routes for platform tools installed outside the framework (Argo CD).
 """
 import framework.templates.gateway_api.v1_0_0.gateway_api as gw
 
@@ -11,12 +11,4 @@ schema ArgoCDRouteModule(gw.HTTPRouteModule):
     route = {
         hostnames = [configurations.platformHostname]
         path = "/argocd"
-    }
-
-# keycloak-operator Service <keycloak>-service, plain HTTP behind the gateway (proxy headers: xforwarded).
-schema KeycloakRouteModule(gw.HTTPRouteModule):
-    serviceName = "blue-keycloak-service"
-    servicePort = 8080
-    route = {
-        hostnames = [configurations.platformHostname]
     }

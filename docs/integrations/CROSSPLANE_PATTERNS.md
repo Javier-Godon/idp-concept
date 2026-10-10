@@ -153,19 +153,21 @@ spec:
   properties:
     hostname:
       type: string
-      description: Base hostname for Keycloak ingress.
-    replicas:
+      description: Bare public hostname for the Keycloak gateway HTTPRoute and hostname URL.
+    instances:
       type: integer
       default: 1
     namespace:
       type: string
-    label:
+    route:
       type: object
       properties:
-        namespace:
+        path:
           type: string
+          default: /
   required:
     - hostname
+    - namespace
 ```
 
 **PostgreSQL XRD** (`xrd_postgres.yaml`) — CNPG-native, intent-level (the current reference target):
@@ -395,10 +397,10 @@ metadata:
   name: blue-keycloak
 spec:
   hostname: bluesolution.es
-  replicas: 1
+  instances: 1
   namespace: keycloak
-  label:
-    namespace: keycloak
+  route:
+    path: /iam
 ```
 
 ---
@@ -563,7 +565,7 @@ Future scope can extend this same entrypoint with optional cluster reconciliatio
 |---|---|---|---|
 | **cert-manager** | `xcertmanagers.koncept.bluesolution.es` | Namespace + Helm Release | Jetstack cert-manager v1.17.2 |
 | **Kafka (Strimzi)** | `xkafkastrimzis.koncept.bluesolution.es` | Helm Release (Strimzi operator) | Strimzi 0.46.0 OCI chart |
-| **Keycloak** | `xkeycloaks.koncept.bluesolution.es` | Namespace + Auto-ready + CRD instance | Keycloak CRD (keycloak-operator 26.4.0) |
+| **Keycloak** | `xkeycloaks.koncept.bluesolution.es` | Observed operator namespace + CRD instance + gateway HTTPRoute (served at `route.path`, e.g. `/iam`) | Keycloak CRD (keycloak-operator 26.4.0) |
 | **PostgreSQL** | `xpostgresinstances.koncept.bluesolution.es` | Namespace + CNPG `Cluster` (provider-native via operator CRD) | CloudNativePG operator 1.30.x (+ optional NodePort Service, function-kcl composition) |
 
 ---

@@ -37,15 +37,7 @@ schema PlatformStack(stack.Stack):
         dependsOn = []
     }.instance
 
-    _keycloak_route = routes.KeycloakRouteModule {
-        name = "keycloak"
-        namespace = "keycloak"
-        asset = {version = "26.4"}
-        configurations = instanceConfigurations
-        dependsOn = []
-    }.instance
-
     # koncept:modules:end
 
     components = []  # koncept:components
-    accessories = [_gateway, _argocd_route, _keycloak_route]  # koncept:accessories
+    accessories = [_gateway, _argocd_route]  # koncept:accessories

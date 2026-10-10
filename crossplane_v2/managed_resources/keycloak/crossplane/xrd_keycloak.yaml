@@ -51,10 +51,14 @@ spec:
               properties:
                 hostname:
                   type: string
-                  description: Public hostname (Keycloak hostname setting and gateway HTTPRoute), e.g. keycloak.example.com.
+                  description: >-
+                    Bare public hostname (no scheme, path or port) used for the gateway HTTPRoute and
+                    the Keycloak hostname URL <route.listener>://<hostname><route.path>, e.g. example.com.
                 namespace:
                   type: string
-                  description: Kubernetes namespace where Keycloak runs.
+                  description: >-
+                    Namespace of the Keycloak operator (it watches only its own namespace). It must already
+                    exist, as must the database Secret; the composition only observes the namespace.
                 instances:
                   type: integer
                   description: Number of Keycloak replicas. Use 1 for dev, 2+ for HA.
@@ -75,6 +79,9 @@ spec:
                       type: string
                       description: Database name.
                       default: keycloak
+                    schema:
+                      type: string
+                      description: Database schema Keycloak uses (empty uses the database default, e.g. public).
                     vendor:
                       type: string
                       description: Database vendor identifier.
@@ -85,14 +92,13 @@ spec:
                         - mariadb
                     secretRef:
                       type: object
-                      description: Reference to a Secret containing db.user and db.password.
+                      description: >-
+                        Secret in the Keycloak namespace with the keys username and password. Never rendered
+                        or committed by koncept; create it out of band.
                       required:
                         - name
-                        - namespace
                       properties:
                         name:
-                          type: string
-                        namespace:
                           type: string
                 route:
                   type: object
@@ -114,7 +120,11 @@ spec:
                       default: https
                     path:
                       type: string
+                      description: >-
+                        Path prefix Keycloak is served under (Keycloak http-relative-path), e.g. /iam.
+                        The route forwards the path unchanged.
                       default: /
+                      pattern: ^/.*$
                 environment:
                   type: string
                   description: "Target environment tier: local, development, staging, production."
@@ -128,13 +138,6 @@ spec:
                   type: string
                   description: Team or system that owns this Keycloak instance.
                   default: ""
-                # Legacy label field — preserved for backwards compatibility
-                label:
-                  type: object
-                  description: "Deprecated: use namespace field instead."
-                  properties:
-                    namespace:
-                      type: string
             status:
               type: object
               properties:

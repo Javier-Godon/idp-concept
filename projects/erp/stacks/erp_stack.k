@@ -7,6 +7,7 @@ import framework.models.stack
 import framework.models.compatibility as compat
 import erp.modules.data.erp_cache.erp_cache_module_def as erp_cache
 import erp.modules.data.erp_postgres.erp_postgres_module_def as erp_postgres
+import erp.modules.identity.erp_keycloak.erp_keycloak_module_def as erp_keycloak
 # koncept:imports:end
 
 schema ErpStack(stack.Stack):
@@ -37,7 +38,15 @@ schema ErpStack(stack.Stack):
         dependsOn = []
     }.instance
 
+    _keycloak = erp_keycloak.ErpKeycloakModule {
+        name = "erp-keycloak"
+        namespace = instanceConfigurations.keycloakNamespace
+        asset = {version = "26.4.0"}
+        configurations = instanceConfigurations
+        dependsOn = []
+    }.instance
+
     # koncept:modules:end
 
     components = []  # koncept:components
-    accessories = [_cache, _postgres]  # koncept:accessories
+    accessories = [_cache, _postgres, _keycloak]  # koncept:accessories

@@ -1,0 +1,19 @@
+apiVersion: koncept.bluesolution.es/v1alpha1
+kind: XKeycloak
+metadata:
+    name: erp-keycloak
+spec:
+    db:
+        database: blue_postgres
+        host: erp-postgres-rw.erp-postgres.svc.cluster.local
+        schema: keycloak
+        secretRef:
+            name: keycloak-db-secret
+        vendor: postgres
+    environment: development
+    hostname: bluesolution.es
+    instances: 1
+    namespace: keycloak
+    route:
+        listener: https
+        path: /iam

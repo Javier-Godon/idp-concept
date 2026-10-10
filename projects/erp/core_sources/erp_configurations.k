@@ -12,4 +12,11 @@ schema ErpConfigurations(base.BaseConfigurations):
     postgresDatabase?: str
     postgresSuperuserSecret?: str
     postgresNodePort?: int
+    postgresClusterName?: str
+    keycloakNamespace?: str
+    keycloakFootprint?: "local" | "development" | "staging" | "production"
+    keycloakHostname?: str
+    keycloakPath?: str
+    keycloakDbSchema?: str
+    keycloakDbSecret?: str
     footprint?: "local" | "development" | "staging" | "production"

@@ -12,8 +12,10 @@ spec:
     kind: XKeycloak
   mode: Pipeline
   pipeline:
-    # Step 1: Create the Keycloak namespace
-    - step: create-namespace
+    # Step 1: Observe the Keycloak namespace. The keycloak-operator watches only the namespace it runs
+    # in, so the namespace is created with the operator (kubernetes/keycloak_namespace.yaml). It is
+    # observe-only so deleting the XR never deletes the namespace together with the operator.
+    - step: observe-namespace
       functionRef:
         name: function-patch-and-transform
       input:
@@ -27,6 +29,8 @@ spec:
               metadata:
                 name: ns-keycloak
               spec:
+                managementPolicies:
+                  - Observe
                 forProvider:
                   manifest:
                     apiVersion: v1
@@ -40,30 +44,7 @@ spec:
                 fromFieldPath: spec.namespace
                 toFieldPath: spec.forProvider.manifest.metadata.name
 
-    # Step 2: Detect readiness before sequencing — function-sequencer only withholds
-    # downstream resources once a predecessor is marked Ready, so auto-ready must run
-    # before the sequencer step evaluates it (see function-sequencer's own reference
-    # composition: detect-readiness precedes sequence-creation).
-    - step: detect-namespace-readiness
-      functionRef:
-        name: function-auto-ready
-
-    # Step 3: Enforce ordering — namespace must be ready before Keycloak CRD
-    - step: enforce-ordering
-      functionRef:
-        name: function-sequencer
-      input:
-        apiVersion: sequencer.fn.crossplane.io/v1beta1
-        kind: Input
-        rules:
-          - sequence:
-              - ns-keycloak
-              - keycloak-instance
-          - sequence:
-              - ns-keycloak
-              - keycloak-route
-
-    # Step 4: Create Keycloak CRD instance (operator-native — keycloak-operator manages pods/secrets)
+    # Step 2: Create the Keycloak instance and its gateway route (operator-native — keycloak-operator manages pods/secrets)
     - step: create-keycloak
       functionRef:
         name: function-patch-and-transform
@@ -80,6 +61,10 @@ spec:
               spec:
                 providerConfigRef:
                   name: provider-kubernetes
+                # Ready only once the operator reports the Keycloak instance Ready.
+                readiness:
+                  policy: DeriveFromCelQuery
+                  celQuery: object.status.conditions.exists(c, c.type == "Ready" && c.status == "True")
                 forProvider:
                   manifest:
                     apiVersion: k8s.keycloak.org/v2alpha1
@@ -107,6 +92,10 @@ spec:
                         httpEnabled: true
                       proxy:
                         headers: xforwarded
+                      # Served under route.path behind the gateway, which forwards the path unchanged.
+                      additionalOptions:
+                        - name: http-relative-path
+                          value: /
                       instances: 1
             patches:
               # Identity
@@ -120,10 +109,20 @@ spec:
               - type: FromCompositeFieldPath
                 fromFieldPath: spec.instances
                 toFieldPath: spec.forProvider.manifest.spec.instances
-              # Hostname (TLS terminates at the gateway; X-Forwarded-* headers are trusted)
-              - type: FromCompositeFieldPath
-                fromFieldPath: spec.hostname
+              # Public URL <listener>://<hostname><path> (TLS terminates at the gateway; X-Forwarded-* headers are trusted)
+              - type: CombineFromComposite
+                combine:
+                  variables:
+                    - fromFieldPath: spec.route.listener
+                    - fromFieldPath: spec.hostname
+                    - fromFieldPath: spec.route.path
+                  strategy: string
+                  string:
+                    fmt: "%s://%s%s"
                 toFieldPath: spec.forProvider.manifest.spec.hostname.hostname
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.route.path
+                toFieldPath: spec.forProvider.manifest.spec.additionalOptions[0].value
               # Database — host, database name, vendor
               - type: FromCompositeFieldPath
                 fromFieldPath: spec.db.host
@@ -134,6 +133,11 @@ spec:
               - type: FromCompositeFieldPath
                 fromFieldPath: spec.db.vendor
                 toFieldPath: spec.forProvider.manifest.spec.db.vendor
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.db.schema
+                toFieldPath: spec.forProvider.manifest.spec.db.schema
+                policy:
+                  fromFieldPath: Optional
               # Database credentials via Secret reference (no hardcoded passwords)
               - type: FromCompositeFieldPath
                 fromFieldPath: spec.db.secretRef.name
@@ -143,16 +147,6 @@ spec:
               - type: FromCompositeFieldPath
                 fromFieldPath: spec.db.secretRef.name
                 toFieldPath: spec.forProvider.manifest.spec.db.passwordSecret.name
-                policy:
-                  fromFieldPath: Optional
-              - type: FromCompositeFieldPath
-                fromFieldPath: spec.db.secretRef.namespace
-                toFieldPath: spec.forProvider.manifest.spec.db.usernameSecret.namespace
-                policy:
-                  fromFieldPath: Optional
-              - type: FromCompositeFieldPath
-                fromFieldPath: spec.db.secretRef.namespace
-                toFieldPath: spec.forProvider.manifest.spec.db.passwordSecret.namespace
                 policy:
                   fromFieldPath: Optional
           - name: keycloak-route
@@ -216,7 +210,7 @@ spec:
                 fromFieldPath: spec.route.path
                 toFieldPath: spec.forProvider.manifest.spec.rules[0].matches[0].path.value
 
-    # Step 5: Auto-detect readiness from managed resources
+    # Step 3: Auto-detect readiness from managed resources
     - step: automatically-detect-readiness
       functionRef:
         name: function-auto-ready
