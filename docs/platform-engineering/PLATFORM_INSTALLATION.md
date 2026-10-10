@@ -282,6 +282,16 @@ kubectl -n keycloak create secret generic keycloak-db-secret \
 
 When Keycloak moves under a path (`route.path: /iam`), every realm that sets a `frontendUrl` must use the same public URL (`https://<platform host>/iam`); otherwise issuer, login and redirect URLs point at the old address. Relying parties must use the issuer `https://<platform host>/iam/realms/<realm>`.
 
+Valkey Admin (`adminUi` on `XValkeyInstance`, served at `https://<platform host>/valkey-admin/`) is published through the gateway and has no login of its own, so the route is protected by an Envoy Gateway basic-auth `SecurityPolicy`. Create the Secret out of band in the cache namespace before the XR syncs (until it exists the gateway rejects requests, it never serves the UI unauthenticated):
+
+```bash
+kubectl create namespace erp-data
+kubectl -n erp-data create secret generic valkey-admin-basic-auth \
+  --from-file=.htpasswd=<(htpasswd -nbs admin '<password>')
+```
+
+`/valkey-admin` redirects to `/valkey-admin/` (the UI loads assets with relative URLs); the route strips the prefix before forwarding, and the UI derives its WebSocket URL from the page path, so the same route carries it. The UI is preconfigured with the Valkey Service of the XR.
+
 The `argocd-cm` patch sets the public URL, annotation resource tracking and a health check for `koncept.bluesolution.es` XRs; `argocd-cmd-params-cm` serves Argo CD under `/argocd` behind the gateway. The `erp` AppProject only allows the XR kinds the project renders.
 
 If an XR is deleted and Argo CD self-heals it immediately, the new XR can see its namespace while it is still terminating. It then converges on the next provider-kubernetes poll (default 10 minutes).

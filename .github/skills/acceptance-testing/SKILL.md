@@ -50,6 +50,7 @@ Avoid direct `manifests.yaml_stream([...])` in template acceptance fixtures.
 | `all` | Basic + templates + integrations + rollouts. |
 
 New dry-run fixtures:
+- `valkey-admin`: `ValkeyAdminModule` Deployment/Service plus sub-path HTTPRoute and basic-auth SecurityPolicy (dry-run only).
 - `data-admin`: pgAdmin, mongo-express, and RedisInsight native Deployment/Service companions rendered through `wrap_component`.
 - `release-notes`: `RenderStack.releaseNotes` rendered as a release-notes ConfigMap.
 

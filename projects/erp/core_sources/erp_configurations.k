@@ -7,6 +7,9 @@ import framework.models.configurations as base
 
 schema ErpConfigurations(base.BaseConfigurations):
     cacheNamespace?: str
+    valkeyAdminHostname?: str
+    valkeyAdminPath?: str
+    valkeyAdminBasicAuthSecret?: str
     postgresNamespace?: str
     postgresFootprint?: "local" | "development" | "staging" | "production"
     postgresDatabase?: str

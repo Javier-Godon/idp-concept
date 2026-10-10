@@ -52,4 +52,22 @@ spec:
   image: "valkey/valkey:8.1.10"
   environment: development
   owner: dev-team
-
+---
+## Valkey with the Valkey Admin UI served at https://example.com/valkey-admin/ behind HTTP basic auth
+## (the Secret needs an `.htpasswd` key and is created out of band).
+apiVersion: koncept.bluesolution.es/v1alpha1
+kind: XValkeyInstance
+metadata:
+  name: admin-cache
+spec:
+  namespace: admin-apps
+  mode: standalone
+  nodeCount: 1
+  storageSize: "5Gi"
+  image: "valkey/valkey:8.1.10"
+  environment: development
+  owner: dev-team
+  adminUi:
+    hostname: example.com
+    path: /valkey-admin
+    basicAuthSecretName: valkey-admin-basic-auth

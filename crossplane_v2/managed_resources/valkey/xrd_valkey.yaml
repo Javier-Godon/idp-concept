@@ -38,6 +38,9 @@ spec:
         - name: ENDPOINT
           type: string
           jsonPath: .status.serviceEndpoint
+        - name: ADMIN
+          type: string
+          jsonPath: .status.adminUrl
         - name: READY
           type: string
           jsonPath: .status.conditions[?(@.type=="Ready")].status
@@ -54,6 +57,8 @@ spec:
               x-kubernetes-validations:
                 - rule: "self.mode != 'replication' || self.nodeCount >= 2"
                   message: "replication mode requires nodeCount >= 2"
+                - rule: "!has(self.adminUi) || self.adminUi.hostname == '' || self.environment in ['local', 'development'] || self.adminUi.basicAuthSecretName != ''"
+                  message: "staging/production adminUi published on a hostname requires basicAuthSecretName (Valkey Admin has no built-in authentication)"
               required:
                 - namespace
                 - mode
@@ -121,6 +126,59 @@ spec:
                   type: string
                   description: "Team or system that owns this instance (for labeling/RBAC)."
                   default: ""
+                adminUi:
+                  type: object
+                  description: >-
+                    Optional Valkey Admin web UI (https://github.com/valkey-io/valkey-admin) preconfigured for this instance.
+                    Valkey Admin has no built-in authentication: when published on a hostname, protect it with
+                    basicAuthSecretName (Envoy Gateway basic auth). Omit the block to deploy no UI.
+                  properties:
+                    image:
+                      type: string
+                      description: Valkey Admin image (pinned tag, never latest).
+                      default: "valkey/valkey-admin:1.2.0"
+                      pattern: "^[a-z0-9/@:._-]+$"
+                    hostname:
+                      type: string
+                      description: >-
+                        Bare public hostname (no scheme, path or port) the UI is published on through the platform gateway.
+                        Empty = cluster-internal Service only.
+                      default: ""
+                      pattern: "^[a-zA-Z0-9.-]*$"
+                    path:
+                      type: string
+                      description: Sub-path of the hostname the UI is served under (the route strips it and redirects <path> to <path>/).
+                      default: /valkey-admin
+                      pattern: "^/[a-zA-Z0-9._~-]+(/[a-zA-Z0-9._~-]+)*$"
+                    listener:
+                      type: string
+                      description: Gateway listener the route attaches to (https = TLS hostnames).
+                      enum:
+                        - https
+                        - http
+                      default: https
+                    gatewayName:
+                      type: string
+                      description: Platform Gateway name.
+                      default: platform-gateway
+                    gatewayNamespace:
+                      type: string
+                      description: Platform Gateway namespace.
+                      default: gateway-system
+                    basicAuthSecretName:
+                      type: string
+                      description: >-
+                        Name of a Secret in the Valkey namespace with an `.htpasswd` key (SHA hashes) enforced on the route by an
+                        Envoy Gateway SecurityPolicy. Created out of band; never rendered.
+                      default: ""
+                    passwordSecretName:
+                      type: string
+                      description: Optional Secret with the Valkey password, passed to the UI as VALKEY_PASSWORD.
+                      default: ""
+                    passwordSecretKey:
+                      type: string
+                      description: Key of passwordSecretName holding the password.
+                      default: password
             status:
               type: object
               properties:
@@ -148,4 +206,7 @@ spec:
                 serviceEndpoint:
                   type: string
                   description: Service endpoint for Valkey connections.
+                adminUrl:
+                  type: string
+                  description: Public URL of the Valkey Admin UI (empty when not published).
 

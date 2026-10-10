@@ -72,7 +72,7 @@ There are **two distinct Crossplane concerns** in this repository. Keeping them 
 | (cluster infra, no template) | `cert_manager/*` | ✅ Helm Release |
 | `gateway_api` (Envoy Gateway) | `gateway_api/*` | ✅ Helm Release + Gateway API objects; live-verified, consumed by `projects/platform` |
 | `postgresql` (CloudNativePG) | `postgres/*` | 🧪 operator CRD; reconcile + NodePort access + delete verified on CNPG 1.30, consumed by `projects/erp` |
-| `valkey` (OT redis-operator) | `valkey/*` | 🧪 operator CRD; reconcile + delete verified, consumed by `projects/erp` |
+| `valkey` (OT redis-operator) | `valkey/*` | 🧪 operator CRD; reconcile + delete verified, consumed by `projects/erp`; optional `adminUi` (Valkey Admin Deployment/Service/HTTPRoute/SecurityPolicy) composed from the same XR |
 | `mongodb`, `rabbitmq`, `redis`, `opensearch`, `minio`, `vault`/`openbao`, `questdb`, `elastic`, `opentelemetry` | — | ⬜ gap: add only where the selection policy justifies a control-plane API |
 | `webapp`, generic `database` | — | 🚫 intentionally excluded (Tier-1 GitOps/YAML) |
 

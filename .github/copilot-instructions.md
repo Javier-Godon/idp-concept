@@ -98,6 +98,7 @@ Later values override earlier ones.
 | `framework/templates/` | Module templates: WebAppModule, SingleDatabaseModule, KafkaClusterModule, PostgreSQLClusterModule, MongoDBCommunityModule, RabbitMQClusterModule, RedisModule, KeycloakModule, OpenSearchClusterModule, VaultStaticSecretModule, QuestDBModule, MinIOTenantSpec/MinIOHelmSpec |
 | `framework/templates/footprints/` | Deployment footprint helpers (`local`, `development`, `staging`, `production`) for right-sizing infrastructure per environment |
 | `framework/templates/admin/` | Optional admin UI companions: pgAdmin, mongo-express, RedisInsight for Redis/Valkey-compatible visual management |
+| `framework/templates/valkey/` | Valkey (`valkey.k`) and its Valkey Admin web UI (`valkey_admin.k`, sub-path route + basic auth) |
 | `framework/assembly/` | Stack utilities: create_namespace helpers |
 | `framework/factory/` | Factory scaffolding: FactorySeed schema |
 | `framework/procedures/` | Conversion functions: `kcl_to_yaml`, `kcl_to_helm`, `kcl_to_kusion`, `kcl_to_argocd` |

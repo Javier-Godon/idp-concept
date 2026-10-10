@@ -29,6 +29,8 @@ schema DeploymentSpec:
     strategy?: any
     minReadySeconds?: int
     annotations?: {str:str}
+    podSecurityContext?: any
+    containerSecurityContext?: any
 
     check:
         1 <= port <= 65535 if port is not Undefined, "port must be between 1 and 65535"
@@ -148,6 +150,8 @@ build_deployment = lambda spec: DeploymentSpec -> apps.Deployment {
             resources = _build_resources(spec.resources)
         if _volume_mounts:
             volumeMounts = _volume_mounts
+        if spec.containerSecurityContext:
+            securityContext = spec.containerSecurityContext
     }
     apps.Deployment {
         apiVersion = "apps/v1"
@@ -179,6 +183,8 @@ build_deployment = lambda spec: DeploymentSpec -> apps.Deployment {
                     containers = [_container]
                     if spec.serviceAccountName:
                         serviceAccountName = spec.serviceAccountName
+                    if spec.podSecurityContext:
+                        securityContext = spec.podSecurityContext
                     if _volumes:
                         volumes = _volumes
                 }

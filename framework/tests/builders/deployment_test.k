@@ -351,3 +351,27 @@ test_deployment_valid_port_max = lambda {
     _result = deploy.build_deployment(_spec)
     assert _result.spec.template.spec.containers[0].ports[0].containerPort == 65535
 }
+
+test_deployment_security_contexts = lambda {
+    _d = deploy.build_deployment(deploy.DeploymentSpec {
+        name = "app"
+        namespace = "apps"
+        image = "example/app"
+        version = "1.0.0"
+        podSecurityContext = {runAsNonRoot = True, runAsUser = 1000}
+        containerSecurityContext = {allowPrivilegeEscalation = False}
+    })
+    assert _d.spec.template.spec.securityContext.runAsUser == 1000
+    assert _d.spec.template.spec.containers[0].securityContext.allowPrivilegeEscalation == False
+}
+
+test_deployment_without_security_contexts_omits_them = lambda {
+    _d = deploy.build_deployment(deploy.DeploymentSpec {
+        name = "app"
+        namespace = "apps"
+        image = "example/app"
+        version = "1.0.0"
+    })
+    assert not _d.spec.template.spec.securityContext
+    assert not _d.spec.template.spec.containers[0].securityContext
+}

@@ -35,6 +35,9 @@ schema RouteSpec:
     path?: str = "/"
     # Replace the matched path prefix before forwarding (e.g. "/" to strip "/api").
     rewritePrefix?: str
+    # Redirect the exact `path` (no trailing slash) to `path/` with a 301. Needed for single-page apps
+    # served under a sub-path that load assets with relative URLs.
+    trailingSlashRedirect?: bool = False
     listener?: "https" | "http" = "https"
     gatewayName?: str = DEFAULT_GATEWAY_NAME
     gatewayNamespace?: str = DEFAULT_GATEWAY_NAMESPACE
@@ -48,6 +51,7 @@ schema RouteSpec:
         }, "route.hostnames must be bare hostnames (no scheme, path or port)"
         path.startswith("/"), "route.path must start with '/'"
         rewritePrefix.startswith("/") if rewritePrefix, "route.rewritePrefix must start with '/'"
+        not path.endswith("/") if trailingSlashRedirect, "route.trailingSlashRedirect requires a path without a trailing '/' (and not '/')"
 
 schema HTTPRouteSpec:
     name: str
@@ -73,6 +77,16 @@ build_http_route = lambda spec: HTTPRouteSpec -> {str:} {
         if _r.timeout:
             timeouts.request = _r.timeout
     }
+    _redirect_rule = {
+        matches = [{path = {$type = "Exact", value = _r.path}}]
+        filters = [{
+            $type = "RequestRedirect"
+            requestRedirect = {
+                path = {$type = "ReplaceFullPath", replaceFullPath = "${_r.path}/"}
+                statusCode = 301
+            }
+        }]
+    }
     {
         apiVersion = "gateway.networking.k8s.io/v1"
         kind = "HTTPRoute"
@@ -88,7 +102,7 @@ build_http_route = lambda spec: HTTPRouteSpec -> {str:} {
                 sectionName = _r.listener
             }]
             hostnames = _r.hostnames
-            rules = [_rule]
+            rules = ([_redirect_rule] if _r.trailingSlashRedirect else []) + [_rule]
         }
     }
 }

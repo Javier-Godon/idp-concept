@@ -2,6 +2,11 @@ import erp.core_sources.erp_configurations as cfg
 
 _erp_profile_configurations = cfg.ErpConfigurations {
     cacheNamespace = "erp-data"
+    # Valkey Admin UI on the shared hostname at /valkey-admin. It has no login of its own: the gateway enforces
+    # basic auth from this Secret (`.htpasswd` key), created out of band in the cache namespace.
+    valkeyAdminHostname = "bluesolution.es"
+    valkeyAdminPath = "/valkey-admin"
+    valkeyAdminBasicAuthSecret = "valkey-admin-basic-auth"
     postgresNamespace = "erp-postgres"
     postgresFootprint = "development"
     postgresDatabase = "blue_postgres"

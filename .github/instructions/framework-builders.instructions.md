@@ -208,6 +208,7 @@ Optional admin clients are opt-in and use pinned images plus Secret references f
 - `PgAdminSpec` / `PgAdminModule` for PostgreSQL.
 - `MongoExpressSpec` / `MongoExpressModule` for MongoDB.
 - `RedisInsightSpec` / `RedisInsightModule` for Redis/Valkey visual management.
+- `templates/valkey/v1_0_0/valkey_admin.k` (`ValkeyAdminSpec` / `ValkeyAdminModule`, or `ValkeyModule.valkeyAdmin`) for the Valkey Admin UI served under a sub-path of a shared hostname; it has no built-in auth, so use `basicAuthSecretName`.
 
 Do not hardcode admin passwords. Use `passwordSecretName` and related Secret key references.
 

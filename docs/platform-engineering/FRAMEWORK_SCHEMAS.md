@@ -596,6 +596,7 @@ Root-level template compatibility files have been removed. Import templates by t
 | `PgAdminModule` | `admin/v1_0_0/data_admin.k` | `Component` | Optional pgAdmin UI Deployment + Service |
 | `MongoExpressModule` | `admin/v1_0_0/data_admin.k` | `Component` | Optional mongo-express UI Deployment + Service |
 | `RedisInsightModule` | `admin/v1_0_0/data_admin.k` | `Component` | Optional RedisInsight UI for Redis/Valkey-compatible stores |
+| `ValkeyAdminModule` | `valkey/v1_0_0/valkey_admin.k` | `Component` | Valkey Admin web UI (`valkey/valkey-admin`), optionally served under a sub-path (default `/valkey-admin`) of a shared hostname via HTTPRoute + basic-auth SecurityPolicy; also available as `ValkeyModule.valkeyAdmin` |
 | `SingleDatabaseModule` | `database/v1_0_0/database.k` | `Accessory` | Simple database (Deployment + Service + PVC; optional local PV) |
 | `KafkaClusterModule` | `kafka/v1_0_0/kafka.k` | `Accessory` | Strimzi Kafka cluster (`kafka.strimzi.io/v1beta2`) |
 
@@ -658,6 +659,7 @@ Use `TelemetryPipelineSpec` for non-trivial flows; use `LogPipelineSpec` for sim
 | pgAdmin | `PgAdminSpec` / `PgAdminModule` | Requires `passwordSecretName`; no hardcoded admin password |
 | mongo-express | `MongoExpressSpec` / `MongoExpressModule` | Production footprint requires MongoDB credential Secret references |
 | RedisInsight | `RedisInsightSpec` / `RedisInsightModule` | Works as a visual client for Redis and Valkey-compatible deployments |
+| Valkey Admin | `ValkeyAdminSpec` / `ValkeyAdminModule` / `ValkeyModule.valkeyAdmin` | No built-in authentication: staging/production require `basicAuthSecretName` when published on a `hostname`; the Secret is referenced by name only |
 
 ### Release Notes
 

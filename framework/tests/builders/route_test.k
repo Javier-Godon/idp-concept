@@ -56,3 +56,31 @@ test_helm_fullname = lambda {
     assert route.helm_fullname("backstage", "backstage") == "backstage"
     assert route.helm_fullname("portal", "backstage") == "portal-backstage"
 }
+
+test_http_route_trailing_slash_redirect_for_subpath_apps = lambda {
+    _r = route.build_http_route(route.HTTPRouteSpec {
+        name = "ui"
+        namespace = "tools"
+        serviceName = "ui"
+        servicePort = 8080
+        route = route.RouteSpec {
+            hostnames = ["tools.example.com"]
+            path = "/ui"
+            rewritePrefix = "/"
+            trailingSlashRedirect = True
+        }
+    })
+    assert len(_r.spec.rules) == 2
+    assert _r.spec.rules[0].matches[0].path == {type = "Exact", value = "/ui"}
+    assert _r.spec.rules[0].filters[0].type == "RequestRedirect"
+    assert _r.spec.rules[0].filters[0].requestRedirect.path.replaceFullPath == "/ui/"
+    assert _r.spec.rules[0].filters[0].requestRedirect.statusCode == 301
+    assert _r.spec.rules[1].matches[0].path == {type = "PathPrefix", value = "/ui"}
+}
+
+test_route_spec_rejects_trailing_slash_redirect_on_root = lambda {
+    _err = runtime.catch(lambda {
+        route.RouteSpec {hostnames = ["tools.example.com"], trailingSlashRedirect = True}
+    })
+    assert _err != Undefined, "Expected validation error for trailingSlashRedirect on '/'"
+}

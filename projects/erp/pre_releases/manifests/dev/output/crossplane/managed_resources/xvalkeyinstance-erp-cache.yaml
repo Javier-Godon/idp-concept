@@ -3,6 +3,14 @@ kind: XValkeyInstance
 metadata:
     name: erp-cache
 spec:
+    adminUi:
+        basicAuthSecretName: valkey-admin-basic-auth
+        gatewayName: platform-gateway
+        gatewayNamespace: gateway-system
+        hostname: bluesolution.es
+        image: valkey/valkey-admin:1.2.0
+        listener: https
+        path: /valkey-admin
     clusterName: erp-cache
     environment: local
     mode: standalone

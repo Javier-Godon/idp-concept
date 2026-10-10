@@ -18,6 +18,8 @@
 ##                      helm install redis-operator ot-helm/redis-operator --version 0.26.1 -n redis-operator --create-namespace
 ##   - provider-kubernetes with ProviderConfig `provider-kubernetes`
 ##   - function-kcl, function-auto-ready
+##   - optional adminUi (Valkey Admin): Envoy Gateway (HTTPRoute + SecurityPolicy CRDs) and the platform Gateway;
+##     the basicAuthSecretName Secret (`.htpasswd` key) is created out of band in the Valkey namespace
 
 apiVersion: apiextensions.crossplane.io/v1
 kind: Composition
@@ -151,16 +153,168 @@ spec:
             _create_valkey = _is_ready("namespace") or "valkey" in _ocds
             _sts_status = _ocds["statefulset"]?.Resource?.status?.atProvider?.manifest?.status or {}
 
+            # Optional Valkey Admin UI (https://github.com/valkey-io/valkey-admin): Deployment + Service, plus an
+            # HTTPRoute on the platform gateway (sub-path of a shared hostname) and an Envoy Gateway basic-auth
+            # SecurityPolicy. The UI has no authentication of its own; the CRDs come from Envoy Gateway.
+            _admin = _ox.adminUi or {}
+            _admin_name = "${_name}-admin"
+            _admin_port = 8080
+            _admin_host = _admin?.hostname or ""
+            _admin_labels = _labels | {
+                "app.kubernetes.io/name" = "valkey-admin"
+                "app" = _admin_name
+            }
+
+            _admin_env = [
+                {name = "DEPLOYMENT_MODE", value = "Web"}
+                {name = "PORT", value = str(_admin_port)}
+                {name = "VALKEY_HOST", value = "${_name}.${_ns}.svc.cluster.local"}
+                {name = "VALKEY_PORT", value = "6379"}
+                if _admin?.passwordSecretName:
+                    {
+                        name = "VALKEY_PASSWORD"
+                        valueFrom.secretKeyRef = {name = _admin.passwordSecretName, key = _admin.passwordSecretKey}
+                    }
+                # Web mode only accepts same-origin WebSocket handshakes; name the public origin explicitly.
+                if _admin_host:
+                    {name = "VALKEY_ADMIN_ALLOWED_WS_ORIGINS", value = "${_admin.listener}://${_admin_host}"}
+            ]
+
+            _admin_deployment = _object("admin-deployment", {
+                apiVersion = "apps/v1"
+                kind = "Deployment"
+                metadata = {
+                    name = _admin_name
+                    namespace = _ns
+                    labels = _admin_labels
+                }
+                spec = {
+                    # Metrics collectors and sessions live in the process: not horizontally scalable.
+                    replicas = 1
+                    selector.matchLabels = {app = _admin_name}
+                    template = {
+                        metadata.labels = _admin_labels
+                        spec = {
+                            # The image runs as the non-root `node` user (uid 1000).
+                            securityContext = {
+                                runAsNonRoot = True
+                                runAsUser = 1000
+                                runAsGroup = 1000
+                                seccompProfile.$type = "RuntimeDefault"
+                            }
+                            containers = [{
+                                name = _admin_name
+                                image = _admin.image
+                                imagePullPolicy = "IfNotPresent"
+                                ports = [{containerPort = _admin_port}]
+                                env = _admin_env
+                                # Web mode: ~1GB for the UI plus ~150MB per primary metrics collector.
+                                resources = {
+                                    requests = {cpu = "100m", memory = "512Mi"}
+                                    limits = {cpu = "1", memory = "1536Mi"}
+                                }
+                                livenessProbe = {
+                                    httpGet = {path = "/", port = _admin_port}
+                                    initialDelaySeconds = 30
+                                    periodSeconds = 10
+                                }
+                                readinessProbe = {
+                                    httpGet = {path = "/", port = _admin_port}
+                                    initialDelaySeconds = 10
+                                    periodSeconds = 5
+                                }
+                                securityContext = {
+                                    allowPrivilegeEscalation = False
+                                    capabilities.drop = ["ALL"]
+                                }
+                            }]
+                        }
+                    }
+                }
+            }, {})
+
+            _admin_service = _object("admin-service", {
+                apiVersion = "v1"
+                kind = "Service"
+                metadata = {
+                    name = _admin_name
+                    namespace = _ns
+                    labels = _admin_labels
+                }
+                spec = {
+                    selector = {app = _admin_name}
+                    ports = [{name = "http", port = _admin_port, targetPort = _admin_port}]
+                    $type = "ClusterIP"
+                }
+            }, {})
+
+            # Same shape as framework/builders/route.k (trailingSlashRedirect + rewritePrefix "/"): the UI loads
+            # assets with relative URLs, uses a HashRouter and derives its WebSocket URL from location.pathname.
+            _admin_route = _object("admin-route", {
+                apiVersion = "gateway.networking.k8s.io/v1"
+                kind = "HTTPRoute"
+                metadata = {
+                    name = _admin_name
+                    namespace = _ns
+                    labels = _admin_labels
+                }
+                spec = {
+                    parentRefs = [{
+                        name = _admin?.gatewayName
+                        namespace = _admin?.gatewayNamespace
+                        sectionName = _admin?.listener
+                    }]
+                    hostnames = [_admin_host]
+                    rules = [
+                        {
+                            matches = [{path = {$type = "Exact", value = _admin?.path}}]
+                            filters = [{
+                                $type = "RequestRedirect"
+                                requestRedirect = {
+                                    path = {$type = "ReplaceFullPath", replaceFullPath = "${_admin?.path}/"}
+                                    statusCode = 301
+                                }
+                            }]
+                        }
+                        {
+                            matches = [{path = {$type = "PathPrefix", value = _admin?.path}}]
+                            backendRefs = [{name = _admin_name, port = _admin_port}]
+                            filters = [{
+                                $type = "URLRewrite"
+                                urlRewrite.path = {$type = "ReplacePrefixMatch", replacePrefixMatch = "/"}
+                            }]
+                        }
+                    ]
+                }
+            }, {})
+
+            _admin_policy = _object("admin-security-policy", {
+                apiVersion = "gateway.envoyproxy.io/v1alpha1"
+                kind = "SecurityPolicy"
+                metadata = {
+                    name = _admin_name
+                    namespace = _ns
+                    labels = _admin_labels
+                }
+                spec = {
+                    targetRefs = [{group = "gateway.networking.k8s.io", kind = "HTTPRoute", name = _admin_name}]
+                    basicAuth.users.name = _admin?.basicAuthSecretName
+                }
+            }, {})
+
+            _admin_items = [_admin_deployment, _admin_service] + ([_admin_route] if _admin_host else []) + ([_admin_policy] if _admin_host and _admin?.basicAuthSecretName else [])
+
             _dxr = {
                 **_params.dxr
                 status = {
                     clusterName = _name
                     serviceEndpoint = "${_name}.${_ns}.svc.cluster.local:6379"
                     readyNodes = _sts_status.readyReplicas or 0
+                    adminUrl = "${_admin.listener}://${_admin_host}${_admin.path}/" if _admin_host else ""
                 }
             }
 
-            items = [_namespace, _dxr] + ([_valkey, _statefulset] if _create_valkey else [])
+            items = [_namespace, _dxr] + ([_valkey, _statefulset] if _create_valkey else []) + (_admin_items if _ox.adminUi and _create_valkey else [])
 
     - step: automatically-detect-readiness
       functionRef:

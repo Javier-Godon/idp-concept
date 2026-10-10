@@ -18,6 +18,8 @@ import models.modules.accessory as accessory
 import builders.leader as leader
 import templates.footprints.v1_0_0.footprint as fp
 import templates.admin.v1_0_0.data_admin as admin
+import templates.valkey.v1_0_0.valkey_admin as valkey_admin
+import builders.route as route_builder
 
 _HELM_RELEASE_API = "helm.toolkit.fluxcd.io/v2beta1"
 
@@ -127,6 +129,8 @@ schema ValkeyModule(accessory.Accessory):
     authEnabled?: bool = False
     extraValues?: {str:str}
     adminUi?: admin.RedisInsightSpec
+    # Valkey Admin web UI; with `hostname` it is served on the platform gateway under `path` (default /valkey-admin).
+    valkeyAdmin?: valkey_admin.ValkeyAdminOptions
     leaders = [leader.build_accessory_leader(valkeyName, namespace, "HelmRelease", _HELM_RELEASE_API)]
 
     _valkey_spec = ValkeySpec {
@@ -143,9 +147,19 @@ schema ValkeyModule(accessory.Accessory):
         extraValues = extraValues
     }
     _valkey_manifest = build_valkey_release(_valkey_spec)
-    crossplaneSpec = build_valkey_xr_spec(_valkey_spec)
+    crossplaneSpec = build_valkey_xr_spec(_valkey_spec) | ({adminUi = valkey_admin.build_valkey_admin_xr_spec(valkeyAdmin)} if valkeyAdmin else {})
 
     _admin_manifests = admin.build_redis_insight_resources(adminUi) if adminUi else []
 
-    manifests = [_valkey_manifest] + _admin_manifests
+    # Bitnami chart primary Service; the crossplane output derives the operator Service from the XR instead.
+    _helm_service = route_builder.helm_fullname(valkeyName, "valkey")
+    _valkey_admin_manifests = valkey_admin.build_valkey_admin_resources(valkey_admin.ValkeyAdminSpec {
+        **valkeyAdmin
+        name = "${valkeyName}-admin"
+        namespace = namespace
+        valkeyHost = "${_helm_service}-primary.${namespace}.svc.cluster.local"
+        footprint = footprint
+    }) if valkeyAdmin else []
+
+    manifests = [_valkey_manifest] + _admin_manifests + _valkey_admin_manifests
 
