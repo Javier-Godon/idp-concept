@@ -51,7 +51,8 @@ Key takeaways:
 Current parity (update when you change `managed_resources/`):
 
 - ✅ PostgreSQL (`postgres/*`, CNPG-native), Kafka (`kafka_strimzi/*`), Keycloak (`keycloak/*`),
-  cert-manager (`cert_manager/*`).
+  cert-manager (`cert_manager/*`), platform API gateway (`gateway_api/*`, Envoy Gateway; the framework
+  standard for exposure — HTTPRoutes, never Ingress).
 - 🧪 Valkey (`valkey/*`, OT redis-operator `Redis`/`RedisReplication`): render, reconcile and delete
   verified on a live cluster; consumed by `projects/erp` through Argo CD.
 - ⬜ Gaps to evaluate: mongodb, rabbitmq, redis, opensearch, minio, vault/openbao, questdb,

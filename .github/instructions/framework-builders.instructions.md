@@ -93,6 +93,27 @@ sa.build_service_account(sa.ServiceAccountSpec {
 })
 ```
 
+### build_http_route (route.k) — the standard for exposing services
+Gateway API `HTTPRoute` on the shared platform gateway. The framework never generates Ingress.
+```kcl
+import framework.builders.route as route
+
+route.build_http_route(route.HTTPRouteSpec {
+    name = "my-app"
+    namespace = "apps"
+    serviceName = "my-app"
+    servicePort = 8080
+    route = route.RouteSpec {
+        hostnames = ["my-app.example.com"]
+        path = "/"                 # PathPrefix match
+        # rewritePrefix = "/"      # optional: replace the matched prefix
+        # listener = "http"        # default "https" (TLS hostnames on the gateway)
+        # gatewayName / gatewayNamespace default to platform-gateway / gateway-system
+    }
+})
+```
+`route.helm_fullname(release, chart)` gives the Service name of charts using Bitnami `common.names.fullname`.
+
 ### build_component_leader / build_accessory_leader (leader.k)
 ```kcl
 import framework.builders.leader as leader
@@ -121,7 +142,10 @@ Use `footprint` to select the infrastructure size/profile:
 Prefer adding a `footprint?: str = "production"` field to infrastructure templates. Existing helpers include `replicas`, `storage_size`, `storage_class`, `retention_days`, `persistence_enabled`, and `resource_values`.
 
 ### WebAppModule (webapp.k) — extends Component
-Set: `port`, `serviceType`, `replicas`, `configData`, `env`, `resources`, `livenessProbe`, `readinessProbe`, `startupProbe`, `imagePullSecretName`
+Set: `port`, `serviceType`, `replicas`, `configData`, `env`, `resources`, `livenessProbe`, `readinessProbe`, `startupProbe`, `imagePullSecretName`, `route` (`RouteSpec` → HTTPRoute)
+
+### GatewayModule / HTTPRouteModule (`templates.gateway_api.v1_0_0.gateway_api`) — extend Accessory
+`GatewayModule` (`component = "gateway"`) is the shared platform gateway (Envoy Gateway): `footprint`, `addresses`, `serviceType`, `replicas`, `tlsHostnames`, `issuerName` or `selfSignedCA` (non-production), `redirectToHttps`. The crossplane output emits an `XGateway` XR; the yaml output emits GatewayClass/EnvoyProxy/Gateway/Certificate/redirect HTTPRoute (controller + cert-manager prerequisites). `HTTPRouteModule` exposes an existing Service: `serviceName`, `servicePort`, `route`.
 
 ### SingleDatabaseModule (database.k) — extends Accessory
 Set: `port`, `dataPath`, `storageSize`, `storageHostPath`, `env`, `resources`, `serviceType`, `portName`

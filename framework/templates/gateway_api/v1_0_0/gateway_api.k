@@ -11,7 +11,7 @@ Two pieces:
         installs the Envoy Gateway controller.
       * yaml output → GatewayClass, EnvoyProxy, Gateway, cert-manager Certificate (+ local CA) and
         an HTTP→HTTPS redirect HTTPRoute. The Envoy Gateway controller and cert-manager are
-        cluster prerequisites on this path.
+        cluster prerequisites on this path, and the stack creates the gateway namespace.
   - HTTPRouteModule: exposes an existing Service (e.g. a Helm-installed product) on the gateway.
     Application modules expose themselves with `route` (see WebAppModule / builders.route).
 
@@ -173,11 +173,6 @@ build_gateway_resources = lambda spec: GatewaySpec -> [{str:}] {
         }
     }] if _s.hasTls and spec.redirectToHttps else []
     [
-        {
-            apiVersion = "v1"
-            kind = "Namespace"
-            metadata = {name = spec.namespace, labels = _labels}
-        }
         {
             apiVersion = _GATEWAY_API
             kind = "GatewayClass"

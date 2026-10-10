@@ -17,7 +17,7 @@ _local = gw.GatewaySpec {
 
 test_gateway_resources_local_tls = lambda {
     _res = gw.build_gateway_resources(_local)
-    assert [r.kind for r in _res] == ["Namespace", "GatewayClass", "EnvoyProxy", "Gateway", "ClusterIssuer", "Certificate", "ClusterIssuer", "Certificate", "HTTPRoute"]
+    assert [r.kind for r in _res] == ["GatewayClass", "EnvoyProxy", "Gateway", "ClusterIssuer", "Certificate", "ClusterIssuer", "Certificate", "HTTPRoute"]
     _gwr = [r for r in _res if r.kind == "Gateway"][0]
     assert _gwr.spec.gatewayClassName == "platform-gateway"
     assert _gwr.spec.addresses == [{type = "IPAddress", value = "192.168.49.2"}]
@@ -35,7 +35,7 @@ test_gateway_resources_local_tls = lambda {
 
 test_gateway_resources_http_only_production = lambda {
     _res = gw.build_gateway_resources(gw.GatewaySpec {name = "edge", namespace = "edge"})
-    assert [r.kind for r in _res] == ["Namespace", "GatewayClass", "EnvoyProxy", "Gateway"]
+    assert [r.kind for r in _res] == ["GatewayClass", "EnvoyProxy", "Gateway"]
     _proxy = [r for r in _res if r.kind == "EnvoyProxy"][0]
     assert _proxy.spec.provider.kubernetes.envoyService.type == "LoadBalancer"
     assert _proxy.spec.provider.kubernetes.envoyDeployment.replicas == 3

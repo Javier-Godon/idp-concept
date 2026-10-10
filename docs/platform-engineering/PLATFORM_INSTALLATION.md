@@ -188,7 +188,7 @@ _bs_spec = bs.BackstageHelmSpec {
 
 Required cluster services:
 
-- Ingress controller.
+- The platform API gateway (`XGateway`, see "Platform API Gateway" below); set `host` on `BackstageHelmSpec` and render `build_backstage_routes` for its HTTPRoute.
 - CloudNativePG operator for the PostgreSQL backing database.
 - cert-manager for TLS, when exposed publicly.
 - Keycloak, when using the documented auth path.
@@ -231,16 +231,34 @@ kubectl apply -f crossplane_v2/functions/
 kubectl apply -f crossplane_v2/managed_resources/postgres/
 ```
 
+### Platform API Gateway (Gateway API, replaces Ingress)
+
+The framework exposes HTTP services only through Gateway API `HTTPRoute`s (`route` on `WebAppModule`, `builders.route`, `gateway_api.HTTPRouteModule`); it never generates Ingress (ingress-nginx is retired upstream). The shared gateway is Envoy Gateway, provisioned by the `XGateway` API from `projects/platform`:
+
+```bash
+kubectl apply -f crossplane_v2/functions/function_kcl.yaml -f crossplane_v2/functions/function_auto_ready.yaml
+kubectl apply -f crossplane_v2/managed_resources/gateway_api/xrd_gateway_api.yaml -f crossplane_v2/managed_resources/gateway_api/x_gateway_api.yaml
+kubectl apply -f gitops/argocd/platform-project.yaml -f gitops/argocd/platform-dev-application.yaml
+```
+
+`XGateway` installs the pinned Envoy Gateway chart (with the Gateway API CRDs), then a GatewayClass, EnvoyProxy, the `gateway-system/platform-gateway` Gateway with `http` and `https` listeners, a cert-manager certificate for `tls.hostnames` and an HTTP→HTTPS redirect. Routes attach with `sectionName: https` for TLS hostnames and `sectionName: http` otherwise.
+
+Local clusters: set `addresses` to the node IP (minikube: `minikube ip`) so the proxy Service gets it as an external IP on ports 80/443, and `tls.selfSignedCA: true` for a local CA. Disable any other controller binding those ports (for example `minikube addons disable ingress`). To trust the local CA in a browser, export it with `kubectl -n cert-manager get secret platform-gateway-local-ca -o jsonpath='{.data.ca\.crt}' | base64 -d > platform-ca.crt`.
+
+Argo CD is served at `https://<platform host>/argocd`: apply `gitops/argocd/argocd-cmd-params-cm.yaml` and `gitops/argocd/argocd-cm.yaml` (see below) and restart `argocd-server`.
+
 ### GitOps For Curated XRs (Argo CD)
 
 `koncept render crossplane` writes typed XRs for curated services to `output/crossplane/managed_resources/`. Commit that directory and let Argo CD sync it; Crossplane reconciles each XR through the matching `crossplane_v2/managed_resources/<service>/` API. `projects/erp` is the reference (Valkey):
 
 ```bash
-kubectl -n argocd patch configmap argocd-cm --type merge --patch-file gitops/argocd/argocd-cm-crossplane.yaml
+kubectl -n argocd patch configmap argocd-cm --type merge --patch-file gitops/argocd/argocd-cm.yaml
+kubectl -n argocd patch configmap argocd-cmd-params-cm --type merge --patch-file gitops/argocd/argocd-cmd-params-cm.yaml
+kubectl -n argocd rollout restart deployment argocd-server
 kubectl apply -f gitops/argocd/erp-project.yaml -f gitops/argocd/erp-dev-application.yaml
 ```
 
-The `argocd-cm` patch sets annotation resource tracking and a health check for `koncept.bluesolution.es` XRs. The `erp` AppProject only allows the XR kinds the project renders.
+The `argocd-cm` patch sets the public URL, annotation resource tracking and a health check for `koncept.bluesolution.es` XRs; `argocd-cmd-params-cm` serves Argo CD under `/argocd` behind the gateway. The `erp` AppProject only allows the XR kinds the project renders.
 
 If an XR is deleted and Argo CD self-heals it immediately, the new XR can see its namespace while it is still terminating. It then converges on the next provider-kubernetes poll (default 10 minutes).
 

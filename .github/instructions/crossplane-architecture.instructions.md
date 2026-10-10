@@ -53,6 +53,7 @@ versions of the same thing**.
 | `kafka` (Strimzi) | `kafka_strimzi/*` | ✅ Helm/operator |
 | `keycloak` | `keycloak/*` | ✅ operator CRD |
 | (cluster infra, no template) | `cert_manager/*` | ✅ Helm Release |
+| `gateway_api` (Envoy Gateway) | `gateway_api/*` | ✅ Helm Release + Gateway API objects; live-verified, consumed by `projects/platform` |
 | `valkey` (OT redis-operator) | `valkey/*` | 🧪 operator CRD; reconcile + delete verified, consumed by `projects/erp` |
 | `mongodb`, `rabbitmq`, `redis`, `opensearch`, `minio`, `vault`/`openbao`, `questdb`, `elastic`, `opentelemetry` | — | ⬜ gap: add only if selection policy justifies it |
 | `webapp`, generic `database` | — | 🚫 intentionally excluded |

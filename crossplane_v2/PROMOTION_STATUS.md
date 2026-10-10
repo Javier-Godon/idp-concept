@@ -42,6 +42,7 @@ These APIs are implemented but lack full production validation. Suitable for lea
 | **MongoDB** | `mongodb/` | ~60% | Missing reconciliation + delete tests | EXPERIMENTAL |
 | **RabbitMQ** | `rabbitmq/` | ~60% | Missing reconciliation + delete tests | EXPERIMENTAL |
 | **Redis** | `redis/` | ~60% | Missing reconciliation + delete tests | EXPERIMENTAL |
+| **Gateway API** | `gateway_api/` | ~85% | Render, reconcile (controller + Gateway + TLS + redirect) and live traffic verified on Crossplane v2.0.2 / Envoy Gateway v1.9.2; delete/upgrade tests pending | EXPERIMENTAL |
 | **Valkey** | `valkey/` | ~80% | Render, reconcile (standalone + replication), and delete verified on Crossplane v2.0.2 / redis-operator v0.26.0; update/drift tests and automation pending | EXPERIMENTAL |
 | **OpenSearch** | `opensearch/` | ~50% | Missing reconciliation, composition untested | EXPERIMENTAL |
 | **Elasticsearch** | `elastic/` | ~50% | Missing reconciliation, version management untested | EXPERIMENTAL |

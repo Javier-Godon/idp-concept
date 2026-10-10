@@ -1,34 +1,56 @@
 """
-Acceptance fixture: Gateway API controller and Gateway resource through the IDP render path.
-Tests: Envoy Gateway HelmRelease + Gateway CRD rendering.
-Level: L1 (dry-run) — requires Flux HelmRelease and Gateway API CRD stubs.
+Acceptance fixture: platform API gateway (Envoy Gateway / Gateway API) through the IDP render path.
+Renders GatewayModule (GatewayClass, EnvoyProxy, Gateway, local-CA certificate, HTTP→HTTPS redirect),
+an HTTPRouteModule for an existing Service, and a WebAppModule exposed with `route`.
+Level: L1 (dry-run) — requires Gateway API, Envoy Gateway and cert-manager CRD stubs.
 """
 
 import ._helpers as h
 import templates.gateway_api.v1_0_0.gateway_api as gw
+import templates.webapp.v1_0_0.webapp as webapp
 
 _namespace = "idp-acceptance-gateway-api"
-_controller = gw.build_gateway_controller({
-    name = "acceptance-envoy-gateway"
-    namespace = _namespace
-    provider = "envoy"
-    replicas = 1
-    chartVersion = gw._ENVOY_GATEWAY_VERSION
-})
-_gateway = gw.build_gateway({
+
+_gateway = gw.GatewayModule {
     name = "acceptance-gateway"
     namespace = _namespace
-    gatewayClassName = "envoy"
-    port = 80
-    protocolType = "HTTP"
-})
-_module = h.wrap_accessory(
-    "acceptance-gateway-api",
-    _namespace,
-    "helm.toolkit.fluxcd.io/v2beta1",
-    "HelmRelease",
-    [_controller, _gateway],
-    gw._ENVOY_GATEWAY_VERSION
-)
+    configurations = {}
+    asset = {version = gw.ENVOY_GATEWAY_VERSION}
+    dependsOn = []
+    footprint = "local"
+    tlsHostnames = ["acceptance.example.com"]
+    selfSignedCA = True
+    caNamespace = _namespace
+}.instance
 
-h.render_accessory(_namespace, _module)
+_existing_service_route = gw.HTTPRouteModule {
+    name = "acceptance-existing-service"
+    namespace = _namespace
+    configurations = {}
+    asset = {version = "1.0.0"}
+    dependsOn = []
+    serviceName = "acceptance-existing-service"
+    servicePort = 80
+    route = {
+        hostnames = ["acceptance.example.com"]
+        path = "/tools"
+        gatewayName = "acceptance-gateway"
+        gatewayNamespace = _namespace
+    }
+}.instance
+
+_app = webapp.WebAppModule {
+    name = "acceptance-routed-app"
+    namespace = _namespace
+    configurations = {}
+    asset = {image = "nginx", version = "1.27.3-alpine"}
+    dependsOn = []
+    port = 8080
+    route = {
+        hostnames = ["acceptance.example.com"]
+        gatewayName = "acceptance-gateway"
+        gatewayNamespace = _namespace
+    }
+}.instance
+
+h.render_stack([_namespace], [_app], [_gateway, _existing_service_route])

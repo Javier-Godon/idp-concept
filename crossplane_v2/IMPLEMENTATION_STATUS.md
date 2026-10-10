@@ -354,7 +354,7 @@ The generated `framework/procedures/kcl_to_crossplane.k` should be updated to:
 - **Instances**: `xr_instance_external_dns.yaml` — AWS Route 53 example
 - **Deployment**: Bitnami Helm chart (external-dns)
 - **API**: `koncept.bluesolution.es/v1alpha1` → `XExternalDNS`
-- **Features**: Multi-provider support (AWS/Azure/GCP/Cloudflare), automatic DNS record sync, multiple sources (Ingress/Service/Gateway)
+- **Features**: Multi-provider support (AWS/Azure/GCP/Cloudflare), automatic DNS record sync, sources: Service and Gateway API HTTPRoute
 - **License**: Apache 2.0 (external-dns)
 - **Tier**: Platform Tier 0 (essential for DNS automation)
 
@@ -364,7 +364,7 @@ The generated `framework/procedures/kcl_to_crossplane.k` should be updated to:
 - **Instances**: `xr_instance_gateway_api.yaml` — Envoy Gateway example
 - **Deployment**: Helm chart (envoy-gateway, nginx-gateway, or istio)
 - **API**: `koncept.bluesolution.es/v1alpha1` → `XGateway`
-- **Features**: Modern API Gateway API (replaces legacy Ingress), multiple implementations (Envoy/NGINX/Istio), L7 routing,cross-namespace routing
+- **Features**: Envoy Gateway v1.9 installed via provider-helm, shared Gateway with http/https listeners, cert-manager TLS (or local CA), HTTP→HTTPS redirect; the framework standard for exposure (Ingress is not generated)
 - **License**: Apache 2.0 (Gateway API spec + implementations)
 - **Tier**: Platform Tier 1 (ingress/API gateway infrastructure)
 

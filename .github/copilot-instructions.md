@@ -164,6 +164,7 @@ Later values override earlier ones.
 - Use `$type` for Kubernetes `type` fields
 - Use `${var}` for string interpolation in manifest values
 - Use `framework.assembly.helpers` for namespace creation in stacks
+- Expose HTTP services with the Gateway API, never Ingress: set `route` on `WebAppModule` (or use `builders.route.build_http_route` / `gateway_api.HTTPRouteModule` for existing Services). Routes attach to the shared `gateway-system/platform-gateway` (Envoy Gateway, `projects/platform`); use listener `https` for TLS hostnames and `http` otherwise.
 - Extend `framework.models.configurations.BaseConfigurations` for project configs
 - Attach `models.release_notes.ReleaseNotes` to `RenderStack.releaseNotes` when a rendered version needs release notes; YAML output includes a `ConfigMap` containing `RELEASE_NOTES.md`.
 

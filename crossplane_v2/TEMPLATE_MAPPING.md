@@ -55,7 +55,7 @@
 | **Observability Stack** | `framework/templates/observability/v1_0_0/observability.k` | `XObservabilityProvisioner` | `crossplane_v2/managed_resources/observability/` | ✅ New | Prometheus + Grafana + Alertmanager; Helm composite; June 7, 2026 |
 | **Cert-Manager** | `framework/templates/cert_manager/v1_0_0/cert_manager.k` | `XCertManager` | `crossplane_v2/managed_resources/cert_manager/` | ✅ Complete | Certificate management; ACME; June 7, 2026 |
 | **External-DNS** | `framework/templates/external_dns/v1_0_0/external_dns.k` | `XExternalDNS` | `crossplane_v2/managed_resources/external_dns/` | ✅ New | Automatic DNS management; June 7, 2026 |
-| **Gateway API** | `framework/templates/gateway_api/v1_0_0/gateway_api.k` | `XGateway` | `crossplane_v2/managed_resources/gateway_api/` | ✅ New | Modern API Gateway (Envoy/NGINX/Istio); June 7, 2026 |
+| **Gateway API** | `framework/templates/gateway_api/v1_0_0/gateway_api.k` | `XGateway` | `crossplane_v2/managed_resources/gateway_api/` | ✅ Live-verified | Platform API gateway: Envoy Gateway v1.9 (Helm) + Gateway/EnvoyProxy/cert; replaces Ingress; Oct 10, 2026 |
 | **Network Policies** | `framework/templates/network_policies/v1_0_0/network_policies.k` | `XNetworkPolicies` | `crossplane_v2/managed_resources/network_policies/` | ✅ New | Kubernetes network isolation; June 7, 2026 |
 | **Apache APISIX** | `framework/templates/apisix/v1_0_0/apisix.k` | `XAPIGateway` | `crossplane_v2/managed_resources/apisix/` | ✅ New | Cloud-native API gateway; Helm; June 7, 2026 |
 | **Apache Superset** | `framework/templates/superset/v1_0_0/superset.k` | `XSuperset` | `crossplane_v2/managed_resources/superset/` | ✅ New | Data visualization & BI platform; Helm; June 7, 2026 |
@@ -73,7 +73,7 @@
 | **Observability** | `framework/templates/observability/v1_0_0/observability.k` | `XObservabilityProvisioner` | `crossplane_v2/managed_resources/observability/` | ✅ Complete | Prometheus + Grafana + Alertmanager composite |
 | **Cert-Manager** | `framework/templates/cert_manager/v1_0_0/cert_manager.k` | `XCertManager` | `crossplane_v2/managed_resources/cert_manager/` | ✅ Complete | ACME certificate provisioning and renewal |
 | **External-DNS** | `framework/templates/external_dns/v1_0_0/external_dns.k` | `XExternalDNS` | `crossplane_v2/managed_resources/external_dns/` | ✅ Complete | Automatic DNS record management (AWS/Azure/GCP/Cloudflare) |
-| **Gateway API** | `framework/templates/gateway_api/v1_0_0/gateway_api.k` | `XGateway` | `crossplane_v2/managed_resources/gateway_api/` | ✅ Complete | Modern API Gateway controller (Envoy/NGINX/Istio) instead of legacy Ingress |
+| **Gateway API** | `framework/templates/gateway_api/v1_0_0/gateway_api.k` | `XGateway` | `crossplane_v2/managed_resources/gateway_api/` | ✅ Live-verified | Envoy Gateway controller + shared Gateway (http/https), cert-manager TLS, HTTP→HTTPS redirect; framework standard (no Ingress) |
 | **Network Policies** | `framework/templates/network_policies/v1_0_0/network_policies.k` | `XNetworkPolicies` | `crossplane_v2/managed_resources/network_policies/` | ✅ Complete | Zero-trust networking with Kubernetes NetworkPolicy |
 | **Apache APISIX** | `framework/templates/apisix/v1_0_0/apisix.k` | `XAPIGateway` | `crossplane_v2/managed_resources/apisix/` | ✅ Complete | Cloud-native API gateway with etcd backend; Helm deployment |
 | **Apache Superset** | `framework/templates/superset/v1_0_0/superset.k` | `XSuperset` | `crossplane_v2/managed_resources/superset/` | ✅ Complete | Open-source data visualization & BI platform; Helm deployment |
