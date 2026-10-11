@@ -37,7 +37,7 @@ schema NexusModule(component.Component):
     createLocalPersistentVolume?: bool
     storageHostPath?: str = "/mnt/data"
     serviceType?: str = "ClusterIP"
-    # Public sub-path; sets NEXUS_CONTEXT_PATH so Nexus itself serves under it. Set `route` to publish it.
+    # Public sub-path; sets NEXUS_CONTEXT (path without leading '/') so Nexus itself serves under it. Set `route` to publish it.
     contextPath?: str = "/"
     route?: route_builder.RouteSpec
     # JVM heap / direct memory; keep within resources.memoryLimit.
@@ -78,7 +78,7 @@ schema NexusModule(component.Component):
         strategy = {$type = "Recreate"}
         env = [
             {name = "INSTALL4J_ADD_VM_PARAMS", value = jvmOptions}
-            {name = "NEXUS_CONTEXT_PATH", value = contextPath}
+            {name = "NEXUS_CONTEXT", value = _context_path[1:]}
         ] + (env or [])
         volumes = [{
             name = "nexus-data"
