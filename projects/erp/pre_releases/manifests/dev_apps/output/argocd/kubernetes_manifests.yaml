@@ -51,7 +51,7 @@ spec:
               key: iam-client-secret
               name: erp-backend-keycloak
               optional: true
-        image: ghcr.io/javier-godon/erp-backend:v0.1.0-a0d0ce0-20261011-1417
+        image: ghcr.io/javier-godon/erp-backend:v0.1.0-c9cdb91-20261011-1529
         imagePullPolicy: IfNotPresent
         livenessProbe:
           failureThreshold: 3
