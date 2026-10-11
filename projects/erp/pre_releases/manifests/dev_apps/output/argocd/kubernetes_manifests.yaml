@@ -1,0 +1,141 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: erp-backend
+  namespace: erp-backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: erp-backend
+  template:
+    metadata:
+      labels:
+        app: erp-backend
+    spec:
+      containers:
+      - env:
+        - name: SPRING_DATASOURCE_URL
+          value: jdbc:postgresql://erp-postgres-rw.erp-postgres.svc.cluster.local:5432/blue_postgres
+        - name: SPRING_DATASOURCE_USERNAME
+          valueFrom:
+            secretKeyRef:
+              key: username
+              name: erp-backend-db
+        - name: SPRING_DATASOURCE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              key: password
+              name: erp-backend-db
+        - name: SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI
+          value: https://bluesolution.es/iam/realms/railway
+        - name: SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI
+          value: http://erp-keycloak-service.keycloak.svc.cluster.local:8080/iam/realms/railway/protocol/openid-connect/certs
+        - name: KEYCLOAK_ADMIN_CLIENT_AUTH_SERVER_URL
+          value: http://erp-keycloak-service.keycloak.svc.cluster.local:8080/iam
+        - name: KEYCLOAK_ADMIN_CLIENT_REALM
+          value: railway
+        - name: KEYCLOAK_IAM_CLIENT_AUTH_SERVER_URL
+          value: http://erp-keycloak-service.keycloak.svc.cluster.local:8080/iam
+        - name: KEYCLOAK_IAM_CLIENT_REALM
+          value: railway
+        - name: KEYCLOAK_ADMIN_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              key: admin-client-secret
+              name: erp-backend-keycloak
+              optional: true
+        - name: KEYCLOAK_IAM_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              key: iam-client-secret
+              name: erp-backend-keycloak
+              optional: true
+        image: ghcr.io/javier-godon/erp-backend:v0.1.0-2774359-20261011-1206
+        imagePullPolicy: IfNotPresent
+        livenessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /actuator/health/liveness
+            port: 9090
+          initialDelaySeconds: 0
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 10
+        name: erp-backend
+        ports:
+        - containerPort: 8089
+        readinessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /actuator/health/readiness
+            port: 9090
+          initialDelaySeconds: 0
+          periodSeconds: 5
+          successThreshold: 1
+          timeoutSeconds: 10
+        resources:
+          limits:
+            cpu: '2'
+            memory: 1536Mi
+          requests:
+            cpu: 250m
+            memory: 768Mi
+        startupProbe:
+          failureThreshold: 30
+          httpGet:
+            path: /actuator/health
+            port: 9090
+          initialDelaySeconds: 20
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 10
+      serviceAccountName: erp-backend-sa
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: erp-backend
+  namespace: erp-backend
+spec:
+  ports:
+  - port: 8089
+  selector:
+    app: erp-backend
+  type: ClusterIP
+---
+apiVersion: v1
+imagePullSecrets:
+- name: ghcr-secret
+kind: ServiceAccount
+metadata:
+  name: erp-backend-sa
+  namespace: erp-backend
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: erp-backend
+  namespace: erp-backend
+  labels:
+    app: erp-backend
+spec:
+  parentRefs:
+  - name: platform-gateway
+    namespace: gateway-system
+    sectionName: https
+  hostnames:
+  - bluesolution.es
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /shopping
+    backendRefs:
+    - name: erp-backend
+      port: 8089
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: erp-backend

@@ -545,6 +545,8 @@ credentials/
 !projects/erp/pre_releases/manifests/*/output/
 projects/erp/pre_releases/manifests/*/output/*
 !projects/erp/pre_releases/manifests/*/output/crossplane/
+# erp application workloads (dev_apps pre-release) are plain YAML synced by Argo CD
+!projects/erp/pre_releases/manifests/*/output/argocd/
 !projects/platform/pre_releases/manifests/*/output/
 projects/platform/pre_releases/manifests/*/output/*
 !projects/platform/pre_releases/manifests/*/output/crossplane/
