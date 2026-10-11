@@ -5,7 +5,7 @@ repository. They attach to the shared platform gateway (`gateway-system/platform
 see `projects/platform`). Apply with:
 
 ```bash
-kubectl apply -f gitops/cluster-routes/
+kubectl apply -f delivery/cluster-routes/
 ```
 
 | Route | Replaces Ingress | Listener |

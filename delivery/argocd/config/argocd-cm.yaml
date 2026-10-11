@@ -1,6 +1,6 @@
 # Argo CD settings: public URL behind the platform API gateway and Crossplane XR support.
 # Merge into the existing argocd-cm (do not replace it):
-#   kubectl -n argocd patch configmap argocd-cm --type merge --patch-file gitops/argocd/argocd-cm.yaml
+#   kubectl -n argocd patch configmap argocd-cm --type merge --patch-file delivery/argocd/config/argocd-cm.yaml
 # See https://docs.crossplane.io/latest/guides/crossplane-with-argo-cd/
 data:
   # Served by the platform gateway (projects/platform route, server.rootpath=/argocd).

@@ -108,6 +108,7 @@ Persistent templates need a Kubernetes storage provisioner when they create PVCs
 | `fluentbit-helm` | `FluentBitHelmSpec` HelmRelease | Flux/Helm controller. |
 | `fluentbit-operator` | `FluentBitOperatorModule` + Fluent Operator CRs | Flux/Helm controller plus Fluent Operator CRDs/controller. |
 | `valkey-admin` | `ValkeyAdminModule` Deployment + Service + HTTPRoute + SecurityPolicy | Dry-run only: Gateway API `HTTPRoute` and Envoy Gateway `SecurityPolicy` CRDs (stubbed). Real use needs Envoy Gateway, the platform Gateway, a reachable Valkey and a basic-auth Secret (`.htpasswd` key) created out of band. |
+| `nexus` | `NexusModule` PVC + Deployment + Service + HTTPRoute | Dry-run only: Gateway API `HTTPRoute` CRD (stubbed). Real use needs a default/named StorageClass, ~3Gi memory and the platform Gateway. |
 | `data-admin` | pgAdmin + mongo-express + RedisInsight Deployment/Service companions | Backing databases are not required for dry-run shape validation; real UI runtime needs reachable data services and Secrets. |
 | `release-notes` | `RenderStack.releaseNotes` ConfigMap | Built-in Kubernetes only. |
 | `questdb-superset-stack` | `QuestDBSpec` HelmRelease + `SupersetModule` HelmRelease | Flux/Helm controller. QuestDB ready on port 8812, then TCP connectivity test from within the cluster. See [QuestDB and Superset](#questdb-and-superset) section. |

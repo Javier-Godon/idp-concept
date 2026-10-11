@@ -1,0 +1,26 @@
+# Least-privilege Argo CD project for Nexus Repository (plain YAML from `koncept render argocd`):
+# only this repository, only the nexus namespace, only the kinds the nexus stack renders.
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: nexus
+  namespace: argocd
+spec:
+  description: Nexus Repository (koncept argocd output)
+  sourceRepos:
+    - https://github.com/Javier-Godon/idp-concept.git
+  destinations:
+    - server: https://kubernetes.default.svc
+      namespace: nexus
+  clusterResourceWhitelist:
+    - group: ""
+      kind: Namespace
+  namespaceResourceWhitelist:
+    - group: ""
+      kind: PersistentVolumeClaim
+    - group: ""
+      kind: Service
+    - group: apps
+      kind: Deployment
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute

@@ -596,6 +596,7 @@ Root-level template compatibility files have been removed. Import templates by t
 | `PgAdminModule` | `admin/v1_0_0/data_admin.k` | `Component` | Optional pgAdmin UI Deployment + Service |
 | `MongoExpressModule` | `admin/v1_0_0/data_admin.k` | `Component` | Optional mongo-express UI Deployment + Service |
 | `RedisInsightModule` | `admin/v1_0_0/data_admin.k` | `Component` | Optional RedisInsight UI for Redis/Valkey-compatible stores |
+| `NexusModule` | `nexus/v1_0_0/nexus.k` | `Component` | Sonatype Nexus Repository 3: PVC-backed `/nexus-data` (artifacts survive restarts), Recreate strategy, non-root, optional sub-path `contextPath` + HTTPRoute |
 | `ValkeyAdminModule` | `valkey/v1_0_0/valkey_admin.k` | `Component` | Valkey Admin web UI (`valkey/valkey-admin`), optionally served under a sub-path (default `/valkey-admin`) of a shared hostname via HTTPRoute + basic-auth SecurityPolicy; also available as `ValkeyModule.valkeyAdmin` |
 | `SingleDatabaseModule` | `database/v1_0_0/database.k` | `Accessory` | Simple database (Deployment + Service + PVC; optional local PV) |
 | `KafkaClusterModule` | `kafka/v1_0_0/kafka.k` | `Accessory` | Strimzi Kafka cluster (`kafka.strimzi.io/v1beta2`) |

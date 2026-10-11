@@ -238,25 +238,40 @@ The framework exposes HTTP services only through Gateway API `HTTPRoute`s (`rout
 ```bash
 kubectl apply -f crossplane_v2/functions/function_kcl.yaml -f crossplane_v2/functions/function_auto_ready.yaml
 kubectl apply -f crossplane_v2/managed_resources/gateway_api/xrd_gateway_api.yaml -f crossplane_v2/managed_resources/gateway_api/x_gateway_api.yaml
-kubectl apply -f gitops/argocd/platform-project.yaml -f gitops/argocd/platform-dev-application.yaml
+kubectl apply -f delivery/argocd/projects/platform-project.yaml -f delivery/argocd/applications/platform-dev-application.yaml
 ```
 
 `XGateway` installs the pinned Envoy Gateway chart (with the Gateway API CRDs), then a GatewayClass, EnvoyProxy, the `gateway-system/platform-gateway` Gateway with `http` and `https` listeners, a cert-manager certificate for `tls.hostnames` and an HTTP→HTTPS redirect. Routes attach with `sectionName: https` for TLS hostnames and `sectionName: http` otherwise.
 
 Local clusters: set `addresses` to the node IP (minikube: `minikube ip`) so the proxy Service gets it as an external IP on ports 80/443, and `tls.selfSignedCA: true` for a local CA. Disable any other controller binding those ports (for example `minikube addons disable ingress`). To trust the local CA in a browser, export it with `kubectl -n cert-manager get secret platform-gateway-local-ca -o jsonpath='{.data.ca\.crt}' | base64 -d > platform-ca.crt`.
 
-Argo CD is served at `https://<platform host>/argocd`: apply `gitops/argocd/argocd-cmd-params-cm.yaml` and `gitops/argocd/argocd-cm.yaml` (see below) and restart `argocd-server`.
+Argo CD is served at `https://<platform host>/argocd`: apply `delivery/argocd/config/argocd-cmd-params-cm.yaml` and `delivery/argocd/config/argocd-cm.yaml` (see below) and restart `argocd-server`.
 
 ### GitOps For Curated XRs (Argo CD)
 
 `koncept render crossplane` writes typed XRs for curated services to `output/crossplane/managed_resources/`. Commit that directory and let Argo CD sync it; Crossplane reconciles each XR through the matching `crossplane_v2/managed_resources/<service>/` API. `projects/erp` is the reference (Valkey cache, a single-instance CloudNativePG PostgreSQL and a single-instance Keycloak):
 
 ```bash
-kubectl -n argocd patch configmap argocd-cm --type merge --patch-file gitops/argocd/argocd-cm.yaml
-kubectl -n argocd patch configmap argocd-cmd-params-cm --type merge --patch-file gitops/argocd/argocd-cmd-params-cm.yaml
+kubectl -n argocd patch configmap argocd-cm --type merge --patch-file delivery/argocd/config/argocd-cm.yaml
+kubectl -n argocd patch configmap argocd-cmd-params-cm --type merge --patch-file delivery/argocd/config/argocd-cmd-params-cm.yaml
 kubectl -n argocd rollout restart deployment argocd-server
-kubectl apply -f gitops/argocd/erp-project.yaml -f gitops/argocd/erp-dev-application.yaml
+kubectl apply -f delivery/argocd/projects/erp-project.yaml -f delivery/argocd/applications/erp-dev-application.yaml
 ```
+
+### Nexus Repository (Argo CD, plain YAML)
+
+`projects/nexus` renders plain Kubernetes YAML (no Crossplane) with `koncept render argocd`; Argo CD syncs it from Git. Nexus runs in namespace `nexus` with a PVC (`/nexus-data`, 50Gi, storage class from the site config) so uploaded artifacts survive restarts, and is served at `https://bluesolution.es/nexus` through the platform gateway.
+
+```bash
+koncept render argocd --factory projects/nexus/pre_releases/manifests/dev/factory \
+  --output projects/nexus/pre_releases/manifests/dev/output/argocd
+# commit the output, then:
+kubectl apply -f delivery/argocd/projects/nexus-project.yaml -f delivery/argocd/applications/nexus-dev-application.yaml
+# first login: user admin, password from the data volume
+kubectl -n nexus exec deploy/nexus -- cat /nexus-data/admin.password
+```
+
+First start takes a few minutes (startup probe allows ~10 min). Change the admin password in the UI on first login.
 
 PostgreSQL needs the CloudNativePG operator and, for superuser access, a Secret created out of band (credentials never live in Git):
 

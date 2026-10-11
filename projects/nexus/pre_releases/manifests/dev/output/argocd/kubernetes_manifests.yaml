@@ -1,0 +1,138 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: nexus-pvc
+  namespace: nexus
+spec:
+  storageClassName: local-path
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 50Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nexus
+  namespace: nexus
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nexus
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: nexus
+    spec:
+      containers:
+      - env:
+        - name: INSTALL4J_ADD_VM_PARAMS
+          value: -Xms1g -Xmx1g -XX:MaxDirectMemorySize=1g
+        - name: NEXUS_CONTEXT_PATH
+          value: /nexus
+        image: sonatype/nexus3:3.96.4
+        imagePullPolicy: IfNotPresent
+        livenessProbe:
+          failureThreshold: 5
+          httpGet:
+            path: /nexus/service/rest/v1/status
+            port: 8081
+          initialDelaySeconds: 0
+          periodSeconds: 30
+          successThreshold: 1
+          timeoutSeconds: 10
+        name: nexus
+        ports:
+        - containerPort: 8081
+        readinessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /nexus/service/rest/v1/status
+            port: 8081
+          initialDelaySeconds: 0
+          periodSeconds: 15
+          successThreshold: 1
+          timeoutSeconds: 10
+        resources:
+          limits:
+            cpu: '2'
+            memory: 3Gi
+          requests:
+            cpu: 500m
+            memory: 2Gi
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+        startupProbe:
+          failureThreshold: 60
+          httpGet:
+            path: /nexus/service/rest/v1/status
+            port: 8081
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 10
+        volumeMounts:
+        - mountPath: /nexus-data
+          name: nexus-data
+      securityContext:
+        fsGroup: 200
+        runAsGroup: 200
+        runAsNonRoot: true
+        runAsUser: 200
+        seccompProfile:
+          type: RuntimeDefault
+      volumes:
+      - name: nexus-data
+        persistentVolumeClaim:
+          claimName: nexus-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: nexus
+  name: nexus
+  namespace: nexus
+spec:
+  ports:
+  - port: 8081
+  selector:
+    app: nexus
+  type: ClusterIP
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: nexus
+  namespace: nexus
+  labels:
+    app: nexus
+spec:
+  parentRefs:
+  - name: platform-gateway
+    namespace: gateway-system
+    sectionName: https
+  hostnames:
+  - bluesolution.es
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /nexus
+    backendRefs:
+    - name: nexus
+      port: 8081
+    timeouts:
+      request: 0s
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: nexus

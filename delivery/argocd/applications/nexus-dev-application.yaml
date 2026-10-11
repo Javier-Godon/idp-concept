@@ -1,0 +1,24 @@
+# Syncs the rendered nexus dev output (`koncept render argocd --factory
+# projects/nexus/pre_releases/manifests/dev/factory --output
+# projects/nexus/pre_releases/manifests/dev/output/argocd`) from Git.
+# The PVC is never pruned automatically: artifacts must survive sync and restarts.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: nexus-dev
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: nexus
+  source:
+    repoURL: https://github.com/Javier-Godon/idp-concept.git
+    targetRevision: main
+    path: projects/nexus/pre_releases/manifests/dev/output/argocd
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: nexus
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
