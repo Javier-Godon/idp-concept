@@ -284,10 +284,11 @@ kubectl create namespace erp-backend
 # 1. image pull secret: classic GitHub PAT with read:packages
 kubectl -n erp-backend create secret docker-registry ghcr-secret \
   --docker-server=ghcr.io --docker-username=<github user> --docker-password='<PAT>'
-# 2. database: reuse the CloudNativePG application role of the erp cluster
+# 2. database: on the dev site the ERP schemas are owned by the superuser (they are also created by local
+#    runs through NodePort 31543 with user `postgres`), so the API uses the same role there
 kubectl -n erp-backend create secret generic erp-backend-db \
-  --from-literal=username="$(kubectl -n erp-postgres get secret erp-postgres-app -o jsonpath='{.data.username}' | base64 -d)" \
-  --from-literal=password="$(kubectl -n erp-postgres get secret erp-postgres-app -o jsonpath='{.data.password}' | base64 -d)"
+  --from-literal=username="$(kubectl -n erp-postgres get secret erp-postgres-superuser -o jsonpath='{.data.username}' | base64 -d)" \
+  --from-literal=password="$(kubectl -n erp-postgres get secret erp-postgres-superuser -o jsonpath='{.data.password}' | base64 -d)"
 # 3. Keycloak confidential clients of realm `railway` (admin-cli service account, iam-client); optional for start-up
 kubectl -n erp-backend create secret generic erp-backend-keycloak \
   --from-literal=admin-client-secret='<admin-cli secret>' --from-literal=iam-client-secret='<iam-client secret>'
