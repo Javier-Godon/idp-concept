@@ -1,0 +1,30 @@
+# Least-privilege Argo CD project for the erp application workloads (plain YAML from
+# `koncept render argocd` on projects/erp/pre_releases/manifests/dev_apps): only this repository,
+# only the erp-backend namespace, only the kinds the ErpAppsStack renders.
+# The erp data/identity services (Crossplane XRs) stay in the `erp` project.
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: erp-apps
+  namespace: argocd
+spec:
+  description: erp application workloads (koncept argocd output)
+  sourceRepos:
+    - https://github.com/Javier-Godon/idp-concept.git
+  destinations:
+    - server: https://kubernetes.default.svc
+      namespace: erp-backend
+  clusterResourceWhitelist:
+    - group: ""
+      kind: Namespace
+  namespaceResourceWhitelist:
+    - group: ""
+      kind: Service
+    - group: ""
+      kind: ServiceAccount
+    - group: ""
+      kind: ConfigMap
+    - group: apps
+      kind: Deployment
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute

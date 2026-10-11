@@ -23,3 +23,12 @@ schema ErpConfigurations(base.BaseConfigurations):
     keycloakDbSchema?: str
     keycloakDbSecret?: str
     footprint?: "local" | "development" | "staging" | "production"
+    # erp-backend (Spring Boot API, Tier-1 GitOps YAML via the dev_apps pre-release)
+    erpBackendImage?: str
+    erpBackendVersion?: str
+    erpBackendHostname?: str
+    erpBackendPath?: str
+    erpBackendPullSecret?: str
+    erpBackendDbSecret?: str
+    erpBackendKeycloakSecret?: str
+    erpBackendKeycloakRealm?: str

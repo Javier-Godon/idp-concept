@@ -20,4 +20,15 @@ _erp_profile_configurations = cfg.ErpConfigurations {
     keycloakDbSchema = "keycloak"
     keycloakDbSecret = "keycloak-db-secret"
     footprint = "development"
+    # erp-backend API (dev_apps pre-release). Pin the image tag published by the erp-backend CD workflow.
+    # Secrets are created out of band in appsNamespace (docs/platform-engineering/PLATFORM_INSTALLATION.md).
+    appsNamespace = "erp-backend"
+    erpBackendImage = "ghcr.io/javier-godon/erp-backend"
+    erpBackendVersion = "v0.1.0-2774359-20261011-1206"
+    erpBackendHostname = "bluesolution.es"
+    erpBackendPath = "/shopping"
+    erpBackendPullSecret = "ghcr-secret"
+    erpBackendDbSecret = "erp-backend-db"
+    erpBackendKeycloakSecret = "erp-backend-keycloak"
+    erpBackendKeycloakRealm = "railway"
 }

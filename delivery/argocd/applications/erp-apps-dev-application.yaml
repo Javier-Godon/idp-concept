@@ -1,0 +1,24 @@
+# Syncs the rendered erp application workloads (`koncept render argocd --factory
+# projects/erp/pre_releases/manifests/dev_apps/factory --output
+# projects/erp/pre_releases/manifests/dev_apps/output/argocd`) from Git.
+# Secrets (ghcr-secret, erp-backend-db, erp-backend-keycloak) are created out of band in erp-backend.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: erp-apps-dev
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: erp-apps
+  source:
+    repoURL: https://github.com/Javier-Godon/idp-concept.git
+    targetRevision: main
+    path: projects/erp/pre_releases/manifests/dev_apps/output/argocd
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: erp-backend
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

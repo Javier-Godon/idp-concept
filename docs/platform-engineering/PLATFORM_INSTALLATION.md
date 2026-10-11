@@ -273,6 +273,37 @@ kubectl -n nexus exec deploy/nexus -- cat /nexus-data/admin.password
 
 First start takes a few minutes (startup probe allows ~10 min). Change the admin password in the UI on first login.
 
+### erp application workloads (Argo CD, plain YAML)
+
+Application workloads of `projects/erp` (today the ERP API, [erp-backend](https://github.com/Javier-Godon/erp-backend)) are **not** Crossplane XRs: they live in a second pre-release, `projects/erp/pre_releases/manifests/dev_apps`, whose stack (`stacks/erp_apps_stack.k`) contains only components. It renders plain YAML with `koncept render argocd` and is synced by the `erp-apps-dev` Application (AppProject `erp-apps`, namespace `erp-backend`). The API is served at `https://<platform host>/shopping` (Swagger UI: `/shopping/swagger-ui/index.html`) and uses the erp PostgreSQL (`erp-postgres-rw`) and Keycloak (`erp-keycloak-service`, issuer `https://<platform host>/iam/realms/railway`).
+
+Create the Secrets out of band (the image is private on GHCR; credentials never live in Git):
+
+```bash
+kubectl create namespace erp-backend
+# 1. image pull secret: classic GitHub PAT with read:packages
+kubectl -n erp-backend create secret docker-registry ghcr-secret \
+  --docker-server=ghcr.io --docker-username=<github user> --docker-password='<PAT>'
+# 2. database: reuse the CloudNativePG application role of the erp cluster
+kubectl -n erp-backend create secret generic erp-backend-db \
+  --from-literal=username="$(kubectl -n erp-postgres get secret erp-postgres-app -o jsonpath='{.data.username}' | base64 -d)" \
+  --from-literal=password="$(kubectl -n erp-postgres get secret erp-postgres-app -o jsonpath='{.data.password}' | base64 -d)"
+# 3. Keycloak confidential clients of realm `railway` (admin-cli service account, iam-client); optional for start-up
+kubectl -n erp-backend create secret generic erp-backend-keycloak \
+  --from-literal=admin-client-secret='<admin-cli secret>' --from-literal=iam-client-secret='<iam-client secret>'
+```
+
+Render, commit and register:
+
+```bash
+koncept render argocd --factory projects/erp/pre_releases/manifests/dev_apps/factory \
+  --output projects/erp/pre_releases/manifests/dev_apps/output/argocd
+# commit the output, then:
+kubectl apply -f delivery/argocd/projects/erp-apps-project.yaml -f delivery/argocd/applications/erp-apps-dev-application.yaml
+```
+
+To deploy a new image, set `erpBackendVersion` in `projects/erp/stacks/development/profile_configurations.k` to the tag published by the erp-backend CD workflow (`v0.1.0-<sha7>-<timestamp>`), re-render and commit. The first start runs every Flyway migration (startup probe allows ~5 min).
+
 PostgreSQL needs the CloudNativePG operator and, for superuser access, a Secret created out of band (credentials never live in Git):
 
 ```bash

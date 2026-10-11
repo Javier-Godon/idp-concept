@@ -10,6 +10,9 @@ import erp.modules.data.erp_postgres.erp_postgres_module_def as erp_postgres
 import erp.modules.identity.erp_keycloak.erp_keycloak_module_def as erp_keycloak
 # koncept:imports:end
 
+# Shared with the apps stack (erp_apps_stack.k): the Keycloak operator Service is `<name>-service`.
+KEYCLOAK_NAME = "erp-keycloak"
+
 schema ErpStack(stack.Stack):
     compatibility = compat.FrameworkCompatibility {
         version = "dev"
@@ -39,7 +42,7 @@ schema ErpStack(stack.Stack):
     }.instance
 
     _keycloak = erp_keycloak.ErpKeycloakModule {
-        name = "erp-keycloak"
+        name = KEYCLOAK_NAME
         namespace = instanceConfigurations.keycloakNamespace
         asset = {version = "26.4.0"}
         configurations = instanceConfigurations
