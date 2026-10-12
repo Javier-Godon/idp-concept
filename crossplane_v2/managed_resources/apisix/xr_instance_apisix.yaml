@@ -1,45 +1,26 @@
-## Example APISIX XR instances
-##
-## Usage: kubectl apply -f xr_instance_apisix.yaml
-## This creates an XAPIGateway composite resource that triggers the APISIX composition.
-
+## Example XAPIGateway instance (local dev, published on the platform gateway).
+## The XR is normally rendered by `koncept render crossplane` (projects/erp); see
+## docs/platform-engineering/API_GATEWAY_VS_GATEWAY_API.md.
 apiVersion: koncept.bluesolution.es/v1alpha1
 kind: XAPIGateway
 metadata:
-  name: prod-apisix
+  name: erp-apisix
 spec:
-  namespace: gateway-prod
-  clusterName: apisix-gateway
-  chartVersion: "2.4.0"
-  adminPort: 9180
-  gatewayHttpPort: 80
-  gatewayHttpsPort: 443
-  dashboardPort: 3000
-  adminEnabled: true
-  dashboardEnabled: true
-  gatewayType: LoadBalancer
-  environment: production
-  owner: platform-team
-
----
-## Example: Development APISIX cluster
-apiVersion: koncept.bluesolution.es/v1alpha1
-kind: XAPIGateway
-metadata:
-  name: dev-apisix
-spec:
-  namespace: gateway-dev
-  clusterName: apisix-gateway-dev
-  chartVersion: "2.4.0"
-  adminPort: 9180
-  gatewayHttpPort: 8080
-  gatewayHttpsPort: 8443
-  dashboardPort: 3000
-  adminEnabled: true
-  dashboardEnabled: true
-  gatewayType: NodePort
+  namespace: apisix
+  releaseName: erp-apisix
+  chartVersion: "2.18.0"
+  replicas: 1
+  adminKeySecretName: apisix-admin-keys
+  adminAllowCidrs:
+    - 10.244.0.0/16
+  etcd:
+    replicas: 1
+    storageSize: 2Gi
+    storageClass: local-path
+    imageTag: 3.6.4-debian-12-r4
+  publish:
+    hostname: bluesolution.es
+    listener: https
+    proxyPath: /api
+    uiEntryPath: /apisix
   environment: development
-  owner: platform-team
-  etcdReplicas: 1
-  etcdStorageSize: "2Gi"
-

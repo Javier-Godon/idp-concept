@@ -1,0 +1,27 @@
+apiVersion: koncept.bluesolution.es/v1alpha1
+kind: XAPIGateway
+metadata:
+    name: erp-apisix
+spec:
+    adminAllowCidrs:
+        - 10.244.0.0/16
+    adminKeySecretName: apisix-admin-keys
+    chartVersion: 2.18.0
+    environment: development
+    etcd:
+        imageTag: 3.6.4-debian-12-r4
+        replicas: 1
+        storageClass: local-path
+        storageSize: 2Gi
+    gatewayType: ClusterIP
+    ingressController: true
+    namespace: apisix
+    publish:
+        gatewayName: platform-gateway
+        gatewayNamespace: gateway-system
+        hostname: bluesolution.es
+        listener: https
+        proxyPath: /api
+        uiEntryPath: /apisix
+    releaseName: erp-apisix
+    replicas: 1

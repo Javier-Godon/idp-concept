@@ -19,6 +19,8 @@ spec:
       kind: XPostgresInstance
     - group: koncept.bluesolution.es
       kind: XKeycloak
+    - group: koncept.bluesolution.es
+      kind: XAPIGateway
   namespaceResourceBlacklist:
     - group: "*"
       kind: "*"

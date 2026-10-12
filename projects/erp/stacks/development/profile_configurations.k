@@ -25,10 +25,19 @@ _erp_profile_configurations = cfg.ErpConfigurations {
     appsNamespace = "erp-backend"
     erpBackendImage = "ghcr.io/javier-godon/erp-backend"
     erpBackendVersion = "v0.1.0-c9cdb91-20261011-1529"
-    erpBackendHostname = "bluesolution.es"
     erpBackendPath = "/shopping"
+    erpApiPath = "/api"
     erpBackendPullSecret = "ghcr-secret"
     erpBackendDbSecret = "erp-backend-db"
     erpBackendKeycloakSecret = "erp-backend-keycloak"
     erpBackendKeycloakRealm = "railway"
+    # APISIX: API gateway for the REST API (`/api`) with its Admin UI at /apisix (-> /ui). Envoy Gateway stays the
+    # edge; the admin keys Secret is created out of band (docs/platform-engineering/PLATFORM_INSTALLATION.md).
+    apisixNamespace = "apisix"
+    apisixName = "erp-apisix"
+    apisixFootprint = "development"
+    apisixHostname = "bluesolution.es"
+    apisixAdminKeySecret = "apisix-admin-keys"
+    # minikube pod network (Envoy Gateway proxy and the ingress controller call the Admin API from it).
+    apisixAdminAllowCidrs = ["10.244.0.0/16"]
 }

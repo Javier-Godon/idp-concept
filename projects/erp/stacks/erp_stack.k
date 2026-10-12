@@ -8,6 +8,7 @@ import framework.models.compatibility as compat
 import erp.modules.data.erp_cache.erp_cache_module_def as erp_cache
 import erp.modules.data.erp_postgres.erp_postgres_module_def as erp_postgres
 import erp.modules.identity.erp_keycloak.erp_keycloak_module_def as erp_keycloak
+import erp.modules.networking.erp_apisix.erp_apisix_module_def as erp_apisix
 # koncept:imports:end
 
 # Shared with the apps stack (erp_apps_stack.k): the Keycloak operator Service is `<name>-service`.
@@ -49,7 +50,15 @@ schema ErpStack(stack.Stack):
         dependsOn = []
     }.instance
 
+    _apisix = erp_apisix.ErpApisixModule {
+        name = instanceConfigurations.apisixName
+        namespace = instanceConfigurations.apisixNamespace
+        asset = {version = "2.18.0"}
+        configurations = instanceConfigurations
+        dependsOn = []
+    }.instance
+
     # koncept:modules:end
 
     components = []  # koncept:components
-    accessories = [_cache, _postgres, _keycloak]  # koncept:accessories
+    accessories = [_cache, _postgres, _keycloak, _apisix]  # koncept:accessories

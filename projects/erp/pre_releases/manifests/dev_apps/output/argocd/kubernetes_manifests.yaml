@@ -112,28 +112,31 @@ metadata:
   name: erp-backend-sa
   namespace: erp-backend
 ---
-apiVersion: gateway.networking.k8s.io/v1
-kind: HTTPRoute
+apiVersion: apisix.apache.org/v2
+kind: ApisixRoute
 metadata:
   name: erp-backend
   namespace: erp-backend
   labels:
     app: erp-backend
 spec:
-  parentRefs:
-  - name: platform-gateway
-    namespace: gateway-system
-    sectionName: https
-  hostnames:
-  - bluesolution.es
-  rules:
-  - matches:
-    - path:
-        type: PathPrefix
-        value: /shopping
-    backendRefs:
-    - name: erp-backend
-      port: 8089
+  ingressClassName: apisix
+  http:
+  - name: erp-backend
+    match:
+      paths:
+      - /api
+      - /api/*
+    backends:
+    - serviceName: erp-backend
+      servicePort: 8089
+    plugins:
+    - name: proxy-rewrite
+      enable: true
+      config:
+        regex_uri:
+        - ^/api/?(.*)
+        - /shopping/$1
 ---
 apiVersion: v1
 kind: Namespace

@@ -6,7 +6,10 @@ metadata:
     koncept.io/tier: "2"
     koncept.io/deployment-method: "helm"
     koncept.io/chart: "apisix/apisix"
-    koncept.io/last-reviewed: "2026-06-07"
+    koncept.io/chart-version: "2.18.0"
+    koncept.io/operator: "apache-apisix-ingress-controller"
+    koncept.io/last-reviewed: "2026-10-12"
+    koncept.io/note: "Apache APISIX 3.19 API gateway with the embedded Admin UI and the Apache apisix-ingress-controller (ApisixRoute CRs). Complements, not replaces, the Gateway API edge (Envoy Gateway). The bundled etcd is development/testing only."
 spec:
   scope: Cluster
   group: koncept.bluesolution.es
@@ -23,12 +26,15 @@ spec:
         - name: NAMESPACE
           type: string
           jsonPath: .spec.namespace
-        - name: ADMIN
+        - name: CHART
           type: string
-          jsonPath: .spec.adminPort
-        - name: GATEWAY
+          jsonPath: .spec.chartVersion
+        - name: PROXY
           type: string
-          jsonPath: .spec.gatewayHttpPort
+          jsonPath: .status.proxyUrl
+        - name: UI
+          type: string
+          jsonPath: .status.adminUiUrl
         - name: READY
           type: string
           jsonPath: .status.conditions[?(@.type=="Ready")].status
@@ -41,96 +47,121 @@ spec:
           properties:
             spec:
               type: object
-              description: Apache APISIX API Gateway instance configures a cloud-native API gateway via Helm chart.
+              description: Apache APISIX API gateway (Helm chart) with etcd, the Admin UI and the ingress-controller operator.
               required:
                 - namespace
+                - adminKeySecretName
+              x-kubernetes-validations:
+                - rule: "self.releaseName.contains('apisix')"
+                  message: "releaseName must contain 'apisix' so the chart Services are <releaseName>-gateway and <releaseName>-admin"
               properties:
                 namespace:
                   type: string
-                  description: Kubernetes namespace where APISIX runs.
-                clusterName:
+                  description: Namespace of the APISIX release (created by the composition).
+                releaseName:
                   type: string
-                  description: Release name / cluster identifier (XR name if unset).
-                  default: ""
+                  description: Helm release name; must contain "apisix".
+                  default: apisix
+                  pattern: "^[a-z0-9]([a-z0-9-]*[a-z0-9])?$"
                 chartVersion:
                   type: string
-                  description: "APISIX Helm chart version (e.g., 2.4.0)."
-                  default: "2.4.0"
-                adminPort:
+                  description: Pinned apisix/apisix chart version (2.18.0 ships APISIX 3.19.0).
+                  default: "2.18.0"
+                  pattern: "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+                replicas:
                   type: integer
-                  description: Admin API port.
-                  default: 9180
+                  description: APISIX data-plane replicas.
+                  default: 1
                   minimum: 1
-                  maximum: 65535
-                gatewayHttpPort:
-                  type: integer
-                  description: Gateway HTTP port.
-                  default: 80
-                  minimum: 1
-                  maximum: 65535
-                gatewayHttpsPort:
-                  type: integer
-                  description: Gateway HTTPS port.
-                  default: 443
-                  minimum: 1
-                  maximum: 65535
-                dashboardPort:
-                  type: integer
-                  description: Dashboard (Web UI) port.
-                  default: 3000
-                  minimum: 1
-                  maximum: 65535
-                adminEnabled:
-                  type: boolean
-                  description: Enable Admin API.
-                  default: true
-                dashboardEnabled:
-                  type: boolean
-                  description: Enable embedded dashboard.
-                  default: true
-                etcdReplicas:
-                  type: integer
-                  description: etcd replica count (embedded). Leave unset to auto-select based on footprint.
-                etcdStorageSize:
+                  maximum: 10
+                adminKeySecretName:
                   type: string
-                  description: etcd persistent storage size (e.g., 5Gi). Leave unset for default.
-                  pattern: "^[0-9]+(Mi|Gi|Ti)$"
-                resourceCpuRequest:
-                  type: string
-                  description: CPU request.
-                  default: "100m"
-                resourceMemoryRequest:
-                  type: string
-                  description: Memory request.
-                  default: "128Mi"
-                resourceCpuLimit:
-                  type: string
-                  description: CPU limit.
-                  default: "500m"
-                resourceMemoryLimit:
-                  type: string
-                  description: Memory limit.
-                  default: "512Mi"
+                  description: >-
+                    Secret in the APISIX namespace with keys `admin` and `viewer` holding the Admin API keys.
+                    Created out of band and never rendered; the public chart default key must not be used.
+                adminAllowCidrs:
+                  type: array
+                  description: Client CIDRs allowed to reach the Admin API / UI (pod network of Envoy Gateway and the ingress controller).
+                  items:
+                    type: string
+                    pattern: "^[0-9a-fA-F:.]+/[0-9]+$"
+                  default:
+                    - 10.244.0.0/16
                 gatewayType:
                   type: string
-                  description: Service type (NodePort for non-prod, LoadBalancer for prod).
-                  default: LoadBalancer
+                  description: Service type of the APISIX data plane (ClusterIP when published through Envoy Gateway).
                   enum:
+                    - ClusterIP
                     - NodePort
                     - LoadBalancer
-                    - ClusterIP
+                  default: ClusterIP
+                ingressController:
+                  type: boolean
+                  description: Install the Apache apisix-ingress-controller so routes are declared as ApisixRoute CRs.
+                  default: true
+                etcd:
+                  type: object
+                  description: Bundled etcd (development/testing; prefer an external etcd in production).
+                  default: {}
+                  properties:
+                    replicas:
+                      type: integer
+                      default: 1
+                      minimum: 1
+                      maximum: 5
+                    storageSize:
+                      type: string
+                      default: "2Gi"
+                      pattern: "^[0-9]+(Mi|Gi|Ti)$"
+                    storageClass:
+                      type: string
+                      description: StorageClass of the etcd PVCs (empty = cluster default). Local clusters use local-path; production uses the Ceph block class.
+                      default: ""
+                    imageTag:
+                      type: string
+                      description: Pinned bitnamilegacy/etcd tag (the chart default is `latest`).
+                      default: "3.6.4-debian-12-r4"
+                      pattern: "^[a-zA-Z0-9._-]+$"
+                publish:
+                  type: object
+                  description: >-
+                    Publish APISIX on the platform gateway (Gateway API). `proxyPath` forwards to the data plane;
+                    `/ui` and `/apisix/admin` forward to the Admin UI/API; `uiEntryPath` redirects to /ui/.
+                    Omit to keep APISIX cluster-internal.
+                  required:
+                    - hostname
+                  properties:
+                    hostname:
+                      type: string
+                      pattern: "^[a-zA-Z0-9.-]+$"
+                    listener:
+                      type: string
+                      enum:
+                        - https
+                        - http
+                      default: https
+                    gatewayName:
+                      type: string
+                      default: platform-gateway
+                    gatewayNamespace:
+                      type: string
+                      default: gateway-system
+                    proxyPath:
+                      type: string
+                      description: Path prefix forwarded to the APISIX data plane.
+                      default: /api
+                      pattern: "^/[a-zA-Z0-9._~-]+(/[a-zA-Z0-9._~-]+)*$"
+                    uiEntryPath:
+                      type: string
+                      description: Friendly entry point redirected to /ui/.
+                      default: /apisix
+                      pattern: "^/[a-zA-Z0-9._~-]+(/[a-zA-Z0-9._~-]+)*$"
                 environment:
                   type: string
-                  description: "Target environment tier: local, development, staging, production."
-                  default: production
-                  enum:
-                    - local
-                    - development
-                    - staging
-                    - production
+                  description: Deployment footprint label.
+                  default: development
                 owner:
                   type: string
-                  description: "Team or system that owns this instance (for labeling/RBAC)."
                   default: ""
             status:
               type: object
@@ -150,13 +181,12 @@ spec:
                         type: string
                       lastTransitionTime:
                         type: string
-                releaseName:
+                proxyUrl:
                   type: string
-                  description: The name of the generated Helm Release.
-                adminEndpoint:
+                  description: Public URL prefix of the APISIX data plane (empty when not published).
+                adminUiUrl:
                   type: string
-                  description: APISIX Admin API endpoint.
-                gatewayEndpoint:
+                  description: Public URL of the APISIX Admin UI (empty when not published).
+                gatewayService:
                   type: string
-                  description: APISIX Gateway endpoint (HTTP).
-
+                  description: In-cluster data-plane Service endpoint.

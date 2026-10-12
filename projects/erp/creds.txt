@@ -1,0 +1,4 @@
+valkey admin: admin:ROjzVi6wwt885h2ZudHa
+keycloak: erp-admin:rxghYOPCg9b3BABD6sTd-JKC
+nexus: admin:5e15f23b-b049-436c-89f1-1a722e5c6f2a
+argocd: admin:PQrrmsUMLdckX1Fn

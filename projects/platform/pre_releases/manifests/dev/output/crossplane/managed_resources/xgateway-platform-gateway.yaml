@@ -20,5 +20,4 @@ spec:
         caNamespace: cert-manager
         hostnames:
             - bluesolution.es
-            - shop.railway.es
         selfSignedCA: true

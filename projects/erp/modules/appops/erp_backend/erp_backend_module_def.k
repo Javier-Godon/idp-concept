@@ -8,7 +8,8 @@ never wrapped in Crossplane. It consumes the curated data/identity services of t
   - Keycloak: the operator-managed instance served at `<keycloakHostname><keycloakPath>`. Tokens are issued
     for the public URL (issuer); keys and admin calls go to the in-cluster Service `keycloakServiceName`.
 
-The HTTP API listens on 8089 under the `/shopping` context path; Spring Boot Actuator listens on 9090.
+The HTTP API listens on 8089 under the `/shopping` context path and is published at `<erpApiPath>` (default /api)
+through APISIX (an ApisixRoute rewrites the public prefix to the context path); Spring Boot Actuator listens on 9090.
 Secrets are referenced by name only and must exist in the application namespace:
   - `<erpBackendPullSecret>`     docker-registry Secret for the private GHCR image
   - `<erpBackendDbSecret>`       keys `username`, `password`
@@ -16,6 +17,7 @@ Secrets are referenced by name only and must exist in the application namespace:
 """
 import framework.templates.webapp.v1_0_0.webapp as webapp
 import framework.builders.deployment as deploy
+import framework.builders.apisix_route as apisix_route
 
 _HTTP_PORT = 8089
 _MANAGEMENT_PORT = 9090
@@ -35,10 +37,17 @@ schema ErpBackendModule(webapp.WebAppModule):
     _keycloakIssuer = "https://${configurations.keycloakHostname}${configurations.keycloakPath}/realms/${_realm}"
     _postgresHost = "${configurations.postgresClusterName}-rw.${configurations.postgresNamespace}.svc.cluster.local"
 
-    route = {
-        hostnames = [configurations.erpBackendHostname]
-        path = configurations.erpBackendPath
-    }
+    # No Gateway API route: Envoy Gateway forwards `erpApiPath` to APISIX (see ErpApisixModule), and this
+    # ApisixRoute makes APISIX rewrite it to the context path of the application and proxy it to the Service.
+    extraManifests = [apisix_route.build_apisix_route(apisix_route.ApisixRouteSpec {
+        name = name
+        namespace = namespace
+        serviceName = name
+        servicePort = _HTTP_PORT
+        publicPath = configurations.erpApiPath
+        upstreamPath = configurations.erpBackendPath
+        labels = {app = name}
+    })]
 
     resources = deploy.ResourceSpec {
         cpuRequest = "250m"

@@ -57,7 +57,7 @@
 | **External-DNS** | `framework/templates/external_dns/v1_0_0/external_dns.k` | `XExternalDNS` | `crossplane_v2/managed_resources/external_dns/` | ✅ New | Automatic DNS management; June 7, 2026 |
 | **Gateway API** | `framework/templates/gateway_api/v1_0_0/gateway_api.k` | `XGateway` | `crossplane_v2/managed_resources/gateway_api/` | ✅ Live-verified | Platform API gateway: Envoy Gateway v1.9 (Helm) + Gateway/EnvoyProxy/cert; replaces Ingress; Oct 10, 2026 |
 | **Network Policies** | `framework/templates/network_policies/v1_0_0/network_policies.k` | `XNetworkPolicies` | `crossplane_v2/managed_resources/network_policies/` | ✅ New | Kubernetes network isolation; June 7, 2026 |
-| **Apache APISIX** | `framework/templates/apisix/v1_0_0/apisix.k` | `XAPIGateway` | `crossplane_v2/managed_resources/apisix/` | ✅ New | Cloud-native API gateway; Helm; June 7, 2026 |
+| **Apache APISIX** | `framework/templates/apisix/v1_0_0/apisix.k` | `XAPIGateway` | `crossplane_v2/managed_resources/apisix/` | ✅ New | Cloud-native API gateway; Helm chart 2.18.0 (APISIX 3.19) + apisix-ingress-controller; Oct 12, 2026 |
 | **Apache Superset** | `framework/templates/superset/v1_0_0/superset.k` | `XSuperset` | `crossplane_v2/managed_resources/superset/` | ✅ New | Data visualization & BI platform; Helm; June 7, 2026 |
 | **Power BI Connector** | `framework/templates/powerbi/v1_0_0/powerbi_connector.k` | `XPowerBIConnector` | `crossplane_v2/managed_resources/powerbi/` | ✅ New | Integration helper for QuestDB/Superset connection; ConfigMap-based; June 7, 2026 |
 

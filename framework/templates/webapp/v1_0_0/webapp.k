@@ -42,6 +42,8 @@ schema WebAppModule(component.Component):
     extraVolumeMounts?: [any]
     # Expose the service through the platform API gateway (Gateway API HTTPRoute).
     route?: route_builder.RouteSpec
+    # Additional manifests rendered with the module (e.g. an ApisixRoute when the API is exposed through APISIX).
+    extraManifests?: [any]
 
     # Auto-computed
     leaders = [leader.build_component_leader(name, namespace)]
@@ -101,4 +103,4 @@ schema WebAppModule(component.Component):
         route = route
     })] if route else []
 
-    manifests = [_deployment, _service] + _configmap_list + _sa_list + _route_list
+    manifests = [_deployment, _service] + _configmap_list + _sa_list + _route_list + (extraManifests or [])

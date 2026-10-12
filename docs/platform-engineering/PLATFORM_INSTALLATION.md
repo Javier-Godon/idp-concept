@@ -258,6 +258,22 @@ kubectl -n argocd rollout restart deployment argocd-server
 kubectl apply -f delivery/argocd/projects/erp-project.yaml -f delivery/argocd/applications/erp-dev-application.yaml
 ```
 
+### APISIX API Gateway (Crossplane XAPIGateway)
+
+`projects/erp` renders an `XAPIGateway` (Apache APISIX 3.19.0, chart `apisix/apisix` 2.18.0, bundled etcd, Admin UI and the Apache `apisix-ingress-controller`). Envoy Gateway stays the edge and forwards `/api` and the Admin UI (`/apisix` → `/ui/`) to APISIX; read [API_GATEWAY_VS_GATEWAY_API.md](API_GATEWAY_VS_GATEWAY_API.md) first. Local etcd uses the `local-path` StorageClass (no Ceph/Longhorn needed on minikube).
+
+```bash
+kubectl apply -f crossplane_v2/managed_resources/apisix/xrd_apisix.yaml -f crossplane_v2/managed_resources/apisix/x_apisix.yaml
+kubectl apply -f delivery/argocd/projects/erp-project.yaml -f delivery/argocd/projects/erp-apps-project.yaml
+# Admin API keys, never committed (the namespace is also created by the composition)
+kubectl create namespace apisix
+kubectl -n apisix create secret generic apisix-admin-keys \
+  --from-literal=admin="$(openssl rand -hex 16)" --from-literal=viewer="$(openssl rand -hex 16)"
+# commit the rendered output; Argo CD syncs the XR (erp-dev) and the ApisixRoute (erp-apps-dev)
+```
+
+Open `https://bluesolution.es/apisix` and log in with the `admin` key: `kubectl -n apisix get secret apisix-admin-keys -o jsonpath='{.data.admin}' | base64 -d`.
+
 ### Nexus Repository (Argo CD, plain YAML)
 
 `projects/nexus` renders plain Kubernetes YAML (no Crossplane) with `koncept render argocd`; Argo CD syncs it from Git. Nexus runs in namespace `nexus` with a PVC (`/nexus-data`, 50Gi, storage class from the site config) so uploaded artifacts survive restarts, and is served at `https://bluesolution.es/nexus` through the platform gateway.
@@ -275,7 +291,7 @@ First start takes a few minutes (startup probe allows ~10 min). Change the admin
 
 ### erp application workloads (Argo CD, plain YAML)
 
-Application workloads of `projects/erp` (today the ERP API, [erp-backend](https://github.com/Javier-Godon/erp-backend)) are **not** Crossplane XRs: they live in a second pre-release, `projects/erp/pre_releases/manifests/dev_apps`, whose stack (`stacks/erp_apps_stack.k`) contains only components. It renders plain YAML with `koncept render argocd` and is synced by the `erp-apps-dev` Application (AppProject `erp-apps`, namespace `erp-backend`). The API is served at `https://<platform host>/shopping` (Swagger UI: `/shopping/swagger-ui/index.html`) and uses the erp PostgreSQL (`erp-postgres-rw`) and Keycloak (`erp-keycloak-service`, issuer `https://<platform host>/iam/realms/railway`).
+Application workloads of `projects/erp` (today the ERP API, [erp-backend](https://github.com/Javier-Godon/erp-backend)) are **not** Crossplane XRs: they live in a second pre-release, `projects/erp/pre_releases/manifests/dev_apps`, whose stack (`stacks/erp_apps_stack.k`) contains only components. It renders plain YAML with `koncept render argocd` and is synced by the `erp-apps-dev` Application (AppProject `erp-apps`, namespace `erp-backend`). The API is served through APISIX at `https://<platform host>/api` (an `ApisixRoute` rewrites it to the application context path `/shopping`; Swagger UI: `/api/swagger-ui/index.html`; see [API_GATEWAY_VS_GATEWAY_API.md](API_GATEWAY_VS_GATEWAY_API.md)) and uses the erp PostgreSQL (`erp-postgres-rw`) and Keycloak (`erp-keycloak-service`, issuer `https://<platform host>/iam/realms/railway`).
 
 Create the Secrets out of band (the image is private on GHCR; credentials never live in Git):
 

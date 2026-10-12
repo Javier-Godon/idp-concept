@@ -65,6 +65,7 @@ _CURATED_SERVICES = {
     # Tier 0: Platform foundation
     "ceph" = {xrd_kind = "XCephCluster", api_group = "koncept.bluesolution.es"}
     "gateway" = {xrd_kind = "XGateway", api_group = "koncept.bluesolution.es"}
+    "apisix" = {xrd_kind = "XAPIGateway", api_group = "koncept.bluesolution.es"}
     # Tier 1: Operator-managed infrastructure
     "postgresql" = {xrd_kind = "XPostgresInstance", api_group = "koncept.bluesolution.es"}
     "timescaledb" = {xrd_kind = "XTimescaleDBInstance", api_group = "koncept.bluesolution.es"}

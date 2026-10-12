@@ -7,6 +7,6 @@ _dev_cluster_site_configurations = cfg.PlatformConfigurations {
     footprint = "local"
     platformHostname = "bluesolution.es"
     gatewayAddresses = ["192.168.49.2"]
-    gatewayTlsHostnames = ["bluesolution.es", "shop.railway.es"]
+    gatewayTlsHostnames = ["bluesolution.es"]
     gatewaySelfSignedCA = True
 }

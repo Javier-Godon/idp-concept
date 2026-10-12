@@ -11,12 +11,9 @@ _module = apisix.APIGatewayModule {
     name = "acceptance-apisix"
     namespace = _namespace
     footprint = "development"
+    adminKeySecretName = "acceptance-apisix-admin-keys"
     adminPort = 9180
     gatewayHttpPort = 80
-    gatewayHttpsPort = 443
-    dashboardPort = 3000
-    adminEnabled = True
-    dashboardEnabled = True
     etcdReplicas = 1
     etcdStorageSize = "1Gi"
 }.instance

@@ -26,9 +26,18 @@ schema ErpConfigurations(base.BaseConfigurations):
     # erp-backend (Spring Boot API, Tier-1 GitOps YAML via the dev_apps pre-release)
     erpBackendImage?: str
     erpBackendVersion?: str
-    erpBackendHostname?: str
+    # Context path the application serves under, and the public prefix APISIX publishes it at.
     erpBackendPath?: str
+    erpApiPath?: str
     erpBackendPullSecret?: str
     erpBackendDbSecret?: str
     erpBackendKeycloakSecret?: str
     erpBackendKeycloakRealm?: str
+    # APISIX API gateway (curated XAPIGateway); the Admin API keys Secret is created out of band in apisixNamespace.
+    apisixNamespace?: str
+    apisixName?: str
+    apisixFootprint?: "local" | "development" | "staging" | "production"
+    apisixHostname?: str
+    apisixAdminKeySecret?: str
+    apisixAdminAllowCidrs?: [str]
+    apisixEtcdStorageClass?: str

@@ -1,10 +1,26 @@
-## APISIX Composition — Helm-based API gateway deployment
+## APISIX Composition — official Helm chart + Apache apisix-ingress-controller (operator)
+##
+## Chart apisix/apisix 2.18.0 (APISIX 3.19.0) with the bundled etcd, the embedded Admin UI and the
+## apisix-ingress-controller subchart (Apache-2.0; ApisixRoute/ApisixUpstream/... CRDs). The Gateway API
+## controller of the subchart is disabled (`disableGatewayAPI`): Gateway API stays with Envoy Gateway.
+##
+## Publishing (optional `spec.publish`, HTTPRoutes on the platform gateway):
+##   <proxyPath>/*              -> <release>-gateway:80   (APISIX data plane; routes are ApisixRoute CRs)
+##   /ui, /apisix/admin         -> <release>-admin:9180   (embedded Admin UI is hardcoded to /ui and
+##                                                          calls /apisix/admin; it cannot live under a sub-path)
+##   <uiEntryPath> (/apisix)    -> redirect to /ui/
+## The Admin API is protected by the keys of `adminKeySecretName` and by `adminAllowCidrs`.
+##
+## Readiness: the Helm Release waits for the workloads (`wait: true`).
 ##
 ## Prerequisites:
-##   - Helm provider is installed and available
-##   - APISIX Helm repository is added to Helm:
-##     helm repo add apisix https://charts.apiseven.com
-##     helm repo update
+##   - provider-helm (ProviderConfig helm-provider), provider-kubernetes (ProviderConfig provider-kubernetes)
+##   - function-kcl, function-auto-ready
+##   - `publish`: Envoy Gateway and the platform Gateway
+##   - Secret `adminKeySecretName` (keys `admin`, `viewer`) in `spec.namespace`, created out of band after the
+##     namespace exists (the Helm release retries until it does):
+##       kubectl -n <ns> create secret generic <name> \
+##         --from-literal=admin="$(openssl rand -hex 16)" --from-literal=viewer="$(openssl rand -hex 16)"
 
 apiVersion: apiextensions.crossplane.io/v1
 kind: Composition
@@ -13,7 +29,8 @@ metadata:
   annotations:
     koncept.io/deployment-method: "helm"
     koncept.io/chart: "apisix/apisix"
-    koncept.io/pattern: "helm-release"
+    koncept.io/pattern: "helm-release-plus-gateway-api"
+    koncept.io/bridge-pattern: "false"
 spec:
   compositeTypeRef:
     apiVersion: koncept.bluesolution.es/v1alpha1
@@ -23,124 +40,206 @@ spec:
 
     - step: render-resources
       functionRef:
-        name: function-patch-and-transform
+        name: function-kcl
       input:
-        apiVersion: pt.fn.crossplane.io/v1beta1
-        kind: Resources
-        resources:
+        apiVersion: krm.kcl.dev/v1alpha1
+        kind: KCLInput
+        spec:
+          source: |
+            _params = option("params")
+            _oxr = _params.oxr
+            _ocds = _params.ocds or {}
+            _x = _oxr.spec
+            _ns = _x.namespace
+            _rel = _x.releaseName or "apisix"
+            _gateway_svc = "${_rel}-gateway"
+            _admin_svc = "${_rel}-admin"
+            _etcd = _x.etcd or {}
 
-          - name: ns-apisix
-            base:
-              apiVersion: kubernetes.crossplane.io/v1alpha2
-              kind: Object
-              spec:
-                providerConfigRef:
-                  name: provider-kubernetes
-                forProvider:
-                  manifest:
-                    apiVersion: v1
-                    kind: Namespace
-                    metadata:
-                      name: apisix
-                      labels:
-                        koncept.io/managed-by: crossplane
-            patches:
-              - type: FromCompositeFieldPath
-                fromFieldPath: spec.namespace
-                toFieldPath: spec.forProvider.manifest.metadata.name
-              - type: FromCompositeFieldPath
-                fromFieldPath: spec.owner
-                toFieldPath: spec.forProvider.manifest.metadata.labels["koncept.io/owner"]
+            _labels = {
+                "app.kubernetes.io/name" = "apisix"
+                "app.kubernetes.io/instance" = _rel
+                "koncept.io/managed-by" = "crossplane"
+                "koncept.io/environment" = _x.environment
+                if _x.owner:
+                    "koncept.io/owner" = _x.owner
+            }
 
-          - name: apisix-helm-release
-            base:
-              apiVersion: helm.crossplane.io/v1beta1
-              kind: Release
-              spec:
-                forProvider:
-                  namespace: apisix
-                  chart:
-                    name: apisix
-                    repository: https://charts.apiseven.com
-                    version: "2.4.0"
-                  values:
-                    apisix:
-                      replicas: 3
-                    etcd:
-                      replicaCount: 3
-                      persistence:
-                        enabled: true
-                        size: 5Gi
-                    gateway:
-                      type: LoadBalancer
-                      http:
-                        port: 80
-                      https:
-                        port: 443
-                    admin:
-                      enabled: true
-                      port: 9180
-                    dashboard:
-                      enabled: true
-                      port: 3000
-                providerConfigRef:
-                  name: provider-helm
-            patches:
-              # Release name
-              - type: FromCompositeFieldPath
-                fromFieldPath: metadata.name
-                toFieldPath: metadata.name
-              - type: FromCompositeFieldPath
-                fromFieldPath: spec.clusterName
-                toFieldPath: metadata.name
-                policy:
-                  fromFieldPath: Optional
-              # Target namespace
-              - type: FromCompositeFieldPath
-                fromFieldPath: spec.namespace
-                toFieldPath: spec.forProvider.namespace
-              # Chart version
-              - type: FromCompositeFieldPath
-                fromFieldPath: spec.chartVersion
-                toFieldPath: spec.forProvider.chart.version
-              # Replicas
-              - type: FromCompositeFieldPath
-                fromFieldPath: spec.etcdReplicas
-                toFieldPath: spec.forProvider.values.etcd.replicaCount
-                policy:
-                  fromFieldPath: Optional
-              # Storage
-              - type: FromCompositeFieldPath
-                fromFieldPath: spec.etcdStorageSize
-                toFieldPath: spec.forProvider.values.etcd.persistence.size
-                policy:
-                  fromFieldPath: Optional
-              # Ports
-              - type: FromCompositeFieldPath
-                fromFieldPath: spec.adminPort
-                toFieldPath: spec.forProvider.values.admin.port
-              - type: FromCompositeFieldPath
-                fromFieldPath: spec.gatewayHttpPort
-                toFieldPath: spec.forProvider.values.gateway.http.port
-              - type: FromCompositeFieldPath
-                fromFieldPath: spec.gatewayHttpsPort
-                toFieldPath: spec.forProvider.values.gateway.https.port
-              - type: FromCompositeFieldPath
-                fromFieldPath: spec.dashboardPort
-                toFieldPath: spec.forProvider.values.dashboard.port
-              # Flags
-              - type: FromCompositeFieldPath
-                fromFieldPath: spec.adminEnabled
-                toFieldPath: spec.forProvider.values.admin.enabled
-              - type: FromCompositeFieldPath
-                fromFieldPath: spec.dashboardEnabled
-                toFieldPath: spec.forProvider.values.dashboard.enabled
-              # Gateway service type
-              - type: FromCompositeFieldPath
-                fromFieldPath: spec.gatewayType
-                toFieldPath: spec.forProvider.values.gateway.type
+            _object = lambda name: str, manifest: {str:} -> {str:} {
+                {
+                    apiVersion = "kubernetes.crossplane.io/v1alpha2"
+                    kind = "Object"
+                    metadata.annotations = {
+                        "krm.kcl.dev/composition-resource-name" = name
+                    }
+                    spec = {
+                        providerConfigRef.name = "provider-kubernetes"
+                        forProvider.manifest = manifest
+                    }
+                }
+            }
+
+            _is_ready = lambda name: str -> bool {
+                _conditions = _ocds[name]?.Resource?.status?.conditions or []
+                any c in _conditions {
+                    c.type == "Ready" and c.status == "True"
+                }
+            }
+
+            _namespace = _object("namespace", {
+                apiVersion = "v1"
+                kind = "Namespace"
+                metadata = {
+                    name = _ns
+                    labels = _labels
+                }
+            })
+
+            _values = {
+                apisix = {
+                    replicaCount = _x.replicas
+                    admin = {
+                        enabled = True
+                        enable_admin_ui = True
+                        allow.ipList = _x.adminAllowCidrs
+                        credentials = {
+                            secretName = _x.adminKeySecretName
+                            secretAdminKey = "admin"
+                            secretViewerKey = "viewer"
+                        }
+                    }
+                }
+                service = {
+                    $type = _x.gatewayType
+                }
+                etcd = {
+                    replicaCount = _etcd.replicas or 1
+                    image.tag = _etcd.imageTag
+                    persistence = {
+                        enabled = True
+                        size = _etcd.storageSize
+                        if _etcd.storageClass:
+                            storageClass = _etcd.storageClass
+                    }
+                }
+                if _x.ingressController:
+                    "ingress-controller" = {
+                        enabled = True
+                        config.disableGatewayAPI = True
+                        webhook.enabled = False
+                        gatewayProxy = {
+                            createDefault = True
+                            provider.controlPlane = {
+                                service.name = _admin_svc
+                                auth.adminKey = {
+                                    value = ""
+                                    valueFrom.secretKeyRef = {name = _x.adminKeySecretName, key = "admin"}
+                                }
+                            }
+                        }
+                    }
+            }
+
+            _release = {
+                apiVersion = "helm.crossplane.io/v1beta1"
+                kind = "Release"
+                # The external name is the Helm release name, which determines the chart Service names.
+                metadata.annotations = {
+                    "krm.kcl.dev/composition-resource-name" = "apisix"
+                    "crossplane.io/external-name" = _rel
+                }
+                spec = {
+                    providerConfigRef.name = "helm-provider"
+                    forProvider = {
+                        chart = {
+                            repository = "https://charts.apiseven.com"
+                            name = "apisix"
+                            version = _x.chartVersion
+                        }
+                        namespace = _ns
+                        wait = True
+                        waitTimeout = "10m"
+                        values = _values
+                    }
+                }
+            }
+
+            # Create the release only after the namespace exists; never drop it once composed.
+            _create_release = _is_ready("namespace") or "apisix" in _ocds
+
+            _pub = _x.publish or {}
+            _parent = [{
+                name = _pub?.gatewayName
+                namespace = _pub?.gatewayNamespace
+                sectionName = _pub?.listener
+            }]
+
+            _redirect = lambda path: str, to: str, code: int -> {str:} {
+                {
+                    matches = [{path = {$type = "Exact", value = path}}]
+                    filters = [{
+                        $type = "RequestRedirect"
+                        requestRedirect = {
+                            path = {$type = "ReplaceFullPath", replaceFullPath = to}
+                            statusCode = code
+                        }
+                    }]
+                }
+            }
+
+            _proxy_route = _object("proxy-route", {
+                apiVersion = "gateway.networking.k8s.io/v1"
+                kind = "HTTPRoute"
+                metadata = {
+                    name = "${_rel}-proxy"
+                    namespace = _ns
+                    labels = _labels
+                }
+                spec = {
+                    parentRefs = _parent
+                    hostnames = [_pub?.hostname]
+                    rules = [{
+                        matches = [{path = {$type = "PathPrefix", value = _pub?.proxyPath}}]
+                        backendRefs = [{name = _gateway_svc, port = 80}]
+                    }]
+                }
+            })
+
+            _admin_backend = [{name = _admin_svc, port = 9180}]
+            _admin_route = _object("admin-route", {
+                apiVersion = "gateway.networking.k8s.io/v1"
+                kind = "HTTPRoute"
+                metadata = {
+                    name = "${_rel}-admin-ui"
+                    namespace = _ns
+                    labels = _labels
+                }
+                spec = {
+                    parentRefs = _parent
+                    hostnames = [_pub?.hostname]
+                    rules = [
+                        _redirect(_pub?.uiEntryPath, "/ui/", 302)
+                        _redirect("/ui", "/ui/", 301)
+                        {
+                            matches = [{path = {$type = "PathPrefix", value = "/ui"}}, {path = {$type = "PathPrefix", value = "/apisix/admin"}}]
+                            backendRefs = _admin_backend
+                        }
+                    ]
+                }
+            })
+
+            _scheme = _pub?.listener
+            _dxr = {
+                **_params.dxr
+                status = {
+                    gatewayService = "${_gateway_svc}.${_ns}.svc.cluster.local:80"
+                    proxyUrl = "${_scheme}://${_pub.hostname}${_pub.proxyPath}" if _pub else ""
+                    adminUiUrl = "${_scheme}://${_pub.hostname}/ui/" if _pub else ""
+                }
+            }
+
+            items = [_namespace, _dxr] + ([_release] if _create_release else []) + ([_proxy_route, _admin_route] if _pub and _create_release else [])
 
     - step: automatically-detect-readiness
       functionRef:
         name: function-auto-ready
-

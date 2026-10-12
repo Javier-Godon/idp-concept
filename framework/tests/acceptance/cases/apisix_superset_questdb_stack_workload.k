@@ -12,9 +12,10 @@ _namespace = "idp-acceptance-apisix-superset-questdb-stack"
 
 # APISIX Gateway
 _gateway = apisix.APIGatewayModule {
-    name = "analytics-gateway"
+    name = "analytics-apisix"
     namespace = _namespace
     footprint = "development"
+    adminKeySecretName = "analytics-apisix-admin-keys"
     etcdReplicas = 1
 }.instance
 
