@@ -138,6 +138,268 @@ spec:
         - ^/api/?(.*)
         - /shopping/$1
 ---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: erp-owner-admin
+  namespace: erp-backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: erp-owner-admin
+  template:
+    metadata:
+      labels:
+        app: erp-owner-admin
+    spec:
+      containers:
+      - env:
+        - name: NUXT_APP_BASE_URL
+          value: /owner/
+        - name: NUXT_PUBLIC_APP_ORIGIN
+          value: https://bluesolution.es
+        - name: NUXT_ERP_API_BASE_URL
+          value: http://erp-backend.erp-backend.svc.cluster.local:8089/shopping
+        - name: NUXT_OIDC_ISSUER
+          value: https://bluesolution.es/iam/realms/railway
+        - name: NUXT_OIDC_CLIENT_ID
+          value: erp-owner-admin-bff
+        - name: NUXT_OIDC_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              key: oidc-client-secret
+              name: erp-owner-admin
+        - name: NUXT_OIDC_REDIRECT_URI
+          value: https://bluesolution.es/owner/auth/callback
+        - name: NUXT_OIDC_POST_LOGOUT_REDIRECT_URI
+          value: https://bluesolution.es/owner/
+        - name: NUXT_SESSION_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              key: session-password
+              name: erp-owner-admin
+        - name: NUXT_SESSION_STORAGE_URL
+          value: redis://erp-cache.erp-data.svc.cluster.local:6379
+        - name: NODE_EXTRA_CA_CERTS
+          value: /etc/platform-ca/ca.crt
+        image: ghcr.io/javier-godon/erp-owner-admin-interface:v0.1.0-dev
+        imagePullPolicy: IfNotPresent
+        livenessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /owner/healthz
+            port: 3000
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 10
+        name: erp-owner-admin
+        ports:
+        - containerPort: 3000
+        readinessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /owner/healthz
+            port: 3000
+          initialDelaySeconds: 2
+          periodSeconds: 5
+          successThreshold: 1
+          timeoutSeconds: 10
+        resources:
+          limits:
+            cpu: 500m
+            memory: 512Mi
+          requests:
+            cpu: 50m
+            memory: 128Mi
+        volumeMounts:
+        - mountPath: /etc/platform-ca
+          name: platform-ca
+          readOnly: true
+      volumes:
+      - configMap:
+          name: platform-ca
+          optional: true
+        name: platform-ca
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: erp-owner-admin
+  namespace: erp-backend
+spec:
+  ports:
+  - port: 3000
+  selector:
+    app: erp-owner-admin
+  type: ClusterIP
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: erp-owner-admin
+  namespace: erp-backend
+  labels:
+    app: erp-owner-admin
+spec:
+  parentRefs:
+  - name: platform-gateway
+    namespace: gateway-system
+    sectionName: https
+  hostnames:
+  - bluesolution.es
+  rules:
+  - matches:
+    - path:
+        type: Exact
+        value: /owner
+    filters:
+    - type: RequestRedirect
+      requestRedirect:
+        path:
+          type: ReplaceFullPath
+          replaceFullPath: /owner/
+        statusCode: 301
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /owner
+    backendRefs:
+    - name: erp-owner-admin
+      port: 3000
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: erp-tenant-admin
+  namespace: erp-backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: erp-tenant-admin
+  template:
+    metadata:
+      labels:
+        app: erp-tenant-admin
+    spec:
+      containers:
+      - env:
+        - name: NUXT_APP_BASE_URL
+          value: /admin/
+        - name: NUXT_PUBLIC_APP_ORIGIN
+          value: https://bluesolution.es
+        - name: NUXT_ERP_API_BASE_URL
+          value: http://erp-backend.erp-backend.svc.cluster.local:8089/shopping
+        - name: NUXT_OIDC_ISSUER
+          value: https://bluesolution.es/iam/realms/railway
+        - name: NUXT_OIDC_CLIENT_ID
+          value: erp-tenant-admin-bff
+        - name: NUXT_OIDC_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              key: oidc-client-secret
+              name: erp-tenant-admin
+        - name: NUXT_OIDC_REDIRECT_URI
+          value: https://bluesolution.es/admin/auth/callback
+        - name: NUXT_OIDC_POST_LOGOUT_REDIRECT_URI
+          value: https://bluesolution.es/admin/
+        - name: NUXT_SESSION_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              key: session-password
+              name: erp-tenant-admin
+        - name: NUXT_SESSION_STORAGE_URL
+          value: redis://erp-cache.erp-data.svc.cluster.local:6379
+        - name: NODE_EXTRA_CA_CERTS
+          value: /etc/platform-ca/ca.crt
+        image: ghcr.io/javier-godon/erp-tenant-admin-interface:v0.1.0-dev
+        imagePullPolicy: IfNotPresent
+        livenessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /admin/healthz
+            port: 3000
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 10
+        name: erp-tenant-admin
+        ports:
+        - containerPort: 3000
+        readinessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /admin/healthz
+            port: 3000
+          initialDelaySeconds: 2
+          periodSeconds: 5
+          successThreshold: 1
+          timeoutSeconds: 10
+        resources:
+          limits:
+            cpu: 500m
+            memory: 512Mi
+          requests:
+            cpu: 50m
+            memory: 128Mi
+        volumeMounts:
+        - mountPath: /etc/platform-ca
+          name: platform-ca
+          readOnly: true
+      volumes:
+      - configMap:
+          name: platform-ca
+          optional: true
+        name: platform-ca
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: erp-tenant-admin
+  namespace: erp-backend
+spec:
+  ports:
+  - port: 3000
+  selector:
+    app: erp-tenant-admin
+  type: ClusterIP
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: erp-tenant-admin
+  namespace: erp-backend
+  labels:
+    app: erp-tenant-admin
+spec:
+  parentRefs:
+  - name: platform-gateway
+    namespace: gateway-system
+    sectionName: https
+  hostnames:
+  - bluesolution.es
+  rules:
+  - matches:
+    - path:
+        type: Exact
+        value: /admin
+    filters:
+    - type: RequestRedirect
+      requestRedirect:
+        path:
+          type: ReplaceFullPath
+          replaceFullPath: /admin/
+        statusCode: 301
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /admin
+    backendRefs:
+    - name: erp-tenant-admin
+      port: 3000
+---
 apiVersion: v1
 kind: Namespace
 metadata:

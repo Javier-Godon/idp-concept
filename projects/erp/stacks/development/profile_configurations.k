@@ -31,6 +31,21 @@ _erp_profile_configurations = cfg.ErpConfigurations {
     erpBackendDbSecret = "erp-backend-db"
     erpBackendKeycloakSecret = "erp-backend-keycloak"
     erpBackendKeycloakRealm = "railway"
+    # Admin UIs: owner console at /owner, tenant administration at /admin (Keycloak clients and the
+    # `erp-*-admin` Secrets are created out of band — docs/platform-engineering/PLATFORM_INSTALLATION.md).
+    # Images are built locally and loaded into minikube until their CD pipelines publish them.
+    erpUiHostname = "bluesolution.es"
+    platformCaConfigMap = "platform-ca"
+    erpOwnerAdminImage = "ghcr.io/javier-godon/erp-owner-admin-interface"
+    erpOwnerAdminVersion = "v0.1.0-dev"
+    erpOwnerAdminPath = "/owner"
+    erpOwnerAdminOidcClientId = "erp-owner-admin-bff"
+    erpOwnerAdminSecret = "erp-owner-admin"
+    erpTenantAdminImage = "ghcr.io/javier-godon/erp-tenant-admin-interface"
+    erpTenantAdminVersion = "v0.1.0-dev"
+    erpTenantAdminPath = "/admin"
+    erpTenantAdminOidcClientId = "erp-tenant-admin-bff"
+    erpTenantAdminSecret = "erp-tenant-admin"
     # APISIX: API gateway for the REST API (`/api`) with its Admin UI at /apisix (-> /ui). Envoy Gateway stays the
     # edge; the admin keys Secret is created out of band (docs/platform-engineering/PLATFORM_INSTALLATION.md).
     apisixNamespace = "apisix"

@@ -33,6 +33,20 @@ schema ErpConfigurations(base.BaseConfigurations):
     erpBackendDbSecret?: str
     erpBackendKeycloakSecret?: str
     erpBackendKeycloakRealm?: str
+    # ERP admin UIs (Nuxt SPA + Nitro BFF), published under sub-paths of erpUiHostname.
+    erpUiHostname?: str
+    # ConfigMap (key `ca.crt`) with the CA of the gateway certificate, created out of band in appsNamespace.
+    platformCaConfigMap?: str
+    erpOwnerAdminImage?: str
+    erpOwnerAdminVersion?: str
+    erpOwnerAdminPath?: str
+    erpOwnerAdminOidcClientId?: str
+    erpOwnerAdminSecret?: str
+    erpTenantAdminImage?: str
+    erpTenantAdminVersion?: str
+    erpTenantAdminPath?: str
+    erpTenantAdminOidcClientId?: str
+    erpTenantAdminSecret?: str
     # APISIX API gateway (curated XAPIGateway); the Admin API keys Secret is created out of band in apisixNamespace.
     apisixNamespace?: str
     apisixName?: str

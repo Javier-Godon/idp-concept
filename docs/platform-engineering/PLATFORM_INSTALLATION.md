@@ -310,6 +310,34 @@ kubectl -n erp-backend create secret generic erp-backend-keycloak \
   --from-literal=admin-client-secret='<admin-cli secret>' --from-literal=iam-client-secret='<iam-client secret>'
 ```
 
+The stack also deploys the two admin UIs (Nuxt SPA + Nitro BFF, module `modules/appops/erp_admin_ui`) on the
+same host: the **owner console** ([erp-owner-admin-interface](https://github.com/Javier-Godon/erp-owner-admin-interface))
+at `/owner/` and the **tenant administration** ([erp-tenant-admin-interface](https://github.com/Javier-Godon/erp-tenant-admin-interface))
+at `/admin/` (Gateway API `HTTPRoute`s on the platform gateway). Each BFF signs users in with its own confidential
+Keycloak client (`erp-owner-admin-bff`, `erp-tenant-admin-bff`; redirect URI `https://<platform host>/<path>/auth/callback`,
+post-logout `https://<platform host>/<path>/`, back-channel logout to the in-cluster Service
+`http://erp-<owner|tenant>-admin.erp-backend.svc.cluster.local:3000/<path>/auth/backchannel-logout`), stores tokens in
+Valkey (`erp-cache.erp-data`) and calls the API Service directly. Secrets and the gateway CA (self-signed on the dev
+site, trusted by Node.js through `NODE_EXTRA_CA_CERTS`):
+
+```bash
+for ui in owner tenant; do
+  kubectl -n erp-backend create secret generic erp-$ui-admin \
+    --from-literal=oidc-client-secret='<secret of client erp-'$ui'-admin-bff>' \
+    --from-literal=session-password="$(openssl rand -base64 48)"
+done
+kubectl -n erp-backend create configmap platform-ca \
+  --from-literal=ca.crt="$(kubectl -n gateway-system get secret platform-gateway-tls -o jsonpath='{.data.ca\.crt}' | base64 -d)"
+```
+
+Until their CD pipelines publish images, build them locally and load them into minikube with the tag pinned in
+`erpOwnerAdminVersion` / `erpTenantAdminVersion`:
+
+```bash
+docker build -t ghcr.io/javier-godon/erp-owner-admin-interface:<version> ../erp-owner-admin-interface
+minikube -p crossplane-v2 image load ghcr.io/javier-godon/erp-owner-admin-interface:<version>
+```
+
 Render, commit and register:
 
 ```bash
