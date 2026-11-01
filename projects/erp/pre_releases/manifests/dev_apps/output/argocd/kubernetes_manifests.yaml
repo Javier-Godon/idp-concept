@@ -51,7 +51,7 @@ spec:
               key: iam-client-secret
               name: erp-backend-keycloak
               optional: true
-        image: ghcr.io/javier-godon/erp-backend:v0.1.0-a2873da-20261101-0944
+        image: ghcr.io/javier-godon/erp-backend:v0.1.0-baa2a1b-20261101-1028
         imagePullPolicy: IfNotPresent
         livenessProbe:
           failureThreshold: 3
@@ -183,7 +183,7 @@ spec:
           value: redis://erp-cache.erp-data.svc.cluster.local:6379
         - name: NODE_EXTRA_CA_CERTS
           value: /etc/platform-ca/ca.crt
-        image: ghcr.io/javier-godon/erp-owner-admin-interface:v0.1.0-eb50676
+        image: ghcr.io/javier-godon/erp-owner-admin-interface:v0.1.0-0564d91
         imagePullPolicy: IfNotPresent
         livenessProbe:
           failureThreshold: 3

@@ -24,7 +24,7 @@ _erp_profile_configurations = cfg.ErpConfigurations {
     # Secrets are created out of band in appsNamespace (docs/platform-engineering/PLATFORM_INSTALLATION.md).
     appsNamespace = "erp-backend"
     erpBackendImage = "ghcr.io/javier-godon/erp-backend"
-    erpBackendVersion = "v0.1.0-a2873da-20261101-0944"
+    erpBackendVersion = "v0.1.0-baa2a1b-20261101-1028"
     erpBackendPath = "/shopping"
     erpApiPath = "/api"
     erpBackendPullSecret = "ghcr-secret"
@@ -37,7 +37,7 @@ _erp_profile_configurations = cfg.ErpConfigurations {
     erpUiHostname = "bluesolution.es"
     platformCaConfigMap = "platform-ca"
     erpOwnerAdminImage = "ghcr.io/javier-godon/erp-owner-admin-interface"
-    erpOwnerAdminVersion = "v0.1.0-eb50676"
+    erpOwnerAdminVersion = "v0.1.0-0564d91"
     erpOwnerAdminPath = "/owner"
     erpOwnerAdminOidcClientId = "erp-owner-admin-bff"
     erpOwnerAdminSecret = "erp-owner-admin"
