@@ -17,3 +17,7 @@ schema ErpKeycloakModule(keycloak.KeycloakModule):
     databaseName = configurations.postgresDatabase
     databaseSchema = configurations.keycloakDbSchema
     databaseSecretName = configurations.keycloakDbSecret
+    # Login theme `erp` (erp-keycloak-theme JAR in /opt/keycloak/providers). The image is not pre-built,
+    # so the operator must not start it with --optimized.
+    image = configurations.keycloakImage
+    startOptimized = False if configurations.keycloakImage else None

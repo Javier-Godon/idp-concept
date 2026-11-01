@@ -22,6 +22,8 @@ schema ErpConfigurations(base.BaseConfigurations):
     keycloakPath?: str
     keycloakDbSchema?: str
     keycloakDbSecret?: str
+    # Custom Keycloak image with the ERP login theme (erp-keycloak-theme), not pre-built (`kc.sh build`).
+    keycloakImage?: str
     footprint?: "local" | "development" | "staging" | "production"
     # erp-backend (Spring Boot API, Tier-1 GitOps YAML via the dev_apps pre-release)
     erpBackendImage?: str

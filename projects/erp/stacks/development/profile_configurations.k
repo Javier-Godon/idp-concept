@@ -20,7 +20,7 @@ _erp_profile_configurations = cfg.ErpConfigurations {
     keycloakDbSchema = "keycloak"
     keycloakDbSecret = "keycloak-db-secret"
     # Keycloak 26.4.0 plus the `erp` login theme (erp-keycloak-theme), built locally and loaded into minikube.
-    keycloakImage = "ghcr.io/javier-godon/erp-keycloak:26.4.0-erp-theme-0.1.0-THEMESHA"
+    keycloakImage = "ghcr.io/javier-godon/erp-keycloak:26.4.0-erp-theme-0.1.0-5d988a6"
     footprint = "development"
     # erp-backend API (dev_apps pre-release). Pin the image tag published by the erp-backend CD workflow.
     # Secrets are created out of band in appsNamespace (docs/platform-engineering/PLATFORM_INSTALLATION.md).

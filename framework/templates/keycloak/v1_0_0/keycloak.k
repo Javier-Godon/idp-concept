@@ -21,6 +21,10 @@ Usage:
 `hostname` is the bare public host name; Keycloak is served at `<listener>://<hostname><path>`
 (TLS terminates at the gateway, so the Keycloak Service speaks plain HTTP behind it).
 
+Themes and providers ship in a custom image (`image`: `FROM quay.io/keycloak/keycloak` plus JARs in
+/opt/keycloak/providers). The operator starts custom images with `--optimized`; an image that was not
+pre-built with `kc.sh build` needs `startOptimized = False` so Keycloak augments itself at start-up.
+
 The Keycloak operator watches only the namespace it runs in: `namespace` must be the operator's
 namespace, and the database Secret (`databaseSecretName`) must exist there.
 """
@@ -39,7 +43,10 @@ schema KeycloakSpec:
     hostname: str
     httpEnabled?: bool
     tlsSecretName?: str
+    # Custom Keycloak image (themes/providers); the operator's default image when unset.
     image?: str
+    # False for custom images not pre-built with `kc.sh build` (the operator assumes optimized custom images).
+    startOptimized?: bool
     databaseVendor?: str
     databaseHost?: str
     databasePort?: int
@@ -91,6 +98,10 @@ build_keycloak_xr_spec = lambda spec: KeycloakSpec, footprint: str, listener: st
             listener = listener
         }
         environment = footprint
+        if spec.image:
+            image = spec.image
+        if spec.startOptimized in [True, False]:
+            startOptimized = spec.startOptimized
         if owner:
             owner = owner
     }
@@ -117,6 +128,7 @@ build_keycloak = lambda spec: KeycloakSpec -> any {
         if spec.tlsSecretName: tlsSecret = spec.tlsSecretName
     }}
     _image = {if spec.image: image = spec.image}
+    _start_optimized = {if spec.startOptimized in [True, False]: startOptimized = spec.startOptimized}
     _relative_path = {if spec.relativePath != "/": additionalOptions = [{
         name = "http-relative-path"
         value = spec.relativePath
@@ -132,7 +144,7 @@ build_keycloak = lambda spec: KeycloakSpec -> any {
             instances = spec.instances
             hostname = {hostname = spec.hostname}
             proxy.headers = spec.proxyHeaders
-        } | _db | _http | _image | _relative_path
+        } | _db | _http | _image | _start_optimized | _relative_path
     }
 }
 
@@ -177,6 +189,7 @@ schema KeycloakModule(accessory.Accessory):
     httpEnabled?: bool
     tlsSecretName?: str
     image?: str
+    startOptimized?: bool
     databaseVendor?: str
     databaseHost?: str
     databasePort?: int
@@ -198,6 +211,7 @@ schema KeycloakModule(accessory.Accessory):
         httpEnabled = httpEnabled
         tlsSecretName = tlsSecretName
         image = image
+        startOptimized = startOptimized
         databaseVendor = databaseVendor
         databaseHost = databaseHost
         databasePort = databasePort

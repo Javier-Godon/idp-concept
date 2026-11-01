@@ -373,6 +373,13 @@ kubectl -n keycloak create secret generic keycloak-db-secret \
 
 When Keycloak moves under a path (`route.path: /iam`), every realm that sets a `frontendUrl` must use the same public URL (`https://<platform host>/iam`); otherwise issuer, login and redirect URLs point at the old address. Relying parties must use the issuer `https://<platform host>/iam/realms/<realm>`.
 
+**Login theme (`erp`).** The login pages of realm `railway` use the Keycloakify theme `erp` from [erp-keycloak-theme](https://github.com/Javier-Godon/erp-keycloak-theme) (Nuxt UI look; brand chosen by OIDC client: owner console violet "Plataforma ERP", tenant administration blue "ERP Admin"). It ships the operator-recommended way, as a custom Keycloak image with the theme JAR in `/opt/keycloak/providers`:
+
+1. In erp-keycloak-theme, `pnpm image:load` builds the JAR and `ghcr.io/javier-godon/erp-keycloak:26.4.0-erp-theme-<version>-<sha7>` (`FROM quay.io/keycloak/keycloak:26.4.0`) and loads it into minikube (`minikube -p crossplane-v2 image load`); nothing is pushed.
+2. Pin it in `keycloakImage` (`projects/erp/stacks/development/profile_configurations.k`) and render (`cd projects/erp/pre_releases/manifests/dev && koncept render crossplane`): the `XKeycloak` gets `spec.image` and `spec.startOptimized: false`, which the composition copies to the Keycloak CR. The image is not pre-built with `kc.sh build`, so Keycloak runs its build step at start-up and build-time options (database, `http-relative-path`, health) stay in the CR; without `startOptimized: false` the operator would start the custom image with `--optimized`.
+3. The operator pulls Keycloak images with `Always` by default, which fails for images that only exist in the cluster; `keycloak_operator_deployment.yaml` sets `KC_OPERATOR_KEYCLOAK_IMAGE_PULL_POLICY=IfNotPresent` (tags are immutable). Apply it with `kubectl -n keycloak apply -f crossplane_v2/managed_resources/keycloak/kubernetes/keycloak_operator_deployment.yaml`. If a Keycloak pod is already stuck in `ImagePullBackOff`, delete it once: the StatefulSet does not replace a pod that never became ready.
+4. Realm settings (admin console → Realm settings, or the admin REST API): login theme `erp`; internationalization enabled with `es` (default) and `en`, so the theme shows Spanish by default with a language switcher.
+
 Valkey Admin (`adminUi` on `XValkeyInstance`, served at `https://<platform host>/valkey-admin/`) is published through the gateway and has no login of its own, so the route is protected by an Envoy Gateway basic-auth `SecurityPolicy`. Create the Secret out of band in the cache namespace before the XR syncs (until it exists the gateway rejects requests, it never serves the UI unauthenticated):
 
 ```bash

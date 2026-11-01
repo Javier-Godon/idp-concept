@@ -6,7 +6,7 @@ metadata:
     koncept.io/tier: "2"
     koncept.io/operator: "keycloak-operator"
     koncept.io/operator-version: "26.4.x"
-    koncept.io/last-reviewed: "2026-10-10"
+    koncept.io/last-reviewed: "2026-11-01"
 spec:
   scope: Cluster
   group: koncept.bluesolution.es
@@ -65,6 +65,17 @@ spec:
                   default: 1
                   minimum: 1
                   maximum: 5
+                image:
+                  type: string
+                  description: >-
+                    Custom Keycloak image carrying themes/providers in /opt/keycloak/providers
+                    (FROM quay.io/keycloak/keycloak:<operator version>). Unset keeps the operator's default image.
+                startOptimized:
+                  type: boolean
+                  description: >-
+                    The operator starts custom images with --optimized. Set false for an image that was not
+                    pre-built with `kc.sh build`, so Keycloak runs its build step at start-up. Unset keeps the
+                    operator default.
                 db:
                   type: object
                   description: External PostgreSQL database connection settings.

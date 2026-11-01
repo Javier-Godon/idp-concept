@@ -391,6 +391,11 @@ spec:
                   fieldPath: metadata.namespace
             - name: RELATED_IMAGE_KEYCLOAK
               value: quay.io/keycloak/keycloak:26.4.0
+            # Pull policy of the Keycloak pods (operator default: Always). Custom Keycloak images (themes,
+            # providers) carry immutable tags and may be loaded into the cluster without a registry
+            # (minikube image load), so they are pulled only when missing.
+            - name: KC_OPERATOR_KEYCLOAK_IMAGE_PULL_POLICY
+              value: IfNotPresent
           image: quay.io/keycloak/keycloak-operator:26.4.0
           imagePullPolicy: Always
           livenessProbe:

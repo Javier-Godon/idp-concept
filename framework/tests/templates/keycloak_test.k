@@ -202,6 +202,37 @@ test_keycloak_module_crossplane_spec = lambda {
     }
 }
 
+_themed = kc.KeycloakModule {
+    name = "iam"
+    namespace = "keycloak"
+    configurations = {}
+    asset = {version = "26.4.0"}
+    dependsOn = []
+    keycloakName = "iam"
+    hostname = "example.com"
+    path = "/iam"
+    footprint = "development"
+    image = "ghcr.io/example/keycloak:26.4.0-theme-1"
+    startOptimized = False
+}.instance
+
+# === Test: a custom image (themes/providers) reaches the Keycloak CR and the XKeycloak ===
+test_keycloak_module_custom_image = lambda {
+    _kc = _themed.manifests[0]
+    assert _kc.spec.image == "ghcr.io/example/keycloak:26.4.0-theme-1"
+    assert _kc.spec.startOptimized == False
+    assert _themed.crossplaneSpec.image == "ghcr.io/example/keycloak:26.4.0-theme-1"
+    assert _themed.crossplaneSpec.startOptimized == False
+}
+
+# === Test: without an image the operator's default image and start mode are kept ===
+test_keycloak_module_default_image = lambda {
+    assert "image" not in _dev.manifests[0].spec
+    assert "startOptimized" not in _dev.manifests[0].spec
+    assert "image" not in _dev.crossplaneSpec
+    assert "startOptimized" not in _dev.crossplaneSpec
+}
+
 # === Test: footprint sizes instances ===
 test_keycloak_module_footprint_instances = lambda {
     assert _prod.crossplaneSpec.instances == 3

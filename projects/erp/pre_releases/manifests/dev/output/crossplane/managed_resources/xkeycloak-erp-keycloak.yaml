@@ -12,8 +12,10 @@ spec:
         vendor: postgres
     environment: development
     hostname: bluesolution.es
+    image: ghcr.io/javier-godon/erp-keycloak:26.4.0-erp-theme-0.1.0-5d988a6
     instances: 1
     namespace: keycloak
     route:
         listener: https
         path: /iam
+    startOptimized: false

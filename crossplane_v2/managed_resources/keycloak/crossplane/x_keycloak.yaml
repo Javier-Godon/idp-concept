@@ -5,7 +5,7 @@ metadata:
   annotations:
     koncept.io/tier: "2"
     koncept.io/operator: "keycloak-operator"
-    koncept.io/last-reviewed: "2026-10-10"
+    koncept.io/last-reviewed: "2026-11-01"
 spec:
   compositeTypeRef:
     apiVersion: koncept.bluesolution.es/v1alpha1
@@ -109,6 +109,17 @@ spec:
               - type: FromCompositeFieldPath
                 fromFieldPath: spec.instances
                 toFieldPath: spec.forProvider.manifest.spec.instances
+              # Custom image with themes/providers; absent keeps the operator's default image and start mode
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.image
+                toFieldPath: spec.forProvider.manifest.spec.image
+                policy:
+                  fromFieldPath: Optional
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.startOptimized
+                toFieldPath: spec.forProvider.manifest.spec.startOptimized
+                policy:
+                  fromFieldPath: Optional
               # Public URL <listener>://<hostname><path> (TLS terminates at the gateway; X-Forwarded-* headers are trusted)
               - type: CombineFromComposite
                 combine:
