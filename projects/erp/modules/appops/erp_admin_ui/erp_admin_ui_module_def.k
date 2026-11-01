@@ -83,6 +83,9 @@ schema ErpAdminUiModule(webapp.WebAppModule):
         {name = "NUXT_OIDC_POST_LOGOUT_REDIRECT_URI", value = "${_appUrl}/"}
         {name = "NUXT_SESSION_PASSWORD", valueFrom = {secretKeyRef = {name = secretName, key = "session-password"}}}
         {name = "NUXT_SESSION_STORAGE_URL", value = _sessionStore}
+        # The platform gateway (Envoy) is the only proxy and appends the client address to X-Forwarded-For;
+        # the BFF rate limits on that hop, never on client-supplied entries.
+        {name = "NUXT_TRUSTED_PROXY_HOPS", value = "1"}
     ] + ([{name = "NODE_EXTRA_CA_CERTS", value = "${_CA_DIR}/ca.crt"}] if caConfigMap else [])
 
     check:

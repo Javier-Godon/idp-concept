@@ -181,9 +181,11 @@ spec:
               name: erp-owner-admin
         - name: NUXT_SESSION_STORAGE_URL
           value: redis://erp-cache.erp-data.svc.cluster.local:6379
+        - name: NUXT_TRUSTED_PROXY_HOPS
+          value: '1'
         - name: NODE_EXTRA_CA_CERTS
           value: /etc/platform-ca/ca.crt
-        image: ghcr.io/javier-godon/erp-owner-admin-interface:v0.1.0-2cb9b70
+        image: ghcr.io/javier-godon/erp-owner-admin-interface:v0.1.0-81ea052
         imagePullPolicy: IfNotPresent
         livenessProbe:
           failureThreshold: 3
@@ -312,9 +314,11 @@ spec:
               name: erp-tenant-admin
         - name: NUXT_SESSION_STORAGE_URL
           value: redis://erp-cache.erp-data.svc.cluster.local:6379
+        - name: NUXT_TRUSTED_PROXY_HOPS
+          value: '1'
         - name: NODE_EXTRA_CA_CERTS
           value: /etc/platform-ca/ca.crt
-        image: ghcr.io/javier-godon/erp-tenant-admin-interface:v0.1.0-d668be0
+        image: ghcr.io/javier-godon/erp-tenant-admin-interface:v0.1.0-1750070
         imagePullPolicy: IfNotPresent
         livenessProbe:
           failureThreshold: 3
