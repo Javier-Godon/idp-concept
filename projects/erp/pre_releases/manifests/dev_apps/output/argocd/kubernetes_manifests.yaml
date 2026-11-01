@@ -183,7 +183,7 @@ spec:
           value: redis://erp-cache.erp-data.svc.cluster.local:6379
         - name: NODE_EXTRA_CA_CERTS
           value: /etc/platform-ca/ca.crt
-        image: ghcr.io/javier-godon/erp-owner-admin-interface:v0.1.0-0564d91
+        image: ghcr.io/javier-godon/erp-owner-admin-interface:v0.1.0-2cb9b70
         imagePullPolicy: IfNotPresent
         livenessProbe:
           failureThreshold: 3
