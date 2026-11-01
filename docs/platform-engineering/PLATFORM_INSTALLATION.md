@@ -324,7 +324,7 @@ site, trusted by Node.js through `NODE_EXTRA_CA_CERTS`):
 for ui in owner tenant; do
   kubectl -n erp-backend create secret generic erp-$ui-admin \
     --from-literal=oidc-client-secret='<secret of client erp-'$ui'-admin-bff>' \
-    --from-literal=session-password="$(openssl rand -base64 48)"
+    --from-literal=app-secret="$(openssl rand -base64 48)"
 done
 kubectl -n erp-backend create configmap platform-ca \
   --from-literal=ca.crt="$(kubectl -n gateway-system get secret platform-gateway-tls -o jsonpath='{.data.ca\.crt}' | base64 -d)"

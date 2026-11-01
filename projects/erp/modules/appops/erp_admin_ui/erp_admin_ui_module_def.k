@@ -9,7 +9,7 @@ tokens in Valkey (`<cacheNamespace>/erp-cache`) and proxies `/api/erp/**` to the
 the cluster (plain HTTP, no gateway hop). The browser only talks to its own origin.
 
 Secrets are referenced by name only and must exist in the application namespace:
-  - `<secretName>`  keys `oidc-client-secret` (Keycloak client secret), `session-password` (>= 32 chars)
+  - `<secretName>`  keys `oidc-client-secret` (Keycloak client secret), `app-secret` (>= 32 chars, Nuxt `appSecret`)
 Optional ConfigMap `<caConfigMap>` with key `ca.crt`: CA of the gateway certificate, trusted by Node.js when the
 BFF calls the public Keycloak issuer (self-signed on the dev site).
 """
@@ -81,7 +81,7 @@ schema ErpAdminUiModule(webapp.WebAppModule):
         {name = "NUXT_OIDC_CLIENT_SECRET", valueFrom = {secretKeyRef = {name = secretName, key = "oidc-client-secret"}}}
         {name = "NUXT_OIDC_REDIRECT_URI", value = "${_appUrl}/auth/callback"}
         {name = "NUXT_OIDC_POST_LOGOUT_REDIRECT_URI", value = "${_appUrl}/"}
-        {name = "NUXT_SESSION_PASSWORD", valueFrom = {secretKeyRef = {name = secretName, key = "session-password"}}}
+        {name = "NUXT_APP_SECRET", valueFrom = {secretKeyRef = {name = secretName, key = "app-secret"}}}
         {name = "NUXT_SESSION_STORAGE_URL", value = _sessionStore}
         # The platform gateway (Envoy) is the only proxy and appends the client address to X-Forwarded-For;
         # the BFF rate limits on that hop, never on client-supplied entries.

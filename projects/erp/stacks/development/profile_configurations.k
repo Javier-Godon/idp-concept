@@ -19,6 +19,8 @@ _erp_profile_configurations = cfg.ErpConfigurations {
     keycloakPath = "/iam"
     keycloakDbSchema = "keycloak"
     keycloakDbSecret = "keycloak-db-secret"
+    # Keycloak 26.4.0 plus the `erp` login theme (erp-keycloak-theme), built locally and loaded into minikube.
+    keycloakImage = "ghcr.io/javier-godon/erp-keycloak:26.4.0-erp-theme-0.1.0-THEMESHA"
     footprint = "development"
     # erp-backend API (dev_apps pre-release). Pin the image tag published by the erp-backend CD workflow.
     # Secrets are created out of band in appsNamespace (docs/platform-engineering/PLATFORM_INSTALLATION.md).
@@ -37,12 +39,12 @@ _erp_profile_configurations = cfg.ErpConfigurations {
     erpUiHostname = "bluesolution.es"
     platformCaConfigMap = "platform-ca"
     erpOwnerAdminImage = "ghcr.io/javier-godon/erp-owner-admin-interface"
-    erpOwnerAdminVersion = "v0.1.0-6941931"
+    erpOwnerAdminVersion = "v0.1.0-39b6a59"
     erpOwnerAdminPath = "/owner"
     erpOwnerAdminOidcClientId = "erp-owner-admin-bff"
     erpOwnerAdminSecret = "erp-owner-admin"
     erpTenantAdminImage = "ghcr.io/javier-godon/erp-tenant-admin-interface"
-    erpTenantAdminVersion = "v0.1.0-3bd778a"
+    erpTenantAdminVersion = "v0.1.0-8f0bad0"
     erpTenantAdminPath = "/admin"
     erpTenantAdminOidcClientId = "erp-tenant-admin-bff"
     erpTenantAdminSecret = "erp-tenant-admin"
