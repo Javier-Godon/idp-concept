@@ -26,7 +26,7 @@ _erp_profile_configurations = cfg.ErpConfigurations {
     # Secrets are created out of band in appsNamespace (docs/platform-engineering/PLATFORM_INSTALLATION.md).
     appsNamespace = "erp-backend"
     erpBackendImage = "ghcr.io/javier-godon/erp-backend"
-    erpBackendVersion = "v0.1.0-baa2a1b-20261101-1028"
+    erpBackendVersion = "v0.1.0-0d2a16e-20261101-1306"
     erpBackendPath = "/shopping"
     erpApiPath = "/api"
     erpBackendPullSecret = "ghcr-secret"
