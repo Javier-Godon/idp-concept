@@ -24,7 +24,7 @@ _erp_profile_configurations = cfg.ErpConfigurations {
     # Secrets are created out of band in appsNamespace (docs/platform-engineering/PLATFORM_INSTALLATION.md).
     appsNamespace = "erp-backend"
     erpBackendImage = "ghcr.io/javier-godon/erp-backend"
-    erpBackendVersion = "v0.1.0-c9cdb91-20261011-1529"
+    erpBackendVersion = "v0.1.0-a2873da-20261101-0944"
     erpBackendPath = "/shopping"
     erpApiPath = "/api"
     erpBackendPullSecret = "ghcr-secret"
@@ -33,16 +33,16 @@ _erp_profile_configurations = cfg.ErpConfigurations {
     erpBackendKeycloakRealm = "railway"
     # Admin UIs: owner console at /owner, tenant administration at /admin (Keycloak clients and the
     # `erp-*-admin` Secrets are created out of band — docs/platform-engineering/PLATFORM_INSTALLATION.md).
-    # Images are built locally and loaded into minikube until their CD pipelines publish them.
+    # Images are built locally and loaded into minikube until their CD pipelines publish them (tag v0.1.0-<sha7>).
     erpUiHostname = "bluesolution.es"
     platformCaConfigMap = "platform-ca"
     erpOwnerAdminImage = "ghcr.io/javier-godon/erp-owner-admin-interface"
-    erpOwnerAdminVersion = "v0.1.0-dev"
+    erpOwnerAdminVersion = "v0.1.0-eb50676"
     erpOwnerAdminPath = "/owner"
     erpOwnerAdminOidcClientId = "erp-owner-admin-bff"
     erpOwnerAdminSecret = "erp-owner-admin"
     erpTenantAdminImage = "ghcr.io/javier-godon/erp-tenant-admin-interface"
-    erpTenantAdminVersion = "v0.1.0-dev"
+    erpTenantAdminVersion = "v0.1.0-d668be0"
     erpTenantAdminPath = "/admin"
     erpTenantAdminOidcClientId = "erp-tenant-admin-bff"
     erpTenantAdminSecret = "erp-tenant-admin"
